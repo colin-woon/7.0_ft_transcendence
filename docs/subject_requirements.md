@@ -17,7 +17,7 @@ Major: Implement real-time features using WebSockets or similar technology.
 ◦ A profile system (view user information).
 ◦ A friends system (add/remove friends, see friends list).
 
- Minor: Use an ORM for the database
+Minor: Use an ORM for the database
 
 Minor: A complete notification system for all creation, update, and deletion actions.
 
