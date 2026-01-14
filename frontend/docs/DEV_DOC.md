@@ -9,7 +9,6 @@ if no nvm, install nvm
 - `npm run start` - Runs the production-built application. Use this after running build.
 - `npm run lint` - check code quality and catch potential issues without fixing them (like norminette)
 - `npm run format` - automatically format your code according to project standards.
-- `npm run test` - Run tests
 
 ## npm CRUD Commands
 ### Create
