@@ -44,7 +44,6 @@ it should be `Python 3.13.11`
 ---
 
 ### Key Comparison Table
-
 | Feature | npm / nvm | uv |
 | --- | --- | --- |
 | **Version File** | `.nvmrc` | `.python-version` |
