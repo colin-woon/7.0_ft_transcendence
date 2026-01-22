@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import org.bumIntra.gateway.security.GatewayRequestContext;
 import org.bumIntra.gateway.config.GatewayAuthConfig;
-import org.bumIntra.gateway.exception.AuthRequiredException;
+// import org.bumIntra.gateway.exception.AuthRequiredException;
 import org.bumIntra.gateway.obs.GatewayObserverLogging;
 import org.bumIntra.gateway.obs.GatewayRequestStart;
 import org.bumIntra.gateway.policy.GatewayPolicyEngine;

@@ -11,7 +11,7 @@ import jakarta.ws.rs.ext.Provider;
 
 @Provider
 @Priority(Priorities.AUTHENTICATION)
-public class DownstreamAuthFilter implements ClientRequestFilter {
+public class ServiceAuthFilter implements ClientRequestFilter {
 
 	@Inject
 	GatewayRequestContext ctx;

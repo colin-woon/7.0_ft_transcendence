@@ -17,7 +17,7 @@ public class GatewayExceptionMapper implements ExceptionMapper<GatewayException>
 	@Override
 	public Response toResponse(GatewayException e) {
 
-		ctx.setError(e.getCode(), e.getStatus().getStatusCode());
+		ctx.setError(e.getCode().toString(), e.getStatus().getStatusCode());
 
 		GatewayErrorResponse body = new GatewayErrorResponse(
 				e.getStatus().getStatusCode(),

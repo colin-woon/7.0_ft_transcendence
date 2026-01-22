@@ -2,12 +2,12 @@ package org.bumIntra.gateway.exception;
 
 import jakarta.ws.rs.core.Response;
 
-public abstract class GatewayException extends RuntimeException {
+public class GatewayException extends RuntimeException {
 
 	private final Response.Status _status;
-	private final String _code;
+	private final GatewayErrorCode _code;
 
-	protected GatewayException(Response.Status status, String code, String message) {
+	public GatewayException(Response.Status status, GatewayErrorCode code, String message) {
 		super(message);
 		_status = status;
 		_code = code;
@@ -17,7 +17,7 @@ public abstract class GatewayException extends RuntimeException {
 		return _status;
 	}
 
-	public String getCode() {
+	public GatewayErrorCode getCode() {
 		return _code;
 	}
 }
