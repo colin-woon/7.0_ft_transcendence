@@ -15,17 +15,19 @@ public class GatewayExceptionMapper implements ExceptionMapper<GatewayException>
 	GatewayRequestContext ctx;
 
 	@Override
-	public Response toResponse(GatewayException exception) {
+	public Response toResponse(GatewayException e) {
+
+		ctx.setError(e.getCode(), e.getStatus().getStatusCode());
 
 		GatewayErrorResponse body = new GatewayErrorResponse(
-				exception.getStatus().getStatusCode(),
-				exception.getStatus().name(),
-				exception.getCode(),
-				exception.getMessage(),
+				e.getStatus().getStatusCode(),
+				e.getStatus().name(),
+				e.getCode(),
+				e.getMessage(),
 				ctx.getRequestId());
 
 		return Response
-				.status(exception.getStatus())
+				.status(e.getStatus())
 				.type(MediaType.APPLICATION_JSON)
 				.entity(body)
 				.build();

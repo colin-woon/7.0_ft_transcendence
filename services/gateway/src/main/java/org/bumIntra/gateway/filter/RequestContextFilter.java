@@ -36,6 +36,8 @@ public class RequestContextFilter implements ContainerRequestFilter {
 	@Override
 	public void filter(ContainerRequestContext request) {
 
+		ctx.clearError();
+
 		String requestId = request.getHeaderString("X-Request-Id");
 
 		if (requestId == null || requestId.isBlank()) {

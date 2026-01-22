@@ -47,6 +47,6 @@ public class ResponseContextFilter implements ContainerResponseFilter {
 						status,
 						Duration.between(st, Instant.now()),
 						status >= 200 && status < 400,
-						Optional.empty()));
+						Optional.ofNullable(ctx.getErrorCode())));
 	}
 }
