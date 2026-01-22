@@ -2,11 +2,14 @@ package org.bumIntra.gateway.filter;
 
 import org.jboss.logging.MDC;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import org.bumIntra.gateway.security.GatewayRequestContext;
 import org.bumIntra.gateway.config.GatewayAuthConfig;
 import org.bumIntra.gateway.exception.AuthRequiredException;
+import org.bumIntra.gateway.obs.GatewayObserverLogging;
+import org.bumIntra.gateway.obs.GatewayRequestStart;
 import org.bumIntra.gateway.policy.GatewayPolicyEngine;
 
 import jakarta.annotation.Priority;
@@ -27,6 +30,9 @@ public class RequestContextFilter implements ContainerRequestFilter {
 	@Inject
 	GatewayPolicyEngine policyEngine;
 
+	@Inject
+	GatewayObserverLogging obs;
+
 	@Override
 	public void filter(ContainerRequestContext request) {
 
@@ -43,6 +49,17 @@ public class RequestContextFilter implements ContainerRequestFilter {
 
 		ctx.setAuth(request.getHeaderString("Authorization"));
 
+		// Obs Hook start
+		Instant st = Instant.now();
+		obs.onRequestStart(new GatewayRequestStart(
+				requestId,
+				request.getMethod(),
+				request.getUriInfo().getPath(),
+				st));
+
+		request.setProperty("gw.start", st);
+
+		// Enforce policies
 		policyEngine.enforce(ctx);
 	}
 }
