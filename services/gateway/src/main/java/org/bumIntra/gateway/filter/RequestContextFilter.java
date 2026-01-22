@@ -1,8 +1,13 @@
 package org.bumIntra.gateway.filter;
 
+import org.jboss.logging.MDC;
+
+import java.util.UUID;
+
 import org.bumIntra.gateway.security.GatewayRequestContext;
 import org.bumIntra.gateway.config.GatewayAuthConfig;
 import org.bumIntra.gateway.exception.AuthRequiredException;
+import org.bumIntra.gateway.policy.GatewayPolicyEngine;
 
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
@@ -17,10 +22,10 @@ import jakarta.ws.rs.ext.Provider;
 public class RequestContextFilter implements ContainerRequestFilter {
 
 	@Inject
-	GatewayAuthConfig authConfig;
+	GatewayRequestContext ctx;
 
 	@Inject
-	GatewayRequestContext ctx;
+	GatewayPolicyEngine policyEngine;
 
 	@Override
 	public void filter(ContainerRequestContext request) {
@@ -28,22 +33,16 @@ public class RequestContextFilter implements ContainerRequestFilter {
 		String requestId = request.getHeaderString("X-Request-Id");
 
 		if (requestId == null || requestId.isBlank()) {
-			requestId = java.util.UUID.randomUUID().toString();
+			requestId = UUID.randomUUID().toString();
 		}
 
 		ctx.setRequestId(requestId);
 
-		String authHeader = request.getHeaderString("Authorization");
+		// MDC - Mapped Diagnostic Context for logging
+		MDC.put("requestId", requestId);
 
-		ctx.setAuth(authHeader);
+		ctx.setAuth(request.getHeaderString("Authorization"));
 
-		if (authConfig.required() && (authHeader == null || authHeader.isBlank())) {
-
-			throw new AuthRequiredException();
-
-			// request.abortWith(
-			// Response.status(Response.Status.UNAUTHORIZED).entity("Authorization header is
-			// required").build());
-		}
+		policyEngine.enforce(ctx);
 	}
 }
