@@ -22,4 +22,5 @@ https://www.python.org/downloads/
 PYTHON_VERSION = 3.13
 
 DATABASE
-POSTGRES_SQL_VERSION =  
+POSTGRES_SQL_VERSION = 18.1
+-containerized in docker container so no setup needed
