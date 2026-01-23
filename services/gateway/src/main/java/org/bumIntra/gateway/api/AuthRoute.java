@@ -6,6 +6,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.inject.Inject;
 import org.bumIntra.gateway.client.AuthClient;
 import org.bumIntra.gateway.client.dto.AuthResult;
+import org.bumIntra.gateway.client.exec.FaultToleranceServiceCallExecutor;
 import org.bumIntra.gateway.client.exec.ServiceCallExecutor;
 import org.bumIntra.gateway.security.GatewayRequestContext;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -22,7 +23,8 @@ public class AuthRoute {
 	GatewayRequestContext ctx;
 
 	@Inject
-	ServiceCallExecutor ex;
+	FaultToleranceServiceCallExecutor ex;
+	// ServiceCallExecutor ex;
 
 	@GET
 	@Path("/ping")

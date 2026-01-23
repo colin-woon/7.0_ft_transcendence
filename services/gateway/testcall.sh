@@ -11,6 +11,8 @@ run() {
   echo "▶ $1"
   shift
   curl -s -i "$@" | sed 's/\r//'
+  echo ""
+  sleep 3
 }
 
 # ──────────────────────────────
