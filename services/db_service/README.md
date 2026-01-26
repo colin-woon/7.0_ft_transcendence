@@ -1,14 +1,13 @@
 # sup boys db_service is very easy to use, just go to /7.0_ft_transcendence and run docker compose up --build. two containers should pop up: 
 
-# 1. postgres_db 
-# 2. python_logic_hub 
+1. postgres_db 
+2. python_logic_hub 
 
-# 1.is the actual db (mapped to port 5433) and 2. is the api layer to access the db (port 8000)
-# in theory you shouldnt ever need to touch port 5433, just do restapi calls to 8000.
+1.is the actual db (mapped to port 5433) and 2. is the api layer to access the db (port 8000) in theory you shouldnt ever need to touch port 5433, just do restapi calls to 8000.
 
 # example python code below on how to use the api:
 
-
+```
 from urllib import response
 import requests
 import json
@@ -86,3 +85,4 @@ if __name__ == "__main__":
     # update_profile(3)
     # create_user("bumser", "bumlol@gmail.com")
     fetch_all_users()
+```
