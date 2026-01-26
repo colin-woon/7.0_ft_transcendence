@@ -1,6 +1,7 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+from contextlib import contextmanager
 
 # 'postgresql+psycopg db api', need to install through uv
 DATABASE_URL = os.getenv(
@@ -18,6 +19,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 # Helper function to get a DB session (Dependency Injection pattern)
+@contextmanager
 def get_db():
     db = SessionLocal()
     try:

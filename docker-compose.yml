@@ -21,6 +21,23 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - app_net
+    
+  logic_hub:
+    build:
+      context: .
+      dockerfile: services/db_service/Dockerfile
+    container_name: python_logic_hub
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+psycopg://dev_user:dev_password@db:5432/forum_db
+    networks:
+      - app_net
 
   # add other services below here, example:
   # redis:
@@ -28,6 +45,10 @@ services:
   #   container_name: redis_cache
   #   ports:
   #     - "6379:6379"
+
+networks:
+  app_net:
+    driver: bridge
 
 volumes:
   postgres_data:

@@ -1,10 +1,9 @@
-# TLDR: Python classes that represent your modernized PostgreSQL tables.
 from datetime import datetime
 from typing import List, Optional
 from sqlalchemy import String, Text, ForeignKey, Date, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-# Import the Base we just created
+# import the base created
 from src.database import Base
 
 class User(Base):
