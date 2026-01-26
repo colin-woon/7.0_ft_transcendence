@@ -9,8 +9,8 @@ RUN uv sync --no-install-project
 
 # copy shared source and service-specific code
 COPY infra/postgres/src/ ./src/
-COPY services/db_service/main.py ./
-COPY services/db_service/schemas.py ./src/
+COPY services/db_service/src/main.py ./
+COPY services/db_service/src/schemas.py ./src/
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app"

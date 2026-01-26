@@ -4,9 +4,9 @@ from fastapi import FastAPI, HTTPException, status
 from contextlib import asynccontextmanager
 
 from src.database import engine, Base
-from src.models import User
+from src.models import User, Project, ForumPost
 from src.base_service import BaseService
-from src.schemas import UserCreate, UserResponse, UserUpdate
+from src.schemas import *
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("logic_hub")
@@ -61,6 +61,36 @@ class UserService(BaseService):
             return True
         return self.execute_with_db(action)
 
+class ProjectService(BaseService):
+    def get_all(self) -> List[Project]:
+        return self.execute_with_db(lambda db: db.query(Project).all())
+
+    def create(self, data: ProjectCreate) -> Project:
+        def action(db):
+            new_obj = Project(**data.model_dump())
+            db.add(new_obj)
+            db.commit()
+            db.refresh(new_obj)
+            return new_obj
+        return self.execute_with_db(action)
+
+class PostService(BaseService):
+    def get_by_project(self, proj_id: int) -> List[ForumPost]:
+        return self.execute_with_db(
+            lambda db: db.query(ForumPost).filter(ForumPost.project_id == proj_id).all()
+        )
+
+    def create(self, data: ForumPostCreate) -> ForumPost:
+        def action(db):
+            new_post = ForumPost(**data.model_dump())
+            db.add(new_post)
+            db.commit()
+            db.refresh(new_post)
+            return new_post
+        return self.execute_with_db(action)
+
+project_svc = ProjectService()
+post_svc = PostService()
 user_svc = UserService()
 
 # ---lifespan Handler (not realted if you wanna add api, just ignore this)---
@@ -85,6 +115,7 @@ app = FastAPI(title="User Service API", lifespan=lifespan)
 
 # -------------------- API Routes --------------------
 
+# --- User API ---
 # get all users
 @app.get("/users", response_model=List[UserResponse])
 def read_users():
@@ -115,3 +146,29 @@ def delete_user(user_id: int):
     if not user_svc.delete(user_id):
         raise HTTPException(status_code=404, detail="User not found")
     return None
+
+
+
+# --- Project API ---
+
+@app.get("/projects", response_model=List[ProjectResponse])
+def read_projects():
+    return project_svc.get_all()
+
+@app.post("/projects", response_model=ProjectResponse, status_code=201)
+def create_project(project: ProjectCreate):
+    return project_svc.create(project)
+
+
+
+
+# --- ForumPost API ---
+
+@app.post("/posts", response_model=ForumPostResponse, status_code=201)
+def create_post(post: ForumPostCreate):
+    # This will fail automatically if author_id doesn't exist in User table (FK Constraint)
+    return post_svc.create(post)
+
+@app.get("/projects/{project_id}/posts", response_model=List[ForumPostResponse])
+def read_project_posts(project_id: int):
+    return post_svc.get_by_project(project_id)

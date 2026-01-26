@@ -2,6 +2,8 @@ from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import datetime
 from typing import Optional
 
+
+# --- User Schemas ---
 # base fields shared by create and response
 class UserBase(BaseModel):
     full_name: str
@@ -26,4 +28,37 @@ class UserResponse(UserBase):
     updated_at: datetime
 
     # tell pydantic to refer to SQLAlchemy model
+    model_config = ConfigDict(from_attributes=True)
+
+
+
+# --- Project Schemas ---
+class ProjectBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+
+class ProjectCreate(ProjectBase):
+    pass
+
+class ProjectResponse(ProjectBase):
+    id: int
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+
+
+# --- ForumPost Schemas ---
+class ForumPostBase(BaseModel):
+    title: str
+    content: str
+    project_id: Optional[int] = None # Optional: Can post without linking a project
+
+class ForumPostCreate(ForumPostBase):
+    author_id: int # Required to link the post to a User
+
+class ForumPostResponse(ForumPostBase):
+    id: int
+    author_id: int
+    created_at: datetime
     model_config = ConfigDict(from_attributes=True)
