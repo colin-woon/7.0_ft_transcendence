@@ -6,18 +6,19 @@ import java.time.Instant;
 import java.util.UUID;
 
 import org.bumIntra.gateway.security.GatewayRequestContext;
-import org.bumIntra.gateway.config.GatewayAuthConfig;
+// import org.bumIntra.gateway.config.GatewayAuthConfig;
 // import org.bumIntra.gateway.exception.AuthRequiredException;
-import org.bumIntra.gateway.obs.GatewayObserverLogging;
+import org.bumIntra.gateway.obs.GatewayObserver;
 import org.bumIntra.gateway.obs.GatewayRequestStart;
 import org.bumIntra.gateway.policy.GatewayPolicyEngine;
 
 import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
-import jakarta.ws.rs.core.Response;
+// import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 
 @Provider
@@ -31,7 +32,7 @@ public class RequestContextFilter implements ContainerRequestFilter {
 	GatewayPolicyEngine policyEngine;
 
 	@Inject
-	GatewayObserverLogging obs;
+	Instance<GatewayObserver> obs;
 
 	@Override
 	public void filter(ContainerRequestContext request) {
@@ -53,11 +54,13 @@ public class RequestContextFilter implements ContainerRequestFilter {
 
 		// Obs Hook start
 		Instant st = Instant.now();
-		obs.onRequestStart(new GatewayRequestStart(
-				requestId,
-				request.getMethod(),
-				request.getUriInfo().getPath(),
-				st));
+		for (var ob : obs) {
+			ob.onRequestStart(new GatewayRequestStart(
+					requestId,
+					request.getMethod(),
+					request.getUriInfo().getPath(),
+					st));
+		}
 
 		request.setProperty("gw.start", st);
 

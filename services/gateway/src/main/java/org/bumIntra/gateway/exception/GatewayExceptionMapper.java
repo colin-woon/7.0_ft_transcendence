@@ -8,6 +8,8 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
+import static org.bumIntra.gateway.exception.GatewayErrorMessageResolver.resolveMessage;
+
 @Provider
 public class GatewayExceptionMapper implements ExceptionMapper<GatewayException> {
 
@@ -15,19 +17,19 @@ public class GatewayExceptionMapper implements ExceptionMapper<GatewayException>
 	GatewayRequestContext ctx;
 
 	@Override
-	public Response toResponse(GatewayException e) {
+	public Response toResponse(GatewayException ge) {
 
-		ctx.setError(e.getCode().toString(), e.getStatus().getStatusCode());
+		ctx.setError(ge.getCode().toString(), ge.getStatus().getStatusCode());
 
 		GatewayErrorResponse body = new GatewayErrorResponse(
-				e.getStatus().getStatusCode(),
-				e.getStatus().name(),
-				e.getCode(),
-				e.getMessage(),
+				ge.getStatus().getStatusCode(),
+				ge.getStatus().name(),
+				ge.getCode(),
+				resolveMessage(ge.getCode()),
 				ctx.getRequestId());
 
 		return Response
-				.status(e.getStatus())
+				.status(ge.getStatus())
 				.type(MediaType.APPLICATION_JSON)
 				.entity(body)
 				.build();

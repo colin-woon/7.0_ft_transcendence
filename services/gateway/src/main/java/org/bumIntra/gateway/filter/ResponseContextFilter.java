@@ -4,11 +4,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
+import org.bumIntra.gateway.obs.GatewayObserver;
 import org.bumIntra.gateway.obs.GatewayObserverLogging;
 import org.bumIntra.gateway.obs.GatewayRequestEnd;
 import org.bumIntra.gateway.security.GatewayRequestContext;
 
 import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -24,7 +26,7 @@ public class ResponseContextFilter implements ContainerResponseFilter {
 	GatewayRequestContext ctx;
 
 	@Inject
-	GatewayObserverLogging obs;
+	Instance<GatewayObserver> obs;
 
 	@Override
 	public void filter(ContainerRequestContext request, ContainerResponseContext response) {
@@ -41,12 +43,14 @@ public class ResponseContextFilter implements ContainerResponseFilter {
 		}
 
 		int status = response.getStatus();
-		obs.onRequestEnd(
-				new GatewayRequestEnd(
-						ctx.getRequestId(),
-						status,
-						Duration.between(st, Instant.now()),
-						status >= 200 && status < 400,
-						Optional.ofNullable(ctx.getErrorCode())));
+		for (var ob : obs) {
+			ob.onRequestEnd(
+					new GatewayRequestEnd(
+							ctx.getRequestId(),
+							status,
+							Duration.between(st, Instant.now()),
+							status >= 200 && status < 400,
+							Optional.ofNullable(ctx.getErrorCode())));
+		}
 	}
 }
