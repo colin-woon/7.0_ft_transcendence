@@ -13,7 +13,7 @@ import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.ext.Provider;
 
 @Provider
-@Priority(Priorities.AUTHENTICATION - 50) // NOTE: run before authentication to avoid passing unwanted headers to
+@Priority(Priorities.AUTHENTICATION - 80) // NOTE: run before authentication to avoid passing unwanted headers to
 											// downstream services
 public class RequestHeaderAllowListFilter implements ContainerRequestFilter {
 

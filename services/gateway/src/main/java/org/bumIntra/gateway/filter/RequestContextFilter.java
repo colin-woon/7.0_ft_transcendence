@@ -22,7 +22,7 @@ import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.ext.Provider;
 
 @Provider
-@Priority(Priorities.AUTHENTICATION)
+@Priority(Priorities.AUTHENTICATION - 100)
 public class RequestContextFilter implements ContainerRequestFilter {
 
 	@Inject
@@ -65,6 +65,6 @@ public class RequestContextFilter implements ContainerRequestFilter {
 		request.setProperty("gw.start", st);
 
 		// Enforce policies
-		policyEngine.enforce(ctx);
+		// policyEngine.enforce(ctx);
 	}
 }

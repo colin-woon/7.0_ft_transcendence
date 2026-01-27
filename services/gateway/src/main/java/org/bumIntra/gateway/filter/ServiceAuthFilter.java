@@ -1,5 +1,6 @@
 package org.bumIntra.gateway.filter;
 
+import org.bumIntra.gateway.policy.GatewayPolicyEngine;
 import org.bumIntra.gateway.security.GatewayRequestContext;
 
 import jakarta.annotation.Priority;
@@ -16,6 +17,9 @@ public class ServiceAuthFilter implements ClientRequestFilter {
 	@Inject
 	GatewayRequestContext ctx;
 
+	@Inject
+	GatewayPolicyEngine policyEngine;
+
 	@Override
 	public void filter(ClientRequestContext request) {
 		String authHeader = ctx.getAuth();
@@ -28,5 +32,7 @@ public class ServiceAuthFilter implements ClientRequestFilter {
 		if (requestId != null && !requestId.isBlank()) {
 			request.getHeaders().putSingle("X-Request-Id", requestId);
 		}
+
+		policyEngine.enforce(ctx);
 	}
 }

@@ -15,7 +15,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 
 @Provider
-@Priority(Priorities.AUTHENTICATION - 100) // NOTE: run before authentication to avoid passing unwanted methods to
+@Priority(Priorities.AUTHENTICATION - 90) // NOTE: run before authentication to avoid passing unwanted methods to
 											// downstream
 // services
 public class MethodAllowListFilter implements ContainerRequestFilter {
