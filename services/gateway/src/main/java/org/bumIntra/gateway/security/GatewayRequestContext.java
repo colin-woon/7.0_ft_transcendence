@@ -1,5 +1,8 @@
 package org.bumIntra.gateway.security;
 
+import java.util.List;
+import java.util.Optional;
+
 import jakarta.enterprise.context.RequestScoped;
 
 @RequestScoped
@@ -11,6 +14,8 @@ public class GatewayRequestContext {
 	private Integer _errorStatus;
 	private String _clientIp;
 	private boolean _internal;
+	private String _userId;
+	private List<String> _roles;
 
 	public String getAuth() {
 		return _auth;
@@ -71,5 +76,21 @@ public class GatewayRequestContext {
 			return getAuth();
 		}
 		return getClientIp();
+	}
+
+	public Optional<String> getUserId() {
+		return Optional.ofNullable(_userId);
+	}
+
+	public void setUserId(String userId) {
+		_userId = userId;
+	}
+
+	public Optional<List<String>> getRoles() {
+		return Optional.ofNullable(_roles);
+	}
+
+	public void setRoles(List<String> roles) {
+		_roles = roles;
 	}
 }

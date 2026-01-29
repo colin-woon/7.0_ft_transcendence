@@ -1,7 +1,6 @@
 package org.bumIntra.gateway.client.dto;
 
-// import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-//
-// @JsonIgnoreProperties(ignoreUnknown = false)
-public record AuthResult(String message) {
+import java.util.List;
+
+public record AuthResult(String sub, List<String> roles) {
 }

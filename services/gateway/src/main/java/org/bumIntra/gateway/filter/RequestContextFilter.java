@@ -28,8 +28,8 @@ public class RequestContextFilter implements ContainerRequestFilter {
 	@Inject
 	GatewayRequestContext ctx;
 
-	@Inject
-	GatewayPolicyEngine policyEngine;
+	// @Inject
+	// GatewayPolicyEngine policyEngine;
 
 	@Inject
 	Instance<GatewayObserver> obs;

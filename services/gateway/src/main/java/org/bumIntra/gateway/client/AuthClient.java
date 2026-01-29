@@ -1,11 +1,13 @@
 package org.bumIntra.gateway.client;
 
 import org.bumIntra.gateway.client.dto.AuthResult;
-import org.bumIntra.gateway.filter.ServiceAuthFilter;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
@@ -15,7 +17,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 @Path("/api")
 @RegisterRestClient(configKey = "auth-service")
-@RegisterProvider(ServiceAuthFilter.class)
+// @RegisterProvider(ServiceAuthFilter.class)
 public interface AuthClient {
 	@GET
 	@Path("/ping")
@@ -23,6 +25,7 @@ public interface AuthClient {
 
 	@GET
 	@Path("/verify")
+	@Produces(MediaType.APPLICATION_JSON)
 	// @Consumes("application/json")
-	AuthResult verify();
+	AuthResult verify(@HeaderParam("Authorization") String authorization);
 }

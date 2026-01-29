@@ -1,38 +1,54 @@
 package org.bumIntra.gateway.filter;
 
-import org.bumIntra.gateway.policy.GatewayPolicyEngine;
+import org.bumIntra.gateway.client.AuthClient;
+import org.bumIntra.gateway.client.AuthService;
+import org.bumIntra.gateway.client.dto.AuthResult;
+import org.bumIntra.gateway.exception.GatewayErrorCode;
+import org.bumIntra.gateway.exception.GatewayException;
 import org.bumIntra.gateway.security.GatewayRequestContext;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
-import jakarta.ws.rs.client.ClientRequestContext;
-import jakarta.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 
 @Provider
-@Priority(Priorities.AUTHENTICATION)
-public class ServiceAuthFilter implements ClientRequestFilter {
+@Priority(Priorities.AUTHENTICATION - 50)
+public class ServiceAuthFilter implements ContainerRequestFilter {
 
 	@Inject
-	GatewayRequestContext ctx;
+	GatewayRequestContext grc;
 
 	@Inject
-	GatewayPolicyEngine policyEngine;
+	AuthService authService;
 
 	@Override
-	public void filter(ClientRequestContext request) {
-		String authHeader = ctx.getAuth();
+	public void filter(ContainerRequestContext request) {
 
-		if (authHeader != null && !authHeader.isBlank()) {
-			request.getHeaders().putSingle("Authorization", authHeader);
+		String authorizationHeader = request.getHeaderString(HttpHeaders.AUTHORIZATION);
+		if (authorizationHeader == null || authorizationHeader.isBlank()) {
+			throw new GatewayException(Response.Status.UNAUTHORIZED, GatewayErrorCode.AUTH_REQUIRED,
+					"Authorization header is missing");
 		}
 
-		String requestId = ctx.getRequestId();
-		if (requestId != null && !requestId.isBlank()) {
-			request.getHeaders().putSingle("X-Request-Id", requestId);
+		grc.setAuth(authorizationHeader);
+
+		// AuthService.verify() uses FaultToleranceServiceCallExecutor internally
+		// Handles retries, circuit breaking, and error mapping automatically
+		AuthResult authResult = authService.verify(authorizationHeader);
+
+		if (authResult == null || authResult.sub() == null || authResult.sub().isBlank()) {
+			throw new GatewayException(Response.Status.UNAUTHORIZED, GatewayErrorCode.AUTH_INVALID,
+					"Authorization token is invalid");
 		}
 
-		policyEngine.enforce(ctx);
+		grc.setUserId(authResult.sub());
+		grc.setRoles(authResult.roles());
 	}
 }

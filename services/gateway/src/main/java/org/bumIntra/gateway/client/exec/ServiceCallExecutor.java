@@ -6,9 +6,12 @@ import java.util.function.Supplier;
 import org.bumIntra.gateway.exception.GatewayErrorCode;
 import org.bumIntra.gateway.exception.GatewayException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.client.ResponseProcessingException;
 import jakarta.ws.rs.core.Response;
 
 @ApplicationScoped
@@ -43,17 +46,34 @@ public class ServiceCallExecutor {
 	private GatewayException handleProcessingFailure(ProcessingException pe) {
 
 		Throwable cause = pe.getCause();
+		String message = pe.getMessage();
 
+		// Check for timeout
 		if (cause instanceof TimeoutException) {
 			return new GatewayException(
 					Response.Status.GATEWAY_TIMEOUT,
 					GatewayErrorCode.SERVICE_TIMEOUT,
-					"Service timeout: " + pe.getMessage());
+					"Service timeout: " + message);
 		}
 
+		// Check for response deserialization errors (JSON/content-type mismatch)
+		// MicroProfile REST Client throws ProcessingException with specific message
+		// patterns
+		if (message != null &&
+				(message.contains("could not be mapped") ||
+						message.contains("media type") ||
+						message.contains("JSON") ||
+						message.contains("deserialize"))) {
+			return new GatewayException(
+					Response.Status.BAD_GATEWAY,
+					GatewayErrorCode.SERVICE_INVALID_RESPONSE,
+					"Invalid response from service: " + message);
+		}
+
+		// Generic processing error (connection, network, etc.)
 		return new GatewayException(
 				Response.Status.SERVICE_UNAVAILABLE,
 				GatewayErrorCode.SERVICE_UNAVAILABLE,
-				"Service unavailable: " + pe.getMessage());
+				"Service unavailable: " + message);
 	}
 }

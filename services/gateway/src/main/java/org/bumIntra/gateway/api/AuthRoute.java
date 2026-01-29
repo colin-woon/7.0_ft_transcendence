@@ -1,10 +1,12 @@
 package org.bumIntra.gateway.api;
 
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
 import jakarta.inject.Inject;
 import org.bumIntra.gateway.client.AuthClient;
+import org.bumIntra.gateway.client.AuthService;
 import org.bumIntra.gateway.client.dto.AuthResult;
 import org.bumIntra.gateway.client.exec.FaultToleranceServiceCallExecutor;
 import org.bumIntra.gateway.security.GatewayRequestContext;
@@ -19,22 +21,26 @@ public class AuthRoute {
 	AuthClient authClient;
 
 	@Inject
+	AuthService authService;
+
+	@Inject
 	GatewayRequestContext ctx;
 
 	@Inject
 	FaultToleranceServiceCallExecutor ex;
-	// ServiceCallExecutor ex;
 
 	@GET
 	@Path("/ping")
 	public Response ping() {
+		// Direct ping for health check - uses executor
 		return ex.execute(() -> authClient.ping());
 	}
 
 	@GET
 	@Path("/verify")
-	public Response verify() {
-		AuthResult result = ex.execute(() -> authClient.verify());
+	public Response verify(@HeaderParam("Authorization") String authorization) {
+		// Use AuthService which internally uses executor - no double wrapping
+		AuthResult result = authService.verify(authorization);
 		return Response.ok(result).build();
 	}
 }
