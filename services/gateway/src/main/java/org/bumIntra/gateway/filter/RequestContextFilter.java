@@ -52,6 +52,15 @@ public class RequestContextFilter implements ContainerRequestFilter {
 
 		ctx.setAuth(request.getHeaderString("Authorization"));
 
+		// RateLimitAccess
+		String clientIp = request.getHeaderString("X-Forwarded-For");
+		if (clientIp == null || clientIp.isBlank()) {
+			clientIp = request.getHeaderString("Remote-Addr");
+		}
+		ctx.setClientIp(clientIp);
+
+		ctx.setInternal("true".equalsIgnoreCase(request.getHeaderString("X-Internal-Request")));
+
 		// Obs Hook start
 		Instant st = Instant.now();
 		for (var ob : obs) {

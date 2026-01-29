@@ -5,6 +5,10 @@ import org.bumIntra.gateway.exception.GatewayErrorCode;
 import org.bumIntra.gateway.exception.RateLimitException;
 import org.bumIntra.gateway.security.GatewayRequestContext;
 import org.bumIntra.gateway.security.ratelimit.InMemTokenBucketRateLimiter;
+import org.bumIntra.gateway.security.ratelimit.RateLimitAccess;
+import org.bumIntra.gateway.security.ratelimit.RateLimitAccessResolver;
+import org.bumIntra.gateway.security.ratelimit.RateLimitProfile;
+import org.bumIntra.gateway.security.ratelimit.RateLimitProfiles;
 
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
@@ -27,6 +31,12 @@ public class RateLimitFilter implements ContainerRequestFilter {
 	@Inject
 	InMemTokenBucketRateLimiter rateLimiter;
 
+	@Inject
+	RateLimitProfiles profiles;
+
+	@Inject
+	RateLimitAccessResolver rlas;
+
 	@Override
 	public void filter(ContainerRequestContext request) {
 
@@ -34,11 +44,15 @@ public class RateLimitFilter implements ContainerRequestFilter {
 			return;
 		}
 
-		rateLimiter.configure(grlc.limit(), grlc.window());
+		// rateLimiter.configure(grlc.limit(), grlc.window());
 
-		String key = buildKey(request);
+		// String key = buildKey(request);
 
-		boolean allowed = rateLimiter.tryConsume(key);
+		RateLimitAccess access = rlas.resolve(grc);
+		RateLimitProfile profile = profiles.getProfile(access);
+		String key = access + ":" + grc.getRateLimitKey();
+
+		boolean allowed = rateLimiter.tryConsume(key, profile);
 		if (!allowed) {
 			grc.setError(
 					GatewayErrorCode.RATE_LIMITED.toString(),
@@ -47,33 +61,33 @@ public class RateLimitFilter implements ContainerRequestFilter {
 		}
 	}
 
-	private String buildKey(ContainerRequestContext request) {
+	// private String buildKey(ContainerRequestContext request) {
+	//
+	// String ip = resolveClientIp(request);
+	//
+	// String auth = request.getHeaderString("Authorization");
+	// if (auth != null && auth.length() > 32) {
+	// auth = auth.substring(0, 32); // safety truncate
+	// }
+	//
+	// return "ip: " + ip + "| auth: " + (auth != null ? auth : "none");
+	// }
 
-		String ip = resolveClientIp(request);
+	// private String resolveClientIp(ContainerRequestContext request) {
+	// String xfwd = request.getHeaderString("X-Forwarded-For");
+	// if (xfwd != null && !xfwd.isBlank()) {
+	// String[] parts = xfwd.split(",");
+	// return parts[0].trim();
+	// }
+	// String ip = grc.getClientIp();
+	// if (ip != null && !ip.isBlank()) {
+	// return ip;
+	// }
+	// return "unknown";
 
-		String auth = request.getHeaderString("Authorization");
-		if (auth != null && auth.length() > 32) {
-			auth = auth.substring(0, 32); // safety truncate
-		}
-
-		return "ip: " + ip + "| auth: " + (auth != null ? auth : "none");
-	}
-
-	private String resolveClientIp(ContainerRequestContext request) {
-		// String xfwd = request.getHeaderString("X-Forwarded-For");
-		// if (xfwd != null && !xfwd.isBlank()) {
-		// String[] parts = xfwd.split(",");
-		// return parts[0].trim();
-		// }
-		// String ip = grc.getClientIp();
-		// if (ip != null && !ip.isBlank()) {
-		// return ip;
-		// }
-		// return "unknown";
-
-		// Do NOT trust forwarded headers yet
-		// Until you add trusted proxy config
-		return request.getUriInfo().getRequestUri().getHost();
-
-	}
+	// Do NOT trust forwarded headers yet
+	// Until you add trusted proxy config
+	// return request.getUriInfo().getRequestUri().getHost();
+	//
+	// }
 }

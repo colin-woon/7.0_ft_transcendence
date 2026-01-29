@@ -9,9 +9,15 @@ public class GatewayRequestContext {
 	private String _requestId;
 	private String _errorCode;
 	private Integer _errorStatus;
+	private String _clientIp;
+	private boolean _internal;
 
 	public String getAuth() {
 		return _auth;
+	}
+
+	public boolean isAuth() {
+		return getAuth() != null && !getAuth().isBlank();
 	}
 
 	public void setAuth(String auth) {
@@ -42,5 +48,28 @@ public class GatewayRequestContext {
 
 	public Integer getErrorStatus() {
 		return _errorStatus;
+	}
+
+	public void setClientIp(String clientIp) {
+		_clientIp = clientIp;
+	}
+
+	public String getClientIp() {
+		return _clientIp;
+	}
+
+	public void setInternal(boolean internal) {
+		_internal = internal;
+	}
+
+	public boolean isInternal() {
+		return _internal;
+	}
+
+	public String getRateLimitKey() {
+		if (isAuth()) {
+			return getAuth();
+		}
+		return getClientIp();
 	}
 }
