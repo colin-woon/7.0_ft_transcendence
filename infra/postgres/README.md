@@ -1,2 +1,3 @@
-# How to interact with database
-	refer to /services/db_service to interact with db
+# READ ME
+
+This is the directory for the postgresql db, refer to the services directory for how to interact with the db.
