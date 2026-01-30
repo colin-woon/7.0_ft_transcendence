@@ -9,6 +9,7 @@ import org.bumIntra.gateway.security.ratelimit.RateLimitAccess;
 import org.bumIntra.gateway.security.ratelimit.RateLimitAccessResolver;
 import org.bumIntra.gateway.security.ratelimit.RateLimitProfile;
 import org.bumIntra.gateway.security.ratelimit.RateLimitProfiles;
+import org.bumIntra.gateway.security.ratelimit.RedisTokenBucketRateLimiter;
 
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
@@ -28,8 +29,13 @@ public class RateLimitFilter implements ContainerRequestFilter {
 	@Inject
 	GatewayRequestContext grc;
 
+	// @Inject
+	// InMemTokenBucketRateLimiter rateLimiter;
+
+	// can create dev/test and prod implementations
+	// and use @Alternative with beans.xml to select which one to use
 	@Inject
-	InMemTokenBucketRateLimiter rateLimiter;
+	RedisTokenBucketRateLimiter rateLimiter;
 
 	@Inject
 	RateLimitProfiles profiles;
@@ -44,13 +50,10 @@ public class RateLimitFilter implements ContainerRequestFilter {
 			return;
 		}
 
-		// rateLimiter.configure(grlc.limit(), grlc.window());
-
-		// String key = buildKey(request);
-
 		RateLimitAccess access = rlas.resolve(grc);
 		RateLimitProfile profile = profiles.getProfile(access);
-		String key = access + ":" + grc.getRateLimitKey();
+		String key = access + ":" + (grc.getRateLimitKey() == null || grc.getRateLimitKey().isBlank() ? "unknown"
+				: grc.getRateLimitKey()); // TODO: hash the key
 
 		boolean allowed = rateLimiter.tryConsume(key, profile);
 		if (!allowed) {
@@ -60,34 +63,4 @@ public class RateLimitFilter implements ContainerRequestFilter {
 			throw new RateLimitException();
 		}
 	}
-
-	// private String buildKey(ContainerRequestContext request) {
-	//
-	// String ip = resolveClientIp(request);
-	//
-	// String auth = request.getHeaderString("Authorization");
-	// if (auth != null && auth.length() > 32) {
-	// auth = auth.substring(0, 32); // safety truncate
-	// }
-	//
-	// return "ip: " + ip + "| auth: " + (auth != null ? auth : "none");
-	// }
-
-	// private String resolveClientIp(ContainerRequestContext request) {
-	// String xfwd = request.getHeaderString("X-Forwarded-For");
-	// if (xfwd != null && !xfwd.isBlank()) {
-	// String[] parts = xfwd.split(",");
-	// return parts[0].trim();
-	// }
-	// String ip = grc.getClientIp();
-	// if (ip != null && !ip.isBlank()) {
-	// return ip;
-	// }
-	// return "unknown";
-
-	// Do NOT trust forwarded headers yet
-	// Until you add trusted proxy config
-	// return request.getUriInfo().getRequestUri().getHost();
-	//
-	// }
 }

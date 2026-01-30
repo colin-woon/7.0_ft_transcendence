@@ -11,7 +11,7 @@ public class DefaultRateLimitResolver implements RateLimitAccessResolver {
 	public RateLimitAccess resolve(GatewayRequestContext grc) {
 
 		if (grc.isInternal()) {
-			return RateLimitAccess.SERVICE;
+			return RateLimitAccess.SERVICE; // TODO: allowed internal after mTLS validation
 		} else if (grc.isAuth()) {
 			return RateLimitAccess.USER;
 		}
