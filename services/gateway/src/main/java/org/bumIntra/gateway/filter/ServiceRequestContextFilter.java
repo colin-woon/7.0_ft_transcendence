@@ -1,7 +1,9 @@
 package org.bumIntra.gateway.filter;
 
 import org.bumIntra.gateway.policy.GatewayPolicyEngine;
+import org.bumIntra.gateway.security.AuthLevel;
 import org.bumIntra.gateway.security.GatewayRequestContext;
+import org.bumIntra.gateway.security.IdentityHeaders;
 
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
@@ -33,6 +35,19 @@ public class ServiceRequestContextFilter implements ClientRequestFilter {
 			request.getHeaders().putSingle("X-Request-Id", requestId);
 		}
 
-		// policyEngine.enforce(ctx);
+		request.getHeaders().putSingle(IdentityHeaders.X_AUTH_LEVEL, ctx.getAuthLevel().name());
+
+		if (ctx.getAuthLevel() == AuthLevel.USER) {
+
+			ctx.getUserId().ifPresent(userId -> {
+				request.getHeaders().putSingle(IdentityHeaders.X_USER_ID, userId);
+			});
+
+			ctx.getRoles().ifPresent(roles -> {
+				request.getHeaders().putSingle(IdentityHeaders.X_USER_ROLES, String.join(",", roles));
+			});
+		}
+
+		// service identity with mTLS
 	}
 }

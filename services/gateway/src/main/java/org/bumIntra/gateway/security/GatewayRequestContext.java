@@ -16,6 +16,7 @@ public class GatewayRequestContext {
 	private boolean _internal;
 	private String _userId;
 	private List<String> _roles;
+	private AuthLevel _authLevel = AuthLevel.GUEST;
 
 	public String getAuth() {
 		return _auth;
@@ -92,5 +93,13 @@ public class GatewayRequestContext {
 
 	public void setRoles(List<String> roles) {
 		_roles = roles;
+	}
+
+	public AuthLevel setAuthLevel(AuthLevel authLevel) {
+		return _authLevel = authLevel;
+	}
+
+	public AuthLevel getAuthLevel() {
+		return _authLevel;
 	}
 }

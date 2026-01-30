@@ -5,6 +5,7 @@ import org.bumIntra.gateway.client.AuthService;
 import org.bumIntra.gateway.client.dto.AuthResult;
 import org.bumIntra.gateway.exception.GatewayErrorCode;
 import org.bumIntra.gateway.exception.GatewayException;
+import org.bumIntra.gateway.security.AuthLevel;
 import org.bumIntra.gateway.security.GatewayRequestContext;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
@@ -50,5 +51,6 @@ public class ServiceAuthFilter implements ContainerRequestFilter {
 
 		grc.setUserId(authResult.sub());
 		grc.setRoles(authResult.roles());
+		grc.setAuthLevel(AuthLevel.USER);
 	}
 }

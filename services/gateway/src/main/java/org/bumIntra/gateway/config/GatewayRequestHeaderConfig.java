@@ -15,7 +15,7 @@ public interface GatewayRequestHeaderConfig {
 	@WithDefault("accept, accept-language, content-type, authorization, user-agent, x-request-id")
 	List<String> requestAllowList();
 
-	@WithDefault("x-internal-, x-bumintra-, x-envoy-, x-forwarded-client-cert")
+	@WithDefault("x-internal-, x-auth-, x-user-, x-service-, x-bumintra-, x-envoy-, x-forwarded-")
 	List<String> requestDenyPrefixes();
 
 	default Set<String> inboundAllowlistLower() {
