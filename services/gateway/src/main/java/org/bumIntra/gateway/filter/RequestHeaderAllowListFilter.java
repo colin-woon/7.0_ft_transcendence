@@ -23,7 +23,7 @@ public class RequestHeaderAllowListFilter implements ContainerRequestFilter {
 	@Override
 	public void filter(ContainerRequestContext request) {
 
-		final Set<String> allowList = grhc.inboundAllowlistLower();
+		// final Set<String> allowList = grhc.inboundAllowlistLower();
 		final List<String> denyPrefixes = grhc.inboundDenyPrefixesLower();
 
 		var headers = request.getHeaders();
@@ -33,7 +33,7 @@ public class RequestHeaderAllowListFilter implements ContainerRequestFilter {
 					if (ks == null)
 						return false;
 					String lower = ks.toLowerCase();
-					return startsWithAny(lower, denyPrefixes) || !allowList.contains(lower);
+					return startsWithAny(lower, denyPrefixes);
 				})
 				.toList()
 				.forEach(headers::remove);

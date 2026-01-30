@@ -3,10 +3,12 @@ package org.bumIntra.gateway.filter;
 import org.bumIntra.gateway.client.AuthClient;
 import org.bumIntra.gateway.client.AuthService;
 import org.bumIntra.gateway.client.dto.AuthResult;
+import org.bumIntra.gateway.config.GatewayAuthConfig;
 import org.bumIntra.gateway.exception.GatewayErrorCode;
 import org.bumIntra.gateway.exception.GatewayException;
 import org.bumIntra.gateway.security.AuthLevel;
 import org.bumIntra.gateway.security.GatewayRequestContext;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import jakarta.annotation.Priority;
@@ -29,8 +31,15 @@ public class ServiceAuthFilter implements ContainerRequestFilter {
 	@Inject
 	AuthService authService;
 
+	@Inject
+	GatewayAuthConfig gac;
+
 	@Override
 	public void filter(ContainerRequestContext request) {
+
+		if (!gac.required()) {
+			return;
+		}
 
 		String authorizationHeader = request.getHeaderString(HttpHeaders.AUTHORIZATION);
 		if (authorizationHeader == null || authorizationHeader.isBlank()) {
