@@ -1,0 +1,60 @@
+package org.acme.model;
+
+import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import java.time.Instant;
+
+@Entity
+@Table(name = "users", schema = "auth_service")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    public Long id;
+
+    // --- Identity Providers ---
+    @Column(nullable = false, unique = true)
+    public String email;
+
+    @Column(name = "intra_id", unique = true)
+    public String intraId;
+
+    @Column(name = "google_id", unique = true)
+    public String googleId;
+
+    // --- Profile Data ---
+    @Column(nullable = false, unique = true)
+    public String username;
+
+    @Column(name = "full_name")
+    public String fullName;
+
+    @Column(name = "avatar_url")
+    public String avatarUrl;
+
+    public String bio;
+
+    // --- Security & Status ---
+    @Enumerated(EnumType.STRING) // maps java enum to postgres enum
+    @Column(columnDefinition = "auth_service.user_role")
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+	public UserRole role = UserRole.STUDENT;
+
+    @Column(name = "is_banned")
+    public boolean isBanned = false;
+
+    @Column(name = "last_seen_at")
+    public Instant lastSeenAt;
+
+    // --- Timestamps ---
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    public Instant createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    public Instant updatedAt;
+}
