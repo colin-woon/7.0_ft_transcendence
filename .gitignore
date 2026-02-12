@@ -1,1 +1,43 @@
-.quarkus/
+# === Java / Quarkus / Maven ===
+target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/wrapper/maven-wrapper.jar
+/mvnw
+/mvnw.cmd
+
+# === Node / Next.js ===
+node_modules/
+.next/
+out/
+build/
+.env*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.biome/
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+.uv/
+
+# === Docker / OS ===
+.DS_Store
+Thumbs.db
+*.swp
+.docker/
+# Keep your Dockerfiles, but ignore local data volumes if you create them
+# pg_data/
+# redis_data/
+
+# === IDE ===
+.vscode/
+.idea/
+*.iml
