@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.acme.dto.UserCreateDTO;
 import org.acme.dto.UserResponseDTO;
+import org.acme.dto.UserSummaryDTO;
+import org.acme.dto.UserUpdateDTO;
 import org.acme.model.User;
 import org.acme.repository.UserRepository;
 
@@ -47,9 +49,41 @@ public class AuthService {
             newUser.username,
             newUser.fullName,
             newUser.avatarUrl,
+			newUser.bio,
             newUser.role,
             newUser.createdAt
         );
+	}
+
+	@Transactional
+	public UserResponseDTO updateUserInfo(long userId, UserUpdateDTO request){
+		User user = userRepository.findById(userId);
+        if (user == null) {
+            throw new WebApplicationException("User not found", 404);
+        }
+
+		if (request.fullName != null) {
+            user.fullName = request.fullName;
+        }
+        
+        if (request.avatarUrl != null) {
+            user.avatarUrl = request.avatarUrl;
+        }
+        
+        if (request.bio != null) {
+            user.bio = request.bio;
+        }
+
+		return new UserResponseDTO(
+			user.id,
+			user.email,
+			user.username,
+			user.fullName,
+			user.avatarUrl,
+			user.bio,
+			user.role,
+			user.createdAt
+		);
 	}
 
 	public List<UserResponseDTO> getAllUsers() {
@@ -60,8 +94,39 @@ public class AuthService {
                 user.username,
                 user.fullName,
                 user.avatarUrl,
+				user.bio,
                 user.role,
                 user.createdAt
+            ))
+            .collect(Collectors.toList());
+    }
+
+	public UserResponseDTO getUserInfo(Long userId) {
+		User user = userRepository.findById(userId);
+
+		if (user == null) {
+        	throw new WebApplicationException("User not found", 404);
+   		}
+
+		return new UserResponseDTO(
+			user.id,
+			user.email,
+			user.username,
+			user.fullName,
+			user.avatarUrl,
+			user.bio,
+			user.role,
+			user.createdAt
+		);
+}
+
+	public List<UserSummaryDTO> getUsersSummary() {
+        return userRepository.listAll().stream()
+            .map(user -> new UserSummaryDTO(
+                user.id,
+                user.username,
+                user.fullName,
+                user.avatarUrl
             ))
             .collect(Collectors.toList());
     }
