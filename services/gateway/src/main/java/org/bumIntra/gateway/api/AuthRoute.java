@@ -6,16 +6,24 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import org.bumIntra.gateway.client.AuthService;
 import org.bumIntra.gateway.client.dto.AuthResult;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
 
 // Temporary dummy testing, to be updated later
 
 @Path("/api/auth")
 public class AuthRoute {
+
 	@Inject
 	AuthService authService;
+
+	@Inject
+	@ConfigProperty(name = "services.auth.url")
+	String authServiceUrl;
 
 	@GET
 	@Path("/ping")
