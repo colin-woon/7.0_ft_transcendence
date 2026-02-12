@@ -1,3 +1,5 @@
+#im not using this bruh
+
 # syntax=docker/dockerfile:1
 
 # Comments are provided throughout this file to help you get started.
@@ -16,7 +18,7 @@
 # most recent version of that image when you build your Dockerfile.
 # If reproducibility is important, consider using a versioned tag
 # (e.g., alpine:3.17.2) or SHA (e.g., alpine@sha256:c41ab5c992deb4fe7e5da09f67a8804a46bd0592bfdf0b1847dde0e0889d2bff).
-FROM alpine:latest as base
+# FROM alpine:latest as base
 
 ################################################################################
 # Create a stage for building/compiling the application.
@@ -26,11 +28,11 @@ FROM alpine:latest as base
 # would issue a RUN command for your application's build process to generate the
 # executable. For language-specific examples, take a look at the Dockerfiles in
 # the Awesome Compose repository: https://github.com/docker/awesome-compose
-FROM base as build
-RUN echo -e '#!/bin/sh\n\
-echo Hello world from $(whoami)! In order to get your application running in a container, take a look at the comments in the Dockerfile to get started.'\
-> /bin/hello.sh
-RUN chmod +x /bin/hello.sh
+# FROM base as build
+# RUN echo -e '#!/bin/sh\n\
+# echo Hello world from $(whoami)! In order to get your application running in a container, take a look at the comments in the Dockerfile to get started.'\
+# > /bin/hello.sh
+# RUN chmod +x /bin/hello.sh
 
 ################################################################################
 # Create a final stage for running your application.
@@ -41,23 +43,23 @@ RUN chmod +x /bin/hello.sh
 # the smallest image possible. This often means using a different and smaller
 # image than the one used for building the application, but for illustrative
 # purposes the "base" image is used here.
-FROM base AS final
+# FROM base AS final
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
-ARG UID=10001
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    --uid "${UID}" \
-    appuser
-USER appuser
+# ARG UID=10001
+# RUN adduser \
+#     --disabled-password \
+#     --gecos "" \
+#     --home "/nonexistent" \
+#     --shell "/sbin/nologin" \
+#     --no-create-home \
+#     --uid "${UID}" \
+#     appuser
+# USER appuser
 
 # Copy the executable from the "build" stage.
-COPY --from=build /bin/hello.sh /bin/
+# COPY --from=build /bin/hello.sh /bin/
 
 # What the container should run when it is started.
-ENTRYPOINT [ "/bin/hello.sh" ]
+# ENTRYPOINT [ "/bin/hello.sh" ]

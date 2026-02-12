@@ -1,5 +1,7 @@
 *
-!target/*-runner
-!target/*-runner.jar
-!target/lib/*
-!target/quarkus-app/*
+!.dockerignore
+!pom.xml
+!mvnw
+!mvnw.cmd
+!.mvn/
+!src/
