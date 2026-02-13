@@ -55,6 +55,24 @@ services:
     #         - QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://db:5432/postgres_db
     #     networks:
     #         - app_net
+    #
+    # chat_service:
+    #     build:
+    #         context: ./services/chat
+    #         dockerfile: Dockerfile
+    #     container_name: chat_service
+    #     ports:
+    #         - '8003:8080'
+    #     depends_on:
+    #         db:
+    #             condition: service_healthy
+    #     environment:
+    #         - DB_USER=dev_user
+    #         - DB_PASSWORD=dev_password
+    #         - QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://db:5432/postgres_db
+    #     networks:
+    #         - app_net
+    #
 
     # gateway services
     gateway_service:
