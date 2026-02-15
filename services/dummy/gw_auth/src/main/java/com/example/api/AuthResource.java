@@ -44,6 +44,12 @@ public class AuthResource {
 			return Response.status(Response.Status.NOT_FOUND).build();
 		}
 
+		if ("500dto".equals(auth)) {
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+					.entity(new AuthResult("500DTO", List.of("USER")))
+					.build();
+		}
+
 		if ("500".equals(auth)) {
 			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
 		}

@@ -57,7 +57,7 @@ public class FaultToleranceServiceCallExecutor {
 
 	private boolean isRetryable(GatewayErrorCode code) {
 		return switch (code) {
-			case SERVICE_TIMEOUT, SERVICE_UNAVAILABLE, SERVICE_SERVER_ERROR -> true;
+			case SERVICE_TIMEOUT, SERVICE_UNAVAILABLE, SERVICE_SERVER_ERROR, SERVICE_INVALID_RESPONSE -> true;
 			default -> false;
 		};
 	}

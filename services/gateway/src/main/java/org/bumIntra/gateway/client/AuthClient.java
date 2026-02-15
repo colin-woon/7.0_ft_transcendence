@@ -29,7 +29,7 @@ public interface AuthClient {
 	@Path("/verify")
 	@Produces(MediaType.APPLICATION_JSON)
 	// @Consumes("application/json")
-	AuthResult verify(@HeaderParam("Authorization") String authorization);
+	Response verify(@HeaderParam("Authorization") String authorization);
 
 	@GET
 	@Path("/headers")

@@ -25,7 +25,10 @@ public class AuthService {
 	}
 
 	public AuthResult verify(String authorization) {
-		return ex.execute(() -> authClient.verify(authorization));
+		return ex.execute(() -> {
+			Response response = authClient.verify(authorization);
+			return response.readEntity(AuthResult.class);
+		});
 
 	}
 
