@@ -1,5 +1,6 @@
 # === Java / Quarkus / Maven ===
 target/
+!**/target/.gitkeep
 *.class
 *.jar
 *.war

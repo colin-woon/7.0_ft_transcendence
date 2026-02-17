@@ -78,7 +78,7 @@ services:
     gateway_service:
         build:
             context: ./services/gateway
-            dockerfile: Dockerfile
+            dockerfile: ./src/main/docker/Dockerfile.jvm
         container_name: gateway_service
         ports:
             - '8080:8080'
@@ -96,7 +96,7 @@ services:
     gw_auth_service:
         build:
             context: ./services/dummy/gw_auth
-            dockerfile: Dockerfile
+            dockerfile: ./src/main/docker/Dockerfile.jvm
         container_name: gw_auth_service
         # ports:
         #     - '9000:9000'
