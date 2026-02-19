@@ -42,3 +42,8 @@ Thumbs.db
 .vscode/
 .idea/
 *.iml
+
+# === Vicky Misc ===
+testfe/
+certs/
+services/dummy/

@@ -75,47 +75,58 @@ services:
     #
 
     # gateway services
-    gateway_service:
+    gateway-service:
         build:
             context: ./services/gateway
             dockerfile: ./src/main/docker/Dockerfile.jvm
-        container_name: gateway_service
-        ports:
-            - '8080:8080'
+        container_name: gateway-service
+        # ports:
+        #     - '8080:8080'
+        # - '8443:8443'
         networks:
             - app_net
         depends_on:
             # update to auth_service, now just temporary dev test
-            - gw_auth_service
-            - gw_redis_service
+            - gw-auth-service
+            - gw-redis-service
+            - testfe-service
         environment:
-            AUTH_SERVICE_URL: 'http://gw-auth-service:8080'
+            # AUTH_SERVICE_URL: 'http://gw-auth-service:8080'
+            AUTH_SERVICE_URL: 'https://gw-auth-service:8443'
             GW_REDIS_URL: 'redis://gw-redis-service:6379'
-            # QUARKUS_REDIS_HOSTS: 'redis://gw_redis_service:6379/'
+            # JAVA_TOOL_OPTIONS: '-Djavax.net.debug=ssl:handshake:verbose'
 
-    gw_auth_service:
+        volumes:
+            - ./certs/runtime/gateway/gateway-keystore.p12:/certs/gateway-keystore.p12:ro
+            - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
+
+    gw-auth-service:
         build:
             context: ./services/dummy/gw_auth
             dockerfile: ./src/main/docker/Dockerfile.jvm
-        container_name: gw_auth_service
+        container_name: gw-auth-service
         # ports:
-        #     - '9000:9000'
+        # - '8080:8080'
+        # - '8443:8443'
         networks:
             app_net:
-                aliases:
-                    - gw-auth-service
+                # aliases:
+                #     - gw-auth-service
+        volumes:
+            - ./certs/runtime/auth/auth-keystore.p12:/certs/auth-keystore.p12:ro
+            - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
 
-    gw_redis_service:
+    gw-redis-service:
         build:
             context: ./infra/redis/gateway-redis
             dockerfile: Dockerfile
-        container_name: gw_redis_service
+        container_name: gw-redis-service
         # ports:
         #   - '6379:6379'
         networks:
             app_net:
-                aliases:
-                    - gw-redis-service
+                # aliases:
+                #     - gw-redis-service
 
     toolbox:
         image: nicolaka/netshoot
@@ -125,6 +136,50 @@ services:
         stdin_open: true # Equivalent to -i
         tty: true # Equivalent to -t
         command: ['/bin/bash'] # Keeps it alive
+        volumes:
+            - ./certs/:/certs/:ro
+
+    nginx-service:
+        image: nginx:stable-alpine
+        container_name: nginx
+        ports:
+            - '443:443'
+        depends_on:
+            - gateway-service
+            - testfe-service
+        networks:
+            - app_net
+        environment:
+            - NGINX_ENTRYPOINT_QUIET_LOGS=1
+        volumes:
+            - ./infra/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+            - ./certs/runtime/nginx/nginx.crt:/etc/nginx/certs/nginx-internal.crt:ro
+            - ./certs/runtime/nginx/nginx.key:/etc/nginx/certs/nginx-internal.key:ro
+            - ./certs/ca/ca.crt:/etc/nginx/certs/ca-internal.crt:ro
+            - ./certs/runtime/frontend/frontend.crt:/etc/nginx/certs/client.crt:ro
+            - ./certs/runtime/frontend/frontend.key:/etc/nginx/certs/client.key:ro
+
+    # Test frontend container for SSR + mTLS testing
+    testfe-service:
+        build:
+            context: ./testfe
+            dockerfile: Dockerfile
+        container_name: testfe-service
+        # ports:
+        #     - '3000:3000'
+        networks:
+            - app_net
+        volumes:
+            - ./certs/runtime/frontend/frontend.crt:/certs/frontend.crt:ro
+            - ./certs/runtime/frontend/frontend.key:/certs/frontend.key:ro
+            - ./certs/ca/ca.crt:/certs/internal-ca.crt:ro
+        environment:
+            - NODE_ENV=production
+            - PORT=3000
+            - GATEWAY_URL=https://gateway-service:8443
+            - MTLS_KEY_PATH=/certs/frontend.key
+            - MTLS_CRT_PATH=/certs/frontend.crt
+            - MTLS_CA_PATH=/certs/internal-ca.crt
 
     # add other services below here, example:
     # redis:
