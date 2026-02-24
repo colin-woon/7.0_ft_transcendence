@@ -85,11 +85,20 @@ services:
         # - '8443:8443'
         networks:
             - app_net
+        healthcheck:
+            test: ['CMD', 'curl', '-f', 'http://localhost:8180/q/health']
+            interval: 10s
+            timeout: 5s
+            start_period: 40s
+            retries: 3
         depends_on:
             # update to auth_service, now just temporary dev test
-            - gw-auth-service
-            - gw-redis-service
-            - testfe-service
+            gw-auth-service:
+                condition: service_healthy
+            gw-redis-service:
+                condition: service_healthy
+            testfe-service:
+                condition: service_started
         environment:
             # AUTH_SERVICE_URL: 'http://gw-auth-service:8080'
             AUTH_SERVICE_URL: 'https://gw-auth-service:8443'
@@ -101,6 +110,8 @@ services:
             - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
 
     gw-auth-service:
+        # profiles:
+        #     - dummy
         build:
             context: ./services/dummy/gw_auth
             dockerfile: ./src/main/docker/Dockerfile.jvm
@@ -109,9 +120,13 @@ services:
         # - '8080:8080'
         # - '8443:8443'
         networks:
-            app_net:
-                # aliases:
-                #     - gw-auth-service
+            - app_net
+        healthcheck:
+            test: ['CMD', 'curl', '-f', 'http://localhost:9000/q/health']
+            interval: 10s
+            timeout: 5s
+            start_period: 30s
+            retries: 3
         volumes:
             - ./certs/runtime/auth/auth-keystore.p12:/certs/auth-keystore.p12:ro
             - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
@@ -124,11 +139,17 @@ services:
         # ports:
         #   - '6379:6379'
         networks:
-            app_net:
-                # aliases:
-                #     - gw-redis-service
+            - app_net
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            interval: 10s
+            timeout: 5s
+            start_period: 10s
+            retries: 3
 
     toolbox:
+        # profiles:
+        #     - debug
         image: nicolaka/netshoot
         container_name: netshoot-toolbox
         networks:
@@ -145,8 +166,10 @@ services:
         ports:
             - '443:443'
         depends_on:
-            - gateway-service
-            - testfe-service
+            gateway-service:
+                condition: service_healthy
+            testfe-service:
+                condition: service_started
         networks:
             - app_net
         environment:
@@ -161,6 +184,8 @@ services:
 
     # Test frontend container for SSR + mTLS testing
     testfe-service:
+        # profiles:
+        #     - dummy
         build:
             context: ./testfe
             dockerfile: Dockerfile
@@ -180,6 +205,8 @@ services:
             - MTLS_KEY_PATH=/certs/frontend.key
             - MTLS_CRT_PATH=/certs/frontend.crt
             - MTLS_CA_PATH=/certs/internal-ca.crt
+            # Trust internal CA globally — makes Node's native fetch verify internal certs
+            - NODE_EXTRA_CA_CERTS=/certs/internal-ca.crt
 
     # add other services below here, example:
     # redis:
