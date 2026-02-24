@@ -76,5 +76,3 @@ These commands replace standard Maven lifecycle calls with Quarkus-optimized wor
 ### Pro-Tip: The Dev UI
 
 When you run `quarkus dev`, you can access the **Dev UI** at `http://localhost:8080/q/dev/`. This provides a visual interface to manage extensions, view configuration, and inspect beans without leaving your browser.
-
-**Would you like me to generate a sample `application.properties` file with common Quarkus configurations for your new project?**

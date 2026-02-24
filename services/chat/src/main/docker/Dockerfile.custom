@@ -1,0 +1,35 @@
+# --- Stage 1: Base (The "Active" Dev Environment) ---
+# We use the same base image Quarkus uses, but with the full SDK
+FROM eclipse-temurin:21-jdk-noble AS base
+USER root
+WORKDIR /app
+COPY services/chat/mvnw .
+COPY services/chat/.mvn ./.mvn
+COPY services/chat/pom.xml .
+RUN chmod +x mvnw && ./mvnw dependency:go-offline
+
+# --- Stage 2: Development (Hot Reloading) ---
+FROM base AS development
+# Compose will mount the 'src' folder here
+EXPOSE 8080 5005
+CMD ["./mvnw", "quarkus:dev", "-Dquarkus.http.host=0.0.0.0"]
+
+# --- Stage 3: Intermediate Build ---
+FROM base AS builder
+COPY services/chat/src ./src
+RUN ./mvnw package -DskipTests
+
+# This mirrors the 'Dockerfile.jvm' logic
+# --- Stage 3: Production Run (Quarkus Optimized) ---
+FROM registry.access.redhat.com/ubi9/openjdk-21:1.23 AS production
+WORKDIR /deployments
+# Assuming you ran a build stage or build locally
+COPY --from=builder --chown=185 target/quarkus-app/lib/ /deployments/lib/
+COPY --from=builder --chown=185 target/quarkus-app/*.jar /deployments/
+COPY --from=builder --chown=185 target/quarkus-app/app/ /deployments/app/
+COPY --from=builder --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
+
+EXPOSE 8080
+USER 185
+ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
+ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ]
