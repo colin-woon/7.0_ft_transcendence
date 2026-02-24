@@ -3,9 +3,9 @@ package org.bumIntra.gateway.security.ratelimit;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 
-import jakarta.enterprise.context.ApplicationScoped;
+// import jakarta.enterprise.context.ApplicationScoped;
 
-@ApplicationScoped
+// @ApplicationScoped
 public class InMemTokenBucketRateLimiter implements RateLimiter {
 
 	private static final class Bucket {
