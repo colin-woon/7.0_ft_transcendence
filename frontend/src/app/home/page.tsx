@@ -1,6 +1,8 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { Search, Download, Coins, MessageCircle, Bell, Plus, Menu, ChevronDown } from "lucide-react";
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { Search, Download, Coins, MessageCircle, Bell, Plus, Menu } from "lucide-react";
+import Sidebar from './Sidebar';
 
 
 const sampleTopics = [
@@ -110,8 +112,8 @@ const sortOptions = ["Best", "Hot", "New", "Top", "Rising"];
 export default function Home()
 {
 	const [activeCategory, setActiveCategory] = useState('All');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [sectionsOpen, setSectionsOpen] = useState<Record<string, boolean>>({ categories: true });
+  const [viewMode, setViewMode] = useState<'card' | 'compact'>('card');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
 	const [activeSort, setActiveSort] = useState("Hot");
 	const [searchQuery, setSearchQuery] = useState("");
@@ -140,31 +142,18 @@ export default function Home()
     }
   });
 
-  // Close sidebar on Escape key for better UX
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsSidebarOpen(false);
-    };
-    if (isSidebarOpen) window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [isSidebarOpen]);
-
-  const toggleSection = (key: string) => {
-    setSectionsOpen((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
     return (
       <div className="min-h-screen bg-[#f9f9f9] text-slate-900 flex flex-col">
-        <header className="bg-white text-slate-900 sticky top-0 z-50 !border-b border-[#8EE7E3] w-full">
+        <header className="bg-white text-slate-900 sticky top-0 z-[60] !border-b border-[#8EE7E3] w-full">
 					<div className="max-w-7xl mx-auto px-4 py-1.5">
 						<div className="flex items-center justify-between gap-4">
 						
-            {/* Left: Logo and reddit text */}
+            {/* Left: Logo and 42 overflow text */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={() => setIsSidebarOpen(true)}
+              <button 
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 className="p-2 hover:bg-black/5 rounded-full transition"
-                aria-label="Open sidebar"
+                aria-label="Toggle sidebar"
               >
                 <Menu size={20} className="text-slate-700" />
               </button>
@@ -218,11 +207,14 @@ export default function Home()
 							<span className="absolute top-0 right-0 w-2 h-2 bg-blue-400 rounded-full"></span>
 							</button>
 
-							{/* Create Post button */}
-              <button className="hidden sm:flex items-center gap-1.5 bg-white text-[#0f6f6b] border border-[#8EE7E3] hover:bg-[#8EE7E3]/15 px-4 py-1.5 rounded-full text-sm font-bold transition">
-							<Plus size={18} />
-							Create
-							</button>
+              {/* Create Post button */}
+              <Link
+                href="/create"
+                className="hidden sm:flex items-center gap-1.5 bg-white text-[#0f6f6b] border border-[#8EE7E3] hover:bg-[#8EE7E3]/15 px-4 py-1.5 rounded-full text-sm font-bold transition"
+              >
+              <Plus size={18} />
+              Create
+              </Link>
 
 							{/* User menu */}
               <button className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm border-2 border-[#8EE7E3]">
@@ -234,191 +226,138 @@ export default function Home()
 					</header>
 
         {/* Main Content */}
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
-          <div className="flex flex-col lg:flex-row gap-6">
-            {isSidebarOpen && (
-              <button
-                onClick={() => setIsSidebarOpen(false)}
-                className="fixed inset-0 bg-black/30 z-40"
-                aria-label="Close categories overlay"
-              />
-            )}
-
-            {/* Left Sidebar - Categories */}
-            <aside
-              id="categories-sidebar"
-              className={`fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] bg-white border-r border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out ${
-                isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-              }`}
-              aria-hidden={!isSidebarOpen}
-            >
-              <div className="h-full pt-20 px-4 overflow-y-auto">
-                {/* Top bar */}
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Browse</h3>
-                  <button
-                    onClick={() => setIsSidebarOpen(false)}
-                    className="inline-flex items-center text-[11px] uppercase tracking-wide text-slate-500 hover:text-[#0f6f6b]"
-                    aria-label="Close sidebar"
-                  >
-                    Close
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Explore section */}
-                  <div>
-                    <div className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold mb-2">Explore</div>
-                    <nav className="bg-white border border-gray-200">
-                      {['Home', 'Popular', 'All Posts'].map((item) => (
-                        <button
-                          key={item}
-                          onClick={() => setIsSidebarOpen(false)}
-                          className="w-full text-left pl-4 pr-3 py-2 text-sm transition border-b border-gray-100 last:border-b-0 hover:bg-gray-50 text-slate-700"
-                        >
-                          {item}
-                        </button>
-                      ))}
-                    </nav>
-                  </div>
-
-                  {/* Categories (collapsible) */}
-                  <div>
-                    <button
-                      onClick={() => toggleSection('categories')}
-                      className="flex w-full items-center justify-between text-[11px] uppercase tracking-wide text-slate-500 font-semibold mb-2 hover:text-[#0f6f6b]"
-                      aria-expanded={sectionsOpen['categories']}
-                      aria-controls="sidebar-categories"
-                    >
-                      <span>Categories</span>
-                      <ChevronDown
-                        size={16}
-                        className={`transition-transform ${sectionsOpen['categories'] ? 'rotate-0' : '-rotate-90'}`}
-                      />
-                    </button>
-                    {sectionsOpen['categories'] && (
-                      <nav id="sidebar-categories" className="bg-white border border-gray-200">
-                        {category.map((cat) => (
-                          <button
-                            key={cat}
-                            onClick={() => setActiveCategory(cat)}
-                            className={`relative w-full text-left pl-4 pr-3 py-2 text-sm transition border-b border-gray-100 last:border-b-0 ${
-                              activeCategory === cat
-                                ? 'bg-[#8EE7E3]/10 text-[#0f6f6b] font-medium'
-                                : 'hover:bg-gray-50 text-slate-700'
-                            }`}
-                          >
-                            <span
-                              className={`absolute left-0 top-0 h-full w-1 ${
-                                activeCategory === cat ? 'bg-[#8EE7E3]' : 'bg-transparent'
-                              }`}
-                            />
-                            {cat}
-                          </button>
-                        ))}
-                      </nav>
-                    )}
-                  </div>
-
-                  {/* About / Other */}
-                  <div>
-                    <div className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold mb-2">About</div>
-                    <nav className="bg-white border border-gray-200">
-                      {['About Us', 'Help Center', 'Settings'].map((item) => (
-                        <button
-                          key={item}
-                          onClick={() => setIsSidebarOpen(false)}
-                          className="w-full text-left pl-4 pr-3 py-2 text-sm transition border-b border-gray-100 last:border-b-0 hover:bg-gray-50 text-slate-700"
-                        >
-                          {item}
-                        </button>
-                      ))}
-                    </nav>
-                  </div>
-                </div>
-              </div>
-            </aside>
-
-            {/* Main Feed */}
-            <div className="flex-1 space-y-4">
-
-              {/* Sort Options */}
-              <div className="bg-white rounded-lg border border-gray-200 p-2">
-                <div className="flex gap-2">
+        <div className="flex">
+          <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+          
+          <main className={`flex-1 w-full px-4 py-6 transition-all duration-300 ${
+            isSidebarOpen ? 'lg:ml-64' : 'ml-0'
+          }`}>
+            <div className="max-w-5xl mx-auto">
+            {/* Sort + View */}
+            <div className="bg-white rounded-lg border border-gray-200 p-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <span className="text-slate-500">Sort by</span>
+                <select
+                  value={activeSort}
+                  onChange={(e) => setActiveSort(e.target.value)}
+                  className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
+                >
                   {sortOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-slate-500">View</span>
+                  <div className="inline-flex rounded-md border border-gray-200 overflow-hidden">
                     <button
-                      key={option}
-                      onClick={() => setActiveSort(option)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                        activeSort === option
+                      onClick={() => setViewMode('card')}
+                      className={`px-3 py-1.5 text-sm transition ${
+                        viewMode === 'card'
                           ? 'bg-[#8EE7E3]/20 text-[#0f6f6b]'
-                          : 'hover:bg-gray-100 text-slate-700'
+                          : 'bg-white text-slate-700 hover:bg-gray-50'
                       }`}
                     >
-                      {option}
+                      Card
                     </button>
-                  ))}
+                    <button
+                      onClick={() => setViewMode('compact')}
+                      className={`px-3 py-1.5 text-sm transition ${
+                        viewMode === 'compact'
+                          ? 'bg-[#8EE7E3]/20 text-[#0f6f6b]'
+                          : 'bg-white text-slate-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      Compact
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {/* Topics List - Scrollable */}
               <div className="space-y-3">
-                {sortedTopics.map((topic) => (
-                  <div
-                    key={topic.id}
-                    className="bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition cursor-pointer"
-                  >
-                    <div className="p-4">
-                      <div className="flex gap-3">
-                        
-                        {/* Vote Section */}
-                        <div className="flex flex-col items-center gap-1 text-xs">
-                          <button className="hover:bg-gray-100 rounded p-1">▲</button>
-                          <span className="font-medium">{topic.upvotes}</span>
-                          <button className="hover:bg-gray-100 rounded p-1">▼</button>
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            {topic.isPinned && (
-                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-                                Pinned
-                              </span>
-                            )}
-                            {topic.isHot && (
-                              <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
-                                🔥 Hot
-                              </span>
-                            )}
-                            <span className="text-xs text-gray-500">{topic.category}</span>
+                {sortedTopics.length === 0 ? (
+                  <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+                    <div className="w-12 h-12 rounded-xl bg-[#8EE7E3]/20 text-[#0f6f6b] flex items-center justify-center text-xl font-bold mx-auto mb-4">
+                      0
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-900 mb-1">No threads yet</h3>
+                    <p className="text-sm text-slate-600 mb-5">
+                      Try a different search, or be the first to start a thread.
+                    </p>
+                    <a
+                      href="/create"
+                      className="inline-flex items-center justify-center rounded-full bg-[#0f6f6b] px-5 py-2 text-sm font-semibold text-white hover:bg-[#0c5d5a]"
+                    >
+                      Create a thread
+                    </a>
+                  </div>
+                ) : (
+                  sortedTopics.map((topic) => (
+                    <div
+                      key={topic.id}
+                      className={`bg-white border border-gray-200 hover:border-gray-300 transition cursor-pointer ${
+                        viewMode === 'card' ? 'rounded-lg' : 'rounded-md'
+                      }`}
+                    >
+                      <div className={viewMode === 'card' ? 'p-4' : 'px-3 py-2'}>
+                        <div className="flex gap-3">
+                          
+                          {/* Vote Section */}
+                          <div className="flex flex-col items-center gap-1 text-xs">
+                            <button className="hover:bg-gray-100 rounded p-1">▲</button>
+                            <span className="font-medium">{topic.upvotes}</span>
+                            <button className="hover:bg-gray-100 rounded p-1">▼</button>
                           </div>
-                          
-                          <h3 className="font-semibold text-lg mb-1 hover:text-[#0f6f6b]">
-                            {topic.title}
-                          </h3>
-                          
-                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                            {topic.preview}
-                          </p>
 
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span className="flex items-center gap-1">
-                              {topic.avatar} {topic.author}
-                            </span>
-                            <span>{topic.timestamp}</span>
-                            <span>💬 {topic.replies} replies</span>
-                            <span>👁 {topic.views} views</span>
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              {topic.isPinned && (
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                                  Pinned
+                                </span>
+                              )}
+                              {topic.isHot && (
+                                <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
+                                  🔥 Hot
+                                </span>
+                              )}
+                              <span className="text-xs text-gray-500">{topic.category}</span>
+                            </div>
+                            
+                            <h3 className={`font-semibold hover:text-[#0f6f6b] ${
+                              viewMode === 'card' ? 'text-lg mb-1' : 'text-base mb-0.5'
+                            }`}>
+                              {topic.title}
+                            </h3>
+                            
+                            {viewMode === 'card' && (
+                              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                                {topic.preview}
+                              </p>
+                            )}
+
+                            <div className="flex items-center gap-4 text-xs text-gray-500">
+                              <span className="flex items-center gap-1">
+                                {topic.avatar} {topic.author}
+                              </span>
+                              <span>{topic.timestamp}</span>
+                              <span>💬 {topic.replies} replies</span>
+                              <span>👁 {topic.views} views</span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
+            </main>
           </div>
-        </main>
 			</div>
 	  )
 }
