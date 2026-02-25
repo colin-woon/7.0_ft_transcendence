@@ -12,7 +12,7 @@ define check_package
 endef
 
 # Ensure commands run even if a file named 'dev' exists
-.PHONY: dev lint format build setup add remove list clean
+.PHONY: all dev lint format build setup add remove list clean
 
 # Default command when you just type 'make'
 all: dev
@@ -31,10 +31,11 @@ build:
 
 setup:
 	curl -s "https://get.sdkman.io" | bash
-	sdk env install
-	sdk env
-	quarkus --version
-	java -version
+	`@echo` "-------------------------------------------------------"
+	`@echo` "SDKMAN installed. Open a new terminal, then run:"
+	`@echo` "  sdk env install && sdk env"
+	`@echo` "  quarkus --version && java -version"
+	`@echo` "-------------------------------------------------------"
 
 add: 
 	$(call check_package,add)

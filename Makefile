@@ -32,11 +32,7 @@ up:
 	$(COMPOSE) --profile $(PROFILE) up -d
 
 down:
-ifneq ($(strip $(PROFILE)),)
 	$(COMPOSE) --profile $(PROFILE) stop
-else
-	$(COMPOSE) down
-endif
 
 build:
 	$(COMPOSE) --profile $(PROFILE) build
