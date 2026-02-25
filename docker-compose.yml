@@ -1,0 +1,60 @@
+services:
+  db:
+    image: postgres:18.1-alpine
+    container_name: postgres_db
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - app_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+  auth_service:
+    build:
+      context: .
+      dockerfile: services/auth/src/main/docker/Dockerfile.custom
+    container_name: auth_service
+    profiles: ["auth", "all"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app_net
+
+  chat_service:
+    build:
+      context: .
+      dockerfile: services/chat/src/main/docker/Dockerfile.custom
+    container_name: chat_service
+    profiles: ["chat", "all"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app_net
+
+  forum_service:
+    image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+    container_name: forum_service
+    profiles: ["forum", "all"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app_net
+    
+  # add other services below here, example:
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: redis_cache
+
+networks:
+  app_net:
+    driver: bridge
+
+volumes:
+  postgres_data:

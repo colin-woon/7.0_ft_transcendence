@@ -47,3 +47,6 @@ Thumbs.db
 testfe/
 certs/
 services/dummy/
+.quarkus/
+*.env
+!*.env.example
