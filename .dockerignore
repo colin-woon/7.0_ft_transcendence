@@ -1,0 +1,23 @@
+# Git
+.git
+.gitignore
+
+# Java / Quarkus
+**/target/
+**/.mvn/wrapper/maven-wrapper.jar
+**/.quarkus/
+
+# Python
+**/__pycache__/
+**/.venv/
+**/.uv/
+*.pyc
+**/docs/
+
+# Frontend / Next.js
+**/node_modules/
+**/.next/
+
+# Environment
+**/*.env
+**/*.local

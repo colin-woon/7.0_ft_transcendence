@@ -1,1 +1,3 @@
 .quarkus/
+*.env
+!*.env.example

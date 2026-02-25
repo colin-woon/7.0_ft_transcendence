@@ -1,84 +1,56 @@
 services:
-  # database
   db:
     image: postgres:18.1-alpine
     container_name: postgres_db
     restart: always
-    environment:
-      # (wes)chill boys i know this is insecure af but its just for dev purposes before we finalize a .env format
-      - POSTGRES_USER=dev_user
-      - POSTGRES_PASSWORD=dev_password
-      - POSTGRES_DB=postgres_db
-    ports:
-      - "5433:5432"
     volumes:
-      # maps local script folder to container auto init folder
-      - ./infra/postgres/init-scripts:/docker-entrypoint-initdb.d
-      # data persistence, managed by docker volumes
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - app_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dev_user -d postgres_db"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - app_net
-    
-  forum_service:
-    build:
-      context: .
-      dockerfile: services/forum/Dockerfile
-    container_name: forum_service
-    ports:
-      - "8000:8000"
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      - DATABASE_URL=postgresql+psycopg://dev_user:dev_password@db:5432/postgres_db
-    networks:
-      - app_net
     
   auth_service:
     build:
-      context: ./services/auth
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/auth/src/main/docker/Dockerfile.custom
     container_name: auth_service
-    ports:
-      - "8002:8080"
+    profiles: ["auth", "all"]
     depends_on:
       db:
         condition: service_healthy
-    environment:
-      - DB_USER=dev_user
-      - DB_PASSWORD=dev_password
-      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://db:5432/postgres_db
     networks:
       - app_net
 
   chat_service:
     build:
-      context: ./services/chat
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/chat/src/main/docker/Dockerfile.custom
     container_name: chat_service
-    ports:
-      - "8003:8080"
+    profiles: ["chat", "all"]
     depends_on:
       db:
         condition: service_healthy
-    environment:
-      - DB_USER=dev_user
-      - DB_PASSWORD=dev_password
-      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://db:5432/postgres_db
     networks:
       - app_net
 
+  forum_service:
+    image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+    container_name: forum_service
+    profiles: ["forum", "all"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app_net
+    
   # add other services below here, example:
   # redis:
   #   image: redis:7-alpine
   #   container_name: redis_cache
-  #   ports:
-  #     - "6379:6379"
 
 networks:
   app_net:
