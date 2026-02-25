@@ -1,9 +1,17 @@
 package org.bumIntra.gateway.websocket;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.bumIntra.gateway.client.AuthService;
 import org.bumIntra.gateway.client.dto.AuthResult;
+import org.bumIntra.gateway.obs.GatewayObserverDispatcher;
+import org.bumIntra.gateway.obs.GatewayWsAuth;
+import org.bumIntra.gateway.obs.GatewayWsClose;
+import org.bumIntra.gateway.obs.GatewayWsOpen;
+import org.bumIntra.gateway.obs.GatewayWsThrottle;
 import org.bumIntra.gateway.websocket.ratelimit.WsRateLimitService;
 import org.jboss.logging.Logger;
 
@@ -24,10 +32,13 @@ import jakarta.enterprise.context.control.ActivateRequestContext;
 @ApplicationScoped
 public class ChatWebSocketEndPoint {
 
-	private static final Logger LOG = Logger.getLogger(ChatWebSocketEndPoint.class);
+	// private static final Logger LOG =
+	// Logger.getLogger(ChatWebSocketEndPoint.class);
 
 	private static final String AUTHZ_STATE = "authState";
 	private static final String USER_ID = "userId";
+	private static final String LAST_THROTTLE_AT = "lastThrottleAt";
+	private static final Duration THROTTLE_LOG_COOLDOWN = Duration.ofSeconds(2);
 
 	@Inject
 	AuthService authService;
@@ -35,18 +46,35 @@ public class ChatWebSocketEndPoint {
 	@Inject
 	WsRateLimitService rls;
 
+	@Inject
+	GatewayObserverDispatcher obs;
+
 	@OnOpen
 	public void onOpen(Session session) {
 
-		LOG.info("WebSocket opened: " + session.getId());
-
-		session.getUserProperties().put(AUTHZ_STATE, "pending");
+		Instant authStart = Instant.now();
 
 		String clientIp = (String) session.getUserProperties()
 				.get(AuthHandshakeConfig.HP_CLIENT_IP);
 
+		obs.onWsOpen(new GatewayWsOpen(
+				session.getId(),
+				clientIp,
+				Instant.now()));
+
+		session.getUserProperties().put(AUTHZ_STATE, "pending");
+
 		if (clientIp == null || clientIp.isBlank() || "unknown".equals(clientIp)) {
-			LOG.warn("Could not determine client IP | session " + session.getId());
+
+			obs.onWsAuth(new GatewayWsAuth(
+					session.getId(),
+					clientIp,
+					Optional.empty(),
+					false,
+					Optional.of("Cannot Determine Client IP"),
+					Duration.between(authStart, Instant.now()),
+					Instant.now()));
+
 			terminate(session, CloseReason.CloseCodes.VIOLATED_POLICY,
 					"Cannot Determine Client IP");
 			return;
@@ -56,8 +84,15 @@ public class ChatWebSocketEndPoint {
 		rls.allowConnection(clientIp).subscribe().with(allowed -> {
 
 			if (!allowed) {
-				LOG.warn("WS_CONN limit exceeded for IP " + clientIp +
-						" | session " + session.getId());
+
+				obs.onWsThrottle(new GatewayWsThrottle(
+						session.getId(),
+						clientIp,
+						Optional.empty(),
+						GatewayWsThrottle.WsThrottleType.CONN_IP,
+						clientIp,
+						Instant.now()));
+
 				terminate(session, CloseReason.CloseCodes.TRY_AGAIN_LATER,
 						"Connection Rate Limit Exceeded");
 				return;
@@ -67,16 +102,33 @@ public class ChatWebSocketEndPoint {
 					.get(AuthHandshakeConfig.HP_AUTHZ);
 
 			if (authz == null || authz.isBlank()) {
-				LOG.warn("Missing Authorization header | session " + session.getId());
+
+				obs.onWsAuth(new GatewayWsAuth(
+						session.getId(),
+						clientIp,
+						Optional.empty(),
+						false,
+						Optional.of("Missing Authorization"),
+						Duration.between(authStart, Instant.now()),
+						Instant.now()));
+
 				terminate(session, CloseReason.CloseCodes.VIOLATED_POLICY,
 						"Missing Authorization");
 				return;
 			}
 
-			executeAuth(session, authz);
+			executeAuth(session, authz, authStart);
 
 		}, e -> {
-			LOG.error("WS_CONN rate limit error | session " + session.getId(), e);
+
+			obs.onWsThrottle(new GatewayWsThrottle(
+					session.getId(),
+					clientIp,
+					Optional.empty(),
+					GatewayWsThrottle.WsThrottleType.CONN_IP,
+					clientIp,
+					Instant.now()));
+
 			terminate(session, CloseReason.CloseCodes.TRY_AGAIN_LATER,
 					"Rate Limit Error");
 		});
@@ -88,7 +140,16 @@ public class ChatWebSocketEndPoint {
 		String authState = (String) session.getUserProperties().get(AUTHZ_STATE);
 
 		if (!"authenticated".equals(authState)) {
-			LOG.warn("Message from unauthenticated session " + session.getId());
+
+			obs.onWsAuth(new GatewayWsAuth(
+					session.getId(),
+					(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
+					Optional.empty(),
+					false,
+					Optional.of("Not Authenticated"),
+					Duration.ZERO,
+					Instant.now()));
+
 			terminate(session, CloseReason.CloseCodes.VIOLATED_POLICY,
 					"Not Authenticated");
 			return;
@@ -97,6 +158,16 @@ public class ChatWebSocketEndPoint {
 		String userId = (String) session.getUserProperties().get(USER_ID);
 
 		if (userId == null) {
+
+			obs.onWsAuth(new GatewayWsAuth(
+					session.getId(),
+					(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
+					Optional.empty(),
+					false,
+					Optional.of("Invalid Session State"),
+					Duration.ZERO,
+					Instant.now()));
+
 			terminate(session, CloseReason.CloseCodes.VIOLATED_POLICY,
 					"Invalid Session State");
 			return;
@@ -108,20 +179,36 @@ public class ChatWebSocketEndPoint {
 				if (session.isOpen()) {
 					session.getAsyncRemote().sendText(
 							"{\"type\":\"throttled\",\"reason\":\"Message Rate Limit Exceeded\"}");
+
+					Instant now = Instant.now();
+					Instant last = (Instant) session.getUserProperties().get(LAST_THROTTLE_AT);
+					if (last == null || Duration.between(last, now).compareTo(THROTTLE_LOG_COOLDOWN) >= 0) {
+						session.getUserProperties().put(LAST_THROTTLE_AT, now);
+						obs.onWsThrottle(new GatewayWsThrottle(
+								session.getId(),
+								(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
+								Optional.of(userId),
+								GatewayWsThrottle.WsThrottleType.MSG,
+								userId,
+								now));
+					}
 				}
 				return;
 			}
-
-			LOG.info("WS message | user " + userId +
-					" | session " + session.getId() +
-					" | payload: " + message);
 
 			if (session.isOpen()) {
 				session.getAsyncRemote().sendText("Echo: " + message);
 			}
 
 		}, e -> {
-			LOG.error("WS_MSG rate limit error | session " + session.getId(), e);
+
+			obs.onWsThrottle(new GatewayWsThrottle(
+					session.getId(),
+					(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
+					Optional.of(userId),
+					GatewayWsThrottle.WsThrottleType.MSG,
+					userId,
+					Instant.now()));
 
 			if (session.isOpen()) {
 				session.getAsyncRemote().sendText(
@@ -130,8 +217,23 @@ public class ChatWebSocketEndPoint {
 		});
 	}
 
+	@OnClose
+	public void onClose(Session session, CloseReason reason) {
+		obs.onWsClose(new GatewayWsClose(
+				session.getId(),
+				Optional.ofNullable((String) session.getUserProperties().get(USER_ID)),
+				reason.getCloseCode().getCode(),
+				reason.getReasonPhrase(),
+				Instant.now()));
+	}
+
+	@OnError
+	public void onError(Session session, Throwable throwable) {
+		obs.onWsError(session != null ? session.getId() : "unknown", throwable);
+	}
+
 	@ActivateRequestContext
-	void executeAuth(Session session, String authorization) {
+	void executeAuth(Session session, String authorization, Instant authStart) {
 		try {
 
 			AuthResult authResult = authService.verify(authorization);
@@ -140,8 +242,16 @@ public class ChatWebSocketEndPoint {
 					authResult.sub() == null ||
 					authResult.sub().isBlank()) {
 
-				LOG.warn("WS Invalid Auth | session " + session.getId());
 				session.getUserProperties().put(AUTHZ_STATE, "invalid");
+
+				obs.onWsAuth(new GatewayWsAuth(
+						session.getId(),
+						(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
+						Optional.empty(),
+						false,
+						Optional.of("Invalid Authorization"),
+						Duration.between(authStart, Instant.now()),
+						Instant.now()));
 				terminate(session,
 						CloseReason.CloseCodes.VIOLATED_POLICY,
 						"Invalid Authorization");
@@ -154,8 +264,15 @@ public class ChatWebSocketEndPoint {
 			rls.allowUserConnection(userId).subscribe().with(connAllowed -> {
 
 				if (!connAllowed) {
-					LOG.warn("WS_CONN_USER limit exceeded | userId " + userId +
-							" | session " + session.getId());
+
+					obs.onWsThrottle(new GatewayWsThrottle(
+							session.getId(),
+							(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
+							Optional.of(userId),
+							GatewayWsThrottle.WsThrottleType.CONN_USER,
+							userId,
+							Instant.now()));
+
 					terminate(session,
 							CloseReason.CloseCodes.TRY_AGAIN_LATER,
 							"User Connection Rate Limit Exceeded");
@@ -166,8 +283,14 @@ public class ChatWebSocketEndPoint {
 				session.getUserProperties().put("roles", authResult.roles());
 				session.getUserProperties().put(AUTHZ_STATE, "authenticated");
 
-				LOG.info("WS Auth Success | session " + session.getId() +
-						" | userId: " + userId);
+				obs.onWsAuth(new GatewayWsAuth(
+						session.getId(),
+						(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
+						Optional.of(userId),
+						true,
+						Optional.empty(), // TODO: put success reason if needed
+						Duration.between(authStart, Instant.now()),
+						Instant.now()));
 
 				if (session.isOpen()) {
 					session.getAsyncRemote().sendText(
@@ -175,7 +298,15 @@ public class ChatWebSocketEndPoint {
 				}
 
 			}, e -> {
-				LOG.error("WS_CONN_USER rate limit error | session " + session.getId(), e);
+
+				obs.onWsThrottle(new GatewayWsThrottle(
+						session.getId(),
+						(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
+						Optional.of(userId),
+						GatewayWsThrottle.WsThrottleType.CONN_USER,
+						userId,
+						Instant.now()));
+
 				terminate(session,
 						CloseReason.CloseCodes.UNEXPECTED_CONDITION,
 						"Connection Rate Limit Error");
@@ -183,24 +314,19 @@ public class ChatWebSocketEndPoint {
 
 		} catch (Exception e) {
 
-			LOG.error("WS Auth Error | session " + session.getId(), e);
+			obs.onWsAuth(new GatewayWsAuth(
+					session.getId(),
+					(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
+					Optional.empty(),
+					false,
+					Optional.of("Authentication Error"),
+					Duration.between(authStart, Instant.now()),
+					Instant.now()));
 
 			terminate(session,
 					CloseReason.CloseCodes.UNEXPECTED_CONDITION,
 					"Authentication Error");
 		}
-	}
-
-	@OnClose
-	public void onClose(Session session, CloseReason reason) {
-		LOG.info("WebSocket closed | session " + session.getId() +
-				" | code: " + reason.getCloseCode().getCode() +
-				" | reason: " + reason.getReasonPhrase());
-	}
-
-	@OnError
-	public void onError(Session session, Throwable throwable) {
-		LOG.error("WebSocket error | session " + session.getId(), throwable);
 	}
 
 	private void terminate(Session session,
@@ -210,11 +336,15 @@ public class ChatWebSocketEndPoint {
 			if (session != null && session.isOpen()) {
 				session.close(new CloseReason(code, reason));
 			}
-			LOG.info("Session " + session.getId() +
-					" terminated | code: " + code +
-					" | reason: " + reason);
+			// obs.onWsClose(new GatewayWsClose(
+			// session != null ? session.getId() : "unknown",
+			// Optional.ofNullable(session != null ? (String)
+			// session.getUserProperties().get(USER_ID) : null),
+			// code.getCode(),
+			// reason,
+			// Instant.now()));
 		} catch (Exception e) {
-			LOG.error("Error terminating session " + session.getId(), e);
+			obs.onWsError(session != null ? session.getId() : "unknown", e);
 		}
 	}
 }

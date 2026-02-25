@@ -9,118 +9,186 @@
 
 .DEFAULT_GOAL := help
 
+# ANSI colours
+BOLD  := \033[1m
+CYAN  := \033[36m
+GREEN := \033[32m
+YELLOW := \033[33m
+RESET := \033[0m
+
+# Shorthand print helpers
+define log
+	@printf "$(CYAN)$(BOLD)»$(RESET) $(1)\n"
+endef
+define ok
+	@printf "$(GREEN)$(BOLD)✔$(RESET) $(1)\n"
+endef
+
 help:
-	@echo "Usage: make -f Makefile.gw <target>"
-	@echo ""
-	@echo "  build-<service>    Build image for a service"
-	@echo "  rebuild-<service>  Rebuild (no-cache) and restart a service"
-	@echo "  up-<service>       Start a service (attached)"
-	@echo "  up-d-<service>     Start a service (detached)"
-	@echo ""
-	@echo "  up                 Build Java services + start all (attached)"
-	@echo "  up-d               Build Java services + start all (detached)"
-	@echo "  down               Stop and remove all containers"
-	@echo ""
-	@echo "  Services: gateway | gw-auth | gw-redis | testfe | nginx | toolbox"
+	@printf "$(BOLD)Usage:$(RESET) make -f Makefile.gw <target>\n\n"
+	@printf "  $(CYAN)build-<service>$(RESET)    Build image for a service\n"
+	@printf "  $(CYAN)rebuild-<service>$(RESET)  Rebuild (no-cache) and restart a service\n"
+	@printf "  $(CYAN)up-<service>$(RESET)       Start a service (attached)\n"
+	@printf "  $(CYAN)up-d-<service>$(RESET)     Start a service (detached)\n\n"
+	@printf "  $(CYAN)up$(RESET)                 Build Java services + start all (attached)\n"
+	@printf "  $(CYAN)up-d$(RESET)               Build Java services + start all (detached)\n"
+	@printf "  $(CYAN)down$(RESET)               Stop and remove all containers\n\n"
+	@printf "  $(YELLOW)Services: gateway | gw-auth | gw-redis | testfe | nginx | toolbox$(RESET)\n"
 
 # ── gateway-service (Quarkus/JVM — needs mvn package first) ──────────────────
 
 build-gateway:
-	cd services/gateway && ./mvnw package -DskipTests
-	docker compose -f docker-compose.gw.yml build gateway-service
+	$(call log, Building gateway (mvn clean package)...)
+	@cd services/gateway && ./mvnw clean package -DskipTests
+	$(call log, Building gateway Docker image...)
+	@docker compose -f docker-compose.gw.yml build gateway-service
+	$(call ok, gateway built)
 
 rebuild-gateway:
-	cd services/gateway && ./mvnw package -DskipTests
-	docker compose -f docker-compose.gw.yml build --no-cache gateway-service
-	docker compose -f docker-compose.gw.yml up -d gateway-service
+	$(call log, Rebuilding gateway (mvn clean package)...)
+	@cd services/gateway && ./mvnw clean package -DskipTests
+	$(call log, Rebuilding gateway Docker image (no-cache)...)
+	@docker compose -f docker-compose.gw.yml build --no-cache gateway-service
+	$(call log, Restarting gateway-service...)
+	@docker compose -f docker-compose.gw.yml up -d gateway-service
+	$(call ok, gateway rebuilt and restarted)
 
 up-gateway:
-	docker compose -f docker-compose.gw.yml up gateway-service
+	$(call log, Starting gateway-service (attached)...)
+	@docker compose -f docker-compose.gw.yml up gateway-service
 
 up-d-gateway:
-	docker compose -f docker-compose.gw.yml up -d gateway-service
+	$(call log, Starting gateway-service (detached)...)
+	@docker compose -f docker-compose.gw.yml up -d gateway-service
+	$(call ok, gateway-service started)
 
 # ── gw-auth-service (Quarkus/JVM — needs mvn package first) ─────────────────
 
 build-gw-auth:
-	cd services/dummy/gw_auth && ./mvnw package -DskipTests
-	docker compose -f docker-compose.gw.yml build gw-auth-service
+	$(call log, Building gw-auth (mvn clean package)...)
+	@cd services/dummy/gw_auth && ./mvnw clean package -DskipTests
+	$(call log, Building gw-auth Docker image...)
+	@docker compose -f docker-compose.gw.yml build gw-auth-service
+	$(call ok, gw-auth built)
 
 rebuild-gw-auth:
-	cd services/dummy/gw_auth && ./mvnw package -DskipTests
-	docker compose -f docker-compose.gw.yml build --no-cache gw-auth-service
-	docker compose -f docker-compose.gw.yml up -d gw-auth-service
+	$(call log, Rebuilding gw-auth (mvn clean package)...)
+	@cd services/dummy/gw_auth && ./mvnw clean package -DskipTests
+	$(call log, Rebuilding gw-auth Docker image (no-cache)...)
+	@docker compose -f docker-compose.gw.yml build --no-cache gw-auth-service
+	$(call log, Restarting gw-auth-service...)
+	@docker compose -f docker-compose.gw.yml up -d gw-auth-service
+	$(call ok, gw-auth rebuilt and restarted)
 
 up-gw-auth:
-	docker compose -f docker-compose.gw.yml up gw-auth-service
+	$(call log, Starting gw-auth-service (attached)...)
+	@docker compose -f docker-compose.gw.yml up gw-auth-service
 
 up-d-gw-auth:
-	docker compose -f docker-compose.gw.yml up -d gw-auth-service
+	$(call log, Starting gw-auth-service (detached)...)
+	@docker compose -f docker-compose.gw.yml up -d gw-auth-service
+	$(call ok, gw-auth-service started)
 
 # ── gw-redis-service ─────────────────────────────────────────────────────────
 
 build-gw-redis:
-	docker compose -f docker-compose.gw.yml build gw-redis-service
+	$(call log, Building gw-redis Docker image...)
+	@docker compose -f docker-compose.gw.yml build gw-redis-service
+	$(call ok, gw-redis built)
 
 rebuild-gw-redis:
-	docker compose -f docker-compose.gw.yml build --no-cache gw-redis-service
-	docker compose -f docker-compose.gw.yml up -d gw-redis-service
+	$(call log, Rebuilding gw-redis Docker image (no-cache)...)
+	@docker compose -f docker-compose.gw.yml build --no-cache gw-redis-service
+	$(call log, Restarting gw-redis-service...)
+	@docker compose -f docker-compose.gw.yml up -d gw-redis-service
+	$(call ok, gw-redis rebuilt and restarted)
 
 up-gw-redis:
-	docker compose -f docker-compose.gw.yml up gw-redis-service
+	$(call log, Starting gw-redis-service (attached)...)
+	@docker compose -f docker-compose.gw.yml up gw-redis-service
 
 up-d-gw-redis:
-	docker compose -f docker-compose.gw.yml up -d gw-redis-service
+	$(call log, Starting gw-redis-service (detached)...)
+	@docker compose -f docker-compose.gw.yml up -d gw-redis-service
+	$(call ok, gw-redis-service started)
 
 # ── testfe-service ───────────────────────────────────────────────────────────
 
 build-testfe:
-	docker compose -f docker-compose.gw.yml build testfe-service
+	$(call log, Building testfe Docker image...)
+	@docker compose -f docker-compose.gw.yml build testfe-service
+	$(call ok, testfe built)
 
 rebuild-testfe:
-	docker compose -f docker-compose.gw.yml build --no-cache testfe-service
-	docker compose -f docker-compose.gw.yml up -d testfe-service
+	$(call log, Rebuilding testfe Docker image (no-cache)...)
+	@docker compose -f docker-compose.gw.yml build --no-cache testfe-service
+	$(call log, Restarting testfe-service...)
+	@docker compose -f docker-compose.gw.yml up -d testfe-service
+	$(call ok, testfe rebuilt and restarted)
 
 up-testfe:
-	docker compose -f docker-compose.gw.yml up testfe-service
+	$(call log, Starting testfe-service (attached)...)
+	@docker compose -f docker-compose.gw.yml up testfe-service
 
 up-d-testfe:
-	docker compose -f docker-compose.gw.yml up -d testfe-service
+	$(call log, Starting testfe-service (detached)...)
+	@docker compose -f docker-compose.gw.yml up -d testfe-service
+	$(call ok, testfe-service started)
 
-# ── nginx-service (prebuilt image, no build context) ─────────────────────────
+# ── nginx-service ─────────────────────────────────────────────────────────────
 
 build-nginx:
-	docker compose -f docker-compose.gw.yml build nginx-service
+	$(call log, Building nginx Docker image...)
+	@docker compose -f docker-compose.gw.yml build nginx-service
+	$(call ok, nginx built)
 
 rebuild-nginx:
-	docker compose -f docker-compose.gw.yml build --no-cache nginx-service
-	docker compose -f docker-compose.gw.yml up -d nginx-service
+	$(call log, Rebuilding nginx Docker image (no-cache)...)
+	@docker compose -f docker-compose.gw.yml build --no-cache nginx-service
+	$(call log, Restarting nginx-service...)
+	@docker compose -f docker-compose.gw.yml up -d nginx-service
+	$(call ok, nginx rebuilt and restarted)
 
 up-nginx:
-	docker compose -f docker-compose.gw.yml up nginx-service
+	$(call log, Starting nginx-service (attached)...)
+	@docker compose -f docker-compose.gw.yml up nginx-service
 
 up-d-nginx:
-	docker compose -f docker-compose.gw.yml up -d nginx-service
+	$(call log, Starting nginx-service (detached)...)
+	@docker compose -f docker-compose.gw.yml up -d nginx-service
+	$(call ok, nginx-service started)
 
-# ── toolbox (prebuilt image, no build context) ────────────────────────────────
+# ── toolbox ────────────────────────────────────────────────────────────────────
 
 up-toolbox:
-	docker compose -f docker-compose.gw.yml up toolbox
+	$(call log, Starting toolbox (attached)...)
+	@docker compose -f docker-compose.gw.yml up toolbox
 
 up-d-toolbox:
-	docker compose -f docker-compose.gw.yml up -d toolbox
+	$(call log, Starting toolbox (detached)...)
+	@docker compose -f docker-compose.gw.yml up -d toolbox
+	$(call ok, toolbox started)
 
 # ── all ───────────────────────────────────────────────────────────────────────
 
 up:
-	cd services/gateway && ./mvnw package -DskipTests
-	cd services/dummy/gw_auth && ./mvnw package -DskipTests
-	docker compose -f docker-compose.gw.yml up --build
+	$(call log, Building gateway (mvn package)...)
+	@cd services/gateway && ./mvnw package -DskipTests
+	$(call log, Building gw-auth (mvn package)...)
+	@cd services/dummy/gw_auth && ./mvnw package -DskipTests
+	$(call log, Starting all services...)
+	@docker compose -f docker-compose.gw.yml up --build
 
 up-d:
-	cd services/gateway && ./mvnw package -DskipTests
-	cd services/dummy/gw_auth && ./mvnw package -DskipTests
-	docker compose -f docker-compose.gw.yml up --build -d
+	$(call log, Building gateway (mvn package)...)
+	@cd services/gateway && ./mvnw package -DskipTests
+	$(call log, Building gw-auth (mvn package)...)
+	@cd services/dummy/gw_auth && ./mvnw package -DskipTests
+	$(call log, Starting all services (detached)...)
+	@docker compose -f docker-compose.gw.yml up --build -d
+	$(call ok, All services started)
 
 down:
-	docker compose -f docker-compose.gw.yml down
+	$(call log, Stopping all services...)
+	@docker compose -f docker-compose.gw.yml down
+	$(call ok, All services stopped)

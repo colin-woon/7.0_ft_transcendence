@@ -9,6 +9,7 @@ import org.bumIntra.gateway.security.GatewayRequestContext;
 // import org.bumIntra.gateway.config.GatewayAuthConfig;
 // import org.bumIntra.gateway.exception.AuthRequiredException;
 import org.bumIntra.gateway.obs.GatewayObserver;
+import org.bumIntra.gateway.obs.GatewayObserverDispatcher;
 import org.bumIntra.gateway.obs.GatewayRequestStart;
 import org.bumIntra.gateway.policy.GatewayPolicyEngine;
 
@@ -32,7 +33,7 @@ public class RequestContextFilter implements ContainerRequestFilter {
 	// GatewayPolicyEngine policyEngine;
 
 	@Inject
-	Instance<GatewayObserver> obs;
+	GatewayObserverDispatcher obs;
 
 	@Override
 	public void filter(ContainerRequestContext request) {
@@ -63,13 +64,19 @@ public class RequestContextFilter implements ContainerRequestFilter {
 
 		// Obs Hook start
 		Instant st = Instant.now();
-		for (var ob : obs) {
-			ob.onRequestStart(new GatewayRequestStart(
-					requestId,
-					request.getMethod(),
-					request.getUriInfo().getPath(),
-					st));
-		}
+		obs.onRequestStart(new GatewayRequestStart(
+				requestId,
+				request.getMethod(),
+				request.getUriInfo().getPath(),
+				st));
+
+		// for (var ob : obs) {
+		// ob.onRequestStart(new GatewayRequestStart(
+		// requestId,
+		// request.getMethod(),
+		// request.getUriInfo().getPath(),
+		// st));
+		// }
 
 		request.setProperty("gw.start", st);
 

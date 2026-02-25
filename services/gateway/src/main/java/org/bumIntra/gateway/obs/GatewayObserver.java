@@ -7,4 +7,19 @@ public interface GatewayObserver {
 
 	default void onRequestEnd(GatewayRequestEnd e) {
 	}
+
+	default void onWsOpen(GatewayWsOpen e) {
+	}
+
+	default void onWsAuth(GatewayWsAuth e) {
+	}
+
+	default void onWsThrottle(GatewayWsThrottle e) {
+	}
+
+	default void onWsClose(GatewayWsClose e) {
+	}
+
+	default void onWsError(String sessionId, Throwable t) {
+	}
 }
