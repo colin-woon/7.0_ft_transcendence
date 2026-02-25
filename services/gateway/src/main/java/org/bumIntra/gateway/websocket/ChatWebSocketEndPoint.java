@@ -169,6 +169,11 @@ public class ChatWebSocketEndPoint {
 				LOG.info("WS Auth Success | session " + session.getId() +
 						" | userId: " + userId);
 
+				if (session.isOpen()) {
+					session.getAsyncRemote().sendText(
+							"{\"type\":\"authenticated\",\"userId\":\"" + userId + "\"}");
+				}
+
 			}, e -> {
 				LOG.error("WS_CONN_USER rate limit error | session " + session.getId(), e);
 				terminate(session,

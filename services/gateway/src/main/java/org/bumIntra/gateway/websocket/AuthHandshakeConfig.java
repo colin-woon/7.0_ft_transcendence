@@ -52,6 +52,19 @@ public class AuthHandshakeConfig extends ServerEndpointConfig.Configurator {
 			}
 		}
 
+		// Fallback: browser WebSocket API cannot set Authorization header.
+		// Accept ?token=<bearer-token> as a query-parameter alternative.
+		if (!sec.getUserProperties().containsKey(HP_AUTHZ)) {
+			Map<String, List<String>> params = request.getParameterMap();
+			List<String> tokenParam = params.get("token");
+			if (tokenParam != null && !tokenParam.isEmpty() && !tokenParam.get(0).isBlank()) {
+				String raw = tokenParam.get(0).trim();
+				// Normalise: accept bare token or "Bearer <token>"
+				String authz = raw.startsWith("Bearer ") ? raw : "Bearer " + raw;
+				sec.getUserProperties().put(HP_AUTHZ, authz);
+			}
+		}
+
 		if (clientIp == null || clientIp.isBlank()) {
 			clientIp = "unknown";
 		}

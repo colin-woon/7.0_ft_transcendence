@@ -1,0 +1,126 @@
+.PHONY: \
+	build-gateway rebuild-gateway up-gateway up-d-gateway \
+	build-gw-auth rebuild-gw-auth up-gw-auth up-d-gw-auth \
+	build-gw-redis rebuild-gw-redis up-gw-redis up-d-gw-redis \
+	build-testfe rebuild-testfe up-testfe up-d-testfe \
+	build-nginx rebuild-nginx up-nginx up-d-nginx \
+	up-toolbox up-d-toolbox \
+	up up-d down help
+
+.DEFAULT_GOAL := help
+
+help:
+	@echo "Usage: make -f Makefile.gw <target>"
+	@echo ""
+	@echo "  build-<service>    Build image for a service"
+	@echo "  rebuild-<service>  Rebuild (no-cache) and restart a service"
+	@echo "  up-<service>       Start a service (attached)"
+	@echo "  up-d-<service>     Start a service (detached)"
+	@echo ""
+	@echo "  up                 Build Java services + start all (attached)"
+	@echo "  up-d               Build Java services + start all (detached)"
+	@echo "  down               Stop and remove all containers"
+	@echo ""
+	@echo "  Services: gateway | gw-auth | gw-redis | testfe | nginx | toolbox"
+
+# ── gateway-service (Quarkus/JVM — needs mvn package first) ──────────────────
+
+build-gateway:
+	cd services/gateway && ./mvnw package -DskipTests
+	docker compose -f docker-compose.gw.yml build gateway-service
+
+rebuild-gateway:
+	cd services/gateway && ./mvnw package -DskipTests
+	docker compose -f docker-compose.gw.yml build --no-cache gateway-service
+	docker compose -f docker-compose.gw.yml up -d gateway-service
+
+up-gateway:
+	docker compose -f docker-compose.gw.yml up gateway-service
+
+up-d-gateway:
+	docker compose -f docker-compose.gw.yml up -d gateway-service
+
+# ── gw-auth-service (Quarkus/JVM — needs mvn package first) ─────────────────
+
+build-gw-auth:
+	cd services/dummy/gw_auth && ./mvnw package -DskipTests
+	docker compose -f docker-compose.gw.yml build gw-auth-service
+
+rebuild-gw-auth:
+	cd services/dummy/gw_auth && ./mvnw package -DskipTests
+	docker compose -f docker-compose.gw.yml build --no-cache gw-auth-service
+	docker compose -f docker-compose.gw.yml up -d gw-auth-service
+
+up-gw-auth:
+	docker compose -f docker-compose.gw.yml up gw-auth-service
+
+up-d-gw-auth:
+	docker compose -f docker-compose.gw.yml up -d gw-auth-service
+
+# ── gw-redis-service ─────────────────────────────────────────────────────────
+
+build-gw-redis:
+	docker compose -f docker-compose.gw.yml build gw-redis-service
+
+rebuild-gw-redis:
+	docker compose -f docker-compose.gw.yml build --no-cache gw-redis-service
+	docker compose -f docker-compose.gw.yml up -d gw-redis-service
+
+up-gw-redis:
+	docker compose -f docker-compose.gw.yml up gw-redis-service
+
+up-d-gw-redis:
+	docker compose -f docker-compose.gw.yml up -d gw-redis-service
+
+# ── testfe-service ───────────────────────────────────────────────────────────
+
+build-testfe:
+	docker compose -f docker-compose.gw.yml build testfe-service
+
+rebuild-testfe:
+	docker compose -f docker-compose.gw.yml build --no-cache testfe-service
+	docker compose -f docker-compose.gw.yml up -d testfe-service
+
+up-testfe:
+	docker compose -f docker-compose.gw.yml up testfe-service
+
+up-d-testfe:
+	docker compose -f docker-compose.gw.yml up -d testfe-service
+
+# ── nginx-service (prebuilt image, no build context) ─────────────────────────
+
+build-nginx:
+	docker compose -f docker-compose.gw.yml build nginx-service
+
+rebuild-nginx:
+	docker compose -f docker-compose.gw.yml build --no-cache nginx-service
+	docker compose -f docker-compose.gw.yml up -d nginx-service
+
+up-nginx:
+	docker compose -f docker-compose.gw.yml up nginx-service
+
+up-d-nginx:
+	docker compose -f docker-compose.gw.yml up -d nginx-service
+
+# ── toolbox (prebuilt image, no build context) ────────────────────────────────
+
+up-toolbox:
+	docker compose -f docker-compose.gw.yml up toolbox
+
+up-d-toolbox:
+	docker compose -f docker-compose.gw.yml up -d toolbox
+
+# ── all ───────────────────────────────────────────────────────────────────────
+
+up:
+	cd services/gateway && ./mvnw package -DskipTests
+	cd services/dummy/gw_auth && ./mvnw package -DskipTests
+	docker compose -f docker-compose.gw.yml up --build
+
+up-d:
+	cd services/gateway && ./mvnw package -DskipTests
+	cd services/dummy/gw_auth && ./mvnw package -DskipTests
+	docker compose -f docker-compose.gw.yml up --build -d
+
+down:
+	docker compose -f docker-compose.gw.yml down
