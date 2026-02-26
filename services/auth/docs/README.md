@@ -1,62 +1,152 @@
-# auth
+# Auth Service
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+Authentication and user management microservice for ft_transcendence, built with Quarkus.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+## Overview
 
-## Running the application in dev mode
+The Auth Service handles OAuth authentication (Google, 42 Intra), JWT token management, user profiles, and session management. It provides a secure authentication layer for the entire application.
 
-You can run your application in dev mode that enables live coding using:
+## Features
 
-```shell script
+- **OAuth 2.0 / OIDC Authentication**
+  - Google OAuth integration
+  - 42 Intra OAuth (ready for implementation)
+  - Multi-tenant OIDC configuration
+
+- **JWT Token Management**
+  - Access tokens (10 minutes default)
+  - Refresh tokens via secure HTTP-only cookies (24 hours default)
+  - RS256 signature algorithm
+  - Custom JWT signing and validation
+
+- **User Management**
+  - User registration via OAuth providers
+  - Profile management (username, full name, avatar, bio)
+  - User search functionality
+  - Role-based access control (STUDENT, ADMIN)
+  - Account linking (multiple OAuth providers per user)
+
+- **Session Management**
+  - Secure session cookies
+  - Session-based refresh token mechanism
+  - Session expiration and cleanup
+
+## Tech Stack
+
+- **Framework**: Quarkus 3.30.5
+- **Language**: Java 21  
+- **Database**: PostgreSQL (via Hibernate ORM + Panache)
+- **Authentication**: Quarkus OIDC + SmallRye JWT
+- **Build Tool**: Maven
+
+## Quick Start
+
+### Prerequisites
+
+- Java 21 (via SDKMAN - see [DEV_DOC.md](DEV_DOC.md))
+- Docker & Docker Compose
+- PostgreSQL database
+
+### Running in Development
+
+From the project root:
+
+```bash
+# Start auth service with database
+make auth
+```
+
+Or directly from the auth service directory:
+
+```bash
 ./mvnw quarkus:dev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+The service will be available at:
+- **API**: `http://localhost:8002`
+- **Dev UI**: `http://localhost:8002/q/dev`
 
-## Packaging and running the application
+### Environment Variables
 
-The application can be packaged using:
+Create or configure `environment/shared.env`:
 
-```shell script
-./mvnw package
+```env
+# Domain
+DOMAIN_NAME=localhost
+PUBLIC_PORT=8002
+
+# OAuth Providers
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+FT_CLIENT_ID=your_42_client_id
+FT_CLIENT_SECRET=your_42_client_secret
+
+# Database
+DB_USER=dev_user
+DB_PASSWORD=dev_password
+
+# JWT
+ACCESS_EXPIRY=600        # 10 minutes
+REFRESH_EXPIRY=86400     # 24 hours
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+## API Endpoints
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+### Authentication
 
-If you want to build an _über-jar_, execute the following command:
+- `GET /auth/login/{provider}` - Initiate OAuth login (google)
+- `POST /auth/refresh` - Refresh access token using session cookie
+- `POST /auth/logout` - Logout and invalidate session
+- `DELETE /auth/delete` - Delete user account
 
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
-```
+### User Profile
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+- `GET /auth/me` - Get current user's profile
+- `PATCH /auth/me` - Update current user's profile
 
-## Creating a native executable
+### User Discovery
 
-You can create a native executable using:
+- `GET /auth/users?q={query}&page={page}&size={size}` - Search users
+- `GET /auth/users/{id}` - Get user profile by ID
 
-```shell script
-./mvnw package -Dnative
-```
+## Authentication Flow
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+1. **Login**: User clicks "Login with Google" → redirected to `/auth/login/google`
+2. **OAuth**: Google authenticates user → redirects back to callback
+3. **User Sync**: Service creates/updates user in database
+4. **Token Generation**: Service issues JWT access token + session cookie
+5. **API Access**: Client uses access token in `Authorization: Bearer` header
+6. **Token Refresh**: When access token expires, use session cookie to get new one
+7. **Logout**: Client calls `/auth/logout` to invalidate session
 
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
+## Database Schema
 
-You can then execute your native executable with: `./target/auth-1.0.0-SNAPSHOT-runner`
+The service uses the `auth_service` schema in PostgreSQL:
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+- **users** - User profiles and OAuth identities
+- **sessions** - Refresh token sessions
 
-## Provided Code
+See [schema.sql](../../../infra/postgres/init-scripts/schema.sql) for details.
 
-### REST
+## Security
 
-Easily start your REST Web Services
+- Access tokens: Short-lived (10 min), stateless JWT
+- Refresh tokens: Long-lived (24 hours), stored in HTTP-only cookies, server-side validation
+- CORS: Configured per environment
+- Role-based authorization using JWT claims
+- Banned users are rejected at token generation
 
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+## Development
+
+See [DEV_DOC.md](DEV_DOC.md) for detailed development information including:
+- Architecture overview
+- Code structure
+- API specifications
+- Testing guidelines
+- Development workflow
+
+## Resources
+
+- [Quarkus Documentation](https://quarkus.io/)
+- [Quarkus OIDC Guide](https://quarkus.io/guides/security-oidc-code-flow-authentication)
+- [SmallRye JWT](https://github.com/smallrye/smallrye-jwt)

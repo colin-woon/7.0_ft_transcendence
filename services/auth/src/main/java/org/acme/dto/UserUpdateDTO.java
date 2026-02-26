@@ -1,14 +1,19 @@
 package org.acme.dto;
 
-import jakarta.validation.constraints.Size;
+import java.util.Optional;
+
+// import jakarta.validation.constraints.Size;
 
 public class UserUpdateDTO {
-    
-    @Size(min = 3, max = 50)
-    public String fullName;
+    // Only these fields can be updated by the user, and all of them are optional
+    // @Size(min = 3, max = 50)
+    public Optional<String> username = Optional.empty();
 
-    public String avatarUrl;
+    // @Size(min = 3, max = 50)
+    public Optional<String> fullName = Optional.empty();
 
-    @Size(max = 255)
-    public String bio;
+    public Optional<String> avatarUrl = Optional.empty();
+
+    // @Size(max = 255)
+    public Optional<String> bio = Optional.empty();
 }

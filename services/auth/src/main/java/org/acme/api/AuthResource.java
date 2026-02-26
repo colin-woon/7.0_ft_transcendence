@@ -1,14 +1,30 @@
 package org.acme.api;
 
-import org.acme.dto.*;
+import java.util.List;
+
+import org.acme.dto.UserInfoDTO;
+import org.acme.dto.UserSummaryDTO;
+import org.acme.dto.UserUpdateDTO;
+import org.acme.service.AuthService;
+import org.eclipse.jdt.annotation.NonNull;
+
+import io.quarkus.security.Authenticated;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.CookieParam;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.acme.service.AuthService;
 
 @Path("/auth")
 @Produces(MediaType.APPLICATION_JSON)
@@ -18,40 +34,102 @@ public class AuthResource {
     @Inject
     AuthService authService;
 
-	//for registration
-    @POST
-    @Path("/register")
-    public Response register(@Valid UserCreateDTO userDTO) {
-        return Response.status(201)
-            .entity(authService.registerUser(userDTO))
-            .build();
-    }
+	@Inject
+	SecurityIdentity identity;
 
-	//for update info page
+	// To Login the user, giving an access and refresh token
+	@GET
+	@Path("/login/{provider}")
+	@Authenticated
+	public Response login(@PathParam("provider") String provider) {
+		return Response.status(200)
+			.entity(authService.createToken(identity))
+			.cookie(authService.createSessionCookie(identity))
+			.build();
+		// String redirect = "/index.html#token=" + authService.createToken(identity).accessToken;
+		// return Response
+				// .seeOther(java.net.URI.create(redirect))
+				// .cookie(authService.createSessionCookie(identity))
+				// .build();
+	}
+
+	// To refresh the user after access token expires
+	@POST
+	@Path("/refresh")
+	// @PermitAll
+	public Response refresh(@CookieParam("sessionId") String sessionId) {
+		return Response.status(200)
+			.entity(authService.refreshToken(sessionId))
+			.build();
+	}
+
+	// To Logout the user, invalidate the access and refresh token
+	@POST
+	@Path("/logout")
+	@Authenticated
+	// @RolesAllowed({"STUDENT", "ADMIN"})
+	public Response logout(@CookieParam("sessionId") String sessionId) {
+		return Response.ok()
+			.entity("{\"message\": \"Logged out\"}")
+			.cookie(authService.deleteSession(sessionId))
+			.build();
+	}
+
+	@DELETE
+	@Path("/delete")
+	@Authenticated
+	// @RolesAllowed({"STUDENT", "ADMIN"})
+	public Response deleteAccount() {
+		return Response.noContent()
+			.cookie(authService.deleteAccount(identity))
+			.build();
+	}
+
+	// To get the user info of the currently logged in user
+	@GET
+	@Path("/me")
+	@Authenticated
+	// @RolesAllowed({"STUDENT", "ADMIN"})
+	public UserInfoDTO getMyInfo() {
+		return authService.getMyInfo(identity);
+	}
+
+	// To update the current user info
 	@PATCH
-	@Path("/update/{userid}")
-	public UserResponseDTO updateUser(@PathParam("userid") long userid, @Valid UserUpdateDTO updateDTO) {
-		return authService.updateUserInfo(userid, updateDTO);
+	@Path("/me")
+	@Authenticated
+	// @RolesAllowed({"STUDENT", "ADMIN"})
+	public UserInfoDTO updateMyInfo(@Valid UserUpdateDTO updateDTO) {
+		return authService.updateMyInfo(identity, updateDTO);
 	}
 
-	//can choose to remove this later, currently for dev purpose
+	// To search for users by email or username, returning list of user summaries (id, name and profile pic)
 	@GET
-    @Path("/users")
-    public List<UserResponseDTO> listUsers() {
-        return authService.getAllUsers();
+	@Path("/users")
+	// @PermitAll
+	public List<@NonNull UserSummaryDTO> searchUser(
+			@QueryParam("q") @DefaultValue("") String query,
+			@QueryParam("page") @DefaultValue("0") int page,
+			@QueryParam("size") @DefaultValue("10") int size) {
+		String safeQuery = (query == null) ? "" : query.trim();
+		return authService.searchUser(safeQuery, page, size);
 	}
 
-	// retrieve comprehensive single user info, prolly use in profile
+	// To lookup user by id, returning user info
 	@GET
-	@Path("/userinfo/{userid}")
-	public UserResponseDTO listUserInfo(@PathParam("userid") long userid){
-		return authService.getUserInfo(userid);
+	@Path("/users/{id}")
+	// @PermitAll
+	public UserInfoDTO lookUpUser(@PathParam("id") long id) {
+		return authService.getUserInfo(id);
 	}
 
-	//retrieve list of user summaries (only name,id and profile pic), will use in dropdown menu 
-	@GET
-    @Path("/userssummary")
-    public List<UserSummaryDTO> listUsersSummary() {
-        return authService.getUsersSummary();
-	}
+	// @GET
+	// @Path("/public-key")
+	// public Response getPublicKey() {
+		// return Response.ok()
+			// .entity(authService.getPublicKey())
+			// .build();
+	// }
+
+	// In the future, I will add some @RoleAllowed(ADMIN) only functions for testing purposes
 }

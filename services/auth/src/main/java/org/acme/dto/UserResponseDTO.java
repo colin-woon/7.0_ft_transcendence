@@ -1,30 +1,16 @@
 package org.acme.dto;
 
-import org.acme.model.UserRole;
-import java.time.Instant;
-
 public class UserResponseDTO {
-    public Long id;
-    public String email;
-    public String username;
-    public String fullName;
-    public String avatarUrl;
-	public String bio;
-    public UserRole role;
-    public Instant createdAt;
+    // The response we send to the frontend after login or refresh, containing the access token and the user info
+    public String accessToken;
+    public Long expiresIn;
+    public UserInfoDTO user;
 
-    // empty constructor for serialization
     public UserResponseDTO() {}
 
-    // constructor
-    public UserResponseDTO(Long id, String email, String username, String fullName, String avatarUrl, String bio, UserRole role, Instant createdAt) {
-        this.id = id;
-        this.email = email;
-        this.username = username;
-        this.fullName = fullName;
-        this.avatarUrl = avatarUrl;
-		this.bio = bio;
-        this.role = role;
-        this.createdAt = createdAt;
+    public UserResponseDTO(String accessToken, Long expiresIn, UserInfoDTO user) {
+        this.accessToken = accessToken;
+        this.expiresIn = expiresIn;
+        this.user = user;
     }
 }

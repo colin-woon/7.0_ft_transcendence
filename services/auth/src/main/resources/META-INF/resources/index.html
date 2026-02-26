@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Auth Service Tester</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
+        .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        button { cursor: pointer; padding: 8px 12px; margin: 5px; border: none; border-radius: 4px; background: #007bff; color: white; }
+        button.delete { background: #dc3545; }
+        button.patch { background: #28a745; }
+        pre { background: #eee; padding: 10px; overflow-x: auto; max-height: 300px; }
+        input, textarea { padding: 6px; margin: 4px; width: 300px; }
+        label { font-weight: bold; display: block; margin-top: 8px; }
+        .status { padding: 5px 10px; border-radius: 4px; display: inline-block; margin: 5px; }
+        .status.ok { background: #d4edda; color: #155724; }
+        .status.err { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h2>Auth Service Tester</h2>
+
+    <div class="card">
+        <h3>1. Login (OIDC)</h3>
+        <a href="/auth/login/google"><button type="button">Login with Google</button></a>
+    </div>
+
+    <div class="card">
+        <h3>2. Authenticated (OIDC Session Cookie)</h3>
+        <button onclick="call('GET', '/auth/me')">GET /auth/me</button>
+        <button onclick="call('POST', '/auth/logout')" class="delete">POST /auth/logout</button>
+        <button onclick="confirmDelete()" class="delete">DELETE /auth/delete</button>
+    </div>
+
+    <div class="card">
+        <h3>3. Update Profile</h3>
+        <label>Username:</label>
+        <input type="text" id="newUsername" placeholder="new username">
+        <label>Bio:</label>
+        <input type="text" id="newBio" placeholder="new bio">
+        <button onclick="patchMe()" class="patch">PATCH /auth/me</button>
+    </div>
+
+    <div class="card">
+        <h3>4. Refresh Token (Cookie-based)</h3>
+        <label>Session Cookie (paste if testing manually):</label>
+        <input type="text" id="sessionId" placeholder="auto-sent by browser">
+        <button onclick="call('POST', '/auth/refresh')">POST /auth/refresh</button>
+    </div>
+
+    <div class="card">
+        <h3>5. Public Endpoints</h3>
+        <label>Search:</label>
+        <input type="text" id="searchQuery" placeholder="search users...">
+        <button onclick="searchUsers()">GET /auth/users</button>
+        <br>
+        <label>User ID:</label>
+        <input type="number" id="userId" placeholder="user ID">
+        <button onclick="lookupUser()">GET /auth/users/{id}</button>
+    </div>
+
+    <div class="card">
+        <h3>Response</h3>
+        <pre id="output">No activity yet...</pre>
+    </div>
+
+    <script>
+        async function call(method, url, body) {
+            var opts = {
+                method: method,
+                credentials: 'include',
+                headers: {}
+            };
+
+            if (body) {
+                opts.headers['Content-Type'] = 'application/json';
+                opts.body = JSON.stringify(body);
+            }
+
+            try {
+                var res = await fetch(url, opts);
+                var text = await res.text();
+                var data;
+                try { data = JSON.parse(text); } catch(e) { data = text || '(empty response)'; }
+
+                document.getElementById('output').innerText =
+                    method + ' ' + url + '\nStatus: ' + res.status + '\n\n' +
+                    (typeof data === 'string' ? data : JSON.stringify(data, null, 2));
+            } catch (err) {
+                document.getElementById('output').innerText = 'Fetch error: ' + err.message;
+            }
+        }
+
+        function patchMe() {
+            var body = {};
+            var username = document.getElementById('newUsername').value.trim();
+            var bio = document.getElementById('newBio').value.trim();
+            if (username) body.username = username;
+            if (bio) body.bio = bio;
+            if (Object.keys(body).length === 0) {
+                alert('Enter at least one field to update');
+                return;
+            }
+            call('PATCH', '/auth/me', body);
+        }
+
+        function confirmDelete() {
+            if (confirm('Are you sure? This will delete your account permanently.')) {
+                call('DELETE', '/auth/delete');
+            }
+        }
+
+        function searchUsers() {
+            var q = document.getElementById('searchQuery').value.trim();
+            call('GET', '/auth/users?q=' + encodeURIComponent(q));
+        }
+
+        function lookupUser() {
+            var id = document.getElementById('userId').value.trim();
+            if (!id) { alert('Enter a user ID'); return; }
+            call('GET', '/auth/users/' + id);
+        }
+    </script>
+</body>
+</html>
+
