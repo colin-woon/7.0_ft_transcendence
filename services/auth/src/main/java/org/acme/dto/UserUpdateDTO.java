@@ -2,18 +2,26 @@ package org.acme.dto;
 
 import java.util.Optional;
 
-// import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public class UserUpdateDTO {
-    // Only these fields can be updated by the user, and all of them are optional
-    // @Size(min = 3, max = 50)
-    public Optional<String> username = Optional.empty();
+	
+	public Optional<
+			@Pattern(regexp = "^[a-zA-Z0-9_-]+$", message = "Username can only contain letters, numbers, underscores, and hyphens")
+			@Size(min = 3, max = 30, message = "Username must be between 3 and 30 characters")
+			String> username = Optional.empty();
 
-    // @Size(min = 3, max = 50)
-    public Optional<String> fullName = Optional.empty();
+	public Optional<
+			@Size(min = 1, max = 100, message = "Full name must be between 1 and 100 characters")
+			String> fullName = Optional.empty();
 
-    public Optional<String> avatarUrl = Optional.empty();
+	public Optional<
+			@Pattern(regexp = "^(https?://)?.*", message = "Avatar URL must be a valid URL")
+			@Size(max = 500, message = "Avatar URL must not exceed 500 characters")
+			String> avatarUrl = Optional.empty();
 
-    // @Size(max = 255)
-    public Optional<String> bio = Optional.empty();
+	public Optional<
+			@Size(max = 500, message = "Bio must not exceed 500 characters")
+			String> bio = Optional.empty();
 }

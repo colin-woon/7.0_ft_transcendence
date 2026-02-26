@@ -78,6 +78,7 @@ PUBLIC_PORT=8002
 # OAuth Providers
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
+# Just set a dummy for now, 42 OAuth has not been implemented yet
 FT_CLIENT_ID=your_42_client_id
 FT_CLIENT_SECRET=your_42_client_secret
 

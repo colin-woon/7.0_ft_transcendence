@@ -46,17 +46,11 @@ public class AuthResource {
 			.entity(authService.createToken(identity))
 			.cookie(authService.createSessionCookie(identity))
 			.build();
-		// String redirect = "/index.html#token=" + authService.createToken(identity).accessToken;
-		// return Response
-				// .seeOther(java.net.URI.create(redirect))
-				// .cookie(authService.createSessionCookie(identity))
-				// .build();
 	}
 
 	// To refresh the user after access token expires
 	@POST
 	@Path("/refresh")
-	// @PermitAll
 	public Response refresh(@CookieParam("sessionId") String sessionId) {
 		return Response.status(200)
 			.entity(authService.refreshToken(sessionId))
@@ -67,7 +61,6 @@ public class AuthResource {
 	@POST
 	@Path("/logout")
 	@Authenticated
-	// @RolesAllowed({"STUDENT", "ADMIN"})
 	public Response logout(@CookieParam("sessionId") String sessionId) {
 		return Response.ok()
 			.entity("{\"message\": \"Logged out\"}")
@@ -78,7 +71,6 @@ public class AuthResource {
 	@DELETE
 	@Path("/delete")
 	@Authenticated
-	// @RolesAllowed({"STUDENT", "ADMIN"})
 	public Response deleteAccount() {
 		return Response.noContent()
 			.cookie(authService.deleteAccount(identity))
@@ -89,7 +81,6 @@ public class AuthResource {
 	@GET
 	@Path("/me")
 	@Authenticated
-	// @RolesAllowed({"STUDENT", "ADMIN"})
 	public UserInfoDTO getMyInfo() {
 		return authService.getMyInfo(identity);
 	}
@@ -98,7 +89,6 @@ public class AuthResource {
 	@PATCH
 	@Path("/me")
 	@Authenticated
-	// @RolesAllowed({"STUDENT", "ADMIN"})
 	public UserInfoDTO updateMyInfo(@Valid UserUpdateDTO updateDTO) {
 		return authService.updateMyInfo(identity, updateDTO);
 	}
@@ -106,30 +96,18 @@ public class AuthResource {
 	// To search for users by email or username, returning list of user summaries (id, name and profile pic)
 	@GET
 	@Path("/users")
-	// @PermitAll
 	public List<@NonNull UserSummaryDTO> searchUser(
 			@QueryParam("q") @DefaultValue("") String query,
 			@QueryParam("page") @DefaultValue("0") int page,
 			@QueryParam("size") @DefaultValue("10") int size) {
-		String safeQuery = (query == null) ? "" : query.trim();
-		return authService.searchUser(safeQuery, page, size);
+
+		return authService.searchUser(query, page, size);
 	}
 
 	// To lookup user by id, returning user info
 	@GET
 	@Path("/users/{id}")
-	// @PermitAll
 	public UserInfoDTO lookUpUser(@PathParam("id") long id) {
 		return authService.getUserInfo(id);
 	}
-
-	// @GET
-	// @Path("/public-key")
-	// public Response getPublicKey() {
-		// return Response.ok()
-			// .entity(authService.getPublicKey())
-			// .build();
-	// }
-
-	// In the future, I will add some @RoleAllowed(ADMIN) only functions for testing purposes
 }

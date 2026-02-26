@@ -15,6 +15,7 @@
         .status { padding: 5px 10px; border-radius: 4px; display: inline-block; margin: 5px; }
         .status.ok { background: #d4edda; color: #155724; }
         .status.err { background: #f8d7da; color: #721c24; }
+        #tokenDisplay { font-size: 0.8em; word-break: break-all; background: #fff3cd; padding: 8px; border-radius: 4px; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -22,13 +23,15 @@
 
     <div class="card">
         <h3>1. Login (OIDC)</h3>
+        <p>Click to login. You'll be redirected back here with your token.</p>
         <a href="/auth/login/google"><button type="button">Login with Google</button></a>
+        <div id="tokenDisplay">No token stored</div>
     </div>
 
     <div class="card">
-        <h3>2. Authenticated (OIDC Session Cookie)</h3>
-        <button onclick="call('GET', '/auth/me')">GET /auth/me</button>
-        <button onclick="call('POST', '/auth/logout')" class="delete">POST /auth/logout</button>
+        <h3>2. Authenticated Endpoints</h3>
+        <button onclick="authCall('GET', '/auth/me')">GET /auth/me</button>
+        <button onclick="authCall('POST', '/auth/logout')" class="delete">POST /auth/logout</button>
         <button onclick="confirmDelete()" class="delete">DELETE /auth/delete</button>
     </div>
 
@@ -43,9 +46,7 @@
 
     <div class="card">
         <h3>4. Refresh Token (Cookie-based)</h3>
-        <label>Session Cookie (paste if testing manually):</label>
-        <input type="text" id="sessionId" placeholder="auto-sent by browser">
-        <button onclick="call('POST', '/auth/refresh')">POST /auth/refresh</button>
+        <button onclick="refreshToken()">POST /auth/refresh</button>
     </div>
 
     <div class="card">
@@ -65,11 +66,48 @@
     </div>
 
     <script>
-        async function call(method, url, body) {
+        // ---- Token Storage ----
+        function getToken() {
+            return localStorage.getItem('accessToken');
+        }
+
+        function setToken(token) {
+            localStorage.setItem('accessToken', token);
+            document.getElementById('tokenDisplay').innerText = 'Token: ' + token.substring(0, 40) + '...';
+        }
+
+        function clearToken() {
+            localStorage.removeItem('accessToken');
+            document.getElementById('tokenDisplay').innerText = 'No token stored';
+        }
+
+        // ---- On page load: check if redirected back from login ----
+        window.addEventListener('DOMContentLoaded', function() {
+            // If the page content is a JSON login response (after OIDC redirect),
+            // the browser landed on /auth/login/google which returned JSON.
+            // Instead, we handle it via a popup/redirect callback approach.
+
+            // Restore token display if already stored
+            var existing = getToken();
+            if (existing) {
+                document.getElementById('tokenDisplay').innerText = 'Token: ' + existing.substring(0, 40) + '...';
+            }
+        });
+
+        // ---- Generic fetch with Bearer token ----
+        async function authCall(method, url, body) {
+            var token = getToken();
+            if (!token) {
+                document.getElementById('output').innerText = 'No access token. Please login or refresh first.';
+                return;
+            }
+
             var opts = {
                 method: method,
                 credentials: 'include',
-                headers: {}
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
             };
 
             if (body) {
@@ -79,6 +117,41 @@
 
             try {
                 var res = await fetch(url, opts);
+
+                // If 401, try auto-refresh
+                if (res.status === 401) {
+                    var refreshed = await doRefresh();
+                    if (refreshed) {
+                        // Retry with new token
+                        opts.headers['Authorization'] = 'Bearer ' + getToken();
+                        res = await fetch(url, opts);
+                    } else {
+                        document.getElementById('output').innerText = 'Token expired. Refresh failed. Please login again.';
+                        return;
+                    }
+                }
+
+                var text = await res.text();
+                var data;
+                try { data = JSON.parse(text); } catch(e) { data = text || '(empty response)'; }
+
+                // If logout, clear token
+                if (url.includes('/logout') || url.includes('/delete')) {
+                    clearToken();
+                }
+
+                document.getElementById('output').innerText =
+                    method + ' ' + url + '\nStatus: ' + res.status + '\n\n' +
+                    (typeof data === 'string' ? data : JSON.stringify(data, null, 2));
+            } catch (err) {
+                document.getElementById('output').innerText = 'Fetch error: ' + err.message;
+            }
+        }
+
+        // ---- Public fetch (no auth header) ----
+        async function publicCall(method, url) {
+            try {
+                var res = await fetch(url, { method: method });
                 var text = await res.text();
                 var data;
                 try { data = JSON.parse(text); } catch(e) { data = text || '(empty response)'; }
@@ -91,6 +164,72 @@
             }
         }
 
+        // ---- Refresh: uses session cookie to get a new access token ----
+        async function doRefresh() {
+            try {
+                var res = await fetch('/auth/refresh', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                if (res.ok) {
+                    var data = await res.json();
+                    if (data.accessToken) {
+                        setToken(data.accessToken);
+                        return true;
+                    }
+                }
+            } catch (e) {
+                console.error('Refresh failed', e);
+            }
+            return false;
+        }
+
+        async function refreshToken() {
+            var ok = await doRefresh();
+            if (ok) {
+                document.getElementById('output').innerText = 'Token refreshed successfully!\nNew token stored.';
+            } else {
+                document.getElementById('output').innerText = 'Refresh failed. Session may have expired. Please login again.';
+            }
+        }
+
+        // ---- Login via popup (captures the token from the redirect response) ----
+        document.querySelector('a[href="/auth/login/google"]').addEventListener('click', function(e) {
+            e.preventDefault();
+            var popup = window.open('/auth/login/google', 'login', 'width=500,height=600');
+
+            var interval = setInterval(function() {
+                try {
+                    if (popup.closed) {
+                        clearInterval(interval);
+                        return;
+                    }
+                    // Once redirected back to our origin, read the response
+                    if (popup.location.origin === window.location.origin) {
+                        var body = popup.document.body.innerText;
+                        try {
+                            var data = JSON.parse(body);
+                            if (data.accessToken) {
+                                setToken(data.accessToken);
+                                document.getElementById('output').innerText =
+                                    'Login successful!\n\n' + JSON.stringify(data, null, 2) +
+                                    '\nExpires: ' + data.expiresIn;
+                            } else {
+                                document.getElementById('output').innerText = 'Login response missing accessToken:\n' + body;
+                            }
+                        } catch (err) {
+                            document.getElementById('output').innerText = 'Login response:\n' + body;
+                        }
+                        popup.close();
+                        clearInterval(interval);
+                    }
+                } catch (err) {
+                    // Cross-origin — still on Google's page, keep waiting
+                }
+            }, 500);
+        });
+
+        // ---- Patch ----
         function patchMe() {
             var body = {};
             var username = document.getElementById('newUsername').value.trim();
@@ -101,26 +240,25 @@
                 alert('Enter at least one field to update');
                 return;
             }
-            call('PATCH', '/auth/me', body);
+            authCall('PATCH', '/auth/me', body);
         }
 
         function confirmDelete() {
             if (confirm('Are you sure? This will delete your account permanently.')) {
-                call('DELETE', '/auth/delete');
+                authCall('DELETE', '/auth/delete');
             }
         }
 
         function searchUsers() {
             var q = document.getElementById('searchQuery').value.trim();
-            call('GET', '/auth/users?q=' + encodeURIComponent(q));
+            publicCall('GET', '/auth/users?q=' + encodeURIComponent(q));
         }
 
         function lookupUser() {
             var id = document.getElementById('userId').value.trim();
             if (!id) { alert('Enter a user ID'); return; }
-            call('GET', '/auth/users/' + id);
+            publicCall('GET', '/auth/users/' + id);
         }
     </script>
 </body>
 </html>
-

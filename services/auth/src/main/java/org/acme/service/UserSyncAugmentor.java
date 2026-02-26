@@ -1,6 +1,7 @@
 package org.acme.service;
 
 import org.acme.model.User;
+import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.runtime.OidcUtils;
@@ -16,6 +17,8 @@ import jakarta.ws.rs.WebApplicationException;
 @ApplicationScoped
 public class UserSyncAugmentor implements SecurityIdentityAugmentor {
 
+	private static final Logger LOG = Logger.getLogger(UserSyncAugmentor.class);
+
 	@Inject
 	UserService userService;
 
@@ -25,30 +28,31 @@ public class UserSyncAugmentor implements SecurityIdentityAugmentor {
 		// 'context' allows us to run slow DB code safely
 
 		if (identity.isAnonymous()) {
-			System.out.println("Identity is anonymous, skipping augmentation");
+			LOG.debug("Identity is anonymous, skipping augmentation");
 			return Uni.createFrom().item(identity);
 		}
 
 		return context.runBlocking(() -> {
-			System.out.println("Hit the UserSyncAugmentor");
-			System.out.println("Identity principal: " + identity.getPrincipal().getName());
-            System.out.println("Identity attributes: " + identity.getAttributes().keySet());
+			LOG.debug("Augmenting identity for: " + identity.getPrincipal().getName());
 
 			UserInfo info = identity.getAttribute("userinfo");
 			String tenantId = identity.getAttribute(OidcUtils.TENANT_ID_ATTRIBUTE);
 
 			if (info == null || tenantId == null) {
 				if (info == null)
-					System.out.println("UserInfo is null in identity augmentor");
+					LOG.warn("UserInfo is null in identity augmentor");
 				if (tenantId == null)
-					System.out.println("TenantId is null in identity augmentor");
+					LOG.warn("TenantId is null in identity augmentor");
 				return identity;
 			}
 
 			User user = userService.syncUser(info, tenantId);
-			if (user == null)
+			if (user == null) {
+				LOG.error("Invalid provider: " + tenantId);
 				throw new WebApplicationException("Invalid provider", 401);
+			}
 
+			LOG.info("User synced successfully: " + user.email);
 			return QuarkusSecurityIdentity.builder(identity)
 					.addAttribute("user", user)
 					.addRole(user.role.name())

@@ -36,7 +36,7 @@ CREATE TABLE auth_service.users (
     full_name VARCHAR(100),
     avatar_url TEXT,
     bio TEXT,
-    
+         
     -- Security & Status
     role auth_service.user_role DEFAULT 'STUDENT',
     is_banned BOOLEAN DEFAULT FALSE,
@@ -46,11 +46,28 @@ CREATE TABLE auth_service.users (
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Sessions table for refresh tokens
+CREATE TABLE auth_service.sessions (
+    id Integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    session_id VARCHAR(255) UNIQUE NOT NULL,
+
+    user_id INTEGER NOT NULL REFERENCES auth_service.users(id) ON DELETE CASCADE,
+    
+    expires_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Trigger for Auth
 CREATE TRIGGER update_users_modtime 
 BEFORE UPDATE ON auth_service.users 
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Indexes for session management
+CREATE INDEX idx_sessions_user_id ON auth_service.sessions(user_id);
+CREATE INDEX idx_sessions_session_id ON auth_service.sessions(session_id);
+CREATE INDEX idx_sessions_expires_at ON auth_service.sessions(expires_at);
 
 -- =======================================================
 -- 2. FORUM SERVICE (Python/FastAPI)
