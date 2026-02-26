@@ -125,12 +125,13 @@ public class UserService {
             rawName = "user";
 
         String baseUsername = rawName.toLowerCase()
-            .replaceAll("[^a-z0-9]", "")
-            .substring(0, Math.min(rawName.length(), 20));
+            .replaceAll("[^a-z0-9]", "");
+
+		baseUsername = baseUsername.substring(0, Math.min(baseUsername.length(), 20));
 
         if (baseUsername.isEmpty())
             baseUsername = "user";
-        
+
         String username = baseUsername;
         int maxAttempts = 100;
         int attempt = 1;
