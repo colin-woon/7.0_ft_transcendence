@@ -4,7 +4,7 @@
 1. Make sure to copy the `environment/*.env.examples` into `environment/*.env`
 2. In case of changing desired host port, refer to `shared.env`
 3. Run `make <profile>` for desired setup, since we're using `docker-compose.override.yml`, you can check the final combined yaml file with `make config`
-4. Use `docker logs <container>` to debug if any lauching issues, currently hot reloading is enabled for code editing for all services containers:
+4. Use `docker logs <container>` to debug if any launching issues, currently hot reloading is enabled for code editing for all services containers:
    - **Auth/Chat** - Quarkus uses Lazy Reloading which happens when the next HTTP request hits the service.
    - **Forum** - Uvicorn will refresh on file save to any `.py` file
    - **Web** - Next.js updates the browser via WebSockets, code changes are instant (HMR)
@@ -14,7 +14,7 @@
    - **Web** - Next.js needs to restart dev server to detect changes in `package.json` especially if any dependencies uses binaries. So **ensure the container is down first with** `make down`, run `npm install <package>`, then relaunch the container with `make web`(The container bind mounts to the entire `services/web/` directory)
 
 ## Folders
-- `environments/` - configurable environments seperated by services (shared.env will be used by all services)
+- `environment/` - configurable environments seperated by services (shared.env will be used by all services)
 - `infra/` - configurable services (no custom code)
 - `services/` - custom services (code included)
 
@@ -27,7 +27,7 @@
 - `make auth` — start only the auth profile.
 - `make chat` — start only the chat profile.
 - `make forum` — start only the forum profile.
-- `make web` — start only the forum profile.
+- `make web` — start only the web profile.
 
 ### Stop services
 - `make down PROFILE=auth` — stop only containers for the auth profile.

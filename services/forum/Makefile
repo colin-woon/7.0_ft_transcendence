@@ -70,8 +70,6 @@ setup:
 		uv run python --version; \
 	fi
 
-# ...existing code...
-
 add:
 	$(call check_package,add)
 	@if [ -n "$$(docker ps -q -f name=$(SERVICE_NAME))" ]; then \
@@ -113,7 +111,7 @@ remove-dev:
 	fi
 
 list:
-		@if [ -n "$$(docker ps -q -f name=$(SERVICE_NAME))" ]; then \
+	@if [ -n "$$(docker ps -q -f name=$(SERVICE_NAME))" ]; then \
 		echo "🚀 Container detected. Running inside Docker..."; \
 		docker exec -it $(SERVICE_NAME) uv tree; \
 	else \
