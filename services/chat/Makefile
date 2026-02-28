@@ -31,10 +31,11 @@ build:
 
 setup:
 	curl -s "https://get.sdkman.io" | bash
-	sdk env install
-	sdk env
-	quarkus --version
-	java -version
+	@echo "-------------------------------------------------------"
+	@echo "SDKMAN installed. Open a new terminal, then run:"
+	@echo "  sdk env install && sdk env"
+	@echo "  quarkus --version && java -version"
+	@echo "-------------------------------------------------------"
 
 add: 
 	$(call check_package,add)
