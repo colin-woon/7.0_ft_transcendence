@@ -37,14 +37,14 @@ public class AuthResource {
 	//can choose to remove this later, currently for dev purpose
 	@GET
     @Path("/users")
-    public List<UserResponseDTO> listUsers() {
+    public List<UserResponseDTO> getAllUsers() {
         return authService.getAllUsers();
 	}
 
 	// retrieve comprehensive single user info, prolly use in profile
 	@GET
 	@Path("/userinfo/{userid}")
-	public UserResponseDTO listUserInfo(@PathParam("userid") long userid){
+	public UserResponseDTO getUserInfo(@PathParam("userid") long userid){
 		return authService.getUserInfo(userid);
 	}
 
