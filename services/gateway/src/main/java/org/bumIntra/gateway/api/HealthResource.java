@@ -1,4 +1,4 @@
-package org.bumIntra.gateway.health;
+package org.bumIntra.gateway.api;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;

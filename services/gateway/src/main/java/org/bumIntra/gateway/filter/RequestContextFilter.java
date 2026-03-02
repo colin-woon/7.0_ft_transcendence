@@ -10,7 +10,7 @@ import org.bumIntra.gateway.security.GatewayRequestContext;
 // import org.bumIntra.gateway.exception.AuthRequiredException;
 import org.bumIntra.gateway.obs.GatewayObserver;
 import org.bumIntra.gateway.obs.GatewayObserverDispatcher;
-import org.bumIntra.gateway.obs.GatewayRequestStart;
+import org.bumIntra.gateway.obs.event.GatewayRequestStart;
 import org.bumIntra.gateway.policy.GatewayPolicyEngine;
 
 import jakarta.annotation.Priority;

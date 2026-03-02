@@ -1,4 +1,4 @@
-package org.bumIntra.gateway.client.exec;
+package org.bumIntra.gateway.client;
 
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;

@@ -1,4 +1,4 @@
-package org.bumIntra.gateway.security.ratelimit;
+package org.bumIntra.gateway.ratelimit;
 
 import io.quarkus.redis.datasource.RedisDataSource;
 import jakarta.enterprise.context.ApplicationScoped;

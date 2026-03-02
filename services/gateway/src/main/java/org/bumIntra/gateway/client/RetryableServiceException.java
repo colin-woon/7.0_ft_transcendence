@@ -1,4 +1,4 @@
-package org.bumIntra.gateway.client.exec;
+package org.bumIntra.gateway.client;
 
 public class RetryableServiceException extends RuntimeException {
 	public RetryableServiceException(Throwable cause) {

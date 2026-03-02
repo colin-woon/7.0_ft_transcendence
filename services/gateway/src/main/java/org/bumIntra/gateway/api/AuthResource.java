@@ -16,7 +16,7 @@ import org.jboss.logging.Logger;
 // Temporary dummy testing, to be updated later
 
 @Path("/api/auth")
-public class AuthRoute {
+public class AuthResource {
 
 	@Inject
 	AuthService authService;

@@ -7,7 +7,7 @@ import java.util.Optional;
 import org.bumIntra.gateway.obs.GatewayObserver;
 import org.bumIntra.gateway.obs.GatewayObserverDispatcher;
 import org.bumIntra.gateway.obs.GatewayObserverLogging;
-import org.bumIntra.gateway.obs.GatewayRequestEnd;
+import org.bumIntra.gateway.obs.event.GatewayRequestEnd;
 import org.bumIntra.gateway.security.GatewayRequestContext;
 
 import jakarta.annotation.Priority;

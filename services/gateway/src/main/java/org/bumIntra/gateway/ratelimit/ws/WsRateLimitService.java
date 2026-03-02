@@ -1,7 +1,7 @@
-package org.bumIntra.gateway.websocket.ratelimit;
+package org.bumIntra.gateway.ratelimit.ws;
 
-import org.bumIntra.gateway.security.ratelimit.RateLimitProfile;
-import org.bumIntra.gateway.security.ratelimit.RateLimiter;
+import org.bumIntra.gateway.ratelimit.RateLimitProfile;
+import org.bumIntra.gateway.ratelimit.RateLimiter;
 
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;

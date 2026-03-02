@@ -8,11 +8,11 @@ import java.util.Optional;
 import org.bumIntra.gateway.client.AuthService;
 import org.bumIntra.gateway.client.dto.AuthResult;
 import org.bumIntra.gateway.obs.GatewayObserverDispatcher;
-import org.bumIntra.gateway.obs.GatewayWsAuth;
-import org.bumIntra.gateway.obs.GatewayWsClose;
-import org.bumIntra.gateway.obs.GatewayWsOpen;
-import org.bumIntra.gateway.obs.GatewayWsThrottle;
-import org.bumIntra.gateway.websocket.ratelimit.WsRateLimitService;
+import org.bumIntra.gateway.obs.event.GatewayWsAuth;
+import org.bumIntra.gateway.obs.event.GatewayWsClose;
+import org.bumIntra.gateway.obs.event.GatewayWsOpen;
+import org.bumIntra.gateway.obs.event.GatewayWsThrottle;
+import org.bumIntra.gateway.ratelimit.ws.WsRateLimitService;
 import org.jboss.logging.Logger;
 
 import jakarta.enterprise.context.ApplicationScoped;

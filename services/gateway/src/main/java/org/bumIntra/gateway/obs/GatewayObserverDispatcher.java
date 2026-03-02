@@ -1,5 +1,7 @@
 package org.bumIntra.gateway.obs;
 
+import org.bumIntra.gateway.obs.event.*;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Typed;

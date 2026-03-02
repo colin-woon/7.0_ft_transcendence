@@ -1,4 +1,4 @@
-package org.bumIntra.gateway.security.ratelimit;
+package org.bumIntra.gateway.ratelimit;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicReference;

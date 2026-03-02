@@ -1,5 +1,7 @@
 package org.bumIntra.gateway.obs;
 
+import org.bumIntra.gateway.obs.event.*;
+
 import java.time.Duration;
 import java.util.EnumMap;
 import java.util.Map;

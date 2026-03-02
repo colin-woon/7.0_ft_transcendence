@@ -1,4 +1,4 @@
-package org.bumIntra.gateway.security.ratelimit;
+package org.bumIntra.gateway.ratelimit;
 
 import java.time.Duration;
 import java.util.Map;

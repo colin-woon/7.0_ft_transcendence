@@ -1,4 +1,4 @@
-package org.bumIntra.gateway.filter;
+package org.bumIntra.gateway.client;
 
 import org.bumIntra.gateway.policy.GatewayPolicyEngine;
 import org.bumIntra.gateway.security.AuthLevel;

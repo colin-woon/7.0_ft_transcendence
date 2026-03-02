@@ -1,7 +1,7 @@
 package org.bumIntra.gateway.client;
 
 import org.bumIntra.gateway.client.dto.AuthResult;
-import org.bumIntra.gateway.client.exec.FaultToleranceServiceCallExecutor;
+import org.bumIntra.gateway.client.FaultToleranceServiceCallExecutor;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import jakarta.enterprise.context.ApplicationScoped;

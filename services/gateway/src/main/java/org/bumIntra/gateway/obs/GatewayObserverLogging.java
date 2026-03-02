@@ -1,5 +1,7 @@
 package org.bumIntra.gateway.obs;
 
+import org.bumIntra.gateway.obs.event.*;
+
 import org.jboss.logging.Logger;
 
 import jakarta.enterprise.context.ApplicationScoped;

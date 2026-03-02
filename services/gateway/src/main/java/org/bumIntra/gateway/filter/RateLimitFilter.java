@@ -4,12 +4,12 @@ import org.bumIntra.gateway.config.GatewayRateLimitConfig;
 import org.bumIntra.gateway.exception.GatewayErrorCode;
 import org.bumIntra.gateway.exception.RateLimitException;
 import org.bumIntra.gateway.security.GatewayRequestContext;
-import org.bumIntra.gateway.security.ratelimit.InMemTokenBucketRateLimiter;
-import org.bumIntra.gateway.security.ratelimit.RateLimitAccess;
-import org.bumIntra.gateway.security.ratelimit.RateLimitAccessResolver;
-import org.bumIntra.gateway.security.ratelimit.RateLimitProfile;
-import org.bumIntra.gateway.security.ratelimit.RateLimitProfiles;
-import org.bumIntra.gateway.security.ratelimit.RedisTokenBucketRateLimiter;
+import org.bumIntra.gateway.ratelimit.InMemTokenBucketRateLimiter;
+import org.bumIntra.gateway.ratelimit.RateLimitAccess;
+import org.bumIntra.gateway.ratelimit.RateLimitAccessResolver;
+import org.bumIntra.gateway.ratelimit.RateLimitProfile;
+import org.bumIntra.gateway.ratelimit.RateLimitProfiles;
+import org.bumIntra.gateway.ratelimit.RedisTokenBucketRateLimiter;
 
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;

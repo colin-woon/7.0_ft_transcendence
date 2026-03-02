@@ -1,8 +1,8 @@
 package org.bumIntra.gateway.test;
 
 import org.bumIntra.gateway.obs.GatewayObserver;
-import org.bumIntra.gateway.obs.GatewayRequestStart;
-import org.bumIntra.gateway.obs.GatewayRequestEnd;
+import org.bumIntra.gateway.obs.event.GatewayRequestStart;
+import org.bumIntra.gateway.obs.event.GatewayRequestEnd;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.concurrent.ConcurrentHashMap;

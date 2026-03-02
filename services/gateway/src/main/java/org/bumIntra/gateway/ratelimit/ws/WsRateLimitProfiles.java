@@ -1,8 +1,8 @@
-package org.bumIntra.gateway.websocket.ratelimit;
+package org.bumIntra.gateway.ratelimit.ws;
 
 import java.time.Duration;
 
-import org.bumIntra.gateway.security.ratelimit.RateLimitProfile;
+import org.bumIntra.gateway.ratelimit.RateLimitProfile;
 
 public final class WsRateLimitProfiles {
 

@@ -1,4 +1,4 @@
-package org.bumIntra.gateway.obs;
+package org.bumIntra.gateway.obs.event;
 
 import java.time.Duration;
 import java.util.Optional;
