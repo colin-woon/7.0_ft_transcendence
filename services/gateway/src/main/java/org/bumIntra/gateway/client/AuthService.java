@@ -35,4 +35,12 @@ public class AuthService {
 	public Response headers(@Context HttpHeaders headers) {
 		return ex.execute(() -> authClient.headers(headers));
 	}
+
+	public Response loginGoogle() {
+		return ex.execute(() -> authClient.loginGoogle());
+	}
+
+	public Response loginIntra() {
+		return ex.execute(() -> authClient.loginIntra());
+	}
 }

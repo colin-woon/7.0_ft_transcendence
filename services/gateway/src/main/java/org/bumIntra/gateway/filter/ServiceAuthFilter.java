@@ -37,6 +37,11 @@ public class ServiceAuthFilter implements ContainerRequestFilter {
 	@Override
 	public void filter(ContainerRequestContext request) {
 
+		String currPath = request.getUriInfo().getPath();
+		if (gac.publicPaths().stream().anyMatch(currPath::startsWith)) {
+			return;
+		}
+
 		if (!gac.required()) {
 			return;
 		}
@@ -49,8 +54,6 @@ public class ServiceAuthFilter implements ContainerRequestFilter {
 
 		grc.setAuth(authorizationHeader);
 
-		// AuthService.verify() uses FaultToleranceServiceCallExecutor internally
-		// Handles retries, circuit breaking, and error mapping automatically
 		AuthResult authResult = authService.verify(authorizationHeader);
 
 		if (authResult == null || authResult.sub() == null || authResult.sub().isBlank()) {
@@ -58,6 +61,7 @@ public class ServiceAuthFilter implements ContainerRequestFilter {
 					"Authorization token is invalid");
 		}
 
+		// TODO: Update with auth DTO when available, and set auth level accordingly
 		grc.setUserId(authResult.sub());
 		grc.setRoles(authResult.roles());
 		grc.setAuthLevel(AuthLevel.USER);

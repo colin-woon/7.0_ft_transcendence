@@ -34,4 +34,12 @@ public interface AuthClient {
 	@GET
 	@Path("/headers")
 	Response headers(@Context HttpHeaders headers);
+
+	@GET
+	@Path("/login/google")
+	Response loginGoogle();
+
+	@GET
+	@Path("/login/intra")
+	Response loginIntra();
 }

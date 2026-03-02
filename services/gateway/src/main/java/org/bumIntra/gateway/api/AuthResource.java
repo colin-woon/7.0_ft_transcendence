@@ -21,9 +21,9 @@ public class AuthResource {
 	@Inject
 	AuthService authService;
 
-	@Inject
-	@ConfigProperty(name = "services.auth.url")
-	String authServiceUrl;
+	// @Inject
+	// @ConfigProperty(name = "services.auth.url")
+	// String authServiceUrl;
 
 	@GET
 	@Path("/ping")
