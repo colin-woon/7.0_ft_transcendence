@@ -39,4 +39,12 @@ public class ChatResource {
         chatService.sendFriendRequest(reqId, addrId);
         return Response.status(201).build();
     }
+
+    @PATCH
+    @Path("/friends/{requesterId}/{addresseeId}/accept")
+    public Response acceptFriendRequest(@PathParam("requesterId") Integer reqId,
+                                        @PathParam("addresseeId") Integer addrId) {
+        chatService.acceptFriendRequest(reqId, addrId);
+        return Response.ok().build();
+    }
 }
