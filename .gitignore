@@ -1,3 +1,4 @@
 .quarkus/
 *.env
 !*.env.example
+.vscode/
