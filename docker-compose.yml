@@ -6,7 +6,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
     networks:
-      - app_net
+      - 42_overflow
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
@@ -23,7 +23,7 @@ services:
       db:
         condition: service_healthy
     networks:
-      - app_net
+      - 42_overflow
 
   chat_service:
     build:
@@ -35,7 +35,7 @@ services:
       db:
         condition: service_healthy
     networks:
-      - app_net
+      - 42_overflow
 
   forum_service:
     image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
@@ -45,7 +45,16 @@ services:
       db:
         condition: service_healthy
     networks:
-      - app_net
+      - 42_overflow
+  
+  web_service:
+    build:
+      context: .
+      dockerfile: services/web/Dockerfile
+    container_name: web_service
+    profiles: ["web", "all"]
+    networks:
+      - 42_overflow
     
   # add other services below here, example:
   # redis:
@@ -53,7 +62,7 @@ services:
   #   container_name: redis_cache
 
 networks:
-  app_net:
+  42_overflow:
     driver: bridge
 
 volumes:

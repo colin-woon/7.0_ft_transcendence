@@ -3,7 +3,7 @@ services:
     env_file:
       - ./environment/db.env
     ports:
-      - "5432:5432"
+      - "${DB_PORT}:5432"
     volumes:
       - ./infra/postgres/init-scripts:/docker-entrypoint-initdb.d
   
@@ -15,7 +15,7 @@ services:
     env_file:
       - ./environment/shared.env
     ports:
-      - "8002:8080"
+      - "${AUTH_PORT}:8080"
     volumes:
       - ./services/auth:/app
 
@@ -27,20 +27,35 @@ services:
     env_file:
       - ./environment/shared.env   
     ports:
-      - "8003:8080"
+      - "${CHAT_PORT}:8080"
     volumes:
       - ./services/chat:/app
 
   forum_service:
     working_dir: /app
     env_file:
-      - ./environment/shared.env   
+      - ./environment/shared.env
+      - ./environment/forum.env
     ports:
-      - "8000:8000"
+      - "${FORUM_PORT}:8000"
     volumes:
       - ./services/forum:/app
     # Note: 'uv run' will install dependencies on the fly in dev if they are in pyproject.toml
     command: uv run uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+
+  web_service:
+    build:
+      context: .
+      dockerfile: services/web/Dockerfile
+      target: development
+    ports:
+      - "${WEB_PORT}:3000"
+    volumes:
+      - ./services/web:/app
+    env_file:
+      - ./environment/shared.env
+      - ./environment/web.env
+
 
   # add other services below here, example:
   # redis:
