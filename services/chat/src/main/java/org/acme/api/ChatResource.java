@@ -17,18 +17,21 @@ public class ChatResource {
     @Inject
     ChatService chatService;
 
+	//send message
     @POST
     @Path("/messages")
     public MessageDTO sendMessage(MessageDTO msg) {
         return chatService.sendMessage(msg);
     }
 
+	//getting conversation history between 2 users
     @GET
     @Path("/history/{user1}/{user2}")
     public List<MessageDTO> getHistory(@PathParam("user1") Integer user1, @PathParam("user2") Integer user2) {
         return chatService.getConversation(user1, user2);
     }
 
+	//sending friend request
 	@POST
     @Path("/friends/{requesterId}/{addresseeId}")
     public Response addFriend(@PathParam("requesterId") Integer reqId, 

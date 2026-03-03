@@ -1,32 +1,47 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
+from typing import Optional, List
 from datetime import datetime
-from typing import Optional
 
-# --- Project Schemas ---
-class ProjectBase(BaseModel):
-    name: str
+# --- Projects ---
+class ProjectCreate(BaseModel):
     slug: str
+    name: str
     description: Optional[str] = None
 
-class ProjectCreate(ProjectBase):
-    pass
-
-class ProjectResponse(ProjectBase):
+class ProjectResponse(ProjectCreate):
     id: int
     created_at: datetime
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
-# --- ForumPost Schemas ---
-class ForumPostBase(BaseModel):
+# --- POSTS ---
+class PostCreate(BaseModel):
     title: str
     content: str
-    project_id: Optional[int] = None
 
-class ForumPostCreate(ForumPostBase):
-    author_id: int 
-
-class ForumPostResponse(ForumPostBase):
+class PostSummary(BaseModel):
     id: int
+    project_id: int
     author_id: int
+    title: str
+    view_count: int
     created_at: datetime
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
+
+class PostDetail(PostSummary):
+    content: str
+    
+# --- Comments ---
+class CommentCreate(BaseModel):
+    content: str
+
+class CommentResponse(BaseModel):
+    id: int
+    post_id: int 
+    author_id: int
+    content: str
+    is_best_answer: bool = False
+    created_at: datetime
+    class Config:
+        from_attributes = True
