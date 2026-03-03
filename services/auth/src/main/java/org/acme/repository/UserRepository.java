@@ -1,11 +1,14 @@
-// userrepository handles db queries with panache
-
 package org.acme.repository;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.acme.dto.UserSummaryDTO;
+import org.acme.model.User;
+import org.eclipse.jdt.annotation.NonNull;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.acme.model.User;
-import java.util.Optional;
 
 @ApplicationScoped
 public class UserRepository implements PanacheRepository<User> {
@@ -18,5 +21,25 @@ public class UserRepository implements PanacheRepository<User> {
 
     public Optional<User> findByUsername(String username) {
         return find("username", username).firstResultOptional();
+    }
+    
+    public Optional<User> findByFullName(String fullName) {
+        return find("fullName", fullName).firstResultOptional();
+    }
+
+    public Optional<User> findByGoogleId(String googleId) {
+        return find("googleId", googleId).firstResultOptional();
+    }
+    
+    public Optional<User> findByIntraId(String intraId) {
+        return find("intraId", intraId).firstResultOptional();
+    }
+
+    public List<@NonNull UserSummaryDTO> searchByName(String query, int pageIndex, int pageSize) {
+        return find("LOWER(username) LIKE ?1 OR LOWER(fullName) LIKE ?1", 
+                    "%" + query.toLowerCase() + "%")
+                .project(UserSummaryDTO.class)
+                .page(pageIndex, pageSize)
+                .list();
     }
 }
