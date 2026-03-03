@@ -66,14 +66,14 @@ up-d-gateway:
 
 build-gw-auth:
 	$(call log, Building gw-auth (mvn clean package)...)
-	@cd services/dummy/gw_auth && ./mvnw clean package -DskipTests
+	@cd gw-test/dummy/gw_auth && ./mvnw clean package -DskipTests
 	$(call log, Building gw-auth Docker image...)
 	@docker compose -f docker-compose.gw.yml build gw-auth-service
 	$(call ok, gw-auth built)
 
 rebuild-gw-auth:
 	$(call log, Rebuilding gw-auth (mvn clean package)...)
-	@cd services/dummy/gw_auth && ./mvnw clean package -DskipTests
+	@cd gw-test/dummy/gw_auth && ./mvnw clean package -DskipTests
 	$(call log, Rebuilding gw-auth Docker image (no-cache)...)
 	@docker compose -f docker-compose.gw.yml build --no-cache gw-auth-service
 	$(call log, Restarting gw-auth-service...)
@@ -175,7 +175,7 @@ up:
 	$(call log, Building gateway (mvn package)...)
 	@cd services/gateway && ./mvnw package -DskipTests
 	$(call log, Building gw-auth (mvn package)...)
-	@cd services/dummy/gw_auth && ./mvnw package -DskipTests
+	@cd gw-test/dummy/gw_auth && ./mvnw package -DskipTests
 	$(call log, Starting all services...)
 	@docker compose -f docker-compose.gw.yml up --build
 
@@ -183,7 +183,7 @@ up-d:
 	$(call log, Building gateway (mvn package)...)
 	@cd services/gateway && ./mvnw package -DskipTests
 	$(call log, Building gw-auth (mvn package)...)
-	@cd services/dummy/gw_auth && ./mvnw package -DskipTests
+	@cd gw-test/dummy/gw_auth && ./mvnw package -DskipTests
 	$(call log, Starting all services (detached)...)
 	@docker compose -f docker-compose.gw.yml up --build -d
 	$(call ok, All services started)

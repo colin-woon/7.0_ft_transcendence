@@ -44,9 +44,10 @@ Thumbs.db
 *.iml
 
 # === Vicky Misc ===
-testfe/
+# testfe/
 certs/
-services/dummy/
+# services/dummy/
+gw-test/
 .quarkus/
 *.env
 !*.env.example

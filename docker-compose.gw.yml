@@ -37,7 +37,7 @@ services:
         # profiles:
         #     - dummy
         build:
-            context: ./services/dummy/gw_auth
+            context: ./gw-test/dummy/gw_auth
             dockerfile: ./src/main/docker/Dockerfile.jvm
         container_name: gw-auth-service
         # ports:
@@ -111,7 +111,7 @@ services:
         # profiles:
         #     - dummy
         build:
-            context: ./testfe
+            context: ./gw-test/testfe
             dockerfile: Dockerfile
         container_name: testfe-service
         # ports:
