@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from typing import List
+from sqlalchemy.exc import IntegrityError
 
 from src import models, schemas
 
@@ -10,12 +11,13 @@ def get_all_projects(db: Session) -> List[models.Project]:
     return db.query(models.Project).all()
 
 def create_project(db: Session, data: schemas.ProjectCreate) -> models.Project:
-    if db.query(models.Project).filter(models.Project.slug == data.slug).first():
-        raise HTTPException(status_code=400, detail="Project slug already exists")
-    
     new_project = models.Project(**data.model_dump())
     db.add(new_project)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Project slug already exists")
     db.refresh(new_project)
     return new_project
 

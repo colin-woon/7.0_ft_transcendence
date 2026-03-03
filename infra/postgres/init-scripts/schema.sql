@@ -70,7 +70,7 @@ CREATE TABLE forum_service.projects (
 -- Forum posts (Top level discussions)
 CREATE TABLE forum_service.forum_posts (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    project_id INTEGER REFERENCES forum_service.projects(id),
+    project_id INTEGER REFERENCES forum_service.projects(id) ON DELETE SET NULL,
     author_id INTEGER NOT NULL, -- LOOSE REFERENCE to auth_service.users(id)
     
     title VARCHAR(255) NOT NULL,
