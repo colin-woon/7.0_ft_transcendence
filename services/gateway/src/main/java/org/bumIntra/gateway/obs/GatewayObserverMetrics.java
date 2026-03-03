@@ -114,6 +114,7 @@ public class GatewayObserverMetrics implements GatewayObserver {
 				.register(meterRegistry));
 	}
 
+	// TODO: move counter and builder into constructor
 	@Override
 	public void onRequestEnd(GatewayRequestEnd gre) {
 
