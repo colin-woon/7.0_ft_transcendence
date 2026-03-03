@@ -1,80 +1,66 @@
 import logging
 from typing import List
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, Depends, status
+from sqlalchemy.orm import Session
 from contextlib import asynccontextmanager
 
-from src.database import engine, Base
-from src.models import Project, ForumPost
-from src.base_service import BaseService
-from src.schemas import (
-    ProjectCreate, ProjectResponse, 
-    ForumPostCreate, ForumPostResponse
-)
+from src.database import engine, Base, get_db
+from src import schemas, logic
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("forum_service")
 
-# --- Service Layer ---
-
-class ProjectService(BaseService):
-    def get_all(self) -> List[Project]:
-        return self.execute_with_db(lambda db: db.query(Project).all())
-
-    def create(self, data: ProjectCreate) -> Project:
-        def action(db):
-            new_obj = Project(**data.model_dump())
-            db.add(new_obj)
-            db.commit()
-            db.refresh(new_obj)
-            return new_obj
-        return self.execute_with_db(action)
-
-class PostService(BaseService):
-    def get_by_project(self, proj_id: int) -> List[ForumPost]:
-        return self.execute_with_db(
-            lambda db: db.query(ForumPost).filter(ForumPost.project_id == proj_id).all()
-        )
-
-    def create(self, data: ForumPostCreate) -> ForumPost:
-        def action(db):
-            # Note: We no longer check if user exists in DB (because they are in a diff service)
-            # In a real app, you would verify the JWT token here to ensure author_id is valid.
-            new_post = ForumPost(**data.model_dump())
-            db.add(new_post)
-            db.commit()
-            db.refresh(new_post)
-            return new_post
-        return self.execute_with_db(action)
-
-project_svc = ProjectService()
-post_svc = PostService()
-
-# --- Lifespan ---
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Connecting to Forum Database...")
-    # This creates tables inside the 'forum_service' schema if they don't exist
+    # This will create tables (and ignore existing ones)
+    # Since you removed tables, you might need to DROP the old ones manually 
+    # or just delete the DB volume to be clean.
     Base.metadata.create_all(bind=engine)
     logger.info("✅ Forum Service is live.")
     yield
 
 app = FastAPI(title="Forum Service API", lifespan=lifespan)
 
-# --- API Routes ---
+# Mock User ID (Replace with real Auth later)
+def get_current_user_id():
+    return 1
 
-@app.get("/projects", response_model=List[ProjectResponse])
-def read_projects():
-    return project_svc.get_all()
+# --- ROUTES ---
 
-@app.post("/projects", response_model=ProjectResponse, status_code=201)
-def create_project(project: ProjectCreate):
-    return project_svc.create(project)
+@app.get("/projects", response_model=List[schemas.ProjectResponse])
+def list_projects(db: Session = Depends(get_db)):
+    return logic.get_all_projects(db)
 
-@app.post("/posts", response_model=ForumPostResponse, status_code=201)
-def create_post(post: ForumPostCreate):
-    return post_svc.create(post)
+@app.post("/projects", response_model=schemas.ProjectResponse, status_code=201)
+def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db)):
+    return logic.create_project(db, project)
 
-@app.get("/projects/{project_id}/posts", response_model=List[ForumPostResponse])
-def read_project_posts(project_id: int):
-    return post_svc.get_by_project(project_id)
+@app.get("/projects/{project_id}/posts", response_model=List[schemas.PostSummary])
+def list_project_posts(project_id: int, db: Session = Depends(get_db)):
+    return logic.get_posts_by_project(db, project_id)
+
+@app.post("/projects/{project_id}/posts", response_model=schemas.PostDetail, status_code=201)
+def create_post(
+    project_id: int, 
+    post: schemas.PostCreate, 
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    return logic.create_post(db, project_id, user_id, post)
+
+@app.get("/posts/{post_id}", response_model=schemas.PostDetail)
+def get_post(post_id: int, db: Session = Depends(get_db)):
+    return logic.get_post_detail(db, post_id)
+
+@app.get("/posts/{post_id}/comments", response_model=List[schemas.CommentResponse])
+def list_comments(post_id: int, db: Session = Depends(get_db)):
+    return logic.get_comments_by_post(db, post_id)
+
+@app.post("/posts/{post_id}/comments", response_model=schemas.CommentResponse, status_code=201)
+def create_comment(
+    post_id: int, 
+    comment: schemas.CommentCreate, 
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    return logic.create_comment(db, post_id, user_id, comment)

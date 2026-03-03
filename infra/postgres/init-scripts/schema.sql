@@ -36,7 +36,7 @@ CREATE TABLE auth_service.users (
     full_name VARCHAR(100),
     avatar_url TEXT,
     bio TEXT,
-    
+         
     -- Security & Status
     role auth_service.user_role DEFAULT 'STUDENT',
     is_banned BOOLEAN DEFAULT FALSE,
@@ -46,15 +46,32 @@ CREATE TABLE auth_service.users (
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Sessions table for refresh tokens
+CREATE TABLE auth_service.sessions (
+    id Integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    session_id VARCHAR(255) UNIQUE NOT NULL,
+
+    user_id INTEGER NOT NULL REFERENCES auth_service.users(id) ON DELETE CASCADE,
+    
+    expires_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Trigger for Auth
 CREATE TRIGGER update_users_modtime 
 BEFORE UPDATE ON auth_service.users 
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Indexes for session management
+CREATE INDEX idx_sessions_user_id ON auth_service.sessions(user_id);
+CREATE INDEX idx_sessions_session_id ON auth_service.sessions(session_id);
+CREATE INDEX idx_sessions_expires_at ON auth_service.sessions(expires_at);
 
 -- =======================================================
 -- 2. FORUM SERVICE (Python/FastAPI)
--- Responsible for: Projects, Threads, Comments, Votes
+-- Responsible for: Projects, Posts, Comments, Votes
 -- =======================================================
 
 -- List of 42 Projects (Static data, e.g., Libft, Minishell)
@@ -67,10 +84,10 @@ CREATE TABLE forum_service.projects (
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- Threads (Top level discussions)
-CREATE TABLE forum_service.threads (
+-- Forum posts (Top level discussions)
+CREATE TABLE forum_service.forum_posts (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    project_id INTEGER REFERENCES forum_service.projects(id),
+    project_id INTEGER REFERENCES forum_service.projects(id) ON DELETE SET NULL,
     author_id INTEGER NOT NULL, -- LOOSE REFERENCE to auth_service.users(id)
     
     title VARCHAR(255) NOT NULL,
@@ -81,10 +98,10 @@ CREATE TABLE forum_service.threads (
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- Comments (Replies to threads)
+-- Comments (Replies to posts)
 CREATE TABLE forum_service.comments (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    thread_id INTEGER REFERENCES forum_service.threads(id) ON DELETE CASCADE,
+    post_id INTEGER REFERENCES forum_service.forum_posts(id) ON DELETE CASCADE,
     author_id INTEGER NOT NULL, -- LOOSE REFERENCE to auth_service.users(id)
     
     content TEXT NOT NULL,
@@ -96,13 +113,13 @@ CREATE TABLE forum_service.comments (
 );
 
 -- Votes (Up/Down logic)
--- Using a single table for both threads and comments (Polymorphic-ish) 
+-- Using a single table for both posts and comments (Polymorphic-ish) 
 -- OR distinct tables. Distinct tables are safer in SQL.
-CREATE TABLE forum_service.thread_votes (
-    thread_id INTEGER REFERENCES forum_service.threads(id) ON DELETE CASCADE,
+CREATE TABLE forum_service.post_votes (
+    post_id INTEGER REFERENCES forum_service.forum_posts(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL,
     vote_value INTEGER CHECK (vote_value IN (1, -1)), -- +1 or -1
-    PRIMARY KEY (thread_id, user_id) -- User can only vote once per thread
+    PRIMARY KEY (post_id, user_id) -- User can only vote once per post
 );
 
 CREATE TABLE forum_service.comment_votes (
@@ -114,12 +131,12 @@ CREATE TABLE forum_service.comment_votes (
 
 -- Triggers for Forum
 CREATE TRIGGER update_projects_modtime BEFORE UPDATE ON forum_service.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_threads_modtime BEFORE UPDATE ON forum_service.threads FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_posts_modtime BEFORE UPDATE ON forum_service.forum_posts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_comments_modtime BEFORE UPDATE ON forum_service.comments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Indexes for Performance (Critical for forum lookups)
-CREATE INDEX idx_threads_project ON forum_service.threads(project_id);
-CREATE INDEX idx_comments_thread ON forum_service.comments(thread_id);
+CREATE INDEX idx_posts_project ON forum_service.forum_posts(project_id);
+CREATE INDEX idx_comments_post ON forum_service.comments(post_id);
 
 
 -- =======================================================
