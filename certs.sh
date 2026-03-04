@@ -10,7 +10,7 @@ SAN_AUTH="gw-auth-service"
 SAN_CHAT="chat-service"
 SAN_FORUM="forum-service"
 SAN_NGINX="nginx-proxy"
-SAN_FRONTEND="testfe-service"
+SAN_WEB="web-service"
 
 P12_PASS="bumintra"
 TRUSTSTORE_PASS="bumintra"
@@ -23,7 +23,7 @@ mkdir -p certs/runtime/auth
 mkdir -p certs/runtime/chat
 mkdir -p certs/runtime/forum
 mkdir -p certs/runtime/nginx
-mkdir -p certs/runtime/frontend
+mkdir -p certs/runtime/web
 
 # --- Generate CA ---
 if [ ! -f "certs/ca/ca.key" ] || [ "$ARG" = "cagenkey" ]; then
@@ -92,27 +92,27 @@ DNS.1 = ${SAN_NGINX}
 DNS.2 = localhost
 IP.1 = 127.0.0.1
 
-[ req_frontend ]
+[ req_web ]
 basicConstraints = critical, CA:FALSE
 keyUsage = critical, digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth, clientAuth
-subjectAltName = @frontend_san
+subjectAltName = @web_san
 
-[ frontend_san ]
-DNS.1 = ${SAN_FRONTEND}
+[ web_san ]
+DNS.1 = ${SAN_WEB}
 EOF
 	echo "✔ SAN config generated."
 fi
 
 # --- Generate service certificates (idempotent per artifact) ---
-for dir in gateway auth chat forum nginx frontend; do
+for dir in gateway auth chat forum nginx web; do
 	case "$dir" in
 	gateway) SVC_CN="$SAN_GATEWAY" ;;
 	auth) SVC_CN="$SAN_AUTH" ;;
 	chat) SVC_CN="$SAN_CHAT" ;;
 	forum) SVC_CN="$SAN_FORUM" ;;
 	nginx) SVC_CN="$SAN_NGINX" ;;
-	frontend) SVC_CN="$SAN_FRONTEND" ;;
+	web) SVC_CN="$SAN_WEB" ;;
 	esac
 
 	KEY="certs/runtime/${dir}/${dir}.key"
@@ -183,7 +183,7 @@ for dir in gateway auth chat forum nginx frontend; do
 	fi
 
 	# --- P12 keystore ---
-	if [[ $FORCE_P12 -eq 1 || ! -f "$P12" ]] && [[ "$dir" != 'nginx' ]] && [[ "$dir" != 'frontend' ]]; then
+	if [[ $FORCE_P12 -eq 1 || ! -f "$P12" ]] && [[ "$dir" != 'nginx' ]] && [[ "$dir" != 'web' ]]; then
 		echo "[$dir] generating PKCS12 keystore..."
 		openssl pkcs12 -export \
 			-inkey "$KEY" \
@@ -195,7 +195,7 @@ for dir in gateway auth chat forum nginx frontend; do
 		chmod 644 "$P12"
 	fi
 
-	if [[ "$dir" = 'nginx' ]] || [[ "$dir" = 'frontend' ]]; then
+	if [[ "$dir" = 'nginx' ]] || [[ "$dir" = 'web' ]]; then
 		echo "[$dir] OK: key/csr/crt present (no keystore for ${dir})"
 	else
 		echo "[$dir] OK: key/csr/crt/p12 present"
