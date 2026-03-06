@@ -22,12 +22,12 @@ services:
   chat_service:
     build:
       context: .
-      dockerfile: services/chat/src/main/docker/Dockerfile.custom
+      dockerfile: services/chat/Dockerfile
       target: development
     env_file:
       - ./environment/shared.env   
     ports:
-      - "${CHAT_PORT}:8080"
+      - "8081:8080"
     volumes:
       - ./services/chat:/app
 

@@ -12,7 +12,7 @@ RUN chmod +x mvnw && ./mvnw dependency:go-offline
 FROM base AS development
 # Compose will mount the 'src' folder here
 EXPOSE 8080 5005
-CMD ["./mvnw", "quarkus:dev", "-Dquarkus.http.host=0.0.0.0"]
+CMD ["./mvnw", "quarkus:dev", "-Dquarkus.http.host=0.0.0.0", "-DdebugHost=0.0.0.0"]
 
 # --- Stage 3.0: Intermediate Build ---
 FROM base AS builder

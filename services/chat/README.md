@@ -1,4 +1,4 @@
-# Project chat_go
+# Project chat
 
 One Paragraph of project description goes here
 

@@ -1,52 +1,64 @@
-package = 
-# $(1) is the command name for the error message
-define check_package
-	@if [ -z "$(package)" ]; then \
-		echo "-------------------------------------------------------"; \
-		echo "❌ ERROR: No package specified."; \
-		echo "Usage:   make $(1) package=<name>"; \
-		echo "Example: make $(1) package=hibernate-orm-panache"; \
-		echo "-------------------------------------------------------"; \
-		exit 1; \
-	fi
-endef
+# Simple Makefile for a Go project
 
-# Ensure commands run even if a file named 'dev' exists
-.PHONY: dev lint format build setup add remove list clean
-
-# Default command when you just type 'make'
-all: dev
-
-dev:
-	quarkus dev
-
-lint:
-	mvn spotless:check
-
-format:
-	mvn spotless:apply
+# Build the application
+all: build test
 
 build:
-	quarkus build
+	@echo "Building..."
+	
+	
+	@go build -o main cmd/api/main.go
 
-setup:
-	curl -s "https://get.sdkman.io" | bash
-	@echo "-------------------------------------------------------"
-	@echo "SDKMAN installed. Open a new terminal, then run:"
-	@echo "  sdk env install && sdk env"
-	@echo "  quarkus --version && java -version"
-	@echo "-------------------------------------------------------"
+# Run the application
+run:
+	@go run cmd/api/main.go
+# Create DB container
+docker-run:
+	@if docker compose up --build 2>/dev/null; then \
+		: ; \
+	else \
+		echo "Falling back to Docker Compose V1"; \
+		docker-compose up --build; \
+	fi
 
-add: 
-	$(call check_package,add)
-	quarkus ext add $(package)
+# Shutdown DB container
+docker-down:
+	@if docker compose down 2>/dev/null; then \
+		: ; \
+	else \
+		echo "Falling back to Docker Compose V1"; \
+		docker-compose down; \
+	fi
 
-remove:
-	$(call check_package,remove)
-	quarkus ext remove $(package)
+# Test the application
+test:
+	@echo "Testing..."
+	@go test ./... -v
+# Integrations Tests for the application
+itest:
+	@echo "Running integration tests..."
+	@go test ./internal/database -v
 
-list:
-	quarkus ext list
-
+# Clean the binary
 clean:
-	mvn clean
+	@echo "Cleaning..."
+	@rm -f main
+
+# Live Reload
+watch:
+	@if command -v air > /dev/null; then \
+            air; \
+            echo "Watching...";\
+        else \
+            read -p "Go's 'air' is not installed on your machine. Do you want to install it? [Y/n] " choice; \
+            if [ "$$choice" != "n" ] && [ "$$choice" != "N" ]; then \
+                go install github.com/air-verse/air@latest; \
+                air; \
+                echo "Watching...";\
+            else \
+                echo "You chose not to install air. Exiting..."; \
+                exit 1; \
+            fi; \
+        fi
+
+.PHONY: all build run test clean watch docker-run docker-down itest

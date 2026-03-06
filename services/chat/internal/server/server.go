@@ -3,8 +3,6 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"os"
-	"strconv"
 	"time"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -19,7 +17,7 @@ type Server struct {
 }
 
 func NewServer() *http.Server {
-	port, _ := strconv.Atoi(os.Getenv("PORT"))
+	port := 8080
 	NewServer := &Server{
 		port: port,
 

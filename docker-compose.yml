@@ -28,7 +28,7 @@ services:
   chat_service:
     build:
       context: .
-      dockerfile: services/chat/src/main/docker/Dockerfile.custom
+      dockerfile: services/chat/Dockerfile
     container_name: chat_service
     profiles: ["chat", "all"]
     depends_on:
