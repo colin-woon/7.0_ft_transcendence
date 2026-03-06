@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"chat_go/internal/server"
+	"app/internal/server"
 )
 
 func gracefulShutdown(apiServer *http.Server, done chan bool) {
