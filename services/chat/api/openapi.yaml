@@ -1,0 +1,48 @@
+openapi: 3.0.4
+info:
+  title: Chat Service API
+  version: 1.0.0
+  description: API for managing messages and friendships
+
+paths:
+  /friendship/{requesterId}/{receiverId}:
+    post:
+      summary: Send a friend request
+      parameters:
+        - name: requesterId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: receiverId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Friend request sent successfully
+        "400":
+          description: Invalid user IDs
+        "404":
+          description: User not found
+
+  /friendship/{requesterId}/{receiverId}/accept:
+    patch:
+      summary: Accept a friend request
+      parameters:
+        - name: requesterId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: receiverId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Friend request accepted successfully
+        "404":
+          description: Request not found

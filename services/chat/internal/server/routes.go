@@ -1,6 +1,7 @@
 package server
 
 import (
+	"app/internal/api"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -8,84 +9,81 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
+
 	"github.com/coder/websocket"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
-	mux := http.NewServeMux()
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
 
-	// Register routes
-	mux.HandleFunc("/", s.HelloWorldHandler)
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
 
-	mux.HandleFunc("/health", s.healthHandler)
+	api.HandlerFromMux(s, r)
 
-	mux.HandleFunc("/websocket", s.websocketHandler)
-
-	// Wrap the mux with CORS middleware
-	return s.corsMiddleware(mux)
-}
-
-func (s *Server) corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Set CORS headers
-		w.Header().Set("Access-Control-Allow-Origin", "*") // Replace "*" with specific origins if needed
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-		w.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
-		w.Header().Set("Access-Control-Allow-Credentials", "false") // Set to "true" if credentials are required
-
-		// Handle preflight OPTIONS requests
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-
-		// Proceed with the next handler
-		next.ServeHTTP(w, r)
+	r.Get("/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./api/openapi.yaml")
 	})
+
+	fileServer := http.FileServer(http.Dir("./api/dist"))
+	r.Handle("/docs/*", http.StripPrefix("/docs/", fileServer))
+
+	r.Get("/", s.HelloWorldHandler)
+
+	r.Get("/health", s.healthHandler)
+
+	r.Get("/websocket", s.websocketHandler)
+
+	return r
 }
 
 func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
-	resp := map[string]string{"message": "Hello World"}
+	resp := make(map[string]string)
+	resp["message"] = "Hello World"
+
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
-		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
-		return
+		log.Fatalf("error handling JSON marshal. Err: %v", err)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	if _, err := w.Write(jsonResp); err != nil {
-		log.Printf("Failed to write response: %v", err)
-	}
+
+	_, _ = w.Write(jsonResp)
 }
 
 func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
-	resp, err := json.Marshal(s.db.Health())
-	if err != nil {
-		http.Error(w, "Failed to marshal health check response", http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	if _, err := w.Write(resp); err != nil {
-		log.Printf("Failed to write response: %v", err)
-	}
+	jsonResp, _ := json.Marshal(s.db.Health())
+	_, _ = w.Write(jsonResp)
 }
 
 func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
 	socket, err := websocket.Accept(w, r, nil)
+
 	if err != nil {
-		http.Error(w, "Failed to open websocket", http.StatusInternalServerError)
+		log.Printf("could not open websocket: %v", err)
+		_, _ = w.Write([]byte("could not open websocket"))
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	defer socket.Close(websocket.StatusGoingAway, "Server closing websocket")
+
+	defer socket.Close(websocket.StatusGoingAway, "server closing websocket")
 
 	ctx := r.Context()
 	socketCtx := socket.CloseRead(ctx)
 
 	for {
 		payload := fmt.Sprintf("server timestamp: %d", time.Now().UnixNano())
-		if err := socket.Write(socketCtx, websocket.MessageText, []byte(payload)); err != nil {
-			log.Printf("Failed to write to socket: %v", err)
+		err := socket.Write(socketCtx, websocket.MessageText, []byte(payload))
+		if err != nil {
 			break
 		}
-		time.Sleep(2 * time.Second)
+		time.Sleep(time.Second * 2)
 	}
 }

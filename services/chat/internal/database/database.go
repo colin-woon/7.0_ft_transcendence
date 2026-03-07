@@ -22,10 +22,14 @@ type Service interface {
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
 	Close() error
+
+	CreateFriendship(ctx context.Context, arg CreateFriendshipParams) (ChatServiceFriendship, error)
+	UpdateFriendshipStatus(ctx context.Context, arg UpdateFriendshipStatusParams) error
 }
 
 type service struct {
 	db *sql.DB
+	*Queries
 }
 
 var (
@@ -38,7 +42,7 @@ var (
 	dbInstance *service
 )
 
-func New() Service {
+func NewConnection() Service {
 	// Reuse Connection
 	if dbInstance != nil {
 		return dbInstance

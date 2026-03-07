@@ -61,3 +61,4 @@ gw-test/
 *.dll
 *.so
 *.dylib
+tmp/
