@@ -15,26 +15,27 @@ services:
         volumes:
             - ./services/auth:/app
 
-    chat-service:
-        build:
-            target: development
-        env_file:
-            - ./environment/shared.env
-        ports:
-            - '${CHAT_PORT}:8080'
-        volumes:
-            - ./services/chat:/app
+    # chat-service:
+    #     build:
+    #         target: development
+    #     env_file:
+    #         - ./environment/shared.env
+    #     ports:
+    #         - '${CHAT_PORT}:8080'
+    #     volumes:
+    #         - ./services/chat:/app
 
     forum-service:
+        build:
+            target: development
+        working_dir: /app
         env_file:
             - ./environment/shared.env
             - ./environment/forum.env
         ports:
-            - '${FORUM_PORT}:8000'
+            - '${FORUM_PORT}:8080'
         volumes:
             - ./services/forum:/app
-        # uv installs dependencies on the fly from pyproject.toml
-        command: uv run uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 
     web-service:
         build:
@@ -52,3 +53,23 @@ services:
             - MTLS_CRT_PATH=
             - MTLS_CA_PATH=
             - NODE_EXTRA_CA_CERTS=
+
+    gateway-service:
+        build:
+            context: .
+            dockerfile: services/gateway/src/main/docker/Dockerfile.custom
+            target: development
+        ports:
+            - '${GATEWAY_PORT:-8001}:8080'
+            - '${GATEWAY_MGMT_PORT:-8180}:8180'
+        volumes:
+            - ./services/gateway:/app
+        depends_on:
+            auth-service:
+                condition: service_healthy
+                required: false
+            web-service:
+                condition: service_started
+                required: false
+            gw-redis-service:
+                condition: service_healthy

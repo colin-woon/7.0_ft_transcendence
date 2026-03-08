@@ -11,7 +11,7 @@ import io.smallrye.config.WithDefault;
 @ConfigMapping(prefix = "gateway.config.methods")
 public interface GatewayMethodConfig {
 
-	@WithDefault("GET, HEAD, POST, PUT, DELETE, PATCH")
+	@WithDefault("GET, POST, PUT, DELETE, PATCH")
 	Set<String> allowedMethods();
 
 	default Set<String> allowedMethodsUpper() {

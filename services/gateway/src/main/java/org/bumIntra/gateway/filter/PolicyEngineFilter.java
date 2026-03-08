@@ -23,6 +23,6 @@ public class PolicyEngineFilter implements ContainerRequestFilter {
 	@Override
 	public void filter(ContainerRequestContext request) {
 
-		policyEngine.enforce(grc);
+		policyEngine.enforce(grc, request);
 	}
 }

@@ -21,6 +21,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Forum Service API", lifespan=lifespan)
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 # Mock User ID (Replace with real Auth later)
 def get_current_user_id():
     return 1

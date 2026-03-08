@@ -36,6 +36,8 @@ services:
             timeout: 5s
             start_period: 30s
             retries: 3
+        env_file:
+            - ./environment/shared.env
         volumes:
             - ./certs/runtime/auth/auth-keystore.p12:/certs/auth-keystore.p12:ro
             - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
@@ -51,22 +53,56 @@ services:
     #             condition: service_healthy
     #     networks:
     #         - 42_overflow
+    #     env_file:
+    #         - ./environment/shared.env
+    #         - ./environment/chat.env
     #     volumes:
     #         - ./certs/runtime/chat/chat-keystore.p12:/certs/chat-keystore.p12:ro
     #         - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
 
     forum-service:
-        image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+        build:
+            context: ./services/forum
+            dockerfile: Dockerfile
+            target: production
         container_name: forum-service
+        working_dir: /app
         profiles: ['forum', 'all']
         depends_on:
             db-service:
                 condition: service_healthy
         networks:
             - 42_overflow
+        env_file:
+            - ./environment/shared.env
+            - ./environment/forum.env
+        healthcheck:
+            test: ['CMD', 'curl', '-fk', 'https://localhost:8443/health']
+            interval: 10s
+            timeout: 5s
+            start_period: 20s
+            retries: 3
+        command:
+            - uv
+            - run
+            - uvicorn
+            - src.main:app
+            - --host
+            - '0.0.0.0'
+            - --port
+            - '8443'
+            - --ssl-keyfile
+            - /certs/forum.key
+            - --ssl-certfile
+            - /certs/forum.crt
+            - --ssl-ca-certs
+            - /certs/internal-ca.crt
+            - --ssl-cert-reqs
+            - '2'
         volumes:
-            - ./certs/runtime/forum/forum-keystore.p12:/certs/forum-keystore.p12:ro
-            - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
+            - ./certs/runtime/forum/forum.key:/certs/forum.key:ro
+            - ./certs/runtime/forum/forum.crt:/certs/forum.crt:ro
+            - ./certs/ca/ca.crt:/certs/internal-ca.crt:ro
 
     web-service:
         build:
@@ -76,23 +112,18 @@ services:
         profiles: ['web', 'all']
         networks:
             - 42_overflow
+        env_file:
+            - ./environment/web.env
         volumes:
             - ./certs/runtime/web/web.crt:/certs/web.crt:ro
             - ./certs/runtime/web/web.key:/certs/web.key:ro
             - ./certs/ca/ca.crt:/certs/internal-ca.crt:ro
-        environment:
-            - PORT=3000
-            - GATEWAY_URL=https://gateway-service:8443
-            - MTLS_KEY_PATH=/certs/web.key
-            - MTLS_CRT_PATH=/certs/web.crt
-            - MTLS_CA_PATH=/certs/internal-ca.crt
-            # Trust internal CA globally — makes Node's native fetch verify internal certs
-            - NODE_EXTRA_CA_CERTS=/certs/internal-ca.crt
 
     gateway-service:
         build:
-            context: ./services/gateway
-            dockerfile: ./src/main/docker/Dockerfile.jvm
+            context: .
+            dockerfile: services/gateway/src/main/docker/Dockerfile.custom
+            target: production
         container_name: gateway-service
         profiles: ['gateway', 'all']
         networks:
@@ -111,11 +142,14 @@ services:
                 condition: service_healthy
             web-service:
                 condition: service_started
-        environment:
-            # AUTH_SERVICE_URL: 'http://gw-auth-service:8080'
-            AUTH_SERVICE_URL: 'https://auth-service:8443'
-            GW_REDIS_URL: 'redis://gw-redis-service:6379'
-            # JAVA_TOOL_OPTIONS: '-Djavax.net.debug=ssl:handshake:verbose'
+        env_file:
+            - ./environment/shared.env
+            - ./environment/gateway.env
+        # environment:
+        # AUTH_SERVICE_URL: 'http://gw-auth-service:8080'
+        # AUTH_SERVICE_URL: 'https://auth-service:8443'
+        # GW_REDIS_URL: 'redis://gw-redis-service:6379'
+        # JAVA_TOOL_OPTIONS: '-Djavax.net.debug=ssl:handshake:verbose'
         volumes:
             - ./certs/runtime/gateway/gateway-keystore.p12:/certs/gateway-keystore.p12:ro
             - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
@@ -146,7 +180,7 @@ services:
             context: ./infra/redis/gateway-redis
             dockerfile: Dockerfile
         container_name: gw-redis-service
-        profiles: ['gw-redis', 'all']
+        profiles: ['gw-redis', 'gateway', 'all']
         # ports:
         #   - '6379:6379'
         networks:

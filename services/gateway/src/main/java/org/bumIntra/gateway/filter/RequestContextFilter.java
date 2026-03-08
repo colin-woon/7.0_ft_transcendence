@@ -27,10 +27,7 @@ import jakarta.ws.rs.ext.Provider;
 public class RequestContextFilter implements ContainerRequestFilter {
 
 	@Inject
-	GatewayRequestContext ctx;
-
-	// @Inject
-	// GatewayPolicyEngine policyEngine;
+	GatewayRequestContext grc;
 
 	@Inject
 	GatewayObserverDispatcher obs;
@@ -38,7 +35,8 @@ public class RequestContextFilter implements ContainerRequestFilter {
 	@Override
 	public void filter(ContainerRequestContext request) {
 
-		ctx.clearError();
+		// TODO: update the X- headers to be something unique to our gateway
+		grc.clearError();
 
 		String requestId = request.getHeaderString("X-Request-Id");
 
@@ -46,21 +44,23 @@ public class RequestContextFilter implements ContainerRequestFilter {
 			requestId = UUID.randomUUID().toString();
 		}
 
-		ctx.setRequestId(requestId);
+		grc.setRequestId(requestId);
+		grc.setPath(request.getUriInfo().getPath());
 
 		// MDC - Mapped Diagnostic Context for logging
 		MDC.put("requestId", requestId);
 
-		ctx.setAuth(request.getHeaderString("Authorization"));
-
-		// RateLimitAccess
-		String clientIp = request.getHeaderString("X-Forwarded-For");
+		// RateLimitAccess TODO: to be review later
+		String clientIp = request.getHeaderString("X-Intra-Real-Ip");
 		if (clientIp == null || clientIp.isBlank()) {
-			clientIp = request.getHeaderString("Remote-Addr");
+			clientIp = request.getHeaderString("X-Intra-Forwarded-For");
 		}
-		ctx.setClientIp(clientIp);
 
-		ctx.setInternal("true".equalsIgnoreCase(request.getHeaderString("X-Internal-Request")));
+		if (clientIp != null && !clientIp.isBlank()) {
+			grc.setClientIp(clientIp);
+		} else {
+			grc.setInternal(true);
+		}
 
 		// Obs Hook start
 		Instant st = Instant.now();
@@ -80,7 +80,5 @@ public class RequestContextFilter implements ContainerRequestFilter {
 
 		request.setProperty("gw.start", st);
 
-		// Enforce policies
-		// policyEngine.enforce(ctx);
 	}
 }

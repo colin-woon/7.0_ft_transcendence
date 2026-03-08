@@ -8,6 +8,7 @@ import org.bumIntra.gateway.security.GatewayRequestContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.container.ContainerRequestContext;
 
 @ApplicationScoped
 public class GatewayPolicyEngine {
@@ -24,9 +25,10 @@ public class GatewayPolicyEngine {
 		}
 	}
 
-	public void enforce(GatewayRequestContext ctx) {
+	public void enforce(GatewayRequestContext ctx, ContainerRequestContext request) {
 		for (var policy : _policies) {
-			policy.evaluate(ctx);
+			policy.evaluate(ctx, request);
+
 		}
 	}
 }

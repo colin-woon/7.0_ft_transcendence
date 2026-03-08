@@ -1,13 +1,16 @@
 package org.bumIntra.gateway.security;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import jakarta.enterprise.context.RequestScoped;
 
 @RequestScoped
 public class GatewayRequestContext {
 
+	// RequestContextFilter
 	private String _auth;
 	private String _requestId;
 	private String _errorCode;
@@ -15,8 +18,15 @@ public class GatewayRequestContext {
 	private String _clientIp;
 	private boolean _internal;
 	private String _userId;
-	private List<String> _roles;
+	private String _path;
+
+	// ServiceAuthFilter
+	private Set<String> _roles = Collections.emptySet();
 	private AuthLevel _authLevel = AuthLevel.GUEST;
+	private boolean _isPublic;
+
+	// Policy
+	boolean _policyPass;
 
 	public String getAuth() {
 		return _auth;
@@ -87,11 +97,11 @@ public class GatewayRequestContext {
 		_userId = userId;
 	}
 
-	public Optional<List<String>> getRoles() {
-		return Optional.ofNullable(_roles);
+	public Set<String> getRoles() {
+		return _roles;
 	}
 
-	public void setRoles(List<String> roles) {
+	public void setRoles(Set<String> roles) {
 		_roles = roles;
 	}
 
@@ -101,5 +111,25 @@ public class GatewayRequestContext {
 
 	public AuthLevel getAuthLevel() {
 		return _authLevel;
+	}
+
+	public boolean isPublic() {
+		return _isPublic;
+	}
+
+	public void setPublic(boolean isPublic) {
+		_isPublic = isPublic;
+	}
+
+	public String getPath() {
+		return _path;
+	}
+
+	public void setPath(String path) {
+		_path = path.trim().toLowerCase().replaceAll("/+", "/");
+	}
+
+	public boolean policyPass() {
+		return _policyPass;
 	}
 }

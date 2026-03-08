@@ -22,6 +22,7 @@ public class ServiceRequestContextFilter implements ClientRequestFilter {
 	// @Inject
 	// GatewayPolicyEngine policyEngine;
 
+	// TODO: need an audit for this class after refactor
 	@Override
 	public void filter(ClientRequestContext request) {
 		String authHeader = ctx.getAuth();
@@ -43,9 +44,11 @@ public class ServiceRequestContextFilter implements ClientRequestFilter {
 				request.getHeaders().putSingle(IdentityHeaders.X_USER_ID, userId);
 			});
 
-			ctx.getRoles().ifPresent(roles -> {
+			// TODO: to be upgraded to support services roles checks
+			var roles = ctx.getRoles();
+			if (!roles.isEmpty()) {
 				request.getHeaders().putSingle(IdentityHeaders.X_USER_ROLES, String.join(",", roles));
-			});
+			}
 		}
 
 		// service identity with mTLS

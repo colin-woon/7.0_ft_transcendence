@@ -6,7 +6,7 @@ ARG="${1:-}"
 CN="ca.bumintra.org"
 
 SAN_GATEWAY="gateway-service"
-SAN_AUTH="gw-auth-service"
+SAN_AUTH="auth-service"
 SAN_CHAT="chat-service"
 SAN_FORUM="forum-service"
 SAN_NGINX="nginx-proxy"
@@ -183,7 +183,7 @@ for dir in gateway auth chat forum nginx web; do
 	fi
 
 	# --- P12 keystore ---
-	if [[ $FORCE_P12 -eq 1 || ! -f "$P12" ]] && [[ "$dir" != 'nginx' ]] && [[ "$dir" != 'web' ]]; then
+	if [[ $FORCE_P12 -eq 1 || ! -f "$P12" ]] && [[ "$dir" != 'nginx' ]] && [[ "$dir" != 'web' ]] && [[ "$dir" != 'forum' ]]; then
 		echo "[$dir] generating PKCS12 keystore..."
 		openssl pkcs12 -export \
 			-inkey "$KEY" \
@@ -195,7 +195,7 @@ for dir in gateway auth chat forum nginx web; do
 		chmod 644 "$P12"
 	fi
 
-	if [[ "$dir" = 'nginx' ]] || [[ "$dir" = 'web' ]]; then
+	if [[ "$dir" = 'nginx' ]] || [[ "$dir" = 'web' ]] || [[ "$dir" = 'forum' ]]; then
 		echo "[$dir] OK: key/csr/crt present (no keystore for ${dir})"
 	else
 		echo "[$dir] OK: key/csr/crt/p12 present"
