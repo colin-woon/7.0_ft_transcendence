@@ -22,6 +22,7 @@ func (s *Server) PostFriendshipRequesterIdReceiverId(w http.ResponseWriter, r *h
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (s *Server) PatchFriendshipRequesterIdReceiverIdAccept(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int) {

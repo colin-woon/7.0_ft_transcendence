@@ -16,7 +16,7 @@ type Server struct {
 	db database.Service
 }
 
-func NewServer() *http.Server {
+func NewServer() (*http.Server, func()) {
 	port := 8080
 	NewServer := &Server{
 		port: port,
@@ -33,5 +33,10 @@ func NewServer() *http.Server {
 		WriteTimeout: 30 * time.Second,
 	}
 
-	return server
+	cleanup := func() {
+		if err := NewServer.db.Close(); err != nil {
+			fmt.Printf("Error closing database connection: %v\n", err)
+		}
+	}
+	return server, cleanup
 }

@@ -39,7 +39,7 @@ var (
 	username   = os.Getenv("DB_USER")
 	port       = os.Getenv("DB_PORT")
 	host       = os.Getenv("DB_HOST")
-	schema     = os.Getenv("")
+	schema     = os.Getenv("DB_SCHEMA")
 	dbInstance *service
 )
 
@@ -56,7 +56,7 @@ func NewConnection() Service {
 	if err != nil {
 		log.Fatal("DB connection error: ", err)
 	}
-	defer pool.Close()
+	// defer pool.Close()
 
 	if err := pool.Ping(ctx); err != nil {
 		log.Fatal("DB ping failed: ", err)
