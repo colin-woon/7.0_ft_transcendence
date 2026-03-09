@@ -26,6 +26,7 @@ type Service interface {
 
 	CreateFriendship(ctx context.Context, arg CreateFriendshipParams) (ChatServiceFriendship, error)
 	UpdateFriendshipStatus(ctx context.Context, arg UpdateFriendshipStatusParams) error
+	SendMessage(ctx context.Context, arg SendMessageParams) (ChatServiceMessage, error)
 }
 
 type service struct {

@@ -2,7 +2,9 @@ version: "2"
 servers: []
 sql:
   - engine: "postgresql"
-    queries: "sql/friendship_queries.sql"
+    queries:
+      - "sql/friendship_queries.sql"
+      - "sql/message_queries.sql"
     schema: "sql/schema.sql"
     gen:
       go:

@@ -46,3 +46,34 @@ paths:
           description: Friend request accepted successfully
         "404":
           description: Request not found
+
+  /message/{senderId}/{receiverId}:
+    post:
+      summary: Send a message
+      parameters:
+        - name: senderId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: receiverId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  minLength: 1
+      responses:
+        "201":
+          description: Message sent successfully
+        "400":
+          description: Invalid user IDs or message content
