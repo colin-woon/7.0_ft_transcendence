@@ -9,8 +9,9 @@ import (
 	"strconv"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
-	_ "github.com/joho/godotenv/autoload"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
+	// "github.com/joho/godotenv/autoload"
 )
 
 // Service represents a service that interacts with a database.
@@ -47,13 +48,25 @@ func NewConnection() Service {
 	if dbInstance != nil {
 		return dbInstance
 	}
+
+	ctx := context.Background()
+
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&search_path=%s", username, password, host, port, database, schema)
-	db, err := sql.Open("pgx", connStr)
+	pool, err := pgxpool.New(ctx, connStr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("DB connection error: ", err)
 	}
+	defer pool.Close()
+
+	if err := pool.Ping(ctx); err != nil {
+		log.Fatal("DB ping failed: ", err)
+	}
+
+	sqlcQueries := New(pool)
+
 	dbInstance = &service{
-		db: db,
+		db:      stdlib.OpenDBFromPool(pool),
+		Queries: sqlcQueries,
 	}
 	return dbInstance
 }
