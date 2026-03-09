@@ -51,3 +51,9 @@ gw-test/
 .quarkus/
 *.env
 !*.env.example
+
+
+# === certs ===
+*.pem
+*.key
+*.crt
