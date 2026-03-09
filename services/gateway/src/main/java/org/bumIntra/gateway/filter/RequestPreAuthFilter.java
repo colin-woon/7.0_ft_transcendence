@@ -25,23 +25,17 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 
 @Provider
-@Priority(Priorities.AUTHENTICATION - 50)
-public class ServiceAuthFilter implements ContainerRequestFilter {
+@Priority(Priorities.AUTHENTICATION - 70)
+public class RequestPreAuthFilter implements ContainerRequestFilter {
 
 	@Inject
 	GatewayRequestContext grc;
-
-	// @Inject
-	// AuthService authService;
 
 	@Inject
 	GatewayAuthConfig gac;
 
 	@Inject
 	SecurityIdentity si;
-
-	// @Inject
-	// JsonWebToken jwt;
 
 	@Override
 	public void filter(ContainerRequestContext request) {

@@ -25,12 +25,12 @@ interface AuthSectionProps {
 }
 
 export default function AuthSection({ token, onToken }: AuthSectionProps) {
-	const [input,     setInput]     = useState('');
+	const [input, setInput] = useState('');
 	const [showPaste, setShowPaste] = useState(false);
 
-	const payload  = token ? parseJwt(token) : null;
-	const exp      = payload?.exp ? new Date(payload.exp * 1000) : null;
-	const expired  = exp ? exp < new Date() : false;
+	const payload = token ? parseJwt(token) : null;
+	const exp = payload?.exp ? new Date(payload.exp * 1000) : null;
+	const expired = exp ? exp < new Date() : false;
 	const loggedIn = !!token && !expired;
 
 	const appUrl = process.env.NEXT_PUBLIC_API_URL ?? 'https://localhost';
@@ -56,22 +56,33 @@ export default function AuthSection({ token, onToken }: AuthSectionProps) {
 	}
 
 	function openLogin() {
-		window.open(`${appUrl}/auth/login/google`, '_blank', 'noopener,noreferrer');
+		window.open(
+			`${appUrl}/api/public/auth/login/google`,
+			'_blank',
+			'noopener,noreferrer'
+		);
 		setShowPaste(true);
 	}
 
 	// ── Logged in ───────────────────────────────────────────────────────────────
 	if (loggedIn && payload) {
 		return (
-			<div className="flex items-center justify-between px-3 py-2 rounded-lg
-				border border-green-800 bg-green-950/30">
+			<div
+				className="flex items-center justify-between px-3 py-2 rounded-lg
+				border border-green-800 bg-green-950/30"
+			>
 				<div className="flex items-center gap-2 min-w-0">
 					<span className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
 					<div className="min-w-0">
-						<p className="text-xs font-mono text-green-300 truncate">{payload.upn ?? payload.sub}</p>
+						<p className="text-xs font-mono text-green-300 truncate">
+							{payload.upn ?? payload.sub}
+						</p>
 						{exp && (
 							<p className="text-[10px] font-mono text-slate-500">
-								expires {exp.toLocaleTimeString('en-GB', { hour12: false })}
+								expires{' '}
+								{exp.toLocaleTimeString('en-GB', {
+									hour12: false,
+								})}
 							</p>
 						)}
 					</div>
@@ -91,26 +102,41 @@ export default function AuthSection({ token, onToken }: AuthSectionProps) {
 	if (token && expired) {
 		return (
 			<div className="space-y-2">
-				<div className="flex items-center justify-between px-3 py-2 rounded-lg
-					border border-red-800 bg-red-950/20">
+				<div
+					className="flex items-center justify-between px-3 py-2 rounded-lg
+					border border-red-800 bg-red-950/20"
+				>
 					<div className="flex items-center gap-2">
 						<span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
-						<p className="text-xs font-mono text-red-400">token expired</p>
+						<p className="text-xs font-mono text-red-400">
+							token expired
+						</p>
 					</div>
 					<div className="flex gap-2">
-						<button onClick={openLogin}
+						<button
+							onClick={openLogin}
 							className="px-2 py-1 text-[11px] font-mono rounded border
-								border-blue-700 text-blue-400 hover:bg-blue-950 transition">
+								border-blue-700 text-blue-400 hover:bg-blue-950 transition"
+						>
 							re-login ↗
 						</button>
-						<button onClick={logout}
+						<button
+							onClick={logout}
 							className="px-2 py-1 text-[11px] font-mono rounded border
-								border-slate-700 text-slate-500 hover:border-red-700 hover:text-red-400 transition">
+								border-slate-700 text-slate-500 hover:border-red-700 hover:text-red-400 transition"
+						>
 							clear
 						</button>
 					</div>
 				</div>
-				{showPaste && <PasteInput input={input} setInput={setInput} onSet={setToken} onCancel={() => setShowPaste(false)} />}
+				{showPaste && (
+					<PasteInput
+						input={input}
+						setInput={setInput}
+						onSet={setToken}
+						onCancel={() => setShowPaste(false)}
+					/>
+				)}
 			</div>
 		);
 	}
@@ -129,17 +155,33 @@ export default function AuthSection({ token, onToken }: AuthSectionProps) {
 						Login with Google
 					</p>
 					<p className="text-xs text-slate-500 mt-0.5">
-						opens new tab → copy <code className="text-slate-400">accessToken</code> → paste below
+						opens new tab → copy{' '}
+						<code className="text-slate-400">accessToken</code> →
+						paste below
 					</p>
 				</div>
-				<span className="text-xs text-slate-600 group-hover:text-blue-500 transition">↗</span>
+				<span className="text-xs text-slate-600 group-hover:text-blue-500 transition">
+					↗
+				</span>
 			</button>
-			{showPaste && <PasteInput input={input} setInput={setInput} onSet={setToken} onCancel={() => setShowPaste(false)} />}
+			{showPaste && (
+				<PasteInput
+					input={input}
+					setInput={setInput}
+					onSet={setToken}
+					onCancel={() => setShowPaste(false)}
+				/>
+			)}
 		</div>
 	);
 }
 
-function PasteInput({ input, setInput, onSet, onCancel }: {
+function PasteInput({
+	input,
+	setInput,
+	onSet,
+	onCancel,
+}: {
 	input: string;
 	setInput: (v: string) => void;
 	onSet: (v: string) => void;
@@ -150,8 +192,10 @@ function PasteInput({ input, setInput, onSet, onCancel }: {
 			<input
 				autoFocus
 				value={input}
-				onChange={e => setInput(e.target.value)}
-				onKeyDown={e => e.key === 'Enter' && input.trim() && onSet(input)}
+				onChange={(e) => setInput(e.target.value)}
+				onKeyDown={(e) =>
+					e.key === 'Enter' && input.trim() && onSet(input)
+				}
 				placeholder="paste accessToken here…"
 				className="flex-1 bg-black/60 border border-slate-700 rounded-lg px-3 py-2
 					text-xs font-mono text-green-400 placeholder:text-slate-700

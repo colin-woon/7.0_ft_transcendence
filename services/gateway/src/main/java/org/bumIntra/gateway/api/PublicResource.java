@@ -22,11 +22,17 @@ public class PublicResource {
 	@GET
 	@Path("/{service}/{subpath: .*}")
 	public Response proxyPublicGet(@PathParam("service") String service,
-			@PathParam("subpath") String subpath,
-			@Context HttpHeaders headers) {
+			@PathParam("subpath") String subpath) {
 		return switch (service) {
-			case "auth" -> authService.proxyGet(service + "/" + subpath, headers);
+			case "auth" -> authService.proxyGet(buildUrl(service, subpath));
 			default -> Response.status(Response.Status.NOT_FOUND).build();
 		};
+	}
+
+	private String buildUrl(String service, String subpath) {
+		if (service.equals("auth") && subpath.startsWith("callback/")) {
+			return "api/public/" + service + "/" + subpath;
+		}
+		return service + "/" + subpath;
 	}
 }

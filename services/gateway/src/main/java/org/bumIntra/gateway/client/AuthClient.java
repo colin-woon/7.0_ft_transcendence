@@ -1,9 +1,10 @@
 package org.bumIntra.gateway.client;
 
-import org.bumIntra.gateway.client.dto.AuthResult;
+import org.bumIntra.gateway.filter.ServiceClientContextFilter;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.Encoded;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
@@ -21,33 +22,33 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 @Path("/")
 @RegisterRestClient(configKey = "auth-service")
-// @RegisterProvider(ServiceAuthFilter.class)
+@RegisterProvider(ServiceClientContextFilter.class)
 public interface AuthClient {
 
 	@GET
 	@Path("/{path: .*}")
-	Response proxyGet(@PathParam("path") String path, @Context HttpHeaders headers);
+	Response proxyGet(@Encoded @PathParam("path") String path);
 
 	@POST
 	@Path("/{path: .*}")
 	// @Consumes(MediaType.APPLICATION_JSON)
 	// @Produces(MediaType.APPLICATION_JSON)
-	Response proxyPost(@PathParam("path") String path, byte[] body, @Context HttpHeaders headers);
+	Response proxyPost(@Encoded @PathParam("path") String path, byte[] body);
 
 	@DELETE
 	@Path("/{path: .*}")
-	Response proxyDelete(@PathParam("path") String path, @Context HttpHeaders headers);
+	Response proxyDelete(@Encoded @PathParam("path") String path);
 
 	@PUT
 	@Path("/{path: .*}")
 	// @Consumes(MediaType.APPLICATION_JSON)
 	// @Produces(MediaType.APPLICATION_JSON)
-	Response proxyPut(@PathParam("path") String path, byte[] body, @Context HttpHeaders headers);
+	Response proxyPut(@Encoded @PathParam("path") String path, byte[] body);
 
 	@PATCH
 	@Path("/{path: .*}")
 	// @Consumes(MediaType.APPLICATION_JSON)
 	// @Produces(MediaType.APPLICATION_JSON)
-	Response proxyPatch(@PathParam("path") String path, byte[] body, @Context HttpHeaders headers);
+	Response proxyPatch(@Encoded @PathParam("path") String path, byte[] body);
 
 }

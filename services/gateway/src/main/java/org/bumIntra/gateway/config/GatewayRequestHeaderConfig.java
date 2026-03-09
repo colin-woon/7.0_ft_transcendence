@@ -13,10 +13,12 @@ import io.smallrye.config.WithDefault;
 public interface GatewayRequestHeaderConfig {
 
 	// TODO: remove defaults and rely on app properties?
-	@WithDefault("accept, accept-language, content-type, authorization, user-agent, x-request-id")
+	// @WithDefault("accept, accept-language, content-type, authorization,
+	// user-agent, x-request-id")
 	List<String> requestAllowList();
 
-	@WithDefault("x-internal-, x-auth-, x-user-, x-service-, x-bumintra-, x-envoy-, x-forwarded-")
+	// @WithDefault("x-internal-, x-auth-, x-user-, x-service-, x-bumintra-,
+	// x-envoy-, x-forwarded-")
 	List<String> requestDenyPrefixes();
 
 	default Set<String> inboundAllowlistLower() {

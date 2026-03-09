@@ -4,5 +4,9 @@ public enum AuthLevel {
 	GUEST,
 	USER,
 	ADMIN,
-	SERVICE
+	SERVICE;
+
+	public boolean isAtLeast(AuthLevel required) {
+		return this.ordinal() >= required.ordinal();
+	}
 }

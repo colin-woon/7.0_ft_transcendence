@@ -20,23 +20,23 @@ public class AuthService {
 	@Inject
 	FaultToleranceServiceCallExecutor ex;
 
-	public Response proxyGet(String path, @Context HttpHeaders headers) {
-		return ex.execute(() -> authClient.proxyGet(path, headers));
+	public Response proxyGet(String path) {
+		return ex.execute(() -> authClient.proxyGet(path));
 	}
 
-	public Response proxyPost(String path, byte[] body, @Context HttpHeaders headers) {
-		return ex.execute(() -> authClient.proxyPost(path, body, headers));
+	public Response proxyPost(String path, byte[] body) {
+		return ex.execute(() -> authClient.proxyPost(path, body));
 	}
 
-	public Response proxyDelete(String path, @Context HttpHeaders headers) {
-		return ex.execute(() -> authClient.proxyDelete(path, headers));
+	public Response proxyDelete(String path) {
+		return ex.execute(() -> authClient.proxyDelete(path));
 	}
 
-	public Response proxyPut(String path, byte[] body, @Context HttpHeaders headers) {
-		return ex.execute(() -> authClient.proxyPut(path, body, headers));
+	public Response proxyPut(String path, byte[] body) {
+		return ex.execute(() -> authClient.proxyPut(path, body));
 	}
 
-	public Response proxyPatch(String path, byte[] body, @Context HttpHeaders headers) {
-		return ex.execute(() -> authClient.proxyPatch(path, body, headers));
+	public Response proxyPatch(String path, byte[] body) {
+		return ex.execute(() -> authClient.proxyPatch(path, body));
 	}
 }

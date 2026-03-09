@@ -6,6 +6,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import jakarta.enterprise.context.RequestScoped;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 @RequestScoped
 public class GatewayRequestContext {
@@ -19,6 +21,13 @@ public class GatewayRequestContext {
 	private boolean _internal;
 	private String _userId;
 	private String _path;
+	private MultivaluedMap<String, String> _queryParams;
+	private MultivaluedMap<String, String> _headers;
+	private String _realIp;
+	private String _forwardedFor;
+	private String _forwardedHost;
+	private String _forwardedProto;
+	// TODO: consided the pros and cons of using List for forwardedFor
 
 	// ServiceAuthFilter
 	private Set<String> _roles = Collections.emptySet();
@@ -131,5 +140,53 @@ public class GatewayRequestContext {
 
 	public boolean policyPass() {
 		return _policyPass;
+	}
+
+	public void setRealIp(String realIp) {
+		_realIp = realIp;
+	}
+
+	public String getRealIp() {
+		return _realIp;
+	}
+
+	public void setForwardedFor(String forwardedFor) {
+		_forwardedFor = forwardedFor;
+	}
+
+	public String getForwardedFor() {
+		return _forwardedFor;
+	}
+
+	public void setForwardedHost(String forwardedHost) {
+		_forwardedHost = forwardedHost;
+	}
+
+	public String getForwardedHost() {
+		return _forwardedHost;
+	}
+
+	public void setForwardedProto(String forwardedProto) {
+		_forwardedProto = forwardedProto;
+	}
+
+	public String getForwardedProto() {
+		return _forwardedProto;
+	}
+
+	public MultivaluedMap<String, String> getQueryParams() {
+		return _queryParams != null ? _queryParams : new MultivaluedHashMap<>();
+	}
+
+	public void setQueryParams(MultivaluedMap<String, String> queryParams) {
+		_queryParams = queryParams;
+	}
+
+	public MultivaluedMap<String, String> getHeaders() {
+		return _headers != null ? _headers : new MultivaluedHashMap<>();
+	}
+
+	public void setHeaders(MultivaluedMap<String, String> headers) {
+		_headers = headers;
 	}
 }

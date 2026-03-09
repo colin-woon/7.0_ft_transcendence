@@ -39,11 +39,10 @@ public class GatewayResource {
 
 	@GET
 	@Path("/{service}/{subpath: .*}")
-	public Response proxyGet(@PathParam("service") String service, @PathParam("subpath") String subpath,
-			@Context HttpHeaders headers) {
+	public Response proxyGet(@PathParam("service") String service, @PathParam("subpath") String subpath) {
 		System.out.println("Proxying GET request to service: " + service + ", subpath: " + subpath);
 		return switch (service) {
-			case "auth" -> authService.proxyGet(service + "/" + subpath, headers);
+			case "auth" -> authService.proxyGet(service + "/" + subpath);
 			// case "forum" -> forumService.proxyGet(service + "/" + subpath, headers);
 			default -> Response.status(Response.Status.NOT_FOUND).entity("Service not found").build();
 		};
@@ -51,21 +50,20 @@ public class GatewayResource {
 
 	@POST
 	@Path("/{service}/{subpath: .*}")
-	public Response proxyPost(@PathParam("service") String service, @PathParam("subpath") String subpath, byte[] body,
-			@Context HttpHeaders headers) {
+	public Response proxyPost(@PathParam("service") String service, @PathParam("subpath") String subpath, byte[] body) {
 		return switch (service) {
-			case "auth" -> authService.proxyPost(service + "/" + subpath, body, headers);
-			// case "forum" -> forumService.proxyPost(service + "/" + subpath, body, headers);
+			case "auth" -> authService.proxyPost(service + "/" + subpath, body);
+			// case "forum" -> forumService.proxyPost(service + "/" + subpath, body,
+			// headers);
 			default -> Response.status(Response.Status.NOT_FOUND).entity("Service not found").build();
 		};
 	}
 
 	@DELETE
 	@Path("/{service}/{subpath: .*}")
-	public Response proxyDelete(@PathParam("service") String service, @PathParam("subpath") String subpath,
-			@Context HttpHeaders headers) {
+	public Response proxyDelete(@PathParam("service") String service, @PathParam("subpath") String subpath) {
 		return switch (service) {
-			case "auth" -> authService.proxyDelete(service + "/" + subpath, headers);
+			case "auth" -> authService.proxyDelete(service + "/" + subpath);
 			// case "forum" -> forumService.proxyDelete(service + "/" + subpath, headers);
 			default -> Response.status(Response.Status.NOT_FOUND).entity("Service not found").build();
 		};
@@ -73,22 +71,23 @@ public class GatewayResource {
 
 	@PUT
 	@Path("/{service}/{subpath: .*}")
-	public Response proxyPut(@PathParam("service") String service, @PathParam("subpath") String subpath, byte[] body,
-			@Context HttpHeaders headers) {
+	public Response proxyPut(@PathParam("service") String service, @PathParam("subpath") String subpath, byte[] body) {
 		return switch (service) {
-			case "auth" -> authService.proxyPut(service + "/" + subpath, body, headers);
-			// case "forum" -> forumService.proxyPut(service + "/" + subpath, body, headers);
+			case "auth" -> authService.proxyPut(service + "/" + subpath, body);
+			// case "forum" -> forumService.proxyPut(service + "/" + subpath, body,
+			// headers);
 			default -> Response.status(Response.Status.NOT_FOUND).entity("Service not found").build();
 		};
 	}
 
 	@PATCH
 	@Path("/{service}/{subpath: .*}")
-	public Response proxyPatch(@PathParam("service") String service, @PathParam("subpath") String subpath, byte[] body,
-			@Context HttpHeaders headers) {
+	public Response proxyPatch(@PathParam("service") String service, @PathParam("subpath") String subpath,
+			byte[] body) {
 		return switch (service) {
-			case "auth" -> authService.proxyPatch(service + "/" + subpath, body, headers);
-			// case "forum" -> forumService.proxyPatch(service + "/" + subpath, body, headers);
+			case "auth" -> authService.proxyPatch(service + "/" + subpath, body);
+			// case "forum" -> forumService.proxyPatch(service + "/" + subpath, body,
+			// headers);
 			default -> Response.status(Response.Status.NOT_FOUND).entity("Service not found").build();
 		};
 	}
