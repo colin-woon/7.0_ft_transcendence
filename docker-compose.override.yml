@@ -26,8 +26,9 @@ services:
       target: development
     env_file:
       - ./environment/shared.env   
+      - ./environment/chat.env   
     ports:
-      - "8081:8080"
+      - "${CHAT_PORT}:8080"
     volumes:
       - ./services/chat:/app
 
