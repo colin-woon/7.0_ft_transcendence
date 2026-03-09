@@ -3,6 +3,7 @@ package org.bumIntra.gateway.api;
 import java.util.Map;
 
 import org.bumIntra.gateway.client.AuthService;
+import org.bumIntra.gateway.client.ForumService;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.DELETE;
@@ -22,8 +23,8 @@ public class GatewayResource {
 	@Inject
 	AuthService authService;
 
-	// @Inject
-	// ForumService forumService;
+	@Inject
+	ForumService forumService;
 
 	// @Inject
 	// ChatService chatService;
@@ -43,7 +44,7 @@ public class GatewayResource {
 		System.out.println("Proxying GET request to service: " + service + ", subpath: " + subpath);
 		return switch (service) {
 			case "auth" -> authService.proxyGet(service + "/" + subpath);
-			// case "forum" -> forumService.proxyGet(service + "/" + subpath, headers);
+			case "forum" -> forumService.proxyGet(service + "/" + subpath);
 			default -> Response.status(Response.Status.NOT_FOUND).entity("Service not found").build();
 		};
 	}
@@ -53,8 +54,7 @@ public class GatewayResource {
 	public Response proxyPost(@PathParam("service") String service, @PathParam("subpath") String subpath, byte[] body) {
 		return switch (service) {
 			case "auth" -> authService.proxyPost(service + "/" + subpath, body);
-			// case "forum" -> forumService.proxyPost(service + "/" + subpath, body,
-			// headers);
+			case "forum" -> forumService.proxyPost(service + "/" + subpath, body);
 			default -> Response.status(Response.Status.NOT_FOUND).entity("Service not found").build();
 		};
 	}
@@ -64,7 +64,7 @@ public class GatewayResource {
 	public Response proxyDelete(@PathParam("service") String service, @PathParam("subpath") String subpath) {
 		return switch (service) {
 			case "auth" -> authService.proxyDelete(service + "/" + subpath);
-			// case "forum" -> forumService.proxyDelete(service + "/" + subpath, headers);
+			case "forum" -> forumService.proxyDelete(service + "/" + subpath);
 			default -> Response.status(Response.Status.NOT_FOUND).entity("Service not found").build();
 		};
 	}
@@ -74,8 +74,7 @@ public class GatewayResource {
 	public Response proxyPut(@PathParam("service") String service, @PathParam("subpath") String subpath, byte[] body) {
 		return switch (service) {
 			case "auth" -> authService.proxyPut(service + "/" + subpath, body);
-			// case "forum" -> forumService.proxyPut(service + "/" + subpath, body,
-			// headers);
+			case "forum" -> forumService.proxyPut(service + "/" + subpath, body);
 			default -> Response.status(Response.Status.NOT_FOUND).entity("Service not found").build();
 		};
 	}
@@ -86,8 +85,7 @@ public class GatewayResource {
 			byte[] body) {
 		return switch (service) {
 			case "auth" -> authService.proxyPatch(service + "/" + subpath, body);
-			// case "forum" -> forumService.proxyPatch(service + "/" + subpath, body,
-			// headers);
+			case "forum" -> forumService.proxyPatch(service + "/" + subpath, body);
 			default -> Response.status(Response.Status.NOT_FOUND).entity("Service not found").build();
 		};
 	}
