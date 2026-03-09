@@ -77,3 +77,44 @@ paths:
           description: Message sent successfully
         "400":
           description: Invalid user IDs or message content
+
+  /history/{senderId}/{receiverId}:
+    get:
+      summary: Get chat history between two users
+      parameters:
+        - name: senderId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: receiverId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Chat history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    senderId:
+                      type: integer
+                    receiverId:
+                      type: integer
+                    content:
+                      type: string
+                    created_at:
+                      type: string
+                      format: date-time
+                      example: "2026-03-09T08:24:27Z"
+        "400":
+          description: Invalid user IDs
+        "404":
+          description: No chat history found

@@ -5,8 +5,8 @@ all: build test
 
 build:
 	@echo "Building..."
-	
-	
+
+
 	@go build -o main cmd/api/main.go
 
 # Run the application
@@ -60,5 +60,11 @@ watch:
                 exit 1; \
             fi; \
         fi
+
+generate-oapi:
+	cd api && go tool oapi-codegen --config config.yaml openapi.yaml
+
+generate-sqlc:
+	@sqlc generate
 
 .PHONY: all build run test clean watch docker-run docker-down itest

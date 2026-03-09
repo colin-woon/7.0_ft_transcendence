@@ -9,6 +9,47 @@ import (
 	"context"
 )
 
+const getChatHistory = `-- name: GetChatHistory :many
+SELECT id, sender_id, receiver_id, content, is_read, read_at, created_at
+FROM chat_service.messages
+WHERE (sender_id = $1 AND receiver_id = $2)
+ OR (sender_id = $2 AND receiver_id = $1)
+ORDER BY created_at ASC
+`
+
+type GetChatHistoryParams struct {
+	SenderID   int32
+	ReceiverID int32
+}
+
+func (q *Queries) GetChatHistory(ctx context.Context, arg GetChatHistoryParams) ([]ChatServiceMessage, error) {
+	rows, err := q.db.Query(ctx, getChatHistory, arg.SenderID, arg.ReceiverID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ChatServiceMessage
+	for rows.Next() {
+		var i ChatServiceMessage
+		if err := rows.Scan(
+			&i.ID,
+			&i.SenderID,
+			&i.ReceiverID,
+			&i.Content,
+			&i.IsRead,
+			&i.ReadAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const sendMessage = `-- name: SendMessage :one
 INSERT INTO chat_service.messages (sender_id, receiver_id, content)
 VALUES ($1, $2, $3)

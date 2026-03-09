@@ -34,6 +34,9 @@ type ServerInterface interface {
 	// Accept a friend request
 	// (PATCH /friendship/{requesterId}/{receiverId}/accept)
 	PatchFriendshipRequesterIdReceiverIdAccept(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int)
+	// Get chat history between two users
+	// (GET /history/{senderId}/{receiverId})
+	GetHistorySenderIdReceiverId(w http.ResponseWriter, r *http.Request, senderId int, receiverId int)
 	// Send a message
 	// (POST /message/{senderId}/{receiverId})
 	PostMessageSenderIdReceiverId(w http.ResponseWriter, r *http.Request, senderId int, receiverId int)
@@ -52,6 +55,12 @@ func (_ Unimplemented) PostFriendshipRequesterIdReceiverId(w http.ResponseWriter
 // Accept a friend request
 // (PATCH /friendship/{requesterId}/{receiverId}/accept)
 func (_ Unimplemented) PatchFriendshipRequesterIdReceiverIdAccept(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get chat history between two users
+// (GET /history/{senderId}/{receiverId})
+func (_ Unimplemented) GetHistorySenderIdReceiverId(w http.ResponseWriter, r *http.Request, senderId int, receiverId int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -129,6 +138,40 @@ func (siw *ServerInterfaceWrapper) PatchFriendshipRequesterIdReceiverIdAccept(w 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PatchFriendshipRequesterIdReceiverIdAccept(w, r, requesterId, receiverId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetHistorySenderIdReceiverId operation middleware
+func (siw *ServerInterfaceWrapper) GetHistorySenderIdReceiverId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "senderId" -------------
+	var senderId int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "senderId", chi.URLParam(r, "senderId"), &senderId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "senderId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "receiverId" -------------
+	var receiverId int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "receiverId", chi.URLParam(r, "receiverId"), &receiverId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "receiverId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHistorySenderIdReceiverId(w, r, senderId, receiverId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -292,6 +335,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Patch(options.BaseURL+"/friendship/{requesterId}/{receiverId}/accept", wrapper.PatchFriendshipRequesterIdReceiverIdAccept)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/history/{senderId}/{receiverId}", wrapper.GetHistorySenderIdReceiverId)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/message/{senderId}/{receiverId}", wrapper.PostMessageSenderIdReceiverId)
 	})
 
@@ -301,15 +347,17 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/9SVT4vbMBDFv4qYs0mcNifd0paCoYWwoadlD6o0sbXEkqqRA8H4u5eRnT80Cbuhh9JT",
-	"UHjzZub9IqUH67YeZA8GSUcbkvUOJKzWldj6KFrlVG1dLVokUjWSUM6IbbToDDU2EBSQbNohSPjcqCQ2",
-	"GPdWo1itKyhgj5FGw8WsnJUwFOADOhUsSPg4K2dLKCCo1BCPMD/7zvuIvzqkhLEyA5802n0+sDJ4Svzp",
-	"A0bFI1cGJKw9pa8ni6ezwdOpOreLqsWEkUA+8/4g8whQgFMtL3LRGop8shENyBQ7LIB0g63i7ukQWG5d",
-	"whojDENxx+6i+wNuL6ym4B1hjudDubgGNe4rppEFoUuCOq2RaNvtdgeOfFmW14WV26udNaIjjKL6QqNw",
-	"eS38wQLnk9j6zhneEqhrWxUPIGHDzdX0gzhOkTXvgzlXWmPILINKurkBlb9+g+pqNPmv2ZZvsh2jQnOD",
-	"7w1sU1B3yY2Z3WE33fZ5T+jMo1fw+1i8mUofvHzHjv+cTo7jkzcHlmjvErq8sAphZ3Veef5KnHV/4RUi",
-	"B5LsiPWirLXuG7o6NSAXxbElpWhdnTM/j/d8Kns5Cf3PV9QMZ/hzkeE9r8SE5C+eB8F/BpPLcbybT8Ek",
-	"4lGH3wEAAP//bqlYe14GAAA=",
+	"H4sIAAAAAAAC/9RWzW7bPBB8FWLPiq04xvejW9qiqYG2CJL20iAoGHJtMbBIlrtyahh694KU7Ci13CTI",
+	"pTkZkmZnf2bI9QaMnTsoNqCRVDCejbNQwOn5TMxdEJW0cmHsQlRIJBdIQlot5sGg1VQaT5ABG14iFPC2",
+	"lCwuMayMQnF6PoMMVhioJTwe5aMcmgycRyu9gQJORvloChl4ySXFEsb3vONNwB81EmOY6SY+KTSr9BCR",
+	"3hHHX+cxyFjyTEMB5474/Y7i4p7gYhed0gVZIWMgKK5i/1CkEiADK6vYSC81ZOnJBNRQcKgxA1IlVjJm",
+	"57WPcGMZFxigabIDdL3sz2C7jmjyzhKm8Uzy432h2n5FV7IgtCyoVgqJ5vVyuY4jn+b5fuDMruTSaFET",
+	"BjF7Ry1wug/8GgHWsZi72urYJVBdVTKsoYDLmFx2hthWkTBPE3MslUKftPSSVTkganz9iKqnLcmr1jZ/",
+	"VNt2VKgH9B2QrRvUQeXamR3QrjTELqzHG0Krh4/gAgdO4Bnyhzb0sgt85tHb5vsLtVHOMtrUtPR+aVRq",
+	"e3xLcdybHqFhrFKgD3E6bFqaXnyXkjgYu4gKqoCSUX+X6TP+lJVPV+okn/xzlJ8c5f9/yf8rJtNi8u83",
+	"yGDuQhWhoCXjEZsK4zX8O6nRQ+1l/bkMft9pMDjq7St3c4uK4f6FDEGuoYmQh05Me6FzlAjIweBq0MUv",
+	"uaU+O6H6eYYsf4b8EHSDfIdoBd+5lIFa93e77k/uP7yAPrXBr93/6TJ44/T6WdY/6PjK2I9oF1xCcbxn",
+	"1aZf3tUu7HrPaw+RsZHmKTuyk+QFy1HEv0Idy7a8wUXYgWKpza8AAAD//5LMGr5cCQAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
