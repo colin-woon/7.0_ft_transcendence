@@ -51,6 +51,7 @@ gw-test/
 .quarkus/
 *.env
 !*.env.example
+GEMINI.md
 
 
 # === certs ===

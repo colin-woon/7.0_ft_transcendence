@@ -1,5 +1,7 @@
 package org.bumIntra.gateway.filter;
 
+import java.util.List;
+
 import org.bumIntra.gateway.security.AuthLevel;
 import org.bumIntra.gateway.security.GatewayRequestContext;
 import org.bumIntra.gateway.security.IdentityHeaders;
@@ -56,16 +58,21 @@ public class ServiceClientContextFilter implements ClientRequestFilter {
 		// System.out.println(k + " = " + v);
 		// });
 
-		if (grc.getHeaders() != null && grc.getHeaders().getFirst("Cookie") != null) {
-			request.getHeaders().putSingle(HttpHeaders.COOKIE, grc.getHeaders().getFirst("Cookie"));
-		}
+		if (grc.getHeaders() != null) {
+			// Propagate essential headers safely
+			var headersToPropagate = List.of(
+					HttpHeaders.COOKIE,
+					HttpHeaders.CONTENT_TYPE,
+					HttpHeaders.ACCEPT,
+					HttpHeaders.AUTHORIZATION);
 
-		// TODO: to review if propagate all headers is needed
-		// if (grc.getHeaders() != null && !grc.getHeaders().isEmpty()) {
-		// grc.getHeaders().forEach((k, v) -> {
-		// request.getHeaders().add(k, v);
-		// });
-		// }
+			for (String headerName : headersToPropagate) {
+				String headerValue = grc.getHeaders().getFirst(headerName);
+				if (headerValue != null) {
+					request.getHeaders().putSingle(headerName, headerValue);
+				}
+			}
+		}
 
 		if (grc.getRequestId() != null && !grc.getRequestId().isBlank()) {
 			request.getHeaders().putSingle(IdentityHeaders.REQUEST_ID, grc.getRequestId());
