@@ -20,8 +20,8 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 
 @Provider
-@Priority(Priorities.AUTHENTICATION - 70)
-public class RateLimitFilter implements ContainerRequestFilter {
+@Priority(Priorities.AUTHORIZATION - 100)
+public class RequestRateLimitFilter implements ContainerRequestFilter {
 
 	@Inject
 	GatewayRateLimitConfig grlc;

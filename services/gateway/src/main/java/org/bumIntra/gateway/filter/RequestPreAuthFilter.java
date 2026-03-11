@@ -9,8 +9,11 @@ import org.bumIntra.gateway.exception.GatewayException;
 import org.bumIntra.gateway.security.AuthLevel;
 import org.bumIntra.gateway.security.GatewayRequestContext;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
+import io.quarkus.security.Authenticated;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
@@ -22,48 +25,53 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 
 @Provider
-@Priority(Priorities.AUTHENTICATION - 50)
-public class ServiceAuthFilter implements ContainerRequestFilter {
+@Priority(Priorities.AUTHENTICATION - 70)
+public class RequestPreAuthFilter implements ContainerRequestFilter {
 
 	@Inject
 	GatewayRequestContext grc;
 
 	@Inject
-	AuthService authService;
+	GatewayAuthConfig gac;
 
 	@Inject
-	GatewayAuthConfig gac;
+	SecurityIdentity si;
 
 	@Override
 	public void filter(ContainerRequestContext request) {
 
-		String currPath = request.getUriInfo().getPath();
-		if (gac.publicPaths().stream().anyMatch(currPath::startsWith)) {
+		if (!si.isAnonymous() && si.getPrincipal() instanceof JsonWebToken) {
+
+			JsonWebToken jwt = (JsonWebToken) si.getPrincipal();
+			grc.setUserId(jwt.getSubject());
+			grc.setRoles(jwt.getGroups());
+
+			if (jwt.getGroups().contains("ADMIN")) {
+				grc.setAuthLevel(AuthLevel.ADMIN);
+			} else {
+				grc.setAuthLevel(AuthLevel.USER);
+			}
+		} else if (grc.isInternal()) {
+			grc.setAuthLevel(AuthLevel.SERVICE);
+		}
+
+		boolean isPublicPath = gac.getPublicPaths().stream().anyMatch(grc.getPath()::startsWith);
+		grc.setPublic(isPublicPath);
+
+		if (grc.isInternal() || isPublicPath || !gac.required()) {
 			return;
 		}
 
-		if (!gac.required()) {
-			return;
-		}
-
-		String authorizationHeader = request.getHeaderString(HttpHeaders.AUTHORIZATION);
-		if (authorizationHeader == null || authorizationHeader.isBlank()) {
+		if (si.isAnonymous()) {
 			throw new GatewayException(Response.Status.UNAUTHORIZED, GatewayErrorCode.AUTH_REQUIRED,
-					"Authorization header is missing");
+					"Authentication is required");
 		}
 
-		grc.setAuth(authorizationHeader);
-
-		AuthResult authResult = authService.verify(authorizationHeader);
-
-		if (authResult == null || authResult.sub() == null || authResult.sub().isBlank()) {
-			throw new GatewayException(Response.Status.UNAUTHORIZED, GatewayErrorCode.AUTH_INVALID,
-					"Authorization token is invalid");
-		}
-
-		// TODO: Update with auth DTO when available, and set auth level accordingly
-		grc.setUserId(authResult.sub());
-		grc.setRoles(authResult.roles());
-		grc.setAuthLevel(AuthLevel.USER);
+		// Method Returns Source Claim
+		// jwt.getSubject() String sub (The "123" ID)
+		// jwt.getIssuer() String iss
+		// jwt.getGroups() Set<String> groups
+		// jwt.getExpirationTime() long exp
+		// jwt.getClaim("upn") T (Generic) upn (The email)
 	}
 }

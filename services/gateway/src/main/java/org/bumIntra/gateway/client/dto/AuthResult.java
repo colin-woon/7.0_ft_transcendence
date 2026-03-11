@@ -1,6 +1,8 @@
 package org.bumIntra.gateway.client.dto;
 
 import java.util.List;
+import java.util.Set;
 
-public record AuthResult(String sub, List<String> roles) {
+// TODO: This is now deprecated
+public record AuthResult(String sub, Set<String> roles) {
 }

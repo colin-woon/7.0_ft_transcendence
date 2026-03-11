@@ -10,10 +10,10 @@ import io.smallrye.config.WithDefault;
 @ConfigMapping(prefix = "gateway.config.headers")
 public interface GatewayResponseHeaderConfig {
 
-	@WithDefault("x-internal-, x-bumintra-, x-envoy-,x-forwarded-")
+	// @WithDefault("x-internal-, x-bumintra-, x-envoy-,x-forwarded-")
 	List<String> responseStripPrefixes();
 
-	@WithDefault("server, via, x-powered-by")
+	// @WithDefault("server, via, x-powered-by")
 	List<String> responseStripHeaders();
 
 	default List<String> stripPrefixesLower() {
