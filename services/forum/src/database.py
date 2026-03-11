@@ -5,7 +5,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 # 'postgresql+psycopg db api', need to install through uv
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql+psycopg://dev_user:dev_password@db:5432/postgres_db"
+    "postgresql+psycopg://dev_user:dev_password@db-service:5432/postgres_db"
 )
 
 engine = create_engine(DATABASE_URL, echo=False) # echo=True prints SQL to terminal for debugging

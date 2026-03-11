@@ -30,7 +30,7 @@ public class RateLimitProfiles {
 		return switch (access) {
 			case GUEST -> new RateLimitProfile(Math.max(1, baseLimit / 3), baseWindow);
 			case USER -> new RateLimitProfile(Math.max(1, baseLimit), baseWindow);
-			case SERVICE -> new RateLimitProfile(Math.max(1, baseLimit * 10), baseWindow);
+			case ADMIN, SERVICE -> new RateLimitProfile(Math.max(1, baseLimit * 10), baseWindow);
 		};
 	}
 }
