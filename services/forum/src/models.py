@@ -55,3 +55,17 @@ class Comment(Base):
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     post: Mapped["ForumPost"] = relationship(back_populates="comments")
+    
+class PostVote(Base):
+    __tablename__ = "post_votes"
+    __table_args__ = {"schema": "forum_service"}
+
+    # Composite primary key naturally prevents a user from voting twice
+    post_id: Mapped[int] = mapped_column(
+        ForeignKey("forum_service.forum_posts.id", ondelete="CASCADE"), 
+        primary_key=True
+    )
+    user_id: Mapped[int] = mapped_column(primary_key=True)
+    
+    # Will store 1 for upvote, -1 for downvote
+    vote_value: Mapped[int] = mapped_column(Integer)

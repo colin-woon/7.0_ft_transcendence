@@ -71,3 +71,44 @@ def create_comment(db: Session, post_id: int, user_id: int, data: schemas.Commen
     db.commit()
     db.refresh(new_comment)
     return new_comment
+
+# --- UPVOTES ---
+# --- VOTING ---
+
+def cast_post_vote(db: Session, post_id: int, user_id: int, vote_value: int) -> dict:
+    # 1. Validate the vote value matches your SQL CHECK constraint
+    if vote_value not in [1, -1]:
+        raise HTTPException(status_code=400, detail="Vote value must be 1 or -1")
+
+    # 2. Ensure the post exists
+    post = db.query(models.ForumPost).filter(models.ForumPost.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    # 3. Check if the user has already voted on this specific post
+    existing_vote = db.query(models.PostVote).filter(
+        models.PostVote.post_id == post_id,
+        models.PostVote.user_id == user_id
+    ).first()
+
+    if existing_vote:
+        if existing_vote.vote_value == vote_value:
+            # TOGGLE OFF: User clicked the same vote button again. Delete the vote.
+            db.delete(existing_vote)
+            db.commit()
+            return {"message": "Vote removed"}
+        else:
+            # CHANGE VOTE: User switched from upvote to downvote (or vice versa).
+            existing_vote.vote_value = vote_value
+            db.commit()
+            return {"message": "Vote updated"}
+    else:
+        # NEW VOTE: Insert the record.
+        new_vote = models.PostVote(
+            post_id=post_id, 
+            user_id=user_id, 
+            vote_value=vote_value
+        )
+        db.add(new_vote)
+        db.commit()
+        return {"message": "Vote registered"}

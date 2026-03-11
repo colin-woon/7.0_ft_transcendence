@@ -71,4 +71,13 @@ def create_comment(
 ):
     return logic.create_comment(db, post_id, user_id, comment)
 
+@router.post("/posts/{post_id}/vote", status_code=status.HTTP_200_OK)
+def vote_on_post(
+    post_id: int,
+    action: schemas.VoteAction,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id) # Getting user from your mock auth
+):
+    return logic.cast_post_vote(db, post_id, user_id, action.vote_value)
+
 app.include_router(router)
