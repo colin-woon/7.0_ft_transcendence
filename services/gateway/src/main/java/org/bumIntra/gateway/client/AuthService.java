@@ -20,27 +20,23 @@ public class AuthService {
 	@Inject
 	FaultToleranceServiceCallExecutor ex;
 
-	public Response ping() {
-		return ex.execute(() -> authClient.ping());
+	public Response proxyGet(String path) {
+		return ex.execute(() -> authClient.proxyGet(path));
 	}
 
-	public AuthResult verify(String authorization) {
-		return ex.execute(() -> {
-			Response response = authClient.verify(authorization);
-			return response.readEntity(AuthResult.class);
-		});
-
+	public Response proxyPost(String path, byte[] body) {
+		return ex.execute(() -> authClient.proxyPost(path, body));
 	}
 
-	public Response headers(@Context HttpHeaders headers) {
-		return ex.execute(() -> authClient.headers(headers));
+	public Response proxyDelete(String path) {
+		return ex.execute(() -> authClient.proxyDelete(path));
 	}
 
-	public Response loginGoogle() {
-		return ex.execute(() -> authClient.loginGoogle());
+	public Response proxyPut(String path, byte[] body) {
+		return ex.execute(() -> authClient.proxyPut(path, body));
 	}
 
-	public Response loginIntra() {
-		return ex.execute(() -> authClient.loginIntra());
+	public Response proxyPatch(String path, byte[] body) {
+		return ex.execute(() -> authClient.proxyPatch(path, body));
 	}
 }

@@ -23,6 +23,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -31,11 +33,20 @@ import jakarta.ws.rs.core.Response;
 @Consumes(MediaType.APPLICATION_JSON)
 public class AuthResource {
 
-    @Inject
-    AuthService authService;
+	@Inject
+	AuthService authService;
 
 	@Inject
 	SecurityIdentity identity;
+
+	@GET
+	@Path("/headers")
+	public Response getHeaders(@Context HttpHeaders headers) {
+		System.out.println("Headers: " + headers.getRequestHeaders());
+		return Response.ok()
+				.entity(headers.getRequestHeaders())
+				.build();
+	}
 
 	// To Login the user, giving an access and refresh token
 	@GET
@@ -43,9 +54,9 @@ public class AuthResource {
 	@Authenticated
 	public Response login(@PathParam("provider") String provider) {
 		return Response.status(200)
-			.entity(authService.createToken(identity))
-			.cookie(authService.createSessionCookie(identity))
-			.build();
+				.entity(authService.createToken(identity))
+				.cookie(authService.createSessionCookie(identity))
+				.build();
 	}
 
 	// To refresh the user after access token expires
@@ -53,8 +64,8 @@ public class AuthResource {
 	@Path("/refresh")
 	public Response refresh(@CookieParam("sessionId") String sessionId) {
 		return Response.status(200)
-			.entity(authService.refreshToken(sessionId))
-			.build();
+				.entity(authService.refreshToken(sessionId))
+				.build();
 	}
 
 	// To Logout the user, invalidate the access and refresh token
@@ -63,9 +74,9 @@ public class AuthResource {
 	@Authenticated
 	public Response logout(@CookieParam("sessionId") String sessionId) {
 		return Response.ok()
-			.entity("{\"message\": \"Logged out\"}")
-			.cookie(authService.deleteSession(sessionId))
-			.build();
+				.entity("{\"message\": \"Logged out\"}")
+				.cookie(authService.deleteSession(sessionId))
+				.build();
 	}
 
 	@DELETE
@@ -73,8 +84,8 @@ public class AuthResource {
 	@Authenticated
 	public Response deleteAccount() {
 		return Response.noContent()
-			.cookie(authService.deleteAccount(identity))
-			.build();
+				.cookie(authService.deleteAccount(identity))
+				.build();
 	}
 
 	// To get the user info of the currently logged in user
@@ -93,7 +104,8 @@ public class AuthResource {
 		return authService.updateMyInfo(identity, updateDTO);
 	}
 
-	// To search for users by email or username, returning list of user summaries (id, name and profile pic)
+	// To search for users by email or username, returning list of user summaries
+	// (id, name and profile pic)
 	@GET
 	@Path("/users")
 	public List<@NonNull UserSummaryDTO> searchUser(

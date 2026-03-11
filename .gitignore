@@ -51,3 +51,10 @@ gw-test/
 .quarkus/
 *.env
 !*.env.example
+GEMINI.md
+
+
+# === certs ===
+*.pem
+*.key
+*.crt

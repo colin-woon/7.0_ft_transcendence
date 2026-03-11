@@ -1,66 +1,85 @@
 services:
-  db:
-    env_file:
-      - ./environment/db.env
-    ports:
-      - "${DB_PORT}:5432"
-    volumes:
-      - ./infra/postgres/init-scripts:/docker-entrypoint-initdb.d
-  
-  auth_service:
-    build:
-      context: .
-      dockerfile: services/auth/src/main/docker/Dockerfile.custom
-      target: development
-    env_file:
-      - ./environment/shared.env
-    ports:
-      - "${AUTH_PORT}:8080"
-    volumes:
-      - ./services/auth:/app
+    db-service:
+        env_file:
+            - ./environment/db.env
+        ports:
+            - '${DB_PORT}:5432'
 
-  chat_service:
-    build:
-      context: .
-      dockerfile: services/chat/src/main/docker/Dockerfile.custom
-      target: development
-    env_file:
-      - ./environment/shared.env   
-    ports:
-      - "${CHAT_PORT}:8080"
-    volumes:
-      - ./services/chat:/app
+    auth-service:
+        build:
+            target: development
+        env_file:
+            - ./environment/shared.env
+        ports:
+            - '${AUTH_PORT}:8080'
+        volumes:
+            - ./services/auth:/app
 
-  forum_service:
-    working_dir: /app
-    env_file:
-      - ./environment/shared.env
-      - ./environment/forum.env
-    ports:
-      - "${FORUM_PORT}:8000"
-    volumes:
-      - ./services/forum:/app
-    # Note: 'uv run' will install dependencies on the fly in dev if they are in pyproject.toml
-    command: uv run uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    # chat-service:
+    #     build:
+    #         target: development
+    #     env_file:
+    #         - ./environment/shared.env
+    #     ports:
+    #         - '${CHAT_PORT}:8080'
+    #     volumes:
+    #         - ./services/chat:/app
 
-  web_service:
-    build:
-      context: .
-      dockerfile: services/web/Dockerfile
-      target: development
-    ports:
-      - "${WEB_PORT}:3000"
-    volumes:
-      - ./services/web:/app
-    env_file:
-      - ./environment/shared.env
-      - ./environment/web.env
+    forum-service:
+        build:
+            target: development
+        working_dir: /app
+        env_file:
+            - ./environment/shared.env
+            - ./environment/forum.env
+        ports:
+            - '${FORUM_PORT}:8080'
+        volumes:
+            - ./services/forum:/app
+        command:
+            - uv
+            - run
+            - uvicorn
+            - src.main:app
+            - --host
+            - '0,0,0,0'
+            - --port
+            - '8080'
+            - --reload
 
+    web-service:
+        build:
+            target: development
+        ports:
+            - '${WEB_PORT}:3000'
+        volumes:
+            - ./services/web:/app
+        env_file:
+            - ./environment/shared.env
+            - ./environment/web.env
+        # Strip prod cert volumes and mTLS env — dev runs plain HTTP
+        environment:
+            - MTLS_KEY_PATH=
+            - MTLS_CRT_PATH=
+            - MTLS_CA_PATH=
+            - NODE_EXTRA_CA_CERTS=
 
-  # add other services below here, example:
-  # redis:
-  #   image: redis:7-alpine
-  #   container_name: redis_cache
-  #   ports:
-  #     - "6379:6379"
-
+    gateway-service:
+        build:
+            context: .
+            dockerfile: services/gateway/src/main/docker/Dockerfile.custom
+            target: development
+        ports:
+            - '${GATEWAY_PORT:-8001}:8080'
+            - '${GATEWAY_MGMT_PORT:-8180}:8180'
+        volumes:
+            - ./services/gateway:/app
+        depends_on:
+            auth-service:
+                condition: service_healthy
+                required: false
+            web-service:
+                condition: service_started
+                required: false
+            gw-redis-service:
+                condition: service_healthy

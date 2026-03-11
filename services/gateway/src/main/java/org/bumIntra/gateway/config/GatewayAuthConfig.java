@@ -13,5 +13,5 @@ public interface GatewayAuthConfig {
 	boolean required();
 
 	@WithName("public-paths")
-	List<String> publicPaths();
+	List<String> getPublicPaths();
 }

@@ -1,0 +1,30 @@
+# --- Stage 1: Base ---
+FROM eclipse-temurin:21-jdk-noble AS base
+USER root
+WORKDIR /app
+COPY services/gateway/mvnw .
+COPY services/gateway/.mvn ./.mvn
+COPY services/gateway/pom.xml .
+RUN chmod +x mvnw && ./mvnw dependency:go-offline
+
+# --- Stage 2: Development (Hot Reloading) ---
+FROM base AS development
+EXPOSE 8080 5005
+CMD ["./mvnw", "quarkus:dev", "-Dquarkus.http.host=0.0.0.0"]
+
+# --- Stage 3.0: Intermediate Build ---
+FROM base AS builder
+COPY services/gateway/src ./src
+RUN ./mvnw package -DskipTests
+
+# --- Stage 3.1: Production ---
+FROM registry.access.redhat.com/ubi9/openjdk-21:1.23 AS production
+WORKDIR /deployments
+COPY --from=builder --chown=185 /app/target/quarkus-app/lib/ /deployments/lib/
+COPY --from=builder --chown=185 /app/target/quarkus-app/*.jar /deployments/
+COPY --from=builder --chown=185 /app/target/quarkus-app/app/ /deployments/app/
+COPY --from=builder --chown=185 /app/target/quarkus-app/quarkus/ /deployments/quarkus/
+EXPOSE 8080
+USER 185
+ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
+ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ]

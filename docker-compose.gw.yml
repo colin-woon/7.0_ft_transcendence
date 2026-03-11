@@ -103,10 +103,10 @@ services:
             - ./certs/runtime/nginx/nginx.crt:/etc/nginx/certs/nginx-internal.crt:ro
             - ./certs/runtime/nginx/nginx.key:/etc/nginx/certs/nginx-internal.key:ro
             - ./certs/ca/ca.crt:/etc/nginx/certs/ca-internal.crt:ro
-            - ./certs/runtime/frontend/frontend.crt:/etc/nginx/certs/client.crt:ro
-            - ./certs/runtime/frontend/frontend.key:/etc/nginx/certs/client.key:ro
+            - ./certs/runtime/web/web.crt:/etc/nginx/certs/client.crt:ro
+            - ./certs/runtime/web/web.key:/etc/nginx/certs/client.key:ro
 
-    # Test frontend container for SSR + mTLS testing
+    # Test web container for SSR + mTLS testing
     testfe-service:
         # profiles:
         #     - dummy
@@ -119,15 +119,15 @@ services:
         networks:
             - app_net
         volumes:
-            - ./certs/runtime/frontend/frontend.crt:/certs/frontend.crt:ro
-            - ./certs/runtime/frontend/frontend.key:/certs/frontend.key:ro
+            - ./certs/runtime/web/web.crt:/certs/web.crt:ro
+            - ./certs/runtime/web/web.key:/certs/web.key:ro
             - ./certs/ca/ca.crt:/certs/internal-ca.crt:ro
         environment:
             - NODE_ENV=production
             - PORT=3000
             - GATEWAY_URL=https://gateway-service:8443
-            - MTLS_KEY_PATH=/certs/frontend.key
-            - MTLS_CRT_PATH=/certs/frontend.crt
+            - MTLS_KEY_PATH=/certs/web.key
+            - MTLS_CRT_PATH=/certs/web.crt
             - MTLS_CA_PATH=/certs/internal-ca.crt
             # Trust internal CA globally — makes Node's native fetch verify internal certs
             - NODE_EXTRA_CA_CERTS=/certs/internal-ca.crt
