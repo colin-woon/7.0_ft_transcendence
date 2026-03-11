@@ -41,6 +41,18 @@ services:
         volumes:
             - ./certs/runtime/auth/auth-keystore.p12:/certs/auth-keystore.p12:ro
             - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
+            
+    chat_service:
+        build:
+          context: .
+          dockerfile: services/chat/Dockerfile
+        container_name: chat_service
+        profiles: ["chat", "all"]
+        depends_on:
+          db:
+            condition: service_healthy
+        networks:
+          - 42_overflow
 
     # chat-service:
     #     build:

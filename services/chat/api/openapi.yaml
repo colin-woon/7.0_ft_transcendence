@@ -1,0 +1,120 @@
+openapi: 3.0.4
+info:
+  title: Chat Service API
+  version: 1.0.0
+  description: API for managing messages and friendships
+
+paths:
+  /friendship/{requesterId}/{receiverId}:
+    post:
+      summary: Send a friend request
+      parameters:
+        - name: requesterId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: receiverId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Friend request sent successfully
+        "400":
+          description: Invalid user IDs
+        "404":
+          description: User not found
+
+  /friendship/{requesterId}/{receiverId}/accept:
+    patch:
+      summary: Accept a friend request
+      parameters:
+        - name: requesterId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: receiverId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Friend request accepted successfully
+        "404":
+          description: Request not found
+
+  /message/{senderId}/{receiverId}:
+    post:
+      summary: Send a message
+      parameters:
+        - name: senderId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: receiverId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  minLength: 1
+      responses:
+        "201":
+          description: Message sent successfully
+        "400":
+          description: Invalid user IDs or message content
+
+  /history/{senderId}/{receiverId}:
+    get:
+      summary: Get chat history between two users
+      parameters:
+        - name: senderId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: receiverId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Chat history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    senderId:
+                      type: integer
+                    receiverId:
+                      type: integer
+                    content:
+                      type: string
+                    created_at:
+                      type: string
+                      format: date-time
+                      example: "2026-03-09T08:24:27Z"
+        "400":
+          description: Invalid user IDs
+        "404":
+          description: No chat history found

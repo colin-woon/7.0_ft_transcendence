@@ -51,6 +51,17 @@ gw-test/
 .quarkus/
 *.env
 !*.env.example
+
+
+# === Go ===
+*go.work
+*templ.go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+tmp/
 GEMINI.md
 
 

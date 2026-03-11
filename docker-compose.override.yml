@@ -5,25 +5,28 @@ services:
         ports:
             - '${DB_PORT}:5432'
 
-    auth-service:
-        build:
-            target: development
-        env_file:
-            - ./environment/shared.env
-        ports:
-            - '${AUTH_PORT}:8080'
-        volumes:
-            - ./services/auth:/app
+  auth-service:
+    build:
+        target: development
+    env_file:
+        - ./environment/shared.env
+    ports:
+        - '${AUTH_PORT}:8080'
+    volumes:
+        - ./services/auth:/app
 
-    # chat-service:
-    #     build:
-    #         target: development
-    #     env_file:
-    #         - ./environment/shared.env
-    #     ports:
-    #         - '${CHAT_PORT}:8080'
-    #     volumes:
-    #         - ./services/chat:/app
+  chat_service:
+    build:
+      context: .
+      dockerfile: services/chat/Dockerfile
+      target: development
+    env_file:
+      - ./environment/shared.env   
+      - ./environment/chat.env   
+    ports:
+      - "${CHAT_PORT}:8080"
+    volumes:
+      - ./services/chat:/app
 
     forum-service:
         build:

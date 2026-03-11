@@ -1,0 +1,89 @@
+package server
+
+import (
+	"app/internal/api"
+	"encoding/json"
+	"log"
+	"net/http"
+
+	"fmt"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
+
+	"github.com/coder/websocket"
+)
+
+func (s *Server) RegisterRoutes() http.Handler {
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+
+	api.HandlerFromMux(s, r)
+
+	r.Get("/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./api/openapi.yaml")
+	})
+
+	fileServer := http.FileServer(http.Dir("./api/dist"))
+	r.Handle("/docs/*", http.StripPrefix("/docs/", fileServer))
+
+	r.Get("/", s.HelloWorldHandler)
+
+	r.Get("/health", s.healthHandler)
+
+	r.Get("/websocket", s.websocketHandler)
+
+	return r
+}
+
+func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
+	resp := make(map[string]string)
+	resp["message"] = "Hello World"
+
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		log.Fatalf("error handling JSON marshal. Err: %v", err)
+	}
+
+	_, _ = w.Write(jsonResp)
+}
+
+func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
+	jsonResp, _ := json.Marshal(s.db.Health())
+	_, _ = w.Write(jsonResp)
+}
+
+func (s *Server) websocketHandler(w http.ResponseWriter, r *http.Request) {
+	socket, err := websocket.Accept(w, r, nil)
+
+	if err != nil {
+		log.Printf("could not open websocket: %v", err)
+		_, _ = w.Write([]byte("could not open websocket"))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	defer socket.Close(websocket.StatusGoingAway, "server closing websocket")
+
+	ctx := r.Context()
+	socketCtx := socket.CloseRead(ctx)
+
+	for {
+		payload := fmt.Sprintf("server timestamp: %d", time.Now().UnixNano())
+		err := socket.Write(socketCtx, websocket.MessageText, []byte(payload))
+		if err != nil {
+			break
+		}
+		time.Sleep(time.Second * 2)
+	}
+}

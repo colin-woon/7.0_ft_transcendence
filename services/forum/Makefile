@@ -27,7 +27,7 @@ start:
 lint:
 	@if [ -n "$$(docker ps -q -f name=$(SERVICE_NAME))" ]; then \
 		echo "🚀 Container detected. Running inside Docker..."; \
-		docker exec -it $(SERVICE_NAME) uv run ruff check .; \
+		docker exec -i $(SERVICE_NAME) uv run ruff check .; \
 	else \
 		echo "⚠️ No container found. Running locally..."; \
 		uv run ruff check .; \
@@ -36,7 +36,7 @@ lint:
 format:
 	@if [ -n "$$(docker ps -q -f name=$(SERVICE_NAME))" ]; then \
 		echo "🚀 Container detected. Running inside Docker..."; \
-		docker exec -it $(SERVICE_NAME) uv run ruff format .; \
+		docker exec -i $(SERVICE_NAME) uv run ruff format .; \
 	else \
 		echo "⚠️ No container found. Running locally..."; \
 		uv run ruff format .; \
@@ -45,7 +45,7 @@ format:
 test:
 	@if [ -n "$$(docker ps -q -f name=$(SERVICE_NAME))" ]; then \
 		echo "🚀 Container detected. Running inside Docker..."; \
-		docker exec -it $(SERVICE_NAME) uv run pytest; \
+		docker exec -i $(SERVICE_NAME) uv run pytest; \
 	else \
 		echo "⚠️ No container found. Running locally..."; \
 		uv run pytest; \
@@ -54,7 +54,7 @@ test:
 typecheck:
 	@if [ -n "$$(docker ps -q -f name=$(SERVICE_NAME))" ]; then \
 		echo "🚀 Container detected. Running inside Docker..."; \
-		docker exec -it $(SERVICE_NAME) uv run pyright; \
+		docker exec -i $(SERVICE_NAME) uv run pyright; \
 	else \
 		echo "⚠️ No container found. Running locally..."; \
 		uv run pyright; \
@@ -63,7 +63,7 @@ typecheck:
 setup:
 	@if [ -n "$$(docker ps -q -f name=$(SERVICE_NAME))" ]; then \
 		echo "🚀 Container detected. Running inside Docker..."; \
-		docker exec -it $(SERVICE_NAME) sh -c "uv sync && uv run python --version"; \
+		docker exec -i $(SERVICE_NAME) sh -c "uv sync && uv run python --version"; \
 	else \
 		echo "⚠️ No container found. Running locally..."; \
 		uv sync; \
@@ -74,7 +74,7 @@ add:
 	$(call check_package,add)
 	@if [ -n "$$(docker ps -q -f name=$(SERVICE_NAME))" ]; then \
 		echo "🚀 Container detected. Running inside Docker..."; \
-		docker exec -it $(SERVICE_NAME) uv add $(package); \
+		docker exec -i $(SERVICE_NAME) uv add $(package); \
 	else \
 		echo "⚠️ No container found. Running locally..."; \
 		uv add $(package); \
@@ -84,7 +84,7 @@ add-dev:
 	$(call check_package,add-dev)
 	@if [ -n "$$(docker ps -q -f name=$(SERVICE_NAME))" ]; then \
 		echo "🚀 Container detected. Running inside Docker..."; \
-		docker exec -it $(SERVICE_NAME) uv add --dev $(package); \
+		docker exec -i $(SERVICE_NAME) uv add --dev $(package); \
 	else \
 		echo "⚠️ No container found. Running locally..."; \
 		uv add --dev $(package); \
@@ -94,7 +94,7 @@ remove:
 	$(call check_package,remove)
 	@if [ -n "$$(docker ps -q -f name=$(SERVICE_NAME))" ]; then \
 		echo "🚀 Container detected. Running inside Docker..."; \
-		docker exec -it $(SERVICE_NAME) uv remove $(package); \
+		docker exec -i $(SERVICE_NAME) uv remove $(package); \
 	else \
 		echo "⚠️ No container found. Running locally..."; \
 		uv remove $(package); \
@@ -104,7 +104,7 @@ remove-dev:
 	$(call check_package,remove-dev)
 	@if [ -n "$$(docker ps -q -f name=$(SERVICE_NAME))" ]; then \
 		echo "🚀 Container detected. Running inside Docker..."; \
-		docker exec -it $(SERVICE_NAME) uv remove $(package) --group dev; \
+		docker exec -i $(SERVICE_NAME) uv remove $(package) --group dev; \
 	else \
 		echo "⚠️ No container found. Running locally..."; \
 		uv remove $(package) --group dev; \
@@ -113,7 +113,7 @@ remove-dev:
 list:
 	@if [ -n "$$(docker ps -q -f name=$(SERVICE_NAME))" ]; then \
 		echo "🚀 Container detected. Running inside Docker..."; \
-		docker exec -it $(SERVICE_NAME) uv tree; \
+		docker exec -i $(SERVICE_NAME) uv tree; \
 	else \
 		echo "⚠️ No container found. Running locally..."; \
 		uv tree; \
