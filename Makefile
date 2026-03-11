@@ -1,8 +1,8 @@
 .DEFAULT_GOAL := help
 
 COMPOSE         ?= docker compose
-COMPOSE_PROD    := $(COMPOSE) -f docker-compose.yml
-COMPOSE_DEV     := $(COMPOSE) -f docker-compose.yml -f docker-compose.override.yml
+COMPOSE_PROD    := $(COMPOSE) -f docker-compose.yml --env-file ./environment/shared.env
+COMPOSE_DEV     := $(COMPOSE) -f docker-compose.yml -f docker-compose.override.yml --env-file ./environment/shared.env
 PROFILE         ?= all
 
 .PHONY: help

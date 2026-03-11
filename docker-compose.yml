@@ -41,18 +41,26 @@ services:
         volumes:
             - ./certs/runtime/auth/auth-keystore.p12:/certs/auth-keystore.p12:ro
             - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
-            
-    chat_service:
+
+    chat-service:
         build:
-          context: .
-          dockerfile: services/chat/Dockerfile
-        container_name: chat_service
-        profiles: ["chat", "all"]
+            context: .
+            dockerfile: services/chat/Dockerfile
+        container_name: chat-service
+        profiles: ['chat', 'all']
         depends_on:
-          db:
-            condition: service_healthy
+            db-service:
+                condition: service_healthy
         networks:
-          - 42_overflow
+            - 42_overflow
+        env_file:
+            - ./environment/shared.env
+            - ./environment/chat.env
+        volumes:
+            - ./certs/runtime/chat/chat-keystore.p12:/certs/chat-keystore.p12:ro
+            - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
+        # ports:
+        #     - '8003:8080'
 
     # chat-service:
     #     build:
