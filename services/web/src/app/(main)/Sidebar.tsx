@@ -1,0 +1,187 @@
+"use client";
+import Link from "next/link";
+import { Home, TrendingUp, Users, BookOpen, Trophy, Settings, HelpCircle, Plus, ChevronDown, Star, X, FolderOpen } from "lucide-react";
+import { useState } from "react";
+
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const [showRecent, setShowRecent] = useState(true);
+
+  const friends = [
+    { name: "alex_km", login: "alkim", color: "from-blue-400 to-blue-600", online: true },
+    { name: "priya_n", login: "pnair", color: "from-purple-400 to-purple-600", online: true },
+    { name: "luca_r", login: "lricci", color: "from-green-400 to-green-600", online: false },
+    { name: "sara_m", login: "smuell", color: "from-orange-400 to-orange-600", online: false },
+    { name: "omar_k", login: "okhan", color: "from-pink-400 to-pink-600", online: true },
+  ];
+
+  const recentFriends = [
+    { name: "javi_p", color: "from-cyan-400 to-cyan-600", online: true },
+    { name: "mei_t", color: "from-indigo-400 to-indigo-600", online: false },
+    { name: "felix_b", color: "from-teal-400 to-teal-600", online: true },
+  ];
+
+  return (
+    <>
+      {/* Overlay for mobile */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/30 z-40 lg:hidden"
+          onClick={onClose}
+        />
+      )}
+      
+      <aside className={`w-64 fixed top-[60px] bottom-0 z-50 flex-shrink-0 transition-transform duration-300 ease-in-out ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        <div className="h-full flex flex-col bg-white border-r border-gray-200">
+          
+          {/* Close button for mobile */}
+          <div className="lg:hidden flex items-center justify-between p-3 border-b border-gray-200">
+            <span className="text-sm font-semibold text-slate-700">Menu</span>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-full transition"
+              aria-label="Close sidebar"
+            >
+              <X size={20} className="text-slate-600" />
+            </button>
+          </div>
+        
+        {/* Navigation Links */}
+        <div className="p-3 border-b border-gray-200">
+          <nav className="space-y-1">
+            <Link href="/home" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group">
+              <Home size={20} className="text-slate-600 group-hover:text-[#0f6f6b]" />
+              <span className="group-hover:text-[#0f6f6b]">Home</span>
+            </Link>
+            <a href="#" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group">
+              <TrendingUp size={20} className="text-slate-600 group-hover:text-[#0f6f6b]" />
+              <span className="group-hover:text-[#0f6f6b]">Popular</span>
+            </a>
+            <a href="#" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group">
+              <Users size={20} className="text-slate-600 group-hover:text-[#0f6f6b]" />
+              <span className="group-hover:text-[#0f6f6b]">Friends</span>
+            </a>
+            <Link href="/home/projects" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group">
+              <FolderOpen size={20} className="text-slate-600 group-hover:text-[#0f6f6b]" />
+              <span className="group-hover:text-[#0f6f6b]">Projects</span>
+            </Link>
+          </nav>
+        </div>
+
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto">
+          
+          {/* Recent Friends */}
+          <div className="p-3 border-b border-gray-200">
+            <button 
+              onClick={() => setShowRecent(!showRecent)}
+              className="flex items-center justify-between w-full px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide hover:text-gray-700 transition"
+            >
+              <span>Recent</span>
+              <ChevronDown size={14} className={`transform transition-transform ${showRecent ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {showRecent && (
+              <div className="mt-2 space-y-1">
+                {recentFriends.map((friend) => (
+                  <a
+                    key={friend.name}
+                    href="#"
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 hover:bg-[#8EE7E3]/10 rounded-md transition group"
+                  >
+                    <div className="relative flex-shrink-0">
+                      <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${friend.color} flex items-center justify-center text-[10px] font-bold text-white`}>
+                        {friend.name[0].toUpperCase()}
+                      </div>
+                      {friend.online && <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-400 rounded-full border border-white" />}
+                    </div>
+                    <span className="truncate text-xs group-hover:text-[#0f6f6b]">{friend.name}</span>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Friends Section */}
+          <div className="p-3">
+            <div className="flex items-center justify-between px-2 mb-2">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Friends</h3>
+              <button className="p-1 hover:bg-gray-100 rounded transition">
+                <Plus size={14} className="text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="space-y-1">
+              {friends.map((friend) => (
+                <a
+                  key={friend.name}
+                  href="#"
+                  className="flex items-center gap-2 px-2 py-2 text-sm text-slate-700 hover:bg-[#8EE7E3]/10 rounded-md transition group"
+                >
+                  <div className="relative flex-shrink-0">
+                    <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${friend.color} flex items-center justify-center text-sm font-bold text-white`}>
+                      {friend.name[0].toUpperCase()}
+                    </div>
+                    {friend.online && <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border border-white" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate group-hover:text-[#0f6f6b]">{friend.name}</div>
+                    <div className="text-xs text-gray-500">{friend.online ? 'Online' : 'Offline'}</div>
+                  </div>
+                </a>
+              ))}
+            </div>
+
+            {/* Add Friend Button */}
+            <button className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-[#0f6f6b] border border-[#8EE7E3] hover:bg-[#8EE7E3]/10 rounded-full transition">
+              <Plus size={16} />
+              Add Friend
+            </button>
+          </div>
+
+          {/* Resources Section */}
+          <div className="p-3 border-t border-gray-200">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 mb-2">Resources</h3>
+            <div className="space-y-1">
+              <a href="#" className="flex items-center gap-3 px-2 py-1.5 text-sm text-slate-700 hover:bg-gray-100 rounded-md transition">
+                <BookOpen size={18} className="text-slate-600" />
+                <span className="text-xs">About 42 overflow</span>
+              </a>
+              <a href="#" className="flex items-center gap-3 px-2 py-1.5 text-sm text-slate-700 hover:bg-gray-100 rounded-md transition">
+                <Trophy size={18} className="text-slate-600" />
+                <span className="text-xs">Achievements</span>
+              </a>
+              <a href="#" className="flex items-center gap-3 px-2 py-1.5 text-sm text-slate-700 hover:bg-gray-100 rounded-md transition">
+                <HelpCircle size={18} className="text-slate-600" />
+                <span className="text-xs">Help Center</span>
+              </a>
+              <a href="#" className="flex items-center gap-3 px-2 py-1.5 text-sm text-slate-700 hover:bg-gray-100 rounded-md transition">
+                <Settings size={18} className="text-slate-600" />
+                <span className="text-xs">Settings</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-3 border-t border-gray-200">
+          <div className="text-xs text-gray-500 space-y-1">
+            <div className="flex flex-wrap gap-2">
+              <a href="#" className="hover:underline">Privacy</a>
+              <span>·</span>
+              <a href="#" className="hover:underline">Terms</a>
+            </div>
+            <p className="text-gray-400">42 overflow, Inc. © 2026</p>
+          </div>
+        </div>
+        </div>
+      </aside>
+    </>
+  );
+}

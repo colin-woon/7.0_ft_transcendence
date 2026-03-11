@@ -12,7 +12,7 @@ define check_package
 endef
 
 # Ensure commands run even if a file named 'dev' exists
-.PHONY: dev lint format build setup add add-dev remove remove-dev start list
+.PHONY: dev lint format build setup add add-dev remove remove-dev start list clean reinstall
 
 # Default command when you just type 'make'
 all: dev
@@ -55,3 +55,9 @@ remove-dev:
 
 list:
 	npm list
+
+clean:
+	rm -rf .next node_modules
+
+reinstall: clean
+	npm install

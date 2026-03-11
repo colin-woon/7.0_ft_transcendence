@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   // Expose GATEWAY_URL to the browser (used for the login link in the test console).
