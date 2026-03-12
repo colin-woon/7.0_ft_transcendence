@@ -3,11 +3,38 @@ info:
   title: Chat Service API
   version: 1.0.0
   description: API for managing messages and friendships
+tags:
+  - name: Friendship
+    description: Endpoints for managing friendships
+  - name: Message
+    description: Endpoints for managing chat messages
+
+components:
+  schemas:
+    ChatMessage:
+      type: object
+      required: [id, senderId, receiverId, content, createdAt]
+      properties:
+        id:
+          type: integer
+        senderId:
+          type: integer
+        receiverId:
+          type: integer
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-03-09T08:24:27Z"
 
 paths:
   /friendship/{requesterId}/{receiverId}:
     post:
+      tags:
+        - Friendship
       summary: Send a friend request
+      operationId: sendFriendRequest
       parameters:
         - name: requesterId
           in: path
@@ -29,7 +56,10 @@ paths:
 
   /friendship/{requesterId}/{receiverId}/accept:
     patch:
+      tags:
+        - Friendship
       summary: Accept a friend request
+      operationId: acceptFriendRequest
       parameters:
         - name: requesterId
           in: path
@@ -49,7 +79,10 @@ paths:
 
   /message/{senderId}/{receiverId}:
     post:
-      summary: Send a message
+      tags:
+        - Message
+      summary: Send a chat message
+      operationId: sendMessage
       parameters:
         - name: senderId
           in: path
@@ -78,9 +111,12 @@ paths:
         "400":
           description: Invalid user IDs or message content
 
-  /history/{senderId}/{receiverId}:
+  /message/history/{senderId}/{receiverId}:
     get:
+      tags:
+        - Message
       summary: Get chat history between two users
+      operationId: getMessageHistory
       parameters:
         - name: senderId
           in: path
@@ -100,21 +136,30 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                    senderId:
-                      type: integer
-                    receiverId:
-                      type: integer
-                    content:
-                      type: string
-                    created_at:
-                      type: string
-                      format: date-time
-                      example: "2026-03-09T08:24:27Z"
+                  $ref: "#/components/schemas/ChatMessage"
         "400":
           description: Invalid user IDs
         "404":
           description: No chat history found
+
+  /message/stream/{tempUserId}:
+    get:
+      tags:
+        - Message
+      summary: Opens an SSE connection for real-time chat message updates
+      operationId: getMessageStream
+      parameters:
+        - name: tempUserId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: SSE connection successful
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/ChatMessage"
+        "401":
+          description: Unauthorized
