@@ -15,6 +15,7 @@ public final class IdentityHeaders {
 	public static final String INTRA_FORWARDED_FOR = "X-Intra-Forwarded-For";
 	public static final String INTRA_FORWARDED_HOST = "X-Intra-Forwarded-Host";
 	public static final String INTRA_FORWARDED_PROTO = "X-Intra-Forwarded-Proto";
+	public static final String CLIENT_IP = "X-Intra-Client-Ip";
 
 	public static final String REAL_IP = "X-Real-Ip";
 	public static final String FORWARDED_FOR = "X-Forwarded-For";

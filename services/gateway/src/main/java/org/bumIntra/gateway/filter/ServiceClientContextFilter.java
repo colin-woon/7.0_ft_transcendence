@@ -48,16 +48,6 @@ public class ServiceClientContextFilter implements ClientRequestFilter {
 			request.setUri(uriBuilder.build());
 		}
 
-		// System.out.println("ClientRequestContext URI: " + request.getUri());
-		// request.getHeaders().forEach((k, v) -> {
-		// System.out.println("ClientRequestContext header: " + k + " = " + v);
-		// });
-		//
-		// System.out.println("GatewayRequestContext headers: ");
-		// grc.getHeaders().forEach((k, v) -> {
-		// System.out.println(k + " = " + v);
-		// });
-
 		if (grc.getHeaders() != null) {
 			// Propagate essential headers safely
 			var headersToPropagate = List.of(

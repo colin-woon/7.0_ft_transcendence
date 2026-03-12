@@ -68,13 +68,16 @@ public class RequestContextFilter implements ContainerRequestFilter {
 		grc.setForwardedProto(request.getHeaderString(IdentityHeaders.INTRA_FORWARDED_PROTO));
 
 		// RateLimitAccess TODO: to be review later
-		String clientIp = grc.getRealIp() != null && !grc.getRealIp().isBlank() ? grc.getRealIp()
-				: grc.getForwardedFor().split(",")[0].trim();
-		if (clientIp != null && !clientIp.isBlank()) {
-			grc.setClientIp(clientIp);
-		} else {
-			grc.setInternal(true);
-		}
 
+		if (grc.getRealIp() == null || grc.getRealIp().isBlank()) {
+			if (grc.getForwardedFor() != null && !grc.getForwardedFor().isBlank()) {
+				grc.setClientIp(grc.getForwardedFor().split(",")[0].trim());
+			} else {
+				grc.setClientIp("unknown");
+				grc.setInternal(true);
+			}
+		} else {
+			grc.setClientIp(grc.getRealIp().trim());
+		}
 	}
 }

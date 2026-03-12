@@ -2,20 +2,17 @@ package org.bumIntra.gateway.websocket;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
-import org.bumIntra.gateway.client.AuthService;
-import org.bumIntra.gateway.client.dto.AuthResult;
 import org.bumIntra.gateway.obs.GatewayObserverDispatcher;
 import org.bumIntra.gateway.obs.event.GatewayWsAuth;
 import org.bumIntra.gateway.obs.event.GatewayWsClose;
 import org.bumIntra.gateway.obs.event.GatewayWsOpen;
 import org.bumIntra.gateway.obs.event.GatewayWsThrottle;
 import org.bumIntra.gateway.ratelimit.ws.WsRateLimitService;
-import org.jboss.logging.Logger;
+import org.bumIntra.gateway.security.IdentityHeaders;
 
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.websocket.CloseReason;
@@ -27,22 +24,17 @@ import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.Session;
 
 import org.bumIntra.gateway.websocket.AuthHandshakeConfig;
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
 import jakarta.enterprise.context.control.ActivateRequestContext;
 
 @ServerEndpoint(value = "/ws/chat", configurator = AuthHandshakeConfig.class)
 @ApplicationScoped
 public class ChatWebSocketEndPoint {
 
-	// private static final Logger LOG =
-	// Logger.getLogger(ChatWebSocketEndPoint.class);
-
 	private static final String AUTHZ_STATE = "authState";
-	private static final String USER_ID = "userId";
 	private static final String LAST_THROTTLE_AT = "lastThrottleAt";
 	private static final Duration THROTTLE_LOG_COOLDOWN = Duration.ofSeconds(2);
-
-	@Inject
-	AuthService authService;
 
 	@Inject
 	WsRateLimitService rls;
@@ -50,13 +42,15 @@ public class ChatWebSocketEndPoint {
 	@Inject
 	GatewayObserverDispatcher obs;
 
+	@Inject
+	SecurityIdentity si;
+
 	@OnOpen
 	public void onOpen(Session session) {
 
 		Instant authStart = Instant.now();
 
-		String clientIp = (String) session.getUserProperties()
-				.get(AuthHandshakeConfig.HP_CLIENT_IP);
+		final String clientIp = getSessionProp(session, IdentityHeaders.CLIENT_IP);
 
 		obs.onWsOpen(new GatewayWsOpen(
 				session.getId(),
@@ -81,6 +75,7 @@ public class ChatWebSocketEndPoint {
 			return;
 		}
 
+		// TODO: change to user maybe
 		// Connection-level rate limit (per IP)
 		rls.allowConnection(clientIp).subscribe().with(allowed -> {
 
@@ -99,26 +94,7 @@ public class ChatWebSocketEndPoint {
 				return;
 			}
 
-			String authz = (String) session.getUserProperties()
-					.get(AuthHandshakeConfig.HP_AUTHZ);
-
-			if (authz == null || authz.isBlank()) {
-
-				obs.onWsAuth(new GatewayWsAuth(
-						session.getId(),
-						clientIp,
-						Optional.empty(),
-						false,
-						Optional.of("Missing Authorization"),
-						Duration.between(authStart, Instant.now()),
-						Instant.now()));
-
-				terminate(session, CloseReason.CloseCodes.VIOLATED_POLICY,
-						"Missing Authorization");
-				return;
-			}
-
-			executeAuth(session, authz, authStart);
+			executeAuth(session, authStart);
 
 		}, e -> {
 
@@ -144,7 +120,7 @@ public class ChatWebSocketEndPoint {
 
 			obs.onWsAuth(new GatewayWsAuth(
 					session.getId(),
-					(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
+					getSessionProp(session, IdentityHeaders.CLIENT_IP),
 					Optional.empty(),
 					false,
 					Optional.of("Not Authenticated"),
@@ -156,13 +132,11 @@ public class ChatWebSocketEndPoint {
 			return;
 		}
 
-		String userId = (String) session.getUserProperties().get(USER_ID);
-
-		if (userId == null) {
+		if (session.getUserProperties().get(IdentityHeaders.USER_ID) == null) {
 
 			obs.onWsAuth(new GatewayWsAuth(
 					session.getId(),
-					(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
+					getSessionProp(session, IdentityHeaders.CLIENT_IP),
 					Optional.empty(),
 					false,
 					Optional.of("Invalid Session State"),
@@ -173,6 +147,8 @@ public class ChatWebSocketEndPoint {
 					"Invalid Session State");
 			return;
 		}
+
+		String userId = getSessionProp(session, IdentityHeaders.USER_ID);
 
 		rls.allowMessage(userId).subscribe().with(allowed -> {
 
@@ -185,18 +161,19 @@ public class ChatWebSocketEndPoint {
 					Instant last = (Instant) session.getUserProperties().get(LAST_THROTTLE_AT);
 					if (last == null || Duration.between(last, now).compareTo(THROTTLE_LOG_COOLDOWN) >= 0) {
 						session.getUserProperties().put(LAST_THROTTLE_AT, now);
-						obs.onWsThrottle(new GatewayWsThrottle(
-								session.getId(),
-								(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
-								Optional.of(userId),
-								GatewayWsThrottle.WsThrottleType.MSG,
-								userId,
+							obs.onWsThrottle(new GatewayWsThrottle(
+									session.getId(),
+									getSessionProp(session, IdentityHeaders.CLIENT_IP),
+									Optional.of(userId),
+									GatewayWsThrottle.WsThrottleType.MSG,
+									userId,
 								now));
 					}
 				}
 				return;
 			}
 
+			// TODO: proxy into chat-service
 			if (session.isOpen()) {
 				session.getAsyncRemote().sendText("Echo: " + message);
 			}
@@ -205,7 +182,7 @@ public class ChatWebSocketEndPoint {
 
 			obs.onWsThrottle(new GatewayWsThrottle(
 					session.getId(),
-					(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
+					getSessionProp(session, IdentityHeaders.CLIENT_IP),
 					Optional.of(userId),
 					GatewayWsThrottle.WsThrottleType.MSG,
 					userId,
@@ -220,9 +197,11 @@ public class ChatWebSocketEndPoint {
 
 	@OnClose
 	public void onClose(Session session, CloseReason reason) {
+		String userId = getSessionProp(session, IdentityHeaders.USER_ID);
+
 		obs.onWsClose(new GatewayWsClose(
 				session.getId(),
-				Optional.ofNullable((String) session.getUserProperties().get(USER_ID)),
+				Optional.ofNullable(userId),
 				reason.getCloseCode().getCode(),
 				reason.getReasonPhrase(),
 				Instant.now()));
@@ -234,46 +213,50 @@ public class ChatWebSocketEndPoint {
 	}
 
 	@ActivateRequestContext
-	void executeAuth(Session session, String authorization, Instant authStart) {
+	void executeAuth(Session session, Instant authStart) {
 		try {
 
-			// AuthResult authResult = authService.verify(authorization);
-
-			AuthResult authResult = new AuthResult("user123", Set.of("user", "admin"));
-
-			if (authResult == null ||
-					authResult.sub() == null ||
-					authResult.sub().isBlank()) {
-
-				session.getUserProperties().put(AUTHZ_STATE, "invalid");
-
-				obs.onWsAuth(new GatewayWsAuth(
-						session.getId(),
-						(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
-						Optional.empty(),
-						false,
-						Optional.of("Invalid Authorization"),
+			// TODO: update to app.properties to Cookie from Authz
+				if (si.isAnonymous()) {
+					obs.onWsAuth(new GatewayWsAuth(
+							session.getId(),
+							getSessionProp(session, IdentityHeaders.CLIENT_IP),
+							Optional.empty(),
+							false,
+							Optional.of("Unauthorized"),
 						Duration.between(authStart, Instant.now()),
 						Instant.now()));
 				terminate(session,
 						CloseReason.CloseCodes.VIOLATED_POLICY,
-						"Invalid Authorization");
+						"Unauthorized");
 				return;
 			}
 
-			String userId = authResult.sub();
+			final String userId;
+
+			if (!si.isAnonymous() && si.getPrincipal() instanceof JsonWebToken) {
+
+				JsonWebToken jwt = (JsonWebToken) si.getPrincipal();
+				session.getUserProperties().put(IdentityHeaders.USER_ID, jwt.getSubject());
+				session.getUserProperties().put(IdentityHeaders.USER_ROLES, jwt.getGroups());
+				userId = jwt.getSubject();
+			} else {
+				// Should not happen if not anonymous, but handle gracefully
+				terminate(session, CloseReason.CloseCodes.VIOLATED_POLICY, "Invalid Principal Type");
+				return;
+			}
 
 			// Post-auth user-level connection gate
 			rls.allowUserConnection(userId).subscribe().with(connAllowed -> {
 
 				if (!connAllowed) {
 
-					obs.onWsThrottle(new GatewayWsThrottle(
-							session.getId(),
-							(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
-							Optional.of(userId),
-							GatewayWsThrottle.WsThrottleType.CONN_USER,
-							userId,
+						obs.onWsThrottle(new GatewayWsThrottle(
+								session.getId(),
+								getSessionProp(session, IdentityHeaders.CLIENT_IP),
+								Optional.of(userId),
+								GatewayWsThrottle.WsThrottleType.CONN_USER,
+								userId,
 							Instant.now()));
 
 					terminate(session,
@@ -282,16 +265,16 @@ public class ChatWebSocketEndPoint {
 					return;
 				}
 
-				session.getUserProperties().put(USER_ID, userId);
-				session.getUserProperties().put("roles", authResult.roles());
+				// session.getUserProperties().put(USER_ID, userId);
+				// session.getUserProperties().put("roles", authResult.roles());
 				session.getUserProperties().put(AUTHZ_STATE, "authenticated");
 
-				obs.onWsAuth(new GatewayWsAuth(
-						session.getId(),
-						(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
-						Optional.of(userId),
-						true,
-						Optional.empty(), // TODO: put success reason if needed
+					obs.onWsAuth(new GatewayWsAuth(
+							session.getId(),
+							getSessionProp(session, IdentityHeaders.CLIENT_IP),
+							Optional.of(userId),
+							true,
+							Optional.empty(), // TODO: put success reason if needed
 						Duration.between(authStart, Instant.now()),
 						Instant.now()));
 
@@ -302,12 +285,12 @@ public class ChatWebSocketEndPoint {
 
 			}, e -> {
 
-				obs.onWsThrottle(new GatewayWsThrottle(
-						session.getId(),
-						(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
-						Optional.of(userId),
-						GatewayWsThrottle.WsThrottleType.CONN_USER,
-						userId,
+					obs.onWsThrottle(new GatewayWsThrottle(
+							session.getId(),
+							getSessionProp(session, IdentityHeaders.CLIENT_IP),
+							Optional.of(userId),
+							GatewayWsThrottle.WsThrottleType.CONN_USER,
+							userId,
 						Instant.now()));
 
 				terminate(session,
@@ -319,7 +302,7 @@ public class ChatWebSocketEndPoint {
 
 			obs.onWsAuth(new GatewayWsAuth(
 					session.getId(),
-					(String) session.getUserProperties().get(AuthHandshakeConfig.HP_CLIENT_IP),
+					getSessionProp(session, IdentityHeaders.CLIENT_IP),
 					Optional.empty(),
 					false,
 					Optional.of("Authentication Error"),
@@ -349,5 +332,10 @@ public class ChatWebSocketEndPoint {
 		} catch (Exception e) {
 			obs.onWsError(session != null ? session.getId() : "unknown", e);
 		}
+	}
+
+	private String getSessionProp(Session session, String key) {
+		Object value = session.getUserProperties().get(key);
+		return value == null ? null : value.toString();
 	}
 }

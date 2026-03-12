@@ -3,6 +3,7 @@ package org.bumIntra.gateway.api;
 import java.util.Map;
 
 import org.bumIntra.gateway.client.AuthService;
+import org.bumIntra.gateway.client.ChatService;
 import org.bumIntra.gateway.client.ForumService;
 
 import jakarta.inject.Inject;
@@ -26,9 +27,10 @@ public class GatewayResource {
 	@Inject
 	ForumService forumService;
 
-	// @Inject
-	// ChatService chatService;
+	@Inject
+	ChatService chatService;
 
+	// TODO: temporary endpoint for testing
 	@GET
 	@Path("/ping")
 	public Response ping() {
@@ -43,8 +45,9 @@ public class GatewayResource {
 	public Response proxyGet(@PathParam("service") String service, @PathParam("subpath") String subpath) {
 		System.out.println("Proxying GET request to service: " + service + ", subpath: " + subpath);
 		return switch (service) {
-			case "auth" -> authService.proxyGet(service + "/" + subpath);
-			case "forum" -> forumService.proxyGet(service + "/" + subpath);
+			case "auth" -> authService.proxyGet(buildPath(service, subpath));
+			case "forum" -> forumService.proxyGet(buildPath(service, subpath));
+			case "chat" -> chatService.proxyGet(buildPath(service, subpath));
 			default -> Response.status(Response.Status.NOT_FOUND).entity("Service not found").build();
 		};
 	}
@@ -53,8 +56,9 @@ public class GatewayResource {
 	@Path("/{service}/{subpath: .*}")
 	public Response proxyPost(@PathParam("service") String service, @PathParam("subpath") String subpath, byte[] body) {
 		return switch (service) {
-			case "auth" -> authService.proxyPost(service + "/" + subpath, body);
-			case "forum" -> forumService.proxyPost(service + "/" + subpath, body);
+			case "auth" -> authService.proxyPost(buildPath(service, subpath), body);
+			case "forum" -> forumService.proxyPost(buildPath(service, subpath), body);
+			case "chat" -> chatService.proxyPost(buildPath(service, subpath), body);
 			default -> Response.status(Response.Status.NOT_FOUND).entity("Service not found").build();
 		};
 	}
@@ -63,8 +67,9 @@ public class GatewayResource {
 	@Path("/{service}/{subpath: .*}")
 	public Response proxyDelete(@PathParam("service") String service, @PathParam("subpath") String subpath) {
 		return switch (service) {
-			case "auth" -> authService.proxyDelete(service + "/" + subpath);
-			case "forum" -> forumService.proxyDelete(service + "/" + subpath);
+			case "auth" -> authService.proxyDelete(buildPath(service, subpath));
+			case "forum" -> forumService.proxyDelete(buildPath(service, subpath));
+			case "chat" -> chatService.proxyDelete(buildPath(service, subpath));
 			default -> Response.status(Response.Status.NOT_FOUND).entity("Service not found").build();
 		};
 	}
@@ -73,8 +78,9 @@ public class GatewayResource {
 	@Path("/{service}/{subpath: .*}")
 	public Response proxyPut(@PathParam("service") String service, @PathParam("subpath") String subpath, byte[] body) {
 		return switch (service) {
-			case "auth" -> authService.proxyPut(service + "/" + subpath, body);
-			case "forum" -> forumService.proxyPut(service + "/" + subpath, body);
+			case "auth" -> authService.proxyPut(buildPath(service, subpath), body);
+			case "forum" -> forumService.proxyPut(buildPath(service, subpath), body);
+			case "chat" -> chatService.proxyPut(buildPath(service, subpath), body);
 			default -> Response.status(Response.Status.NOT_FOUND).entity("Service not found").build();
 		};
 	}
@@ -84,9 +90,17 @@ public class GatewayResource {
 	public Response proxyPatch(@PathParam("service") String service, @PathParam("subpath") String subpath,
 			byte[] body) {
 		return switch (service) {
-			case "auth" -> authService.proxyPatch(service + "/" + subpath, body);
-			case "forum" -> forumService.proxyPatch(service + "/" + subpath, body);
+			case "auth" -> authService.proxyPatch(buildPath(service, subpath), body);
+			case "forum" -> forumService.proxyPatch(buildPath(service, subpath), body);
+			case "chat" -> chatService.proxyPatch(buildPath(service, subpath), body);
 			default -> Response.status(Response.Status.NOT_FOUND).entity("Service not found").build();
 		};
+	}
+
+	private String buildPath(String service, String subpath) {
+		// TODO: Strip "<service>/" prefix after downstream services adopt normalized
+		// base paths.
+		// return subpath;
+		return service + "/" + subpath;
 	}
 }
