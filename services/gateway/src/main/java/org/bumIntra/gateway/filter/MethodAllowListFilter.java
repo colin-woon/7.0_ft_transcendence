@@ -15,9 +15,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 
 @Provider
-@Priority(Priorities.AUTHENTICATION - 90) // NOTE: run before authentication to avoid passing unwanted methods to
-											// downstream
-// services
+@Priority(Priorities.AUTHENTICATION - 90)
 public class MethodAllowListFilter implements ContainerRequestFilter {
 
 	@Inject
@@ -41,10 +39,8 @@ public class MethodAllowListFilter implements ContainerRequestFilter {
 			throw new GatewayException(
 					Response.Status.METHOD_NOT_ALLOWED,
 					GatewayErrorCode.FORBIDDEN,
-					"Method not allowed: " + upper);
-			// .withHeader("Allow", String.join(", ", allowed));
-			// TODO: above line to be uncommented when JAX-RS supports setting Allow header
-			// in 405 responses
+					"Method not allowed: " + upper)
+					.withHeader("Allow", String.join(", ", allowed));
 		}
 	}
 }

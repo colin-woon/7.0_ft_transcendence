@@ -62,3 +62,10 @@ gw-test/
 *.so
 *.dylib
 tmp/
+AGENTS.md
+
+
+# === certs ===
+*.pem
+*.key
+*.crt

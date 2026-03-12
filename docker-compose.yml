@@ -1,69 +1,234 @@
 services:
-  db:
-    image: postgres:18.1-alpine
-    container_name: postgres_db
-    restart: always
-    volumes:
-      - postgres_data:/var/lib/postgresql
-    networks:
-      - 42_overflow
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    
-  auth_service:
-    build:
-      context: .
-      dockerfile: services/auth/src/main/docker/Dockerfile.custom
-    container_name: auth_service
-    profiles: ["auth", "all"]
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - 42_overflow
+    db-service:
+        image: postgres:18.1-alpine
+        container_name: postgres-db
+        restart: always
+        env_file:
+            - ./environment/db.env
+        volumes:
+            - ./infra/postgres/init-scripts:/docker-entrypoint-initdb.d
+            - postgres_data:/var/lib/postgresql
+        networks:
+            - 42_overflow
+        healthcheck:
+            test:
+                ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
+            interval: 10s
+            timeout: 5s
+            retries: 5
 
-  chat_service:
-    build:
-      context: .
-      dockerfile: services/chat/Dockerfile
-    container_name: chat_service
-    profiles: ["chat", "all"]
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - 42_overflow
+    auth-service:
+        build:
+            context: .
+            dockerfile: services/auth/src/main/docker/Dockerfile.custom
+            target: production
+        container_name: auth-service
+        profiles: ['auth', 'all']
+        depends_on:
+            db-service:
+                condition: service_healthy
+        networks:
+            - 42_overflow
+        # auth to add health route or use management port
+        healthcheck:
+            test: ['CMD', 'curl', '-f', 'http://localhost:9000/q/health']
+            interval: 10s
+            timeout: 5s
+            start_period: 30s
+            retries: 3
+        env_file:
+            - ./environment/shared.env
+        volumes:
+            - ./certs/runtime/auth/auth-keystore.p12:/certs/auth-keystore.p12:ro
+            - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
 
-  forum_service:
-    image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
-    container_name: forum_service
-    profiles: ["forum", "all"]
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - 42_overflow
-  
-  web_service:
-    build:
-      context: .
-      dockerfile: services/web/Dockerfile
-    container_name: web_service
-    profiles: ["web", "all"]
-    networks:
-      - 42_overflow
-    
-  # add other services below here, example:
-  # redis:
-  #   image: redis:7-alpine
-  #   container_name: redis_cache
+    chat-service:
+        build:
+            context: .
+            dockerfile: services/chat/Dockerfile
+        container_name: chat-service
+        profiles: ['chat', 'all']
+        depends_on:
+            db-service:
+                condition: service_healthy
+        networks:
+            - 42_overflow
+        env_file:
+            - ./environment/shared.env
+            - ./environment/chat.env
+        volumes:
+            - ./certs/runtime/chat/chat-keystore.p12:/certs/chat-keystore.p12:ro
+            - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
+        # ports:
+        #     - '8003:8080'
+
+    # chat-service:
+    #     build:
+    #         context: .
+    #         dockerfile: services/chat/src/main/docker/Dockerfile.custom
+    #     container_name: chat-service
+    #     profiles: ['chat', 'all']
+    #     depends_on:
+    #         db-service:
+    #             condition: service_healthy
+    #     networks:
+    #         - 42_overflow
+    #     env_file:
+    #         - ./environment/shared.env
+    #         - ./environment/chat.env
+    #     volumes:
+    #         - ./certs/runtime/chat/chat-keystore.p12:/certs/chat-keystore.p12:ro
+    #         - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
+
+    forum-service:
+        build:
+            context: ./services/forum
+            dockerfile: Dockerfile
+            target: production
+        container_name: forum-service
+        working_dir: /app
+        profiles: ['forum', 'all']
+        depends_on:
+            db-service:
+                condition: service_healthy
+        networks:
+            - 42_overflow
+        env_file:
+            - ./environment/shared.env
+            - ./environment/forum.env
+        healthcheck:
+            test: ['CMD', 'curl', '-fk', 'https://localhost:8443/health'] # need to open public route
+            interval: 10s
+            timeout: 5s
+            start_period: 20s
+            retries: 3
+        command:
+            - uv
+            - run
+            - uvicorn
+            - src.main:app
+            - --host
+            - '0.0.0.0'
+            - --port
+            - '8443'
+            - --ssl-keyfile
+            - /certs/forum.key
+            - --ssl-certfile
+            - /certs/forum.crt
+            - --ssl-ca-certs
+            - /certs/internal-ca.crt
+            - --ssl-cert-reqs
+            - '2'
+        volumes:
+            - ./certs/runtime/forum/forum.key:/certs/forum.key:ro
+            - ./certs/runtime/forum/forum.crt:/certs/forum.crt:ro
+            - ./certs/ca/ca.crt:/certs/internal-ca.crt:ro
+
+    web-service:
+        build:
+            context: .
+            dockerfile: services/web/Dockerfile
+        container_name: web_service
+        profiles: ['web', 'all']
+        networks:
+            - 42_overflow
+        env_file:
+            - ./environment/web.env
+        volumes:
+            - ./certs/runtime/web/web.crt:/certs/web.crt:ro
+            - ./certs/runtime/web/web.key:/certs/web.key:ro
+            - ./certs/ca/ca.crt:/certs/internal-ca.crt:ro
+
+    gateway-service:
+        build:
+            context: .
+            dockerfile: services/gateway/src/main/docker/Dockerfile.custom
+            target: production
+        container_name: gateway-service
+        profiles: ['gateway', 'all']
+        networks:
+            - 42_overflow
+        healthcheck:
+            test: ['CMD', 'curl', '-f', 'http://localhost:8180/q/health']
+            interval: 10s
+            timeout: 5s
+            start_period: 40s
+            retries: 3
+        depends_on:
+            # update to auth_service, now just temporary dev test
+            auth-service:
+                condition: service_healthy
+            gw-redis-service:
+                condition: service_healthy
+            web-service:
+                condition: service_started
+        env_file:
+            - ./environment/shared.env
+            - ./environment/gateway.env
+        # environment:
+        # AUTH_SERVICE_URL: 'http://gw-auth-service:8080'
+        # AUTH_SERVICE_URL: 'https://auth-service:8443'
+        # GW_REDIS_URL: 'redis://gw-redis-service:6379'
+        # JAVA_TOOL_OPTIONS: '-Djavax.net.debug=ssl:handshake:verbose'
+        volumes:
+            - ./certs/runtime/gateway/gateway-keystore.p12:/certs/gateway-keystore.p12:ro
+            - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
+
+    nginx-service:
+        image: nginx:stable-alpine
+        container_name: nginx
+        profiles: ['nginx', 'all']
+        ports:
+            - '443:443'
+        depends_on:
+            gateway-service:
+                condition: service_healthy
+            web-service:
+                condition: service_started
+        networks:
+            - 42_overflow
+        environment:
+            - NGINX_ENTRYPOINT_QUIET_LOGS=1
+        volumes:
+            - ./infra/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+            - ./certs/runtime/nginx/nginx.crt:/etc/nginx/certs/nginx-internal.crt:ro
+            - ./certs/runtime/nginx/nginx.key:/etc/nginx/certs/nginx-internal.key:ro
+            - ./certs/ca/ca.crt:/etc/nginx/certs/ca-internal.crt:ro
+
+    gw-redis-service:
+        build:
+            context: ./infra/redis/gateway-redis
+            dockerfile: Dockerfile
+        container_name: gw-redis-service
+        profiles: ['gw-redis', 'gateway', 'all']
+        # ports:
+        #   - '6379:6379'
+        networks:
+            - 42_overflow
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            interval: 10s
+            timeout: 5s
+            start_period: 10s
+            retries: 3
+
+    # usefull for internal ping test , uncomment to use
+    # toolbox:
+    #     # profiles:
+    #     #     - debug
+    #     image: nicolaka/netshoot
+    #     container_name: netshoot-toolbox
+    #     networks:
+    #         - app_net
+    #     stdin_open: true # Equivalent to -i
+    #     tty: true # Equivalent to -t
+    #     command: ['/bin/bash'] # Keeps it alive
+    #     volumes:
+    #         - ./certs/:/certs/:ro
 
 networks:
-  42_overflow:
-    driver: bridge
+    42_overflow:
+        driver: bridge
 
 volumes:
-  postgres_data:
+    postgres_data:

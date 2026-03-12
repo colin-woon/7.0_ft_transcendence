@@ -6,20 +6,15 @@ import java.time.Instant;
 import java.util.UUID;
 
 import org.bumIntra.gateway.security.GatewayRequestContext;
-// import org.bumIntra.gateway.config.GatewayAuthConfig;
-// import org.bumIntra.gateway.exception.AuthRequiredException;
-import org.bumIntra.gateway.obs.GatewayObserver;
+import org.bumIntra.gateway.security.IdentityHeaders;
 import org.bumIntra.gateway.obs.GatewayObserverDispatcher;
 import org.bumIntra.gateway.obs.event.GatewayRequestStart;
-import org.bumIntra.gateway.policy.GatewayPolicyEngine;
 
 import jakarta.annotation.Priority;
-import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
-// import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 
 @Provider
@@ -27,10 +22,7 @@ import jakarta.ws.rs.ext.Provider;
 public class RequestContextFilter implements ContainerRequestFilter {
 
 	@Inject
-	GatewayRequestContext ctx;
-
-	// @Inject
-	// GatewayPolicyEngine policyEngine;
+	GatewayRequestContext grc;
 
 	@Inject
 	GatewayObserverDispatcher obs;
@@ -38,49 +30,51 @@ public class RequestContextFilter implements ContainerRequestFilter {
 	@Override
 	public void filter(ContainerRequestContext request) {
 
-		ctx.clearError();
+		populateGrcContext(request);
 
-		String requestId = request.getHeaderString("X-Request-Id");
+		// MDC - Mapped Diagnostic Context for logging
+		MDC.put("requestId", grc.getRequestId());
+
+		// Obs Hook start
+		Instant st = Instant.now();
+		obs.onRequestStart(new GatewayRequestStart(
+				grc.getRequestId(),
+				request.getMethod(),
+				grc.getPath(),
+				st));
+
+		request.setProperty("gw.start", st);
+	}
+
+	private void populateGrcContext(ContainerRequestContext request) {
+
+		grc.clearError();
+
+		// TODO: update the X- headers to be something unique if needed
+		String requestId = request.getHeaderString(IdentityHeaders.REQUEST_ID);
 
 		if (requestId == null || requestId.isBlank()) {
 			requestId = UUID.randomUUID().toString();
 		}
 
-		ctx.setRequestId(requestId);
+		grc.setRequestId(requestId);
+		grc.setPath(request.getUriInfo().getPath());
+		grc.setQueryParams(request.getUriInfo().getQueryParameters());
+		grc.setHeaders(request.getHeaders());
 
-		// MDC - Mapped Diagnostic Context for logging
-		MDC.put("requestId", requestId);
+		grc.setRealIp(request.getHeaderString(IdentityHeaders.INTRA_REAL_IP));
+		grc.setForwardedFor(request.getHeaderString(IdentityHeaders.INTRA_FORWARDED_FOR));
+		grc.setForwardedHost(request.getHeaderString(IdentityHeaders.INTRA_FORWARDED_HOST));
+		grc.setForwardedProto(request.getHeaderString(IdentityHeaders.INTRA_FORWARDED_PROTO));
 
-		ctx.setAuth(request.getHeaderString("Authorization"));
-
-		// RateLimitAccess
-		String clientIp = request.getHeaderString("X-Forwarded-For");
-		if (clientIp == null || clientIp.isBlank()) {
-			clientIp = request.getHeaderString("Remote-Addr");
+		// RateLimitAccess TODO: to be review later
+		String clientIp = grc.getRealIp() != null && !grc.getRealIp().isBlank() ? grc.getRealIp()
+				: grc.getForwardedFor().split(",")[0].trim();
+		if (clientIp != null && !clientIp.isBlank()) {
+			grc.setClientIp(clientIp);
+		} else {
+			grc.setInternal(true);
 		}
-		ctx.setClientIp(clientIp);
 
-		ctx.setInternal("true".equalsIgnoreCase(request.getHeaderString("X-Internal-Request")));
-
-		// Obs Hook start
-		Instant st = Instant.now();
-		obs.onRequestStart(new GatewayRequestStart(
-				requestId,
-				request.getMethod(),
-				request.getUriInfo().getPath(),
-				st));
-
-		// for (var ob : obs) {
-		// ob.onRequestStart(new GatewayRequestStart(
-		// requestId,
-		// request.getMethod(),
-		// request.getUriInfo().getPath(),
-		// st));
-		// }
-
-		request.setProperty("gw.start", st);
-
-		// Enforce policies
-		// policyEngine.enforce(ctx);
 	}
 }

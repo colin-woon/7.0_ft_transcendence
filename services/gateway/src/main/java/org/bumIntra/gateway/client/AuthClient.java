@@ -1,11 +1,16 @@
 package org.bumIntra.gateway.client;
 
-import org.bumIntra.gateway.client.dto.AuthResult;
+import org.bumIntra.gateway.filter.ServiceClientContextFilter;
 
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.Encoded;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -15,31 +20,35 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-// Temporary dummy testing, to be updated later
-
-@Path("/api")
+@Path("/")
 @RegisterRestClient(configKey = "auth-service")
-// @RegisterProvider(ServiceAuthFilter.class)
+@RegisterProvider(ServiceClientContextFilter.class)
 public interface AuthClient {
-	@GET
-	@Path("/ping")
-	Response ping();
 
 	@GET
-	@Path("/verify")
-	@Produces(MediaType.APPLICATION_JSON)
-	// @Consumes("application/json")
-	Response verify(@HeaderParam("Authorization") String authorization);
+	@Path("/{path: .*}")
+	Response proxyGet(@Encoded @PathParam("path") String path);
 
-	@GET
-	@Path("/headers")
-	Response headers(@Context HttpHeaders headers);
+	@POST
+	@Path("/{path: .*}")
+	// @Consumes(MediaType.APPLICATION_JSON)
+	// @Produces(MediaType.APPLICATION_JSON)
+	Response proxyPost(@Encoded @PathParam("path") String path, byte[] body);
 
-	@GET
-	@Path("/login/google")
-	Response loginGoogle();
+	@DELETE
+	@Path("/{path: .*}")
+	Response proxyDelete(@Encoded @PathParam("path") String path);
 
-	@GET
-	@Path("/login/intra")
-	Response loginIntra();
+	@PUT
+	@Path("/{path: .*}")
+	// @Consumes(MediaType.APPLICATION_JSON)
+	// @Produces(MediaType.APPLICATION_JSON)
+	Response proxyPut(@Encoded @PathParam("path") String path, byte[] body);
+
+	@PATCH
+	@Path("/{path: .*}")
+	// @Consumes(MediaType.APPLICATION_JSON)
+	// @Produces(MediaType.APPLICATION_JSON)
+	Response proxyPatch(@Encoded @PathParam("path") String path, byte[] body);
+
 }
