@@ -62,7 +62,7 @@ gw-test/
 *.so
 *.dylib
 tmp/
-GEMINI.md
+AGENTS.md
 
 
 # === certs ===
