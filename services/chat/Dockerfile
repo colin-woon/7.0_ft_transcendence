@@ -8,8 +8,12 @@ RUN go mod download
 # --- Stage 2: Development (Hot Reloading) ---
 FROM base AS development
 # Install Air for hot reloading
-RUN go install github.com/air-verse/air@latest
+RUN go install github.com/air-verse/air@latest && \
+	go install github.com/go-delve/delve/cmd/dlv@latest
+RUN apk add --no-cache libc6-compat build-base
 
+ENV PATH="/go/bin:${PATH}"
+ENV GOPATH="/go/bin"
 # Expose port (default for Go apps varies, adjust as needed)
 EXPOSE 8080
 
