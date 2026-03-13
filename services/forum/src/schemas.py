@@ -6,13 +6,23 @@ from datetime import datetime
 class ProjectCreate(BaseModel):
     slug: str
     name: str
+    objectives: List[str] = []
+    estimate_time: Optional[str] = None
     description: Optional[str] = None
+
 
 class ProjectResponse(ProjectCreate):
     id: int
     created_at: datetime
     class Config:
         from_attributes = True
+
+class ProjectListPage(BaseModel):
+    items: List[ProjectResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
 
 # --- POSTS ---
 class PostCreate(BaseModel):

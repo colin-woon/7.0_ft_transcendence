@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
-from sqlalchemy import String, Text, ForeignKey, func, Integer, Boolean
+from sqlalchemy import String, Text, ForeignKey, func, Integer, Boolean, ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
@@ -15,7 +15,9 @@ class Project(Base):
     name: Mapped[str] = mapped_column(String(255))
     description: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    
+    objectives: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
+    estimate_time: Mapped[Optional[str]] = mapped_column(String(50))
+
     posts: Mapped[List["ForumPost"]] = relationship(back_populates="project")
 
 # --- 2. FORUM POSTS ---
@@ -60,12 +62,12 @@ class PostVote(Base):
     __tablename__ = "post_votes"
     __table_args__ = {"schema": "forum_service"}
 
-    # Composite primary key naturally prevents a user from voting twice
+    # composite primary key naturally prevents a user from voting twice
     post_id: Mapped[int] = mapped_column(
         ForeignKey("forum_service.forum_posts.id", ondelete="CASCADE"), 
         primary_key=True
     )
     user_id: Mapped[int] = mapped_column(primary_key=True)
     
-    # Will store 1 for upvote, -1 for downvote
+    # will store 1 for upvote, -1 for downvote
     vote_value: Mapped[int] = mapped_column(Integer)

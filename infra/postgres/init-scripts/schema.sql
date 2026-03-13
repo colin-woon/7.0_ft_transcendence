@@ -80,6 +80,8 @@ CREATE TABLE forum_service.projects (
     slug VARCHAR(100) UNIQUE NOT NULL,
     name VARCHAR(100) NOT NULL,
     description TEXT,
+    objectives TEXT[],
+    estimate_time VARCHAR(50),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
