@@ -1,11 +1,7 @@
 import logging
 import os
 from typing import List
-<<<<<<< HEAD
-from fastapi import APIRouter, FastAPI, Depends, status
-=======
-from fastapi import FastAPI, Depends, status, Query
->>>>>>> 19c7046 (added seeding for forum)
+from fastapi import APIRouter, FastAPI, Depends, status, Query
 from sqlalchemy.orm import Session
 from contextlib import asynccontextmanager
 
