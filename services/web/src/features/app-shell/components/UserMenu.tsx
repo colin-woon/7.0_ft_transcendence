@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { LayoutDashboard, LogOut, ChevronDown } from 'lucide-react'
-import { useAuth } from '@/context/AuthContext'
+import { useAuth } from '@/features/auth/context/AuthContext'
 
 export default function UserMenu() {
   const { user, logout } = useAuth()
