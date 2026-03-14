@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_GATEWAY_URL: process.env.NEXT_PUBLIC_GATEWAY_URL ?? process.env.GATEWAY_URL ?? 'https://localhost',
   },
+  turbopack: {
+    root: __dirname,
+  },
 };
 
 
