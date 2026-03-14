@@ -15,18 +15,6 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.ext.Provider;
 
-/**
- * Outbound ClientRequestFilter — runs just before the REST client sends the
- * HTTP request to a downstream service. Injects identity and tracing headers
- * from the current GatewayRequestContext so every downstream service receives
- * a consistent set of X-* headers regardless of which proxy method was called.
- *
- * This is the correct hook for header injection: ContainerRequestFilters /
- * ServiceHeaderPolicy run server-side and their mutations never travel to the
- * outbound REST client request.
- *
- * Register on each REST client interface via @RegisterProvider.
- */
 @Provider
 @Priority(Priorities.HEADER_DECORATOR - 100)
 public class ServiceClientContextFilter implements ClientRequestFilter {
@@ -36,6 +24,10 @@ public class ServiceClientContextFilter implements ClientRequestFilter {
 
 	@Override
 	public void filter(ClientRequestContext request) {
+
+		// if (grc.isSse()) {
+		// return;
+		// }
 
 		if (grc.getQueryParams() != null && !grc.getQueryParams().isEmpty()) {
 
@@ -54,7 +46,8 @@ public class ServiceClientContextFilter implements ClientRequestFilter {
 					HttpHeaders.COOKIE,
 					HttpHeaders.CONTENT_TYPE,
 					HttpHeaders.ACCEPT,
-					HttpHeaders.AUTHORIZATION);
+					HttpHeaders.AUTHORIZATION,
+					"Last-Event-ID"); // for SSE
 
 			for (String headerName : headersToPropagate) {
 				String headerValue = grc.getHeaders().getFirst(headerName);

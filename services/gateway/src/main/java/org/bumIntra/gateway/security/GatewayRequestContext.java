@@ -1,5 +1,6 @@
 package org.bumIntra.gateway.security;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -13,6 +14,7 @@ import jakarta.ws.rs.core.MultivaluedMap;
 public class GatewayRequestContext {
 
 	// RequestContextFilter
+	private Instant _st;
 	private String _auth;
 	private String _requestId;
 	private String _errorCode;
@@ -34,8 +36,9 @@ public class GatewayRequestContext {
 	private AuthLevel _authLevel = AuthLevel.GUEST;
 	private boolean _isPublic;
 
-	// Policy
-	boolean _policyPass;
+	// SSE
+	private boolean _isSse;
+	// TODO: last event id
 
 	public String getAuth() {
 		return _auth;
@@ -138,10 +141,6 @@ public class GatewayRequestContext {
 		_path = path.trim().toLowerCase().replaceAll("/+", "/");
 	}
 
-	public boolean policyPass() {
-		return _policyPass;
-	}
-
 	public void setRealIp(String realIp) {
 		_realIp = realIp;
 	}
@@ -188,5 +187,21 @@ public class GatewayRequestContext {
 
 	public void setHeaders(MultivaluedMap<String, String> headers) {
 		_headers = headers;
+	}
+
+	public boolean isSse() {
+		return _isSse;
+	}
+
+	public void setSse(boolean isSse) {
+		_isSse = isSse;
+	}
+
+	public void setStartTime(Instant st) {
+		_st = st;
+	}
+
+	public Instant getStartTime() {
+		return _st;
 	}
 }

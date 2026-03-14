@@ -161,12 +161,12 @@ public class ChatWebSocketEndPoint {
 					Instant last = (Instant) session.getUserProperties().get(LAST_THROTTLE_AT);
 					if (last == null || Duration.between(last, now).compareTo(THROTTLE_LOG_COOLDOWN) >= 0) {
 						session.getUserProperties().put(LAST_THROTTLE_AT, now);
-							obs.onWsThrottle(new GatewayWsThrottle(
-									session.getId(),
-									getSessionProp(session, IdentityHeaders.CLIENT_IP),
-									Optional.of(userId),
-									GatewayWsThrottle.WsThrottleType.MSG,
-									userId,
+						obs.onWsThrottle(new GatewayWsThrottle(
+								session.getId(),
+								getSessionProp(session, IdentityHeaders.CLIENT_IP),
+								Optional.of(userId),
+								GatewayWsThrottle.WsThrottleType.MSG,
+								userId,
 								now));
 					}
 				}
@@ -217,13 +217,13 @@ public class ChatWebSocketEndPoint {
 		try {
 
 			// TODO: update to app.properties to Cookie from Authz
-				if (si.isAnonymous()) {
-					obs.onWsAuth(new GatewayWsAuth(
-							session.getId(),
-							getSessionProp(session, IdentityHeaders.CLIENT_IP),
-							Optional.empty(),
-							false,
-							Optional.of("Unauthorized"),
+			if (si.isAnonymous()) {
+				obs.onWsAuth(new GatewayWsAuth(
+						session.getId(),
+						getSessionProp(session, IdentityHeaders.CLIENT_IP),
+						Optional.empty(),
+						false,
+						Optional.of("Unauthorized"),
 						Duration.between(authStart, Instant.now()),
 						Instant.now()));
 				terminate(session,
@@ -251,12 +251,12 @@ public class ChatWebSocketEndPoint {
 
 				if (!connAllowed) {
 
-						obs.onWsThrottle(new GatewayWsThrottle(
-								session.getId(),
-								getSessionProp(session, IdentityHeaders.CLIENT_IP),
-								Optional.of(userId),
-								GatewayWsThrottle.WsThrottleType.CONN_USER,
-								userId,
+					obs.onWsThrottle(new GatewayWsThrottle(
+							session.getId(),
+							getSessionProp(session, IdentityHeaders.CLIENT_IP),
+							Optional.of(userId),
+							GatewayWsThrottle.WsThrottleType.CONN_USER,
+							userId,
 							Instant.now()));
 
 					terminate(session,
@@ -269,12 +269,12 @@ public class ChatWebSocketEndPoint {
 				// session.getUserProperties().put("roles", authResult.roles());
 				session.getUserProperties().put(AUTHZ_STATE, "authenticated");
 
-					obs.onWsAuth(new GatewayWsAuth(
-							session.getId(),
-							getSessionProp(session, IdentityHeaders.CLIENT_IP),
-							Optional.of(userId),
-							true,
-							Optional.empty(), // TODO: put success reason if needed
+				obs.onWsAuth(new GatewayWsAuth(
+						session.getId(),
+						getSessionProp(session, IdentityHeaders.CLIENT_IP),
+						Optional.of(userId),
+						true,
+						Optional.empty(), // TODO: put success reason if needed
 						Duration.between(authStart, Instant.now()),
 						Instant.now()));
 
@@ -285,12 +285,12 @@ public class ChatWebSocketEndPoint {
 
 			}, e -> {
 
-					obs.onWsThrottle(new GatewayWsThrottle(
-							session.getId(),
-							getSessionProp(session, IdentityHeaders.CLIENT_IP),
-							Optional.of(userId),
-							GatewayWsThrottle.WsThrottleType.CONN_USER,
-							userId,
+				obs.onWsThrottle(new GatewayWsThrottle(
+						session.getId(),
+						getSessionProp(session, IdentityHeaders.CLIENT_IP),
+						Optional.of(userId),
+						GatewayWsThrottle.WsThrottleType.CONN_USER,
+						userId,
 						Instant.now()));
 
 				terminate(session,

@@ -3,6 +3,7 @@ package org.bumIntra.gateway.filter;
 import org.jboss.logging.MDC;
 
 import java.time.Instant;
+import java.util.Locale;
 import java.util.UUID;
 
 import org.bumIntra.gateway.security.GatewayRequestContext;
@@ -44,6 +45,7 @@ public class RequestContextFilter implements ContainerRequestFilter {
 				st));
 
 		request.setProperty("gw.start", st);
+		grc.setStartTime(st);
 	}
 
 	private void populateGrcContext(ContainerRequestContext request) {
@@ -78,6 +80,13 @@ public class RequestContextFilter implements ContainerRequestFilter {
 			}
 		} else {
 			grc.setClientIp(grc.getRealIp().trim());
+		}
+
+		// SSE event checks, default to false for java.
+		if (grc.getPath().startsWith("stream/") && "GET".equalsIgnoreCase(request.getMethod())
+				&& request.getHeaderString("Accept") != null
+				&& request.getHeaderString("Accept").toLowerCase(Locale.ROOT).contains("text/event-stream")) {
+			grc.setSse(true);
 		}
 	}
 }

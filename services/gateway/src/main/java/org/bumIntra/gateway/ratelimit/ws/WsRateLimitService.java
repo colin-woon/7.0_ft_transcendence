@@ -3,12 +3,14 @@ package org.bumIntra.gateway.ratelimit.ws;
 import org.bumIntra.gateway.ratelimit.RateLimitProfile;
 import org.bumIntra.gateway.ratelimit.RateLimiter;
 
+import io.quarkus.arc.properties.IfBuildProperty;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
+@IfBuildProperty(name = "gateway.config.ratelimit.enabled", stringValue = "true")
 public class WsRateLimitService {
 
 	@Inject
