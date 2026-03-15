@@ -3,16 +3,14 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
-
-	_ "github.com/joho/godotenv/autoload"
-
 	"app/internal/database"
 )
 
 type Server struct {
 	port int
-
+	sseHub *SseConnectionHub
 	db database.Service
 }
 
@@ -20,6 +18,10 @@ func NewServer() (*http.Server, func()) {
 	port := 8080
 	NewServer := &Server{
 		port: port,
+		sseHub: &SseConnectionHub {
+			userChannels: make(map[int]chan string),
+			mutex: sync.RWMutex{},
+		},
 
 		db: database.NewConnection(),
 	}

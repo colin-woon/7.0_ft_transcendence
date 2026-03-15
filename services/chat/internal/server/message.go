@@ -6,8 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
+	"sync"
 )
+
+type SseConnectionHub struct {
+	userChannels map[int]chan string
+	mutex        sync.RWMutex
+}
 
 func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, senderId int, receiverId int) {
 	ctx := r.Context()
@@ -28,6 +33,11 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, senderId in
 	if err != nil {
 		http.Error(w, "Failed to send message", http.StatusInternalServerError)
 	}
+	s.sseHub.mutex.RLock()
+	if ch, exists := s.sseHub.userChannels[receiverId]; exists {
+		ch <- fmt.Sprintf("%s", body.Content)
+	}
+	s.sseHub.mutex.RUnlock()
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -62,20 +72,23 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request, tempUs
 		return
 	}
 
-	// 3. Setup a 10-second ticker
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
+	sseCh := make(chan string, 10)
+	s.sseHub.mutex.Lock()
+	s.sseHub.userChannels[tempUserId] = sseCh
+	s.sseHub.mutex.Unlock()
 
 	for {
 		select {
+		// Client disconnected
 		case <-r.Context().Done():
-			// Client disconnected
+			s.sseHub.mutex.Lock()
+			delete(s.sseHub.userChannels, tempUserId)
+			s.sseHub.mutex.Unlock()
 			return
-		case t := <-ticker.C:
-			// Format: "data: <message>\n\n"
-			fmt.Fprintf(w, "data: The time is %s\n\n", t.Format(time.RFC3339))
-
-			// Flush the data to the client immediately
+		// Format: "data: <message>\n\n"
+		// Flush the data to the client immediately
+		case message := <-sseCh:
+			fmt.Fprintf(w, "data: %s\n\n", message)
 			flusher.Flush()
 		}
 	}
