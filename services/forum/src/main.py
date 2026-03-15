@@ -60,6 +60,8 @@ def get_current_user_id():
 
 router = APIRouter(prefix="/forum")
 
+# --- PROJECTS API ENDPOINT ---
+
 @router.get("/projects", response_model=schemas.ProjectListPage)
 def list_projects(    page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=100), db: Session = Depends(get_db),):
     return logic.get_all_projects_paginated(db, page=page, page_size=page_size)
@@ -74,9 +76,31 @@ def get_project(project_id: int, db: Session = Depends(get_db)):
 def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db)):
     return logic.create_project(db, project)
 
+# --- FORUM POST API ENDPOINT ---
+
+@router.get("/posts", response_model=List[schemas.PostSummary])
+def list_all_posts(db: Session = Depends(get_db)):
+    return logic.get_all_posts(db)
+
+@router.get("/posts/top", response_model=List[schemas.PostSummary])
+def list_all_posts_by_top(db: Session = Depends(get_db)):
+    return logic.get_all_posts_sort_by_top(db)
+
+@router.get("/posts/new", response_model=List[schemas.PostSummary])
+def list_all_posts_by_new(db: Session = Depends(get_db)):
+    return logic.get_all_posts_sort_by_new(db)
+
 @router.get("/projects/{project_id}/posts", response_model=List[schemas.PostSummary])
 def list_project_posts(project_id: int, db: Session = Depends(get_db)):
     return logic.get_posts_by_project(db, project_id)
+
+@router.get("/projects/{project_id}/posts/top", response_model=List[schemas.PostSummary])
+def list_project_posts_by_top(project_id: int, db: Session = Depends(get_db)):
+    return logic.get_posts_by_project_sort_by_top(db, project_id)
+
+@router.get("/projects/{project_id}/posts/new", response_model=List[schemas.PostSummary])
+def list_project_posts_by_new(project_id: int, db: Session = Depends(get_db)):
+    return logic.get_posts_by_project_sort_by_new(db, project_id)
 
 @router.post("/projects/{project_id}/posts", response_model=schemas.PostDetail, status_code=201)
 def create_post(
@@ -87,17 +111,23 @@ def create_post(
 ):
     return logic.create_post(db, project_id, user_id, post)
 
-@router.get("/posts", response_model=List[schemas.PostSummary])
-def list_all_posts(db: Session = Depends(get_db)):
-    return logic.get_all_posts(db)
-
 @router.get("/posts/{post_id}", response_model=schemas.PostDetail)
 def get_post(post_id: int, db: Session = Depends(get_db)):
     return logic.get_post_detail(db, post_id)
 
+# --- COMMENTS API ENDPOINT ---
+
 @router.get("/posts/{post_id}/comments", response_model=List[schemas.CommentResponse])
 def list_comments(post_id: int, db: Session = Depends(get_db)):
     return logic.get_comments_by_post(db, post_id)
+
+@router.get("/posts/{post_id}/comments/top", response_model=List[schemas.CommentResponse])
+def list_comments_sort_by_top(post_id: int, db: Session = Depends(get_db)):
+    return logic.get_comments_by_post_sort_by_top(db, post_id)
+
+@router.get("/posts/{post_id}/comments/new", response_model=List[schemas.CommentResponse])
+def list_comments_sort_by_new(post_id: int, db: Session = Depends(get_db)):
+    return logic.get_comments_by_post_sort_by_new(db, post_id)
 
 @router.post("/posts/{post_id}/comments", response_model=schemas.CommentResponse, status_code=201)
 def create_comment(
@@ -107,6 +137,8 @@ def create_comment(
     user_id: int = Depends(get_current_user_id)
 ):
     return logic.create_comment(db, post_id, user_id, comment)
+
+# --- VOTES API ENDPOINT ---
 
 @router.post("/posts/{post_id}/vote", status_code=status.HTTP_200_OK)
 def vote_on_post(

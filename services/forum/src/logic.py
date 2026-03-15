@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, text
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
@@ -112,7 +112,7 @@ def create_project(db: Session, data: schemas.ProjectCreate) -> models.Project:
 
 
 # --- POSTS ---
-def get_all_posts(db:Session) -> models.ForumPost:
+def get_all_posts(db:Session) -> List[models.ForumPost]:
     results = (
         db.query(
             models.ForumPost,
@@ -120,6 +120,40 @@ def get_all_posts(db:Session) -> models.ForumPost:
         )
         .outerjoin(models.PostVote, models.ForumPost.id == models.PostVote.post_id)
         .group_by(models.ForumPost.id)
+        .all()
+    )
+    posts = []
+    for post_obj, score in results:
+        post_obj.vote_score = score
+        posts.append(post_obj)
+    return posts
+
+def get_all_posts_sort_by_top(db:Session) -> List[models.ForumPost]:
+    results = (
+        db.query(
+            models.ForumPost,
+            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score")
+        )
+        .outerjoin(models.PostVote, models.ForumPost.id == models.PostVote.post_id)
+        .group_by(models.ForumPost.id)
+        .order_by(text("vote_score DESC"))
+        .all()
+    )
+    posts = []
+    for post_obj, score in results:
+        post_obj.vote_score = score
+        posts.append(post_obj)
+    return posts
+
+def get_all_posts_sort_by_new(db:Session) -> List[models.ForumPost]:
+    results = (
+        db.query(
+            models.ForumPost,
+            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score")
+        )
+        .outerjoin(models.PostVote, models.ForumPost.id == models.PostVote.post_id)
+        .group_by(models.ForumPost.id)
+        .order_by(text("created_at DESC"))
         .all()
     )
     posts = []
@@ -145,6 +179,41 @@ def get_posts_by_project(db: Session, project_id: int) -> List[models.ForumPost]
         posts.append(post_obj)
     return posts
 
+def get_posts_by_project_sort_by_top(db: Session, project_id: int) -> List[models.ForumPost]:
+    results = (
+        db.query(
+            models.ForumPost,
+            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score")
+        )
+        .outerjoin(models.PostVote, models.ForumPost.id == models.PostVote.post_id)
+        .filter(models.ForumPost.project_id == project_id)
+        .group_by(models.ForumPost.id)
+        .order_by(text("vote_score DESC"))
+        .all()
+    )
+    posts = []
+    for post_obj, score in results:
+        post_obj.vote_score = score
+        posts.append(post_obj)
+    return posts
+
+def get_posts_by_project_sort_by_new(db: Session, project_id: int) -> List[models.ForumPost]:
+    results = (
+        db.query(
+            models.ForumPost,
+            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score")
+        )
+        .outerjoin(models.PostVote, models.ForumPost.id == models.PostVote.post_id)
+        .filter(models.ForumPost.project_id == project_id)
+        .group_by(models.ForumPost.id)
+        .order_by(text("created_at DESC"))
+        .all()
+    )
+    posts = []
+    for post_obj, score in results:
+        post_obj.vote_score = score
+        posts.append(post_obj)
+    return posts
 
 def create_post(db: Session, project_id: int, user_id: int, data: schemas.PostCreate) -> models.ForumPost:
     if not db.query(models.Project).filter(models.Project.id == project_id).first():
@@ -192,6 +261,41 @@ def get_comments_by_post(db: Session, post_id: int) -> List[models.Comment]:
         comments.append(comment_obj)
     return comments
 
+def get_comments_by_post_sort_by_top(db: Session, post_id: int) -> List[models.Comment]:
+    results = (
+            db.query(
+                models.Comment,
+                func.coalesce(func.sum(models.CommentVote.vote_value), 0).label("vote_score")
+            )
+            .outerjoin(models.CommentVote, models.Comment.id == models.CommentVote.comment_id)
+            .filter(models.Comment.post_id == post_id)
+            .group_by(models.Comment.id)
+            .order_by(text ("vote_score DESC"))
+            .all()
+        )
+    comments = []
+    for comment_obj, score in results:
+        comment_obj.vote_score = score
+        comments.append(comment_obj)
+    return comments
+
+def get_comments_by_post_sort_by_new(db: Session, post_id: int) -> List[models.Comment]:
+    results = (
+            db.query(
+                models.Comment,
+                func.coalesce(func.sum(models.CommentVote.vote_value), 0).label("vote_score")
+            )
+            .outerjoin(models.CommentVote, models.Comment.id == models.CommentVote.comment_id)
+            .filter(models.Comment.post_id == post_id)
+            .group_by(models.Comment.id)
+            .order_by(text ("created_at DESC"))
+            .all()
+        )
+    comments = []
+    for comment_obj, score in results:
+        comment_obj.vote_score = score
+        comments.append(comment_obj)
+    return comments
 
 def create_comment(db: Session, post_id: int, user_id: int, data: schemas.CommentCreate) -> models.Comment:
     if not db.query(models.ForumPost).filter(models.ForumPost.id == post_id).first():
