@@ -11,7 +11,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
 
 @Path("/")
-@RegisterRestClient(configKey = "chat-service")
+@RegisterRestClient(configKey = "chat-stream-service")
 @RegisterProvider(ServiceClientContextFilter.class)
 public interface StreamChatClient {
 

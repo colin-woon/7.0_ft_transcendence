@@ -51,7 +51,7 @@ public class GatewayObserverLogging implements GatewayObserver {
 
 	@Override
 	public void onWsThrottle(GatewayWsThrottle e) {
-		LOG.infov("gw.ws.throttle sessionId={0} ip={1} userId={2} type={3} key={4} at={5}",
+		LOG.infov("gw.ws.throttle sessionId={0} ip={1} userId={2} type={3} at={4}",
 				e.sessionId(),
 				e.clientIp(),
 				e.userId().orElse("-"),

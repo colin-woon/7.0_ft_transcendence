@@ -115,6 +115,7 @@ public class WsChatServer {
 					}
 
 					if (!authHandler.authenticate(session)) {
+						obsHandler.onAuthFailure(session, "Unauthorized");
 						stateHandler.markUnauthorized(session);
 						terminateSession(session, CloseReason.CloseCodes.VIOLATED_POLICY, "Unauthorized");
 						return;
