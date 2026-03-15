@@ -36,6 +36,7 @@ class PostSummary(BaseModel):
     title: str
     view_count: int
     created_at: datetime
+    vote_score: int = 0
     class Config:
         from_attributes = True
 
@@ -52,6 +53,7 @@ class CommentResponse(BaseModel):
     author_id: int
     content: str
     is_best_answer: bool = False
+    vote_score: int = 0
     created_at: datetime
     class Config:
         from_attributes = True

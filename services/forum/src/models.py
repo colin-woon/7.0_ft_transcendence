@@ -71,3 +71,17 @@ class PostVote(Base):
     
     # will store 1 for upvote, -1 for downvote
     vote_value: Mapped[int] = mapped_column(Integer)
+
+class CommentVote(Base):
+    __tablename__ = "comment_votes"
+    __table_args__ = {"schema": "forum_service"}
+
+    # composite primary key naturally prevents a user from voting twice
+    comment_id: Mapped[int] = mapped_column(
+        ForeignKey("forum_service.comments.id", ondelete="CASCADE"), 
+        primary_key=True
+    )
+    user_id: Mapped[int] = mapped_column(primary_key=True)
+    
+    # will store 1 for upvote, -1 for downvote
+    vote_value: Mapped[int] = mapped_column(Integer)

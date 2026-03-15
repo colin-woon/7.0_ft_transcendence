@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
@@ -111,8 +112,38 @@ def create_project(db: Session, data: schemas.ProjectCreate) -> models.Project:
 
 
 # --- POSTS ---
+def get_all_posts(db:Session) -> models.ForumPost:
+    results = (
+        db.query(
+            models.ForumPost,
+            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score")
+        )
+        .outerjoin(models.PostVote, models.ForumPost.id == models.PostVote.post_id)
+        .group_by(models.ForumPost.id)
+        .all()
+    )
+    posts = []
+    for post_obj, score in results:
+        post_obj.vote_score = score
+        posts.append(post_obj)
+    return posts
+
 def get_posts_by_project(db: Session, project_id: int) -> List[models.ForumPost]:
-    return db.query(models.ForumPost).filter(models.ForumPost.project_id == project_id).all()
+    results = (
+        db.query(
+            models.ForumPost,
+            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score")
+        )
+        .outerjoin(models.PostVote, models.ForumPost.id == models.PostVote.post_id)
+        .filter(models.ForumPost.project_id == project_id)
+        .group_by(models.ForumPost.id)
+        .all()
+    )
+    posts = []
+    for post_obj, score in results:
+        post_obj.vote_score = score
+        posts.append(post_obj)
+    return posts
 
 
 def create_post(db: Session, project_id: int, user_id: int, data: schemas.PostCreate) -> models.ForumPost:
@@ -135,7 +166,8 @@ def get_post_detail(db: Session, post_id: int) -> models.ForumPost:
     post = db.query(models.ForumPost).filter(models.ForumPost.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
-
+    score = get_post_vote_score(db, post_id)
+    post.vote_score = score
     post.view_count += 1
     db.commit()
     db.refresh(post)
@@ -144,7 +176,21 @@ def get_post_detail(db: Session, post_id: int) -> models.ForumPost:
 
 # --- COMMENTS ---
 def get_comments_by_post(db: Session, post_id: int) -> List[models.Comment]:
-    return db.query(models.Comment).filter(models.Comment.post_id == post_id).all()
+    results = (
+            db.query(
+                models.Comment,
+                func.coalesce(func.sum(models.CommentVote.vote_value), 0).label("vote_score")
+            )
+            .outerjoin(models.CommentVote, models.Comment.id == models.CommentVote.comment_id)
+            .filter(models.Comment.post_id == post_id)
+            .group_by(models.Comment.id)
+            .all()
+        )
+    comments = []
+    for comment_obj, score in results:
+        comment_obj.vote_score = score
+        comments.append(comment_obj)
+    return comments
 
 
 def create_comment(db: Session, post_id: int, user_id: int, data: schemas.CommentCreate) -> models.Comment:
@@ -194,3 +240,40 @@ def cast_post_vote(db: Session, post_id: int, user_id: int, vote_value: int) -> 
     db.add(new_vote)
     db.commit()
     return {"message": "Vote registered"}
+
+def cast_comment_vote(db: Session, comment_id: int, user_id: int, vote_value: int) -> dict:
+    if vote_value not in [1, -1]:
+        raise HTTPException(status_code=400, detail="Vote value must be 1 or -1")
+
+    post = db.query(models.Comment).filter(models.Comment.id == comment_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    existing_vote = db.query(models.PostVote).filter(
+        models.CommentVote.comment_id == comment_id,
+        models.CommentVote.user_id == user_id,
+    ).first()
+
+    if existing_vote:
+        if existing_vote.vote_value == vote_value:
+            db.delete(existing_vote)
+            db.commit()
+            return {"message": "Vote removed"}
+
+        existing_vote.vote_value = vote_value
+        db.commit()
+        return {"message": "Vote updated"}
+
+    new_vote = models.CommentVote(
+        comment_id=comment_id,
+        user_id=user_id,
+        vote_value=vote_value,
+    )
+    db.add(new_vote)
+    db.commit()
+    return {"message": "Vote registered"}
+
+def get_post_vote_score(db: Session, post_id: int) -> int:
+    score = db.query(func.sum(models.PostVote.vote_value))\
+        .filter(models.PostVote.post_id == post_id).scalar()
+    return score

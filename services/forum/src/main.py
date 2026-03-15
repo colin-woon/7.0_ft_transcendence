@@ -87,6 +87,10 @@ def create_post(
 ):
     return logic.create_post(db, project_id, user_id, post)
 
+@router.get("/posts", response_model=List[schemas.PostSummary])
+def list_all_posts(db: Session = Depends(get_db)):
+    return logic.get_all_posts(db)
+
 @router.get("/posts/{post_id}", response_model=schemas.PostDetail)
 def get_post(post_id: int, db: Session = Depends(get_db)):
     return logic.get_post_detail(db, post_id)
@@ -112,5 +116,14 @@ def vote_on_post(
     user_id: int = Depends(get_current_user_id)
 ):
     return logic.cast_post_vote(db, post_id, user_id, action.vote_value)
+
+@router.post("/posts/{post_id}/comments/{comment_id}/vote", status_code=status.HTTP_200_OK)
+def vote_on_comment(
+    comment_id: int,
+    action: schemas.VoteAction,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
+    return logic.cast_comment_vote(db, comment_id, user_id, action.vote_value)
 
 app.include_router(router)
