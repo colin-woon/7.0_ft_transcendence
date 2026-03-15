@@ -8,7 +8,6 @@ public record GatewayWsThrottle(
 		String clientIp,
 		Optional<String> userId,
 		WsThrottleType type,
-		String key,
 		Instant at) {
 
 	public enum WsThrottleType {

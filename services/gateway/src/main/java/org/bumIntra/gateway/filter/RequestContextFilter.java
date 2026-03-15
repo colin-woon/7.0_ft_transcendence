@@ -83,7 +83,8 @@ public class RequestContextFilter implements ContainerRequestFilter {
 		}
 
 		// SSE event checks, default to false for java.
-		if (grc.getPath().startsWith("stream/") && "GET".equalsIgnoreCase(request.getMethod())
+		if ((grc.getPath().startsWith("stream/") || grc.getPath().startsWith("/stream/"))
+				&& "GET".equalsIgnoreCase(request.getMethod())
 				&& request.getHeaderString("Accept") != null
 				&& request.getHeaderString("Accept").toLowerCase(Locale.ROOT).contains("text/event-stream")) {
 			grc.setSse(true);

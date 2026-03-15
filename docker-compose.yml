@@ -201,8 +201,6 @@ services:
             dockerfile: Dockerfile
         container_name: gw-redis-service
         profiles: ['gw-redis', 'gateway', 'all']
-        # ports:
-        #   - '6379:6379'
         networks:
             - 42_overflow
         healthcheck:

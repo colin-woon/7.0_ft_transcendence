@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.micrometer.core.instrument.Counter;
@@ -195,7 +196,7 @@ public class GatewayObserverMetrics implements GatewayObserver {
 			_wsAuthFailureTotal.increment();
 		}
 
-		_wsAuthTimer.record(e.latency());
+		_wsAuthTimer.record(e.latency().map(Duration::toMillis).orElse(0L), TimeUnit.MILLISECONDS);
 
 		// Record authentication latency
 		// Timer.builder("gateway_ws_auth_duration_seconds")

@@ -1,5 +1,7 @@
 package org.bumIntra.gateway.obs;
 
+import java.time.Duration;
+
 import org.bumIntra.gateway.obs.event.*;
 
 import org.jboss.logging.Logger;
@@ -43,7 +45,7 @@ public class GatewayObserverLogging implements GatewayObserver {
 		LOG.infov("gw.ws.auth sessionId={0} ip={1} success={2} userId={3} latencyMs={4} reason={5}",
 				e.sessionId(), e.clientIp(), e.success(),
 				e.userId().orElse("-"),
-				e.latency().toMillis(),
+				e.latency().map(Duration::toMillis).orElse(0L),
 				e.reason().orElse("-"));
 	}
 
@@ -54,7 +56,6 @@ public class GatewayObserverLogging implements GatewayObserver {
 				e.clientIp(),
 				e.userId().orElse("-"),
 				e.type(),
-				e.key(),
 				e.at());
 	}
 

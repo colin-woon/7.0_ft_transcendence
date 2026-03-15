@@ -86,3 +86,7 @@ services:
                 required: false
             gw-redis-service:
                 condition: service_healthy
+
+    gw-redis-service:
+        ports:
+            - '6379:6379'
