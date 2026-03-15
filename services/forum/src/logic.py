@@ -110,6 +110,8 @@ def create_project(db: Session, data: schemas.ProjectCreate) -> models.Project:
     db.refresh(new_project)
     return new_project
 
+def search_project(db: Session, query: str) -> list[models.Project]:
+    return db.query(models.Project).filter(models.Project.name.ilike(f"%{query}%")).all()
 
 # --- POSTS ---
 def get_all_posts(db:Session) -> List[models.ForumPost]:

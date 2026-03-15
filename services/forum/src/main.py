@@ -63,7 +63,7 @@ router = APIRouter(prefix="/forum")
 # --- PROJECTS API ENDPOINT ---
 
 @router.get("/projects", response_model=schemas.ProjectListPage)
-def list_projects(    page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=100), db: Session = Depends(get_db),):
+def list_projects(page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=100), db: Session = Depends(get_db),):
     return logic.get_all_projects_paginated(db, page=page, page_size=page_size)
 
 
@@ -75,6 +75,10 @@ def get_project(project_id: int, db: Session = Depends(get_db)):
 @router.post("/projects", response_model=schemas.ProjectResponse, status_code=201)
 def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db)):
     return logic.create_project(db, project)
+
+@router.get("/search/projects", response_model=List[schemas.ProjectSummary])
+def search_project(search_query: str = Query(... , min_length=1), db: Session = Depends(get_db)):
+    return logic.search_project(db, search_query)
 
 # --- FORUM POST API ENDPOINT ---
 

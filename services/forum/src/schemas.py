@@ -3,6 +3,10 @@ from typing import Optional, List
 from datetime import datetime
 
 # --- Projects ---
+
+class ProjectSummary(BaseModel):
+    name: str
+    description: Optional[str] = None
 class ProjectCreate(BaseModel):
     slug: str
     name: str
