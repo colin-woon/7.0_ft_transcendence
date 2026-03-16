@@ -403,7 +403,7 @@ def cast_comment_vote(db: Session, comment_id: int, user_id: int, vote_value: in
     if not post:
         raise HTTPException(status_code=404, detail="Comment not found")
 
-    existing_vote = db.query(models.PostVote).filter(
+    existing_vote = db.query(models.CommentVote).filter(
         models.CommentVote.comment_id == comment_id,
         models.CommentVote.user_id == user_id,
     ).first()
@@ -430,7 +430,7 @@ def cast_comment_vote(db: Session, comment_id: int, user_id: int, vote_value: in
 def get_post_vote_score(db: Session, post_id: int) -> int:
     score = db.query(func.sum(models.PostVote.vote_value))\
         .filter(models.PostVote.post_id == post_id).scalar()
-    return score
+    return int(score)
 
 
 
