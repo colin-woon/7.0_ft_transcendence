@@ -3,6 +3,7 @@ package org.bumIntra.gateway.ratelimit;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.runtime.Startup;
 import io.quarkus.runtime.StartupEvent;
@@ -12,6 +13,7 @@ import jakarta.inject.Inject;
 
 @Startup
 @ApplicationScoped
+@IfBuildProperty(name = "gateway.config.ratelimit.enabled", stringValue = "true")
 public class RedisScriptRegistry {
 
 	private static final String LUA_SCRIPT = "redis/token_bucket.lua";

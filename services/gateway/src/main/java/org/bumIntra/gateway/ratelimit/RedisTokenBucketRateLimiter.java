@@ -1,10 +1,12 @@
 package org.bumIntra.gateway.ratelimit;
 
+import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.redis.datasource.RedisDataSource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
+@IfBuildProperty(name = "gateway.config.ratelimit.enabled", stringValue = "true")
 public class RedisTokenBucketRateLimiter implements RateLimiter {
 
 	@Inject

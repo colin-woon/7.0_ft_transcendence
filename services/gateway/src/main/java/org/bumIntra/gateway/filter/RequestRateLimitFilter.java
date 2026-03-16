@@ -4,6 +4,9 @@ import org.bumIntra.gateway.config.GatewayRateLimitConfig;
 import org.bumIntra.gateway.exception.GatewayErrorCode;
 import org.bumIntra.gateway.exception.RateLimitException;
 import org.bumIntra.gateway.security.GatewayRequestContext;
+
+import io.quarkus.arc.properties.IfBuildProperty;
+
 import org.bumIntra.gateway.ratelimit.InMemTokenBucketRateLimiter;
 import org.bumIntra.gateway.ratelimit.RateLimitAccess;
 import org.bumIntra.gateway.ratelimit.RateLimitAccessResolver;
@@ -21,6 +24,7 @@ import jakarta.ws.rs.ext.Provider;
 
 @Provider
 @Priority(Priorities.AUTHORIZATION - 100)
+@IfBuildProperty(name = "gateway.config.ratelimit.enabled", stringValue = "true")
 public class RequestRateLimitFilter implements ContainerRequestFilter {
 
 	@Inject

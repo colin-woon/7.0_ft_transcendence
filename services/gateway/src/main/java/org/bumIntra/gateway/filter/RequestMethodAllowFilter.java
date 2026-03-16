@@ -16,7 +16,7 @@ import jakarta.ws.rs.ext.Provider;
 
 @Provider
 @Priority(Priorities.AUTHENTICATION - 90)
-public class MethodAllowListFilter implements ContainerRequestFilter {
+public class RequestMethodAllowFilter implements ContainerRequestFilter {
 
 	@Inject
 	GatewayMethodConfig gmc;

@@ -14,7 +14,7 @@ import jakarta.ws.rs.ext.Provider;
 
 @Provider
 @Priority(Priorities.AUTHENTICATION - 80)
-public class RequestHeaderAllowListFilter implements ContainerRequestFilter {
+public class RequestHeaderAllowFilter implements ContainerRequestFilter {
 
 	@Inject
 	GatewayRequestHeaderConfig grhc;

@@ -3,13 +3,15 @@ package org.bumIntra.gateway.ratelimit.ws;
 import org.bumIntra.gateway.ratelimit.RateLimitProfile;
 import org.bumIntra.gateway.ratelimit.RateLimiter;
 
+import io.quarkus.arc.properties.IfBuildProperty;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
-public class WsRateLimitService {
+@IfBuildProperty(name = "gateway.config.ratelimit.enabled", stringValue = "true")
+public class WsRateLimitService implements WsRateLimiter {
 
 	@Inject
 	RateLimiter rateLimiter;
@@ -18,8 +20,9 @@ public class WsRateLimitService {
 	 * Connection-level limiter (pre-auth).
 	 * Key format: ws:conn:{remoteIp}
 	 */
-	public Uni<Boolean> allowConnection(String remoteIp) {
-		String key = "ws:conn:" + remoteIp;
+	@Override
+	public Uni<Boolean> allowAnonymousConnection(String clientIp) {
+		String key = "ws:conn:" + clientIp;
 		return allow(key, WsRateLimitProfiles.WS_CONN);
 	}
 
@@ -27,6 +30,7 @@ public class WsRateLimitService {
 	 * Post-auth per-user connection gate.
 	 * Key format: ws:conn:user:{userId}
 	 */
+	@Override
 	public Uni<Boolean> allowUserConnection(String userId) {
 		String key = "ws:conn:user:" + userId;
 		return allow(key, WsRateLimitProfiles.WS_CONN_USER);
@@ -35,6 +39,7 @@ public class WsRateLimitService {
 	/**
 	 * Key format: ws:msg:{userId}
 	 */
+	@Override
 	public Uni<Boolean> allowMessage(String userId) {
 		String key = "ws:msg:" + userId;
 		return allow(key, WsRateLimitProfiles.WS_MSG);

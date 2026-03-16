@@ -24,7 +24,7 @@ import jakarta.ws.rs.ext.Provider;
 public class ResponseContextFilter implements ContainerResponseFilter {
 
 	@Inject
-	GatewayRequestContext ctx;
+	GatewayRequestContext grc;
 
 	@Inject
 	GatewayObserverDispatcher obs;
@@ -33,8 +33,12 @@ public class ResponseContextFilter implements ContainerResponseFilter {
 	public void filter(ContainerRequestContext request, ContainerResponseContext response) {
 
 		// Echo X-Request-Id header back to client
-		if (ctx.getRequestId() != null) {
-			response.getHeaders().putSingle("X-Request-Id", ctx.getRequestId());
+		if (grc.getRequestId() != null) {
+			response.getHeaders().putSingle("X-Request-Id", grc.getRequestId());
+		}
+
+		if (grc.isSse()) {
+			return;
 		}
 
 		// Obs end hook
@@ -46,11 +50,11 @@ public class ResponseContextFilter implements ContainerResponseFilter {
 		int status = response.getStatus();
 
 		obs.onRequestEnd(new GatewayRequestEnd(
-				ctx.getRequestId(),
+				grc.getRequestId(),
 				status,
 				Duration.between(st, Instant.now()),
 				status >= 200 && status < 400,
-				Optional.ofNullable(ctx.getErrorCode())));
+				Optional.ofNullable(grc.getErrorCode())));
 
 		// for (var ob : obs) {
 		// ob.onRequestEnd(

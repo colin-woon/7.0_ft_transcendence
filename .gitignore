@@ -69,3 +69,6 @@ AGENTS.md
 *.pem
 *.key
 *.crt
+
+# === Local planning notes ===
+TODO.local.md

@@ -10,6 +10,6 @@ public record GatewayWsAuth(
 		Optional<String> userId,
 		boolean success,
 		Optional<String> reason,
-		Duration latency,
+		Optional<Duration> latency,
 		Instant at) {
 }

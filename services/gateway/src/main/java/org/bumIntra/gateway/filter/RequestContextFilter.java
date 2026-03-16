@@ -3,6 +3,7 @@ package org.bumIntra.gateway.filter;
 import org.jboss.logging.MDC;
 
 import java.time.Instant;
+import java.util.Locale;
 import java.util.UUID;
 
 import org.bumIntra.gateway.security.GatewayRequestContext;
@@ -44,6 +45,7 @@ public class RequestContextFilter implements ContainerRequestFilter {
 				st));
 
 		request.setProperty("gw.start", st);
+		grc.setStartTime(st);
 	}
 
 	private void populateGrcContext(ContainerRequestContext request) {
@@ -68,13 +70,24 @@ public class RequestContextFilter implements ContainerRequestFilter {
 		grc.setForwardedProto(request.getHeaderString(IdentityHeaders.INTRA_FORWARDED_PROTO));
 
 		// RateLimitAccess TODO: to be review later
-		String clientIp = grc.getRealIp() != null && !grc.getRealIp().isBlank() ? grc.getRealIp()
-				: grc.getForwardedFor().split(",")[0].trim();
-		if (clientIp != null && !clientIp.isBlank()) {
-			grc.setClientIp(clientIp);
+
+		if (grc.getRealIp() == null || grc.getRealIp().isBlank()) {
+			if (grc.getForwardedFor() != null && !grc.getForwardedFor().isBlank()) {
+				grc.setClientIp(grc.getForwardedFor().split(",")[0].trim());
+			} else {
+				grc.setClientIp("unknown");
+				grc.setInternal(true);
+			}
 		} else {
-			grc.setInternal(true);
+			grc.setClientIp(grc.getRealIp().trim());
 		}
 
+		// SSE event checks, default to false for java.
+		if ((grc.getPath().startsWith("stream/") || grc.getPath().startsWith("/stream/"))
+				&& "GET".equalsIgnoreCase(request.getMethod())
+				&& request.getHeaderString("Accept") != null
+				&& request.getHeaderString("Accept").toLowerCase(Locale.ROOT).contains("text/event-stream")) {
+			grc.setSse(true);
+		}
 	}
 }
