@@ -38,6 +38,7 @@ services:
             retries: 3
         env_file:
             - ./environment/shared.env
+            - ./environment/auth.env
         volumes:
             - ./certs/runtime/auth/auth-keystore.p12:/certs/auth-keystore.p12:ro
             - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro

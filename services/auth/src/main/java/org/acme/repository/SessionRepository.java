@@ -1,8 +1,10 @@
 package org.acme.repository;
 
 import java.util.Optional;
+import java.util.List;
 
 import org.acme.model.Session;
+import org.eclipse.jdt.annotation.NonNull;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.panache.common.Sort;
@@ -15,8 +17,8 @@ public class SessionRepository implements PanacheRepository<Session> {
 		return find("sessionId", sessionId).firstResultOptional();
 	}
 
-	public Optional<Session> findByUserId(Long userId) {
-		return find("userId", userId).firstResultOptional();
+	public List<@NonNull Session> findByUserId(Long userId) {
+		return find("userId", userId).list();
 	}
 
 	public long countByUserId(Long userId) {

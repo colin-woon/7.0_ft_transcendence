@@ -2,263 +2,798 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Auth Service Tester</title>
+    <title>Auth Service</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
-        .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        button { cursor: pointer; padding: 8px 12px; margin: 5px; border: none; border-radius: 4px; background: #007bff; color: white; }
-        button.delete { background: #dc3545; }
-        button.patch { background: #28a745; }
-        pre { background: #eee; padding: 10px; overflow-x: auto; max-height: 300px; }
-        input, textarea { padding: 6px; margin: 4px; width: 300px; }
-        label { font-weight: bold; display: block; margin-top: 8px; }
-        .status { padding: 5px 10px; border-radius: 4px; display: inline-block; margin: 5px; }
-        .status.ok { background: #d4edda; color: #155724; }
-        .status.err { background: #f8d7da; color: #721c24; }
-        #tokenDisplay { font-size: 0.8em; word-break: break-all; background: #fff3cd; padding: 8px; border-radius: 4px; margin-top: 5px; }
+        :root {
+            --bg:       #0a0a0a;
+            --surface:  #111111;
+            --surface2: #181818;
+            --border:   #222222;
+            --text:     #d4d4d4;
+            --muted:    #777;
+            --dim:      #8f8f8f;
+            --blue:     #4a9eff;
+            --green:    #4caf70;
+            --red:      #e05555;
+            --orange:   #e07d30;
+            --teal:     #2aa8b8;
+        }
+
+        body[data-theme='graphite-cyan'] {
+            --bg:       #091015;
+            --surface:  #101a22;
+            --surface2: #142230;
+            --border:   #1e3445;
+            --text:     #d9ebf6;
+            --muted:    #93aab8;
+            --dim:      #a2bdcc;
+            --blue:     #69c2ff;
+            --green:    #6fcf97;
+            --red:      #ff6b6b;
+            --orange:   #ffad5c;
+            --teal:     #4fd5d6;
+        }
+
+        body[data-theme='midnight-amber'] {
+            --bg:       #0f0b08;
+            --surface:  #1a1410;
+            --surface2: #241c16;
+            --border:   #3a2a1d;
+            --text:     #f0dfcc;
+            --muted:    #bea78e;
+            --dim:      #d2b89a;
+            --blue:     #c7a471;
+            --green:    #8ec17d;
+            --red:      #e67864;
+            --orange:   #ffb35f;
+            --teal:     #75beb3;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', 'Trebuchet MS', 'Arial', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ---- TOPBAR ---- */
+        .topbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            display: flex;
+            align-items: stretch;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            height: 46px;
+            width: 100%;
+        }
+
+        .brand {
+            font-size: 0.75em;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            padding-right: 20px;
+            border-right: 1px solid var(--border);
+            margin-right: 4px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        nav { display: flex; align-items: stretch; flex: 1; }
+
+        .tab {
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--muted);
+            padding: 0 16px;
+            cursor: pointer;
+            font-size: 0.82em;
+            font-weight: 500;
+            transition: color 0.15s, border-color 0.15s;
+            border-radius: 0;
+            margin: 0;
+            white-space: nowrap;
+            line-height: 1;
+        }
+        .tab:hover { color: var(--text); }
+        .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+        .tab.admin { color: #e0333322; }
+        .tab.admin:hover { color: var(--red); }
+        .tab.admin.active { color: var(--red); border-bottom-color: var(--red); }
+
+        .topbar-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            padding-left: 16px;
+            border-left: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        #topbarToken {
+            font-size: 0.7em;
+            font-family: monospace;
+            color: var(--dim);
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        #topbarToken.live { color: #4caf7066; }
+
+        .theme-select {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 4px;
+            padding: 4px 7px;
+            font-size: 0.72em;
+            margin-right: 10px;
+        }
+
+        /* ---- MAIN LAYOUT ---- */
+        .main {
+            flex: 1;
+            max-width: 1280px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 24px;
+            gap: 0;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+            gap: 16px;
+            align-items: start;
+        }
+
+        .content-column,
+        .response-column {
+            min-width: 0;
+        }
+
+        .response-column {
+            position: sticky;
+            top: 62px;
+        }
+
+        /* ---- SECTIONS ---- */
+        .section { display: none; flex-direction: column; gap: 10px; }
+        .section.active { display: flex; }
+
+        /* ---- CARDS ---- */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 14px 16px;
+        }
+
+        .card-label {
+            font-size: 0.68em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text);
+            margin-bottom: 12px;
+        }
+
+        /* ---- FIELDS ---- */
+        .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+        .field:last-of-type { margin-bottom: 0; }
+
+        .field label {
+            font-size: 0.72em;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .field input,
+        .field select {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text);
+            padding: 6px 9px;
+            font-size: 0.84em;
+            width: 100%;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .field input:focus, .field select:focus { border-color: #333; }
+        .field select option { background: var(--surface2); }
+
+        .row { display: flex; gap: 10px; }
+        .row .field { flex: 1; margin-bottom: 0; }
+
+        /* ---- BUTTONS ---- */
+        .btn {
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+            transition: filter 0.15s;
+            white-space: nowrap;
+            line-height: 1.4;
+            flex-shrink: 0;
+        }
+        .btn:hover { filter: brightness(1.2); }
+        .btn-blue   { background: #1a3a5c; color: #6ab4ff; border: 1px solid #1e4870; }
+        .btn-green  { background: #1a3326; color: #5ec47a; border: 1px solid #1e3d2c; }
+        .btn-red    { background: #3a1414; color: #e06060; border: 1px solid #4a1a1a; }
+        .btn-orange { background: #3a2010; color: #e08840; border: 1px solid #4a2a14; }
+        .btn-teal   { background: #0f2a2e; color: #3abccc; border: 1px solid #143438; }
+        .btn-ghost  { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+        .btn-ghost:hover { border-color: #333; color: var(--text); }
+
+        .btn-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; margin-top: 10px; }
+
+        /* annotated button wrapper */
+        .annotated { display: flex; flex-direction: column; gap: 3px; }
+        .annotated .note { font-size: 0.67em; color: var(--text); opacity: 0.75; padding-left: 1px; }
+
+        /* ---- DIVIDER ---- */
+        .divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+
+        /* ---- TOKEN BOX ---- */
+        .token-box {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 8px 10px;
+            font-family: monospace;
+            font-size: 0.7em;
+            color: var(--text);
+            word-break: break-all;
+            min-height: 32px;
+            line-height: 1.6;
+        }
+        .token-box.live { color: #4caf7066; }
+
+        /* ---- BADGE ---- */
+        .badge {
+            font-size: 0.68em;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-family: monospace;
+        }
+        .ok  { background: #4caf7018; color: #4caf70; border: 1px solid #4caf7030; }
+        .err { background: #e0555518; color: #e05555; border: 1px solid #e0555530; }
+
+        /* ---- RESPONSE PANEL ---- */
+        .response-panel {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--surface);
+            display: flex;
+            flex-direction: column;
+            min-height: 420px;
+            max-height: calc(100vh - 90px);
+            box-shadow: 0 8px 28px #00000055;
+        }
+
+        .response-head {
+            padding: 8px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .response-head .rlabel {
+            font-size: 0.67em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text);
+        }
+
+        .response-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 14px;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.74em;
+            line-height: 1.7;
+            color: var(--text);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .spacer { height: 8px; flex-shrink: 0; }
+
+        @media (max-width: 760px) {
+            .topbar {
+                padding: 0 10px;
+            }
+
+            .brand {
+                display: none;
+            }
+
+            .main {
+                padding: 14px 12px;
+            }
+
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .response-column {
+                position: static;
+                top: auto;
+            }
+
+            .topbar-right {
+                padding-left: 8px;
+            }
+
+            .theme-select {
+                max-width: 118px;
+                margin-right: 6px;
+            }
+
+            .response-panel {
+                min-height: 260px;
+                max-height: 420px;
+            }
+        }
     </style>
 </head>
 <body>
-    <h2>Auth Service Tester</h2>
 
-    <div class="card">
-        <h3>1. Login (OIDC)</h3>
-        <p>Click to login. You'll be redirected back here with your token.</p>
-        <a href="/auth/login/google"><button type="button">Login with Google</button></a>
-        <div id="tokenDisplay">No token stored</div>
+<div class="topbar">
+    <div class="brand">Auth Dev</div>
+    <nav>
+        <button class="tab active" onclick="showTab('login')">Login</button>
+        <button class="tab" onclick="showTab('profile')">Profile</button>
+        <button class="tab" onclick="showTab('sessions')">Sessions</button>
+        <button class="tab" onclick="showTab('users')">Users</button>
+        <button class="tab admin" id="adminTab" style="display:none" onclick="showTab('admin')">Admin</button>
+    </nav>
+    <div class="topbar-right">
+        <select id="themeSelect" class="theme-select" onchange="setTheme(this.value)">
+            <option value="charcoal">Charcoal Blue</option>
+            <option value="graphite-cyan">Graphite Cyan</option>
+            <option value="midnight-amber">Midnight Amber</option>
+        </select>
+        <div id="topbarToken">no token</div>
+    </div>
+</div>
+
+<div class="main">
+
+    <div class="main-grid">
+    <div class="content-column">
+
+    <!-- ===== LOGIN ===== -->
+    <div class="section active" id="section-login">
+        <div class="card">
+            <div class="card-label">OAuth</div>
+            <div class="btn-row" style="margin-top:0;">
+                <button class="btn btn-blue" id="loginGoogleBtn">Login with Google</button>
+                <button class="btn btn-teal" id="login42Btn">Login with 42</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-label">Token</div>
+            <div class="token-box" id="tokenDisplay">No token stored</div>
+            <div class="btn-row">
+                <button class="btn btn-ghost" onclick="clearTokenUI()">Clear token</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-label">Health</div>
+            <div class="btn-row" style="margin-top:0;">
+                <button class="btn btn-teal" onclick="publicCall('GET', '/auth/health')">GET /auth/health</button>
+            </div>
+        </div>
     </div>
 
-    <div class="card">
-        <h3>2. Authenticated Endpoints</h3>
-        <button onclick="authCall('GET', '/auth/me')">GET /auth/me</button>
-        <button onclick="authCall('POST', '/auth/logout')" class="delete">POST /auth/logout</button>
-        <button onclick="confirmDelete()" class="delete">DELETE /auth/delete</button>
+    <!-- ===== PROFILE ===== -->
+    <div class="section" id="section-profile">
+        <div class="card">
+            <div class="card-label">My Account</div>
+            <div class="btn-row" style="margin-top:0;">
+                <button class="btn btn-blue" onclick="authCall('GET', '/auth/me')">GET /auth/me</button>
+                <button class="btn btn-red" onclick="confirmDelete()">DELETE /auth/delete</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-label">Update Profile — PATCH /auth/me</div>
+            <div class="row">
+                <div class="field"><label>Username</label><input type="text" id="newUsername" placeholder="new username"></div>
+                <div class="field"><label>Full Name</label><input type="text" id="newFullName" placeholder="full name"></div>
+            </div>
+            <div class="field" style="margin-top:8px;"><label>Bio</label><input type="text" id="newBio" placeholder="bio"></div>
+            <div class="field"><label>Avatar URL</label><input type="text" id="newAvatarUrl" placeholder="https://example.com/avatar.png"></div>
+            <div class="btn-row">
+                <button class="btn btn-green" onclick="patchMe()">PATCH /auth/me</button>
+            </div>
+        </div>
     </div>
 
-    <div class="card">
-        <h3>3. Update Profile</h3>
-        <label>Username:</label>
-        <input type="text" id="newUsername" placeholder="new username">
-        <label>Bio:</label>
-        <input type="text" id="newBio" placeholder="new bio">
-        <button onclick="patchMe()" class="patch">PATCH /auth/me</button>
+    <!-- ===== SESSIONS ===== -->
+    <div class="section" id="section-sessions">
+        <div class="card">
+            <div class="card-label">Token &amp; Data</div>
+            <div class="btn-row" style="margin-top:0;">
+                <button class="btn btn-blue" onclick="refreshToken()">POST /auth/refresh</button>
+                <div class="annotated">
+                    <span class="note">intra users only</span>
+                    <button class="btn btn-teal" onclick="authCall('POST', '/auth/reload')">POST /auth/reload</button>
+                </div>
+                <button class="btn btn-teal" onclick="authCall('GET', '/auth/sessions')">GET /auth/sessions</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-label">Logout</div>
+            <div class="btn-row" style="margin-top:0;">
+                <button class="btn btn-red" onclick="authCall('POST', '/auth/logout')">Current Session</button>
+                <button class="btn btn-red" onclick="confirmLogoutAll()">All Sessions</button>
+            </div>
+            <hr class="divider">
+            <div class="field">
+                <label>Logout Specific Session</label>
+                <input type="text" id="logoutSessionId" placeholder="session UUID">
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-orange" onclick="logoutSpecificSession()">POST /auth/logout?sessionId=...</button>
+            </div>
+        </div>
     </div>
 
-    <div class="card">
-        <h3>4. Refresh Token (Cookie-based)</h3>
-        <button onclick="refreshToken()">POST /auth/refresh</button>
+    <!-- ===== USERS ===== -->
+    <div class="section" id="section-users">
+        <div class="card">
+            <div class="card-label">Search — GET /auth/users</div>
+            <div class="field"><label>Query</label><input type="text" id="searchQuery" placeholder="search by name or username..."></div>
+            <div class="row" style="margin-top:8px;">
+                <div class="field"><label>Page</label><input type="number" id="searchPage" value="0"></div>
+                <div class="field"><label>Size</label><input type="number" id="searchSize" value="10"></div>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-blue" onclick="searchUsers()">GET /auth/users</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-label">Lookup by ID — GET /auth/users/{id}</div>
+            <div class="field"><label>User ID</label><input type="number" id="userId" placeholder="user ID"></div>
+            <div class="btn-row">
+                <button class="btn btn-blue" onclick="lookupUser()">GET /auth/users/{id}</button>
+            </div>
+        </div>
     </div>
 
-    <div class="card">
-        <h3>5. Public Endpoints</h3>
-        <label>Search:</label>
-        <input type="text" id="searchQuery" placeholder="search users...">
-        <button onclick="searchUsers()">GET /auth/users</button>
-        <br>
-        <label>User ID:</label>
-        <input type="number" id="userId" placeholder="user ID">
-        <button onclick="lookupUser()">GET /auth/users/{id}</button>
+    <!-- ===== ADMIN ===== -->
+    <div class="section" id="section-admin">
+        <div class="card" style="border-color:#2e1a1a;">
+            <div class="card-label" style="color:#663333;">Manage User</div>
+            <div class="field"><label>Target User ID</label><input type="number" id="adminTargetId" placeholder="user ID"></div>
+            <hr class="divider">
+            <div class="row">
+                <div class="field"><label>Username</label><input type="text" id="adminUsername" placeholder="username"></div>
+                <div class="field"><label>Full Name</label><input type="text" id="adminFullName" placeholder="full name"></div>
+            </div>
+            <div class="field" style="margin-top:8px;"><label>Avatar URL</label><input type="text" id="adminAvatarUrl" placeholder="https://..."></div>
+            <div class="field"><label>Bio</label><input type="text" id="adminBio" placeholder="bio"></div>
+            <div class="row" style="margin-top:8px;">
+                <div class="field">
+                    <label>Role</label>
+                    <select id="adminRole">
+                        <option value="">(no change)</option>
+                        <option value="STUDENT">STUDENT</option>
+                        <option value="ADMIN">ADMIN</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Banned</label>
+                    <select id="adminBanned">
+                        <option value="">(no change)</option>
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                    </select>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-green" onclick="adminPatchUser()">PATCH user</button>
+                <button class="btn btn-red" onclick="adminDeleteUser()">DELETE user</button>
+                <button class="btn btn-orange" onclick="adminLogoutUser()">Logout user</button>
+            </div>
+        </div>
+        <div class="card" style="border-color:#2e1a1a;">
+            <div class="card-label" style="color:#663333;">Create User — POST /auth/admin/users/create</div>
+            <div class="row">
+                <div class="field"><label>Email *</label><input type="email" id="createEmail" placeholder="user@example.com"></div>
+                <div class="field"><label>Username *</label><input type="text" id="createUsername" placeholder="username"></div>
+            </div>
+            <div class="row" style="margin-top:8px;">
+                <div class="field"><label>Full Name</label><input type="text" id="createFullName" placeholder="full name"></div>
+                <div class="field">
+                    <label>Role</label>
+                    <select id="createRole"><option value="STUDENT">STUDENT</option><option value="ADMIN">ADMIN</option></select>
+                </div>
+            </div>
+            <div class="field" style="margin-top:8px;"><label>Avatar URL</label><input type="text" id="createAvatarUrl" placeholder="https://..."></div>
+            <div class="field"><label>Bio</label><input type="text" id="createBio" placeholder="bio"></div>
+            <div class="btn-row">
+                <button class="btn btn-green" onclick="adminCreateUser()">POST /auth/admin/users/create</button>
+            </div>
+        </div>
     </div>
 
-    <div class="card">
-        <h3>Response</h3>
-        <pre id="output">No activity yet...</pre>
     </div>
 
-    <script>
-        // ---- Token Storage ----
-        function getToken() {
-            return localStorage.getItem('accessToken');
+    <div class="response-column">
+
+    <!-- ===== RESPONSE ===== -->
+    <div class="response-panel">
+        <div class="response-head">
+            <span class="rlabel">Response</span>
+            <span id="responseStatus"></span>
+        </div>
+        <pre class="response-body" id="output">No activity yet...</pre>
+    </div>
+
+    </div>
+    </div>
+
+    <div class="spacer"></div>
+
+</div>
+
+<script>
+    function setTheme(theme) {
+        if (theme === 'charcoal') {
+            document.body.removeAttribute('data-theme');
+        } else {
+            document.body.setAttribute('data-theme', theme);
         }
+        localStorage.setItem('authDevTheme', theme);
+        var sel = document.getElementById('themeSelect');
+        if (sel && sel.value !== theme) sel.value = theme;
+    }
 
-        function setToken(token) {
-            localStorage.setItem('accessToken', token);
-            document.getElementById('tokenDisplay').innerText = 'Token: ' + token.substring(0, 40) + '...';
-        }
-
-        function clearToken() {
-            localStorage.removeItem('accessToken');
-            document.getElementById('tokenDisplay').innerText = 'No token stored';
-        }
-
-        // ---- On page load: check if redirected back from login ----
-        window.addEventListener('DOMContentLoaded', function() {
-            // If the page content is a JSON login response (after OIDC redirect),
-            // the browser landed on /auth/login/google which returned JSON.
-            // Instead, we handle it via a popup/redirect callback approach.
-
-            // Restore token display if already stored
-            var existing = getToken();
-            if (existing) {
-                document.getElementById('tokenDisplay').innerText = 'Token: ' + existing.substring(0, 40) + '...';
-            }
+    // ---- Tabs ----
+    function showTab(name) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+        document.getElementById('section-' + name).classList.add('active');
+        document.querySelectorAll('.tab').forEach(b => {
+            if (b.getAttribute('onclick') === "showTab('" + name + "')") b.classList.add('active');
         });
+    }
 
-        // ---- Generic fetch with Bearer token ----
-        async function authCall(method, url, body) {
-            var token = getToken();
-            if (!token) {
-                document.getElementById('output').innerText = 'No access token. Please login or refresh first.';
-                return;
-            }
+    // ---- Token ----
+    function getToken() { return localStorage.getItem('accessToken'); }
 
-            var opts = {
-                method: method,
-                credentials: 'include',
-                headers: {
-                    'Authorization': 'Bearer ' + token
-                }
-            };
+    function setToken(token) {
+        localStorage.setItem('accessToken', token);
+        var d = document.getElementById('tokenDisplay');
+        d.innerText = token; d.className = 'token-box live';
+        var t = document.getElementById('topbarToken');
+        t.innerText = token.substring(0, 30) + '…'; t.className = 'live';
+        updateAdminVisibility();
+    }
 
-            if (body) {
-                opts.headers['Content-Type'] = 'application/json';
-                opts.body = JSON.stringify(body);
-            }
+    function clearToken() {
+        localStorage.removeItem('accessToken');
+        document.getElementById('tokenDisplay').innerText = 'No token stored';
+        document.getElementById('tokenDisplay').className = 'token-box';
+        document.getElementById('topbarToken').innerText = 'no token';
+        document.getElementById('topbarToken').className = '';
+        updateAdminVisibility();
+    }
 
-            try {
-                var res = await fetch(url, opts);
+    function clearTokenUI() { clearToken(); setOutput('—', '—', null, 'Token cleared.'); }
 
-                // If 401, try auto-refresh
-                if (res.status === 401) {
-                    var refreshed = await doRefresh();
-                    if (refreshed) {
-                        // Retry with new token
-                        opts.headers['Authorization'] = 'Bearer ' + getToken();
-                        res = await fetch(url, opts);
-                    } else {
-                        document.getElementById('output').innerText = 'Token expired. Refresh failed. Please login again.';
-                        return;
-                    }
-                }
-
-                var text = await res.text();
-                var data;
-                try { data = JSON.parse(text); } catch(e) { data = text || '(empty response)'; }
-
-                // If logout, clear token
-                if (url.includes('/logout') || url.includes('/delete')) {
-                    clearToken();
-                }
-
-                document.getElementById('output').innerText =
-                    method + ' ' + url + '\nStatus: ' + res.status + '\n\n' +
-                    (typeof data === 'string' ? data : JSON.stringify(data, null, 2));
-            } catch (err) {
-                document.getElementById('output').innerText = 'Fetch error: ' + err.message;
-            }
+    // ---- Output ----
+    function setOutput(method, url, status, data) {
+        var statusEl = document.getElementById('responseStatus');
+        if (status !== null) {
+            var ok = status >= 200 && status < 300;
+            statusEl.innerHTML = '<span class="badge ' + (ok ? 'ok' : 'err') + '">' + status + '</span>';
+        } else {
+            statusEl.innerHTML = '';
         }
+        document.getElementById('output').innerText =
+            (method !== '—' ? method + ' ' + url + '\n\n' : '') +
+            (typeof data === 'string' ? data : JSON.stringify(data, null, 2));
+    }
 
-        // ---- Public fetch (no auth header) ----
-        async function publicCall(method, url) {
-            try {
-                var res = await fetch(url, { method: method });
-                var text = await res.text();
-                var data;
-                try { data = JSON.parse(text); } catch(e) { data = text || '(empty response)'; }
-
-                document.getElementById('output').innerText =
-                    method + ' ' + url + '\nStatus: ' + res.status + '\n\n' +
-                    (typeof data === 'string' ? data : JSON.stringify(data, null, 2));
-            } catch (err) {
-                document.getElementById('output').innerText = 'Fetch error: ' + err.message;
-            }
-        }
-
-        // ---- Refresh: uses session cookie to get a new access token ----
-        async function doRefresh() {
-            try {
-                var res = await fetch('/auth/refresh', {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-                if (res.ok) {
-                    var data = await res.json();
-                    if (data.accessToken) {
-                        setToken(data.accessToken);
-                        return true;
-                    }
-                }
-            } catch (e) {
-                console.error('Refresh failed', e);
-            }
-            return false;
-        }
-
-        async function refreshToken() {
-            var ok = await doRefresh();
-            if (ok) {
-                document.getElementById('output').innerText = 'Token refreshed successfully!\nNew token stored.';
-            } else {
-                document.getElementById('output').innerText = 'Refresh failed. Session may have expired. Please login again.';
-            }
-        }
-
-        // ---- Login via popup (captures the token from the redirect response) ----
-        document.querySelector('a[href="/auth/login/google"]').addEventListener('click', function(e) {
-            e.preventDefault();
-            var popup = window.open('/auth/login/google', 'login', 'width=500,height=600');
-
-            var interval = setInterval(function() {
+    // ---- Login redirect intercept ----
+    (function() {
+        if (localStorage.getItem('loginPending') !== 'true') return;
+        var onIndex = ['/', '/index.html'].includes(window.location.pathname) ||
+                      window.location.pathname.endsWith('/index.html');
+        if (!onIndex) {
+            window.addEventListener('DOMContentLoaded', function() {
                 try {
-                    if (popup.closed) {
-                        clearInterval(interval);
+                    var data = JSON.parse(document.body.innerText.trim());
+                    if (data.accessToken) {
+                        localStorage.setItem('accessToken', data.accessToken);
+                        localStorage.removeItem('loginPending');
+                        window.location.href = '/index.html#loggedin';
                         return;
                     }
-                    // Once redirected back to our origin, read the response
-                    if (popup.location.origin === window.location.origin) {
-                        var body = popup.document.body.innerText;
-                        try {
-                            var data = JSON.parse(body);
-                            if (data.accessToken) {
-                                setToken(data.accessToken);
-                                document.getElementById('output').innerText =
-                                    'Login successful!\n\n' + JSON.stringify(data, null, 2) +
-                                    '\nExpires: ' + data.expiresIn;
-                            } else {
-                                document.getElementById('output').innerText = 'Login response missing accessToken:\n' + body;
-                            }
-                        } catch (err) {
-                            document.getElementById('output').innerText = 'Login response:\n' + body;
-                        }
-                        popup.close();
-                        clearInterval(interval);
-                    }
-                } catch (err) {
-                    // Cross-origin — still on Google's page, keep waiting
-                }
-            }, 500);
-        });
+                } catch (e) {}
+                localStorage.removeItem('loginPending');
+                window.location.href = '/index.html#loginfailed';
+            });
+        }
+    })();
 
-        // ---- Patch ----
-        function patchMe() {
-            var body = {};
-            var username = document.getElementById('newUsername').value.trim();
-            var bio = document.getElementById('newBio').value.trim();
-            if (username) body.username = username;
-            if (bio) body.bio = bio;
-            if (Object.keys(body).length === 0) {
-                alert('Enter at least one field to update');
-                return;
+    window.addEventListener('DOMContentLoaded', async function() {
+        var savedTheme = localStorage.getItem('authDevTheme') || 'charcoal';
+        setTheme(savedTheme);
+
+        var existing = getToken();
+        if (existing) setToken(existing);
+        updateAdminVisibility();
+
+        if (window.location.hash === '#loggedin') {
+            history.replaceState(null, '', window.location.pathname);
+            localStorage.removeItem('loginPending');
+            if (getToken()) { setToken(getToken()); setOutput('—', '—', null, 'Login successful! Token captured.'); }
+            return;
+        }
+        if (window.location.hash === '#loginfailed') {
+            history.replaceState(null, '', window.location.pathname);
+            localStorage.removeItem('loginPending');
+            var ok = await doRefresh();
+            setOutput('—', '—', null, ok ? 'Login successful! Token obtained via refresh.' : 'Login failed. Please try again.');
+            return;
+        }
+        if (localStorage.getItem('loginPending') === 'true') {
+            localStorage.removeItem('loginPending');
+            var ok = await doRefresh();
+            setOutput('—', '—', null, ok ? 'Login successful! Token stored via refresh.' : 'Login redirect detected but refresh failed.');
+        }
+    });
+
+    document.getElementById('loginGoogleBtn').addEventListener('click', function() {
+        localStorage.setItem('loginPending', 'true'); window.location.href = '/auth/login/google';
+    });
+    document.getElementById('login42Btn').addEventListener('click', function() {
+        localStorage.setItem('loginPending', 'true'); window.location.href = '/auth/login/42';
+    });
+
+    // ---- Auth fetch ----
+    async function authCall(method, url, body) {
+        var token = getToken();
+        if (!token) { setOutput(method, url, 401, 'No access token. Please login first.'); return; }
+        var opts = { method, credentials: 'include', headers: { 'Authorization': 'Bearer ' + token } };
+        if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+        try {
+            var res = await fetch(url, opts);
+            if (res.status === 401) {
+                var refreshed = await doRefresh();
+                if (refreshed) { opts.headers['Authorization'] = 'Bearer ' + getToken(); res = await fetch(url, opts); }
+                else { setOutput(method, url, 401, 'Token expired. Refresh failed. Please login again.'); return; }
             }
-            authCall('PATCH', '/auth/me', body);
-        }
+            var text = await res.text(), data;
+            try { data = JSON.parse(text); } catch(e) { data = text || '(empty)'; }
+            if (!url.includes('/admin/') && (url.includes('/logout') || url.includes('/delete'))) clearToken();
+            setOutput(method, url, res.status, data);
+        } catch (err) { setOutput(method, url, null, 'Fetch error: ' + err.message); }
+    }
 
-        function confirmDelete() {
-            if (confirm('Are you sure? This will delete your account permanently.')) {
-                authCall('DELETE', '/auth/delete');
-            }
-        }
+    async function publicCall(method, url) {
+        try {
+            var res = await fetch(url, { method });
+            var text = await res.text(), data;
+            try { data = JSON.parse(text); } catch(e) { data = text || '(empty)'; }
+            setOutput(method, url, res.status, data);
+        } catch (err) { setOutput(method, url, null, 'Fetch error: ' + err.message); }
+    }
 
-        function searchUsers() {
-            var q = document.getElementById('searchQuery').value.trim();
-            publicCall('GET', '/auth/users?q=' + encodeURIComponent(q));
-        }
+    async function doRefresh() {
+        try {
+            var res = await fetch('/auth/refresh', { method: 'POST', credentials: 'include' });
+            if (res.ok) { var d = await res.json(); if (d.accessToken) { setToken(d.accessToken); return true; } }
+        } catch (e) {}
+        return false;
+    }
 
-        function lookupUser() {
-            var id = document.getElementById('userId').value.trim();
-            if (!id) { alert('Enter a user ID'); return; }
-            publicCall('GET', '/auth/users/' + id);
-        }
-    </script>
+    async function refreshToken() {
+        var ok = await doRefresh();
+        setOutput('POST', '/auth/refresh', ok ? 200 : 401, ok ? 'Token refreshed successfully.' : 'Refresh failed. Session may have expired.');
+    }
+
+    // ---- Profile ----
+    function patchMe() {
+        var body = {}, v;
+        if ((v = document.getElementById('newUsername').value.trim())) body.username = v;
+        if ((v = document.getElementById('newFullName').value.trim())) body.fullName = v;
+        if ((v = document.getElementById('newAvatarUrl').value.trim())) body.avatarUrl = v;
+        if ((v = document.getElementById('newBio').value.trim())) body.bio = v;
+        if (!Object.keys(body).length) { alert('Enter at least one field to update'); return; }
+        authCall('PATCH', '/auth/me', body);
+    }
+    function confirmDelete() { if (confirm('Delete your account permanently?')) authCall('DELETE', '/auth/delete'); }
+
+    // ---- Sessions ----
+    function logoutSpecificSession() {
+        var sid = document.getElementById('logoutSessionId').value.trim();
+        if (!sid) { alert('Enter a session ID'); return; }
+        authCall('POST', '/auth/logout?sessionId=' + encodeURIComponent(sid));
+    }
+    function confirmLogoutAll() { if (confirm('Log out from ALL sessions?')) authCall('POST', '/auth/logout/all'); }
+
+    // ---- Users ----
+    function searchUsers() {
+        var q = document.getElementById('searchQuery').value.trim();
+        var page = document.getElementById('searchPage').value || '0';
+        var size = document.getElementById('searchSize').value || '10';
+        authCall('GET', '/auth/users?q=' + encodeURIComponent(q) + '&page=' + page + '&size=' + size);
+    }
+    function lookupUser() {
+        var id = document.getElementById('userId').value.trim();
+        if (!id) { alert('Enter a user ID'); return; }
+        authCall('GET', '/auth/users/' + id);
+    }
+
+    // ---- Admin ----
+    function isAdmin() {
+        var token = getToken();
+        if (!token) return false;
+        try { return (JSON.parse(atob(token.split('.')[1])).groups || []).includes('ADMIN'); } catch(e) { return false; }
+    }
+    function updateAdminVisibility() {
+        document.getElementById('adminTab').style.display = isAdmin() ? 'inline-flex' : 'none';
+    }
+    function adminPatchUser() {
+        var id = document.getElementById('adminTargetId').value.trim();
+        if (!id) { alert('Enter a target user ID'); return; }
+        var body = {}, v;
+        if ((v = document.getElementById('adminUsername').value.trim())) body.username = v;
+        if ((v = document.getElementById('adminFullName').value.trim())) body.fullName = v;
+        if ((v = document.getElementById('adminAvatarUrl').value.trim())) body.avatarUrl = v;
+        if ((v = document.getElementById('adminBio').value.trim())) body.bio = v;
+        if ((v = document.getElementById('adminRole').value)) body.role = v;
+        if ((v = document.getElementById('adminBanned').value)) body.isBanned = (v === 'true');
+        if (!Object.keys(body).length) { alert('Enter at least one field to update'); return; }
+        authCall('PATCH', '/auth/admin/users/' + id, body);
+    }
+    function adminDeleteUser() {
+        var id = document.getElementById('adminTargetId').value.trim();
+        if (!id) { alert('Enter a target user ID'); return; }
+        if (confirm('Permanently delete user ' + id + '?')) authCall('DELETE', '/auth/admin/users/' + id + '/delete');
+    }
+    function adminLogoutUser() {
+        var id = document.getElementById('adminTargetId').value.trim();
+        if (!id) { alert('Enter a target user ID'); return; }
+        if (confirm('Log out user ' + id + ' from all sessions?')) authCall('POST', '/auth/admin/users/' + id + '/logout');
+    }
+    function adminCreateUser() {
+        var email = document.getElementById('createEmail').value.trim();
+        var username = document.getElementById('createUsername').value.trim();
+        if (!email || !username) { alert('Email and Username are required'); return; }
+        var body = { email, username }, v;
+        if ((v = document.getElementById('createFullName').value.trim())) body.fullName = v;
+        if ((v = document.getElementById('createAvatarUrl').value.trim())) body.avatarUrl = v;
+        if ((v = document.getElementById('createBio').value.trim())) body.bio = v;
+        if ((v = document.getElementById('createRole').value)) body.role = v;
+        authCall('POST', '/auth/admin/users/create', body);
+    }
+</script>
 </body>
 </html>

@@ -10,6 +10,7 @@ services:
             target: development
         env_file:
             - ./environment/shared.env
+            - ./environment/auth.env
         ports:
             - '${AUTH_PORT}:8080'
         volumes:

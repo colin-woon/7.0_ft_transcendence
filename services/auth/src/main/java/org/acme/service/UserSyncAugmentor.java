@@ -12,7 +12,6 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.WebApplicationException;
 
 @ApplicationScoped
 public class UserSyncAugmentor implements SecurityIdentityAugmentor {
@@ -40,19 +39,14 @@ public class UserSyncAugmentor implements SecurityIdentityAugmentor {
 
 			if (info == null || tenantId == null) {
 				if (info == null)
-					LOG.warn("UserInfo is null in identity augmentor");
+					LOG.debug("UserInfo is null in identity augmentor");
 				if (tenantId == null)
-					LOG.warn("TenantId is null in identity augmentor");
+					LOG.debug("TenantId is null in identity augmentor");
 				return identity;
 			}
-
 			User user = userService.syncUser(info, tenantId);
-			if (user == null) {
-				LOG.error("Invalid provider: " + tenantId);
-				throw new WebApplicationException("Invalid provider", 401);
-			}
 
-			LOG.info("User synced successfully: " + user.email);
+			LOG.info("User synced successfully: " + user.id);
 			return QuarkusSecurityIdentity.builder(identity)
 					.addAttribute("user", user)
 					.addRole(user.role.name())

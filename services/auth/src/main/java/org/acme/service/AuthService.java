@@ -2,14 +2,16 @@ package org.acme.service;
 
 import java.time.Instant;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.acme.dto.IntraInfoDTO;
+import org.acme.dto.SessionDTO;
 import org.acme.dto.UserInfoDTO;
 import org.acme.dto.UserResponseDTO;
-import org.acme.dto.UserSummaryDTO;
-import org.acme.dto.UserUpdateDTO;
 import org.acme.model.Session;
 import org.acme.model.User;
 import org.acme.repository.SessionRepository;
@@ -20,6 +22,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.jwt.build.Jwt;
+import io.vertx.core.http.HttpServerRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -37,13 +40,19 @@ public class AuthService {
 	@Inject
 	SessionRepository sessionRepository;
 
+	@Inject
+	DeviceParser deviceParser;
+
+	@Inject
+	HttpServerRequest request;
+
 	@ConfigProperty(name = "app.domain.name", defaultValue = "localhost")
 	String domain;
 
-	@ConfigProperty(name = "REFRESH_EXPIRY", defaultValue = "86400")
+	@ConfigProperty(name = "refresh.expiry", defaultValue = "86400")
 	Long refreshExpiry;
 
-	@ConfigProperty(name = "ACCESS_EXPIRY", defaultValue = "600")
+	@ConfigProperty(name = "access.expiry", defaultValue = "600")
 	Long accessExpiry;
 
 	@ConfigProperty(name = "secure.cookies", defaultValue = "false")
@@ -60,19 +69,20 @@ public class AuthService {
 			throw new WebApplicationException("User not found in identity", 401);
 		}
 		if (user.isBanned) {
-			LOG.warn("Banned user attempted to login: " + user.email);
+			LOG.warn("Banned user attempted to login: " + user.id);
 			throw new WebApplicationException("User is banned", 403);
 		}
 
-		LOG.info("Creating access token for user: " + user.email);
+		LOG.info("Creating access token for user: " + user.id);
 		String accessToken = Jwt
 				.subject(String.valueOf(user.id))
 				.upn(user.email)
 				.groups(Set.of(user.role.name()))
 				.sign();
 
+		IntraInfoDTO intrainfo = user.intra != null ? new IntraInfoDTO(user.intra) : null;
 		return new UserResponseDTO(accessToken, Instant.now().plusSeconds(accessExpiry),
-			new UserInfoDTO(user));
+			new UserInfoDTO(user, intrainfo));
 	}
 
 	@Transactional
@@ -83,7 +93,7 @@ public class AuthService {
 			throw new WebApplicationException("User not found in identity", 401);
 		}
 		if (user.isBanned) {
-			LOG.warn("Banned user attempted to create session: " + user.email);
+			LOG.warn("Banned user attempted to create session: " + user.id);
 			throw new WebApplicationException("User is banned", 403);
 		}
 		Instant expiry = Instant.now().plusSeconds(refreshExpiry);
@@ -93,18 +103,19 @@ public class AuthService {
 		newSession.sessionId = sessionId;
 		newSession.userId = user.id;
 		newSession.expiresAt = expiry;
-
-		sessionRepository.persist(newSession);
-		LOG.info("Created session for user: " + user.email);
+		parseDeviceInfo(newSession);
 
 		long sessionCount = sessionRepository.countByUserId(user.id);
 		if (sessionCount >= maxSessionsPerUser) {
-			LOG.debug("User " + user.email + " exceeded max sessions, cleaning up oldest");
+			LOG.debug("User " + user.id + " exceeded max sessions, cleaning up oldest");
 			Session oldestSession = sessionRepository.findOldestByUserId(user.id).orElse(null);
 			if (oldestSession != null) {
 				sessionRepository.delete(oldestSession);
 			}
 		}
+
+		sessionRepository.persist(newSession);
+		LOG.info("Created session for user: " + user.id + ", sessionId: " + sessionId);
 
 		NewCookie cookie = new NewCookie.Builder("sessionId")
 			.value(sessionId)
@@ -119,6 +130,34 @@ public class AuthService {
 			.build();
 
 		return cookie;
+	}
+
+	public NewCookie[] clearOIDCCookies() {
+		NewCookie clearDefault = new NewCookie.Builder("q_session")
+			.value("")
+			.path("/")
+			.domain(domain)
+			.maxAge(0)
+			.secure(secureCookies)
+			.httpOnly(true)
+			.build();
+		NewCookie clearGoogle = new NewCookie.Builder("q_session_google")
+			.value("")
+			.path("/")
+			.domain(domain)
+			.maxAge(0)
+			.secure(secureCookies)
+			.httpOnly(true)
+			.build();
+		NewCookie clear42 = new NewCookie.Builder("q_session_42")
+			.value("")
+			.path("/")
+			.domain(domain)
+			.maxAge(0)
+			.secure(secureCookies)
+			.httpOnly(true)
+			.build();
+		return new NewCookie[] { clearDefault, clearGoogle, clear42 };
 	}
 
 	@Transactional
@@ -146,36 +185,69 @@ public class AuthService {
 			throw new WebApplicationException("User not found", 404);
 		}
 		if (user.isBanned) {
-			LOG.warn("Banned user attempted refresh: " + user.email);
+			LOG.warn("Banned user attempted refresh: " + user.id);
 			throw new WebApplicationException("User is banned", 403);
 		}
 
-		LOG.debug("Refreshing token for user: " + user.email);
+		LOG.debug("Refreshing token for user: " + user.id + ", sessionId: " + sessionId);
 		String accessToken = Jwt
 				.subject(String.valueOf(user.id))
 				.upn(user.email)
 				.groups(Set.of(user.role.name()))
 				.sign();
 
+		IntraInfoDTO intrainfo = user.intra != null ? new IntraInfoDTO(user.intra) : null;
 		return new UserResponseDTO(accessToken, Instant.now().plusSeconds(accessExpiry),
-			new UserInfoDTO(user));
+			new UserInfoDTO(user, intrainfo));
 	}
 
 	@Transactional
-	public NewCookie deleteSession(String sessionId) {
-		if (sessionId == null || sessionId.isEmpty()) {
+	public NewCookie deleteSession(String targetSessionId, String cookieSessionId, Long userId) {
+		String sessionToDelete = (targetSessionId != null && !targetSessionId.isEmpty())
+			? targetSessionId : cookieSessionId;
+
+		if (sessionToDelete == null || sessionToDelete.isEmpty()) {
 			LOG.warn("Logout attempted without session ID");
 			throw new WebApplicationException("Session ID is required", 401);
 		}
 
-		Session session = sessionRepository.findBySessionId(sessionId)
+		Session session = sessionRepository.findBySessionId(sessionToDelete)
 				.orElseThrow(() -> {
 					LOG.warn("Logout attempted with invalid session ID");
 					return new WebApplicationException("Session not found", 404);
 				});
 
+		if (!session.userId.equals(userId)) {
+			LOG.warn("User " + userId + " attempted to delete session " + sessionToDelete);
+			throw new WebApplicationException("Unauthorized", 403);
+		}
+
 		sessionRepository.delete(session);
-		LOG.info("Session deleted (logout): " + sessionId);
+		LOG.info("Session deleted (logout): " + sessionToDelete);
+
+		if (sessionToDelete.equals(cookieSessionId)) {
+			return new NewCookie.Builder("sessionId")
+				.value("")
+				.path("/")
+				.domain(domain)
+				.maxAge(0)
+				.secure(secureCookies)
+				.httpOnly(true)
+				.build();
+		}
+		return null;
+	}
+
+	@Transactional
+	public NewCookie deleteAllSessions(Long userId) {
+		User user = userRepository.findById(userId);
+		if (user == null) {
+			LOG.error("User not found for admin logout: " + userId);
+			throw new WebApplicationException("User not found", 404);
+		}
+
+		sessionRepository.deleteByUserId(userId);
+		LOG.info("User sessions deleted: " + userId);
 		return new NewCookie.Builder("sessionId")
 			.value("")
 			.path("/")
@@ -187,109 +259,66 @@ public class AuthService {
 			.build();
 	}
 
-	@Transactional
-	public NewCookie deleteAccount(SecurityIdentity identity) {
-		User userInIdentity = identity.getAttribute("user");
-		if (userInIdentity == null) {
-			LOG.error("User not found in identity during account deletion");
-			throw new WebApplicationException("User not found in identity", 401);
-		}
-
-		User user = userRepository.findById(userInIdentity.id);
-		if (user == null) {
-			LOG.error("User not found for deletion: " + userInIdentity.id);
-			throw new WebApplicationException("User not found", 404);
-		}
-
-		LOG.warn("Deleting user account: " + user.email);
-		userRepository.delete(user);
-		return new NewCookie.Builder("sessionId")
-			.value("")
-			.path("/")
-			.domain(domain)
-			.maxAge(0)
-			.secure(secureCookies)
-			.httpOnly(true)
-			.comment("The session id to replace the old one, effectively deleting the user")
-			.build();
-	}
-
-	public UserInfoDTO getMyInfo(SecurityIdentity identity) {
-		User userInIdentity = identity.getAttribute("user");
-		if (userInIdentity == null) {
-			LOG.error("User not found in identity");
-			throw new WebApplicationException("User not found in identity", 401);
-		}
-
-		User user = userRepository.findById(userInIdentity.id);
-		if (user == null) {
-			LOG.error("User not found: " + userInIdentity.id);
-			throw new WebApplicationException("User not found", 404);
-		}
-		if (user.isBanned) {
-			LOG.warn("Banned user attempted to access profile: " + user.email);
-			throw new WebApplicationException("User is banned", 403);
-		}
-
-		return new UserInfoDTO(user);
-	}
-
-	@Transactional
-	public UserInfoDTO updateMyInfo(SecurityIdentity identity, UserUpdateDTO updateDTO) {
-		User userInIdentity = identity.getAttribute("user");
-		if (userInIdentity == null) {
-			LOG.error("User not found in identity during profile update");
-			throw new WebApplicationException("User not found in identity", 404);
-		}
-
-		User user = userRepository.findById(userInIdentity.id);
-		if (user == null) {
-			LOG.error("User not found for update: " + userInIdentity.id);
-			throw new WebApplicationException("User not found", 404);
-		}
-		if (user.isBanned) {
-			LOG.warn("Banned user attempted to update profile: " + user.email);
-			throw new WebApplicationException("User is banned", 403);
-		}
-
-		updateDTO.fullName.ifPresent(newValue -> user.fullName = newValue );
-		updateDTO.avatarUrl.ifPresent(newValue -> user.avatarUrl = newValue );
-		updateDTO.bio.ifPresent(newValue -> user.bio = newValue );
-		updateDTO.username.ifPresent(newValue -> {
-			if (userRepository.findByUsername(newValue).isPresent()) {
-				LOG.warn("Username already taken: " + newValue);
-				throw new WebApplicationException("Username already taken", 409);
-			}
-			user.username = newValue;
-			LOG.info("Username updated for user: " + user.email);
-		});
-
-		userRepository.persist(user);
-
-		return new UserInfoDTO(user);
-	}
-
-	@Transactional
-	public List<@NonNull UserSummaryDTO> searchUser(String query, int page, int size) {
-		if (page < 0) {
-			page = 0;
-		}
-		if (size < 1 || size > 100) {
-			size = 10;
-		}
-		String safeQuery = (query == null) ? "" : query.trim();
-
-		return userRepository.searchByName(safeQuery, page, size);
-	}
-
-	@Transactional
-	public UserInfoDTO getUserInfo(Long userId) {
+	public List<@NonNull SessionDTO> listSessions(Long userId) {
 		User user = userRepository.findById(userId);
 		if (user == null) {
-			LOG.debug("User not found: " + userId);
+			LOG.error("User not found for listing sessions: " + userId);
 			throw new WebApplicationException("User not found", 404);
 		}
 
-		return new UserInfoDTO(user);
+		List<@NonNull Session> sessions = sessionRepository.findByUserId(userId);
+		return sessions.stream()
+			.map(s -> new SessionDTO(s.sessionId, s.deviceType, s.browser,
+				s.os, s.ipAddress, s.expiresAt, s.createdAt))
+			.toList();
+	}
+
+	@SuppressWarnings("UseSpecificCatch")
+	public Map<String, Object> healthCheck() {
+		Map<String, Object> health = new HashMap<>();
+		health.put("status", "ok");
+
+		// 1. Database connectivity
+		try {
+			long userCount = userRepository.count();
+			health.put("database", Map.of("status", "ok", "userCount", userCount));
+		} catch (Exception e) {
+			health.put("database", Map.of("status", "error", "message", e.getMessage()));
+			health.put("status", "degraded");
+		}
+
+		// 2. Session store
+		try {
+			long activeSessionCount = sessionRepository.count();
+			health.put("sessions", Map.of("status", "ok", "activeCount", activeSessionCount));
+		} catch (Exception e) {
+			health.put("sessions", Map.of("status", "error", "message", e.getMessage()));
+			health.put("status", "degraded");
+		}
+
+		// 3. JWT signing capability (verify key is loaded)
+		try {
+			Jwt.subject("healthcheck").sign();
+			health.put("jwt", Map.of("status", "ok"));
+		} catch (Exception e) {
+			health.put("jwt", Map.of("status", "error", "message", e.getMessage()));
+			health.put("status", "degraded");
+		}
+
+		return health;
+	}
+
+	private void parseDeviceInfo(Session session) {
+		String uaHeader = request.getHeader("User-Agent");
+		if (uaHeader != null && !uaHeader.isBlank()) {
+			var deviceInfo = deviceParser.parse(uaHeader);
+			session.deviceType = deviceInfo.get("deviceType");
+			session.browser = deviceInfo.get("browser");
+			session.os = deviceInfo.get("os");
+		}
+		String forwarded = request.getHeader("X-Forwarded-For");
+		session.ipAddress = forwarded != null
+			? forwarded.split(",")[0].trim()
+			: (request.remoteAddress() != null ? request.remoteAddress().host() : null);
 	}
 }
