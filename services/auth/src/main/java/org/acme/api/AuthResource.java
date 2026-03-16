@@ -9,8 +9,8 @@ import org.acme.dto.UserSummaryDTO;
 import org.acme.dto.UserUpdateDTO;
 import org.acme.service.AdminService;
 import org.acme.service.AuthService;
-import org.acme.service.ProfileService;
 import org.acme.service.IntraService;
+import org.acme.service.ProfileService;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 

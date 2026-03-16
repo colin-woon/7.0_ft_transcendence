@@ -17,11 +17,11 @@ import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 
 @ApplicationScoped
 public class SeedService {
@@ -54,7 +54,6 @@ public class SeedService {
 	@ConfigProperty(name = "seed.campus")
 	String seedCampus;
 
-	@Transactional
 	public void onStart(@Observes StartupEvent ev) {
 		LOG.info("Seed mode: " + seedMode);
 		switch (seedMode) {
@@ -73,8 +72,7 @@ public class SeedService {
 		try {
 			IntraDTO[] data = objectMapper.readValue(file, IntraDTO[].class);
 			for (IntraDTO dto : data) {
-				User user = userService.createNewUser(dto);
-				intraService.syncIntraData(user, dto);
+				persistSeedUser(dto);
 			}
 			LOG.info("Seeded " + data.length + " users from file");
 			return true;
@@ -141,10 +139,14 @@ public class SeedService {
 		}
 
 		for (IntraDTO dto : deduplicated.values()) {
-			upsertSeedUser(dto);
+			persistSeedUser(dto);
 		}
 		saveSeedFile(new ArrayList<>(deduplicated.values()));
 		LOG.info("Seeded " + deduplicated.size() + " users from 42 API");
+	}
+
+	private void persistSeedUser(IntraDTO dto) {
+		QuarkusTransaction.requiringNew().run(() -> upsertSeedUser(dto));
 	}
 
 	public void saveSeedFile(List<IntraDTO> data) {

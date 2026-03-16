@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.acme.dto.IntraDTO;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -38,6 +39,15 @@ public class IntraClientService {
 	@ConfigProperty(name = "ft.client.secret", defaultValue = "")
 	String ftClientSecret;
 
+	@ConfigProperty(name = "ft.api.retry.max-attempts", defaultValue = "4")
+	int maxAttempts;
+
+	@ConfigProperty(name = "ft.api.retry.base-delay-seconds", defaultValue = "30")
+	long baseDelaySeconds;
+
+	@ConfigProperty(name = "ft.api.retry.max-delay-seconds", defaultValue = "120")
+	long maxDelaySeconds;
+
 	@Inject
 	ObjectMapper objectMapper;
 
@@ -61,8 +71,10 @@ public class IntraClientService {
 				.POST(HttpRequest.BodyPublishers.ofString(body))
 				.build();
 
-			HttpResponse<String> response = httpClient
-				.send(request, HttpResponse.BodyHandlers.ofString());
+			HttpResponse<String> response = sendWithRetry(request, "fetch 42 API token");
+			if (response == null) {
+				return null;
+			}
 
 			if (response.statusCode() != 200) {
 				LOG.error("42 API token request failed: HTTP " + response.statusCode());
@@ -70,9 +82,7 @@ public class IntraClientService {
 			}
 
 			return objectMapper.readTree(response.body()).get("access_token").asText();
-		} catch (IOException | InterruptedException e) {
-			if (e instanceof InterruptedException)
-				Thread.currentThread().interrupt();
+		} catch (IOException e) {
 			LOG.error("Failed to obtain 42 API token", e);
 			return null;
 		}
@@ -92,8 +102,10 @@ public class IntraClientService {
 				.GET()
 				.build();
 
-			HttpResponse<String> response = httpClient
-				.send(request, HttpResponse.BodyHandlers.ofString());
+			HttpResponse<String> response = sendWithRetry(request, "fetch user '" + login + "'");
+			if (response == null) {
+				return null;
+			}
 
 			if (response.statusCode() != 200) {
 				LOG.warn("Failed to fetch user '" + login + "': HTTP " + response.statusCode());
@@ -101,9 +113,7 @@ public class IntraClientService {
 			}
 
 			return objectMapper.readValue(response.body(), IntraDTO.class);
-		} catch (IOException | InterruptedException e) {
-			if (e instanceof InterruptedException)
-				Thread.currentThread().interrupt();
+		} catch (IOException e) {
 			LOG.error("Failed to fetch user from 42 API: " + login, e);
 			return null;
 		}
@@ -117,8 +127,10 @@ public class IntraClientService {
 				.GET()
 				.build();
 
-			HttpResponse<String> response = httpClient
-				.send(request, HttpResponse.BodyHandlers.ofString());
+			HttpResponse<String> response = sendWithRetry(request, "fetch current 42 user");
+			if (response == null) {
+				return null;
+			}
 
 			if (response.statusCode() != 200) {
 				LOG.warn("Failed to fetch current user '/v2/me': HTTP " + response.statusCode());
@@ -126,9 +138,7 @@ public class IntraClientService {
 			}
 
 			return objectMapper.readValue(response.body(), IntraDTO.class);
-		} catch (IOException | InterruptedException e) {
-			if (e instanceof InterruptedException)
-				Thread.currentThread().interrupt();
+		} catch (IOException e) {
 			LOG.error("Failed to fetch current user from 42 API", e);
 			return null;
 		}
@@ -153,8 +163,12 @@ public class IntraClientService {
 					.GET()
 					.build();
 
-				HttpResponse<String> response = httpClient
-					.send(request, HttpResponse.BodyHandlers.ofString());
+				HttpResponse<String> response = sendWithRetry(
+					request,
+					"fetch users for campus '" + campus + "' page " + pageNumber);
+				if (response == null) {
+					return result;
+				}
 
 				if (response.statusCode() != 200) {
 					LOG.warn("Failed to fetch users for campus '" + campus + "' page " + pageNumber
@@ -176,9 +190,7 @@ public class IntraClientService {
 			}
 
 			return result;
-		} catch (IOException | InterruptedException e) {
-			if (e instanceof InterruptedException)
-				Thread.currentThread().interrupt();
+		} catch (IOException e) {
 			LOG.error("Failed to fetch users by campus from 42 API: " + campus, e);
 			return result;
 		}
@@ -203,8 +215,10 @@ public class IntraClientService {
 					.GET()
 					.build();
 
-				HttpResponse<String> response = httpClient
-					.send(request, HttpResponse.BodyHandlers.ofString());
+				HttpResponse<String> response = sendWithRetry(request, "fetch campus id for '" + campusName + "'");
+				if (response == null) {
+					continue;
+				}
 
 				if (response.statusCode() != 200) {
 					LOG.warn("Failed to fetch campus id for '" + campusName + "': HTTP " + response.statusCode());
@@ -244,11 +258,95 @@ public class IntraClientService {
 			}
 
 			return ids;
-		} catch (IOException | InterruptedException e) {
-			if (e instanceof InterruptedException)
-				Thread.currentThread().interrupt();
+		} catch (IOException e) {
 			LOG.error("Failed to fetch campuses from 42 API", e);
 			return ids;
+		}
+	}
+
+	private HttpResponse<String> sendWithRetry(HttpRequest request, String operation) {
+		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+			try {
+				HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+				int statusCode = response.statusCode();
+
+				if (!isRetryableStatus(statusCode) || attempt == maxAttempts) {
+					return response;
+				}
+
+				long delayMillis = resolveRetryDelayMillis(response, attempt);
+				LOG.warnf(
+					"42 API %s failed with HTTP %d on attempt %d/%d. Retrying in %d seconds.",
+					operation,
+					statusCode,
+					attempt,
+					maxAttempts,
+					delayMillis / 1000);
+
+				if (!sleepBeforeRetry(delayMillis, operation)) {
+					return null;
+				}
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				LOG.error("Interrupted while " + operation, e);
+				return null;
+			} catch (IOException e) {
+				if (attempt == maxAttempts) {
+					LOG.error("Failed to " + operation + " after " + maxAttempts + " attempts", e);
+					return null;
+				}
+
+				long delayMillis = resolveRetryDelayMillis(null, attempt);
+				LOG.warnf(
+					"42 API %s failed on attempt %d/%d due to %s. Retrying in %d seconds.",
+					operation,
+					attempt,
+					maxAttempts,
+					e.getClass().getSimpleName(),
+					delayMillis / 1000);
+
+				if (!sleepBeforeRetry(delayMillis, operation)) {
+					return null;
+				}
+			}
+		}
+
+		return null;
+	}
+
+	private boolean isRetryableStatus(int statusCode) {
+		return statusCode == 429
+			|| statusCode == 500
+			|| statusCode == 502
+			|| statusCode == 503
+			|| statusCode == 504;
+	}
+
+	private long resolveRetryDelayMillis(HttpResponse<String> response, int attempt) {
+		if (response != null) {
+			Optional<String> retryAfter = response.headers().firstValue("Retry-After");
+			if (retryAfter.isPresent()) {
+				try {
+					long retryAfterSeconds = Long.parseLong(retryAfter.get().trim());
+					return Math.max(1L, retryAfterSeconds) * 1000L;
+				} catch (NumberFormatException ignored) {
+					// Fall back to configured exponential backoff.
+				}
+			}
+		}
+
+		long delaySeconds = Math.min(baseDelaySeconds * attempt, maxDelaySeconds);
+		return Math.max(1L, delaySeconds) * 1000L;
+	}
+
+	private boolean sleepBeforeRetry(long delayMillis, String operation) {
+		try {
+			Thread.sleep(delayMillis);
+			return true;
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			LOG.error("Interrupted while waiting to retry " + operation, e);
+			return false;
 		}
 	}
 }
