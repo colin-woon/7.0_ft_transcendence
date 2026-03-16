@@ -3,7 +3,6 @@ module app
 go 1.25.8
 
 require (
-	github.com/coder/websocket v1.8.14
 	github.com/getkin/kin-openapi v0.133.0
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-chi/cors v1.2.2

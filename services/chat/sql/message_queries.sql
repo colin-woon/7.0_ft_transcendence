@@ -1,9 +1,9 @@
--- name: SendMessage :one
+-- name: CreateMessage :one
 INSERT INTO chat_service.messages (sender_id, receiver_id, content)
 VALUES ($1, $2, $3)
 RETURNING *;
 
--- name: GetChatHistory :many
+-- name: GetMessageHistoryByUserPair :many
 SELECT id, sender_id, receiver_id, content, is_read, read_at, created_at
 FROM chat_service.messages
 WHERE (sender_id = $1 AND receiver_id = $2)

@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func (s *Server) PostFriendshipRequesterIdReceiverId(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int) {
+func (s *Server) SendFriendRequest(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int) {
 	ctx := r.Context()
 
 	_, err := s.db.CreateFriendship(ctx, database.CreateFriendshipParams{
@@ -25,7 +25,7 @@ func (s *Server) PostFriendshipRequesterIdReceiverId(w http.ResponseWriter, r *h
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (s *Server) PatchFriendshipRequesterIdReceiverIdAccept(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int) {
+func (s *Server) AcceptFriendRequest(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int) {
 	ctx := r.Context()
 
 	err := s.db.UpdateFriendshipStatus(ctx, database.UpdateFriendshipStatusParams{
