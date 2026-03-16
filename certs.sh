@@ -1,7 +1,17 @@
 #!/bin/bash
-set -eu
+set -euo pipefail
 
 ARG="${1:-}"
+
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT_DIR"
+
+for cmd in openssl keytool sha256sum; do
+	if ! command -v "$cmd" >/dev/null 2>&1; then
+		echo "Error: required command '$cmd' is not installed or not in PATH"
+		exit 1
+	fi
+done
 
 CN="ca.bumintra.org"
 
@@ -153,7 +163,7 @@ for dir in gateway auth chat forum nginx web; do
 		openssl genrsa -out "$KEY" 2048
 		FORCE_CSR=1
 		FORCE_CRT=1
-		chmod 644 "$KEY"
+		chmod 600 "$KEY"
 	fi
 
 	# --- CSR ---
@@ -219,3 +229,47 @@ else
 	echo "[truststore] OK: shared truststore present"
 	echo "-----------------------------------"
 fi
+
+AUTH_KEY_DIR="services/auth/src/main/resources"
+AUTH_PRIVATE_KEY="${AUTH_KEY_DIR}/privateKey.pem"
+AUTH_PUBLIC_KEY="${AUTH_KEY_DIR}/publicKey.pem"
+GATEWAY_PUBLIC_KEY="services/gateway/src/main/resources/publicKey.pem"
+
+JWT_REGEN=0
+if [ "${ARG:-}" = "jwtregen" ]; then
+	JWT_REGEN=1
+	echo "[auth] forced JWT key rotation requested (jwtregen)"
+	rm -f "$AUTH_PRIVATE_KEY" "$AUTH_PUBLIC_KEY"
+fi
+
+if [ ! -f "$AUTH_PRIVATE_KEY" ] || [ ! -f "$AUTH_PUBLIC_KEY" ]; then
+	echo "[auth] generating JWT keys..."
+	openssl genrsa -out "$AUTH_PRIVATE_KEY" 2048
+	openssl rsa -in "$AUTH_PRIVATE_KEY" -pubout -out "$AUTH_PUBLIC_KEY"
+	chmod 600 "$AUTH_PRIVATE_KEY"
+	chmod 644 "$AUTH_PUBLIC_KEY"
+else
+	chmod 600 "$AUTH_PRIVATE_KEY"
+	chmod 644 "$AUTH_PUBLIC_KEY"
+	if [ "$JWT_REGEN" -eq 0 ]; then
+		echo "[auth] JWT keys already exist (no rotation performed)"
+	fi
+fi
+
+if [ ! -f "$AUTH_PUBLIC_KEY" ]; then
+	echo "Error: auth public key not found at $AUTH_PUBLIC_KEY"
+	exit 1
+fi
+
+mkdir -p "$(dirname "$GATEWAY_PUBLIC_KEY")"
+cp "$AUTH_PUBLIC_KEY" "$GATEWAY_PUBLIC_KEY"
+
+AUTH_PUB_SHA="$(sha256sum "$AUTH_PUBLIC_KEY" | awk '{print $1}')"
+GW_PUB_SHA="$(sha256sum "$GATEWAY_PUBLIC_KEY" | awk '{print $1}')"
+
+if [ "$AUTH_PUB_SHA" != "$GW_PUB_SHA" ]; then
+	echo "Error: gateway public key does not match auth public key after copy"
+	exit 1
+fi
+
+echo "[auth] public key synced to gateway and verified"
