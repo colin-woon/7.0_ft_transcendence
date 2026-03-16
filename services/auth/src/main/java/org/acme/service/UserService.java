@@ -1,44 +1,51 @@
 package org.acme.service;
 
+import org.acme.dto.IntraDTO;
 import org.acme.model.User;
 import org.acme.model.UserRole;
 import org.acme.repository.UserRepository;
+import org.hibernate.Hibernate;
 import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.UserInfo;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.WebApplicationException;
 
 @ApplicationScoped
 public class UserService {
-	
+
 	private static final Logger LOG = Logger.getLogger(UserService.class);
-	
+
 	@Inject
 	UserRepository userRepository;
+
+	@Inject
+	IntraService intraService;
 
 	@Transactional
 	public User syncUser(UserInfo info, String tenantId) {
 		LOG.debug("Syncing user from tenant: " + tenantId);
-		return switch (tenantId) {
-			case "google" -> augmentByGoogle(info);
+		User user = switch (tenantId) {
+			case "google" -> syncByGoogle(info);
 
-			case "42" -> augmentBy42(info);
-
-			default -> {
-				LOG.error("Unknown tenant: " + tenantId);
-				yield null;
-			}
+			case "42" -> syncBy42(info);
+			
+			default -> throw new WebApplicationException("Unknown provider: " + tenantId, 401);
 		};
+		// Initialize lazy relations while the session is still open,
+		// since the User will be stored as a detached SecurityIdentity attribute
+		Hibernate.initialize(user.intra);
+		return user;
 	}
 
-	private User augmentByGoogle(UserInfo info) {
+	private User syncByGoogle(UserInfo info) {
 		String email = info.getString("email");
 		String rawName = info.getString("name");
 		String googleId = info.getString("sub");
 
-		LOG.debug("Augmenting user by Google: " + email);
+		LOG.debug("Syncing user by Google: " + email);
 
 		User user = userRepository.findByGoogleId(googleId).orElse(null);
 		
@@ -51,99 +58,108 @@ public class UserService {
 					userRepository.persist(user);
 				} else {
 					LOG.error("Email already linked to different Google account: " + email);
-					throw new RuntimeException("Email already linked to different Google account");
+					throw new WebApplicationException("Email already linked to different Google account", 409);
 				}
 			} else {
 				LOG.info("Creating new user from Google: " + email);
-				user = createNewUser(email, rawName, googleId, UserRole.STUDENT, "google");
+				user = createNewUser(email, rawName, googleId, UserRole.STUDENT);
 			}
 		}
 
 		return user;
 	}
 
-	private User augmentBy42(UserInfo info) {
-		String email = info.getString("email");
-		String rawName = info.getString("login");
-		String intraId = info.getString("id");
-		UserRole role;
+	private User syncBy42(UserInfo info) {
+		IntraDTO intraDTO = intraService.parseUserInfo(info);
 
-		LOG.debug("Augmenting user by 42: " + email);
+		User user = userRepository.findByIntraId(intraDTO.id.toString()).orElse(null);
 
-		if ((info.contains("kind") && info.getString("kind").equals("admin"))
-				|| (email != null && email.endsWith("@staff.42.fr"))) {
-			role = UserRole.ADMIN;
-		} else {
-			role = UserRole.STUDENT;
-		}
-
-		User user = userRepository.findByIntraId(intraId).orElse(null);
-		
 		if (user == null) {
-			user = userRepository.findByEmail(email).orElse(null);
+			user = userRepository.findByEmail(intraDTO.email).orElse(null);
 			if (user != null) {
 				if (user.intraId == null) {
-					LOG.info("Linking 42 account to existing user: " + email);
-					user.intraId = intraId;
-					if (role == UserRole.ADMIN) {
-						user.role = UserRole.ADMIN;
-					}
-					userRepository.persist(user);
+					LOG.info("Linking 42 account to existing user: " + intraDTO.email);
+					user.intraId = intraDTO.id.toString();
+					intraService.syncUserData(user, intraDTO);
 				} else {
-					LOG.error("Email already linked to different 42 account: " + email);
-					throw new RuntimeException("Email already linked to different 42 account");
+					LOG.error("Email already linked to different 42 account: " + intraDTO.email);
+					throw new WebApplicationException("Email already linked to different 42 account", 409);
 				}
 			} else {
-				LOG.info("Creating new user from 42: " + email);
-				user = createNewUser(email, rawName, intraId, role, "42");
+				LOG.info("Creating new user from 42: " + intraDTO.email);
+				user = createNewUser(intraDTO);
 			}
 		}
-	
+
+		intraService.syncIntraData(user, intraDTO);
 		return user;
 	}
 
-	private User createNewUser(String email, String rawName, String id, UserRole role, String provider) {
-		LOG.info("Creating new user: " + email + " (provider: " + provider + ")");
+	public User createNewUser(String email, String rawName, String id, UserRole role) {
+		LOG.info("Creating new user: " + email + " (provider: google)");
+
 		User user = new User();
 		user.email = email;
 		user.fullName = rawName;
 		user.role = role;
 		user.username = generateUsername(rawName);
+		user.googleId = id;
 
-		if (provider.equals("google")) {
-			user.googleId = id;
-		} else if (provider.equals("42")) {
-			user.intraId = id;
-		}
 		userRepository.persist(user);
 		LOG.info("User created successfully with username: " + user.username);
 		return user;
 	}
 
-	private String generateUsername(String rawName) {
+	public User createNewUser(IntraDTO intraDTO) {
+		LOG.info("Creating new user: " + intraDTO.email + " (provider: 42)");
+
+		User user = new User();
+		user.email = intraDTO.email;
+		user.intraId = intraDTO.id.toString();
+		user.fullName = intraDTO.usualFullName != null ? intraDTO.usualFullName : intraDTO.displayName;
+		user.username = intraDTO.login != null && !intraDTO.login.isBlank()
+		? intraDTO.login : generateUsername(intraDTO.usualFullName);
+		user.role = intraDTO.isStaff ? UserRole.ADMIN : UserRole.STUDENT;
+		user.avatarUrl = intraDTO.image != null ? intraDTO.image.link : null;
+
+		userRepository.persist(user);
+		LOG.info("User created successfully with username: " + user.username);
+		return user;
+	}
+
+	public String generateUsername(String rawName) {
 		if (rawName == null || rawName.isBlank())
-            rawName = "user";
+			rawName = "user";
 
-        String baseUsername = rawName.toLowerCase()
-            .replaceAll("[^a-z0-9]", "");
+		String[] parts = rawName.trim().split("\\s+");
+	    String firstName = parts[0];
+	    String lastName = parts[parts.length - 1];
 
-		baseUsername = baseUsername.substring(0, Math.min(baseUsername.length(), 20));
+	    firstName = firstName.toLowerCase().replaceAll("[^a-z0-9]", "");
+	    lastName = lastName.toLowerCase().replaceAll("[^a-z0-9]", "");
 
-        if (baseUsername.isEmpty())
-            baseUsername = "user";
+	    if (firstName.isEmpty()) firstName = "user";
+	    if (lastName.isEmpty()) lastName = firstName;
 
-        String username = baseUsername;
-        int maxAttempts = 100;
-        int attempt = 1;
+	    String candidate = null;
 
-        while (attempt <= maxAttempts) {
-            if (!userRepository.findByUsername(username).isPresent()) {
-                return username;
-            }
-            username = baseUsername + attempt;
-            attempt++;
-        }
-        
-        return baseUsername + "_" + java.util.UUID.randomUUID().toString().substring(0, 8);
+	    for (int n = 1; n <= firstName.length(); n++) {
+	        candidate = firstName.substring(0, n) + lastName;
+	        if (!userRepository.findByUsername(candidate).isPresent()) {
+	            return candidate;
+	        }
+	    }
+
+	    int suffix = 1;
+	    final int maxSuffixAttempts = 10000;
+	    while (suffix <= maxSuffixAttempts) {
+	        String attempt = candidate + suffix;
+	        if (!userRepository.findByUsername(attempt).isPresent()) {
+	            return attempt;
+	        }
+	        suffix++;
+	    }
+
+	    return candidate + "_" + java.util.UUID.randomUUID().toString().substring(0, 8);
 	}
 }

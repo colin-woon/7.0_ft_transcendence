@@ -25,6 +25,16 @@ public class Session {
 	@Column(name = "user_id", nullable = false)
 	public Long userId;
 
+	@Column(name = "device_type")
+	public String deviceType;
+
+	public String browser;
+
+	public String os;
+
+	@Column(name = "ip_address")
+	public String ipAddress;
+
 	@Column(name = "expires_at", nullable = false)
 	public Instant expiresAt;
 

@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.acme.dto.UserSummaryDTO;
 import org.acme.model.User;
+import org.acme.model.UserRole;
 import org.eclipse.jdt.annotation.NonNull;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
@@ -42,4 +43,11 @@ public class UserRepository implements PanacheRepository<User> {
                 .page(pageIndex, pageSize)
                 .list();
     }
-}
+
+    public List<@NonNull UserSummaryDTO> searchByName(String query, int pageIndex, int pageSize, UserRole role) {
+        return find("(LOWER(username) LIKE ?1 OR LOWER(fullName) LIKE ?1) AND role = ?2", 
+                    "%" + query.toLowerCase() + "%", role)
+                .project(UserSummaryDTO.class)
+                .page(pageIndex, pageSize)
+                .list();
+    }}

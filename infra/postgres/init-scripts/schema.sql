@@ -48,25 +48,71 @@ CREATE TABLE auth_service.users (
 
 -- Sessions table for refresh tokens
 CREATE TABLE auth_service.sessions (
-    id Integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
     session_id VARCHAR(255) UNIQUE NOT NULL,
 
     user_id INTEGER NOT NULL REFERENCES auth_service.users(id) ON DELETE CASCADE,
-    
-    expires_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    device_type VARCHAR(50),
+    browser VARCHAR(100),
+    os VARCHAR(100),
+    ip_address VARCHAR(45),
+
+    expires_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP + INTERVAL '1 day',
 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- Trigger for Auth
+CREATE TABLE auth_service.intra (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    user_id INTEGER UNIQUE NOT NULL REFERENCES auth_service.users(id) ON DELETE CASCADE,
+
+    kind VARCHAR(50),
+    url TEXT,
+    phone VARCHAR(50),
+    location VARCHAR(100),
+    wallet INTEGER DEFAULT 0,
+    correction_points INTEGER DEFAULT 0,
+    pool_month VARCHAR(20),
+    pool_year VARCHAR(10),
+    is_staff BOOLEAN DEFAULT FALSE,
+    is_alumni BOOLEAN DEFAULT FALSE,
+    is_active BOOLEAN DEFAULT FALSE,
+
+    -- Nested data from 42 API (stored as JSONB)
+    image JSONB,
+    intra_groups JSONB,
+    cursus JSONB,
+    projects JSONB,
+    achievements JSONB,
+    titles JSONB,
+    titles_users JSONB,
+    partnerships JSONB,
+    patroned JSONB,
+    patroning JSONB,
+    roles JSONB,
+    campus JSONB,
+    campus_users JSONB,
+    languages JSONB,
+    expertises JSONB,
+
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Trigger for Auth User
 CREATE TRIGGER update_users_modtime 
 BEFORE UPDATE ON auth_service.users 
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Trigger for Auth Intra
+CREATE TRIGGER update_intra_modtime 
+BEFORE UPDATE ON auth_service.intra 
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- Indexes for session management
 CREATE INDEX idx_sessions_user_id ON auth_service.sessions(user_id);
-CREATE INDEX idx_sessions_session_id ON auth_service.sessions(session_id);
 CREATE INDEX idx_sessions_expires_at ON auth_service.sessions(expires_at);
 
 -- =======================================================
