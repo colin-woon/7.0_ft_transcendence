@@ -6,7 +6,7 @@ import {
   Search, Phone, Video, UserPlus, MoreHorizontal,
   Smile, Paperclip, Gift,
 } from 'lucide-react'
-import { useAppShell } from './AppShellContext'
+import { useAppShell } from '../context/AppShellContext'
 
 // ── Types & mock data ──────────────────────────────────────────────────────────
 

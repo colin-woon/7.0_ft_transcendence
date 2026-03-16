@@ -2,10 +2,10 @@
 
 import Link from 'next/link'
 import { Search, Download, Coins, MessageCircle, Bell, Plus, Menu } from 'lucide-react'
-import Sidebar from './Sidebar'
-import UserMenu from './UserMenu'
-import ChatWidget from './ChatWidget'
-import { AppShellProvider, useAppShell } from './AppShellContext'
+import Sidebar from '@/features/app-shell/components/Sidebar'
+import UserMenu from '@/features/app-shell/components/UserMenu'
+import ChatWidget from '@/features/app-shell/components/ChatWidget'
+import { AppShellProvider, useAppShell } from '@/features/app-shell/context/AppShellContext'
 
 function Shell({ children }: { children: React.ReactNode }) {
   const { isSidebarOpen, toggleSidebar, closeSidebar, searchQuery, setSearchQuery, isChatOpen, openChatInbox, closeChatInbox } = useAppShell()

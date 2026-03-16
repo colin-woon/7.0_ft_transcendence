@@ -1,3 +1,5 @@
-export default function ForumPage() {
-  return <div className="p-8 text-slate-400">Forum coming soon.</div>
+import ForumPage from '@/features/forum/components/ForumPage'
+
+export default function ForumRoute() {
+  return <ForumPage />
 }
