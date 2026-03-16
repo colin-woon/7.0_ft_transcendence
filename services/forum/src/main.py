@@ -11,11 +11,13 @@ from src import schemas, logic
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("forum_service")
 
+# --- USED FOR PROJECT SEEDING ---
+
 
 def _is_truthy(value: str | None) -> bool:
     if value is None:
         return False
-    return value.strip().lower() in {"1", "true", "yes", "on"}
+    return value.strip().lower() in {"1", "true"}
 
 
 def maybe_seed_projects() -> None:
@@ -35,14 +37,18 @@ def maybe_seed_projects() -> None:
         )
     except Exception:
         logger.exception("Project seeding failed.")
-        raise
     finally:
         db.close()
+
+def backfill_post_comment_count() ->None:
+        db = SessionLocal()
+        logic.backfill_forum_counters(db)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     maybe_seed_projects()
+    backfill_post_comment_count()
     logger.info("Forum Service is live.")
     yield
 
@@ -54,7 +60,7 @@ def health():
 
 # Mock User ID (Replace with real Auth later)
 def get_current_user_id():
-    return 1
+    return 2
 
 # --- ROUTES ---
 
@@ -63,7 +69,11 @@ router = APIRouter(prefix="/forum")
 # --- PROJECTS API ENDPOINT ---
 
 @router.get("/projects", response_model=schemas.ProjectListPage)
-def list_projects(page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=100), db: Session = Depends(get_db),):
+def list_projects(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(25, ge=1, le=100),
+    db: Session = Depends(get_db)
+    ):
     return logic.get_all_projects_paginated(db, page=page, page_size=page_size)
 
 
@@ -75,10 +85,6 @@ def get_project(project_id: int, db: Session = Depends(get_db)):
 @router.post("/projects", response_model=schemas.ProjectResponse, status_code=201)
 def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db)):
     return logic.create_project(db, project)
-
-@router.get("/search/projects", response_model=List[schemas.ProjectSummary])
-def search_project(search_query: str = Query(... , min_length=1), db: Session = Depends(get_db)):
-    return logic.search_project(db, search_query)
 
 # --- FORUM POST API ENDPOINT ---
 
@@ -161,5 +167,15 @@ def vote_on_comment(
     user_id: int = Depends(get_current_user_id)
 ):
     return logic.cast_comment_vote(db, comment_id, user_id, action.vote_value)
+
+# --- SEARCH FEATURE ENDPOINT ---
+
+@router.get("/search/projects", response_model=List[schemas.ProjectResponse])
+def search_project(search_query: str = Query(... , min_length=2, max_length=20), db: Session = Depends(get_db)):
+    return logic.search_project(db, search_query)
+
+@router.get("/search/posts", response_model=List[schemas.PostSummary])
+def search_posts(search_query: str = Query(... , min_length=2, max_length=20), db: Session = Depends(get_db)):
+    return logic.search_posts(db, search_query)
 
 app.include_router(router)

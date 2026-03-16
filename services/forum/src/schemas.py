@@ -7,12 +7,14 @@ from datetime import datetime
 class ProjectSummary(BaseModel):
     name: str
     description: Optional[str] = None
+
 class ProjectCreate(BaseModel):
     slug: str
     name: str
     objectives: List[str] = []
     estimate_time: Optional[str] = None
     description: Optional[str] = None
+    post_count: int = 0
 
 
 class ProjectResponse(ProjectCreate):
@@ -41,6 +43,7 @@ class PostSummary(BaseModel):
     view_count: int
     created_at: datetime
     vote_score: int = 0
+    comment_count: int = 0
     class Config:
         from_attributes = True
 

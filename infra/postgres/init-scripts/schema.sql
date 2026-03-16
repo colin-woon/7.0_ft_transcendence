@@ -82,6 +82,7 @@ CREATE TABLE forum_service.projects (
     description TEXT,
     objectives TEXT[],
     estimate_time VARCHAR(50),
+    post_count INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
@@ -95,6 +96,7 @@ CREATE TABLE forum_service.forum_posts (
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL, -- Markdown content
     
+    comment_count INTEGER DEFAULT 0,
     view_count INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP

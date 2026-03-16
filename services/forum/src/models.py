@@ -17,7 +17,7 @@ class Project(Base):
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     objectives: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
     estimate_time: Mapped[Optional[str]] = mapped_column(String(50))
-
+    post_count: Mapped[int] = mapped_column(Integer, default=0)
     posts: Mapped[List["ForumPost"]] = relationship(back_populates="project")
 
 # --- 2. FORUM POSTS ---
@@ -35,6 +35,7 @@ class ForumPost(Base):
     title: Mapped[str] = mapped_column(String(255))
     content: Mapped[str] = mapped_column(Text)
     view_count: Mapped[int] = mapped_column(Integer, default=0)
+    comment_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     project: Mapped["Project"] = relationship(back_populates="posts")

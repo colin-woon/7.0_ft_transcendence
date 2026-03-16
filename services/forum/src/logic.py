@@ -68,6 +68,46 @@ def seed_projects_from_json(db: Session, json_path: str | Path) -> dict[str, int
         db.rollback()
         raise
 
+def backfill_forum_counters(db: Session) -> dict[str, int]:
+    project_counts = dict(
+        db.query(models.ForumPost.project_id, func.count(models.ForumPost.id))
+        .filter(models.ForumPost.project_id.isnot(None))
+        .group_by(models.ForumPost.project_id)
+        .all()
+    )
+
+    post_comment_counts = dict(
+        db.query(models.Comment.post_id, func.count(models.Comment.id))
+        .group_by(models.Comment.post_id)
+        .all()
+    )
+
+    projects = db.query(models.Project).all()
+    posts = db.query(models.ForumPost).all()
+
+    for p in projects:
+        p.post_count = project_counts.get(p.id, 0)
+
+    for post in posts:
+        post.comment_count = post_comment_counts.get(post.id, 0)
+
+    db.commit()
+    return {"projects_updated": len(projects), "posts_updated": len(posts)}
+
+
+# --- HELPER COUNT FUNCTIONS ---
+def get_project_post_count(db: Session, project_id: int) -> int:
+    count = db.query(func.count(models.ForumPost.id))\
+              .filter(models.ForumPost.project_id == project_id)\
+              .scalar()
+    return count or 0
+
+def get_post_comment_count(db: Session, post_id: int) -> int:
+    count = db.query(func.count(models.Comment.id))\
+              .filter(models.Comment.post_id == post_id)\
+              .scalar()
+    return count or 0
+
 
 # --- PROJECTS ---
 def get_all_projects(db: Session) -> List[models.Project]:
@@ -96,6 +136,7 @@ def get_project_by_id(db: Session, project_id: int) -> models.Project:
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    project.post_count = get_project_post_count(db, project_id)
     return project
 
 
@@ -110,8 +151,7 @@ def create_project(db: Session, data: schemas.ProjectCreate) -> models.Project:
     db.refresh(new_project)
     return new_project
 
-def search_project(db: Session, query: str) -> list[models.Project]:
-    return db.query(models.Project).filter(models.Project.name.ilike(f"%{query}%")).all()
+
 
 # --- POSTS ---
 def get_all_posts(db:Session) -> List[models.ForumPost]:
@@ -218,7 +258,8 @@ def get_posts_by_project_sort_by_new(db: Session, project_id: int) -> List[model
     return posts
 
 def create_post(db: Session, project_id: int, user_id: int, data: schemas.PostCreate) -> models.ForumPost:
-    if not db.query(models.Project).filter(models.Project.id == project_id).first():
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
     new_post = models.ForumPost(
@@ -227,7 +268,9 @@ def create_post(db: Session, project_id: int, user_id: int, data: schemas.PostCr
         title=data.title,
         content=data.content,
     )
+
     db.add(new_post)
+    project.post_count += 1
     db.commit()
     db.refresh(new_post)
     return new_post
@@ -243,6 +286,8 @@ def get_post_detail(db: Session, post_id: int) -> models.ForumPost:
     db.commit()
     db.refresh(post)
     return post
+
+
 
 
 # --- COMMENTS ---
@@ -300,7 +345,8 @@ def get_comments_by_post_sort_by_new(db: Session, post_id: int) -> List[models.C
     return comments
 
 def create_comment(db: Session, post_id: int, user_id: int, data: schemas.CommentCreate) -> models.Comment:
-    if not db.query(models.ForumPost).filter(models.ForumPost.id == post_id).first():
+    post = db.query(models.ForumPost).filter(models.ForumPost.id == post_id).first()
+    if not post:
         raise HTTPException(status_code=404, detail="Post not found")
 
     new_comment = models.Comment(
@@ -309,9 +355,11 @@ def create_comment(db: Session, post_id: int, user_id: int, data: schemas.Commen
         content=data.content,
     )
     db.add(new_comment)
+    post.comment_count += 1
     db.commit()
     db.refresh(new_comment)
     return new_comment
+
 
 
 # --- VOTING ---
@@ -383,3 +431,12 @@ def get_post_vote_score(db: Session, post_id: int) -> int:
     score = db.query(func.sum(models.PostVote.vote_value))\
         .filter(models.PostVote.post_id == post_id).scalar()
     return score
+
+
+
+# --- SEARCH ---
+def search_project(db: Session, query: str) -> list[models.Project]:
+    return db.query(models.Project).filter(models.Project.name.ilike(f"%{query}%")).all()
+
+def search_posts(db: Session, query: str) -> list[models.ForumPost]:
+    return db.query(models.ForumPost).filter(models.ForumPost.title.ilike(f"%{query}%")).all()
