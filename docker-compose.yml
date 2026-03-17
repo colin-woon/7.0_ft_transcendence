@@ -180,6 +180,7 @@ services:
         container_name: nginx
         profiles: ['nginx', 'all']
         ports:
+            - '80:80'
             - '443:443'
         depends_on:
             gateway-service:
@@ -191,7 +192,7 @@ services:
         environment:
             - NGINX_ENTRYPOINT_QUIET_LOGS=1
         volumes:
-            - ./infra/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+            - ./infra/nginx/nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
             - ./certs/runtime/nginx/nginx.crt:/etc/nginx/certs/nginx-internal.crt:ro
             - ./certs/runtime/nginx/nginx.key:/etc/nginx/certs/nginx-internal.key:ro
             - ./certs/ca/ca.crt:/etc/nginx/certs/ca-internal.crt:ro
