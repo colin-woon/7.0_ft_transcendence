@@ -58,27 +58,34 @@ public class SeedService {
 		LOG.info("Seed mode: " + seedMode);
 		switch (seedMode) {
 			case OFF -> {}
-			case FILE -> seedFromFile();
+			case FILE -> loadSeedFile();
 			default -> seedFromApi(seedMode);
 		}
 	}
 
-	public boolean seedFromFile() {
+	public void loadSeedFile() {
 		File file = new File(seedFilePath);
 		if (!file.exists()) {
-			LOG.info("No seed file found at: " + seedFilePath);
-			return false;
+			LOG.error("No seed file found at: " + seedFilePath);
+			return;
+		}
+		if (file.isDirectory()) {
+			LOG.error("Seed file path points to a directory, expected a file: " + seedFilePath);
+			return;
 		}
 		try {
 			IntraDTO[] data = objectMapper.readValue(file, IntraDTO[].class);
+			if (data == null) {
+				LOG.error("Seed file unavailable. Continuing startup without seeding.");
+				return;
+			}
+
 			for (IntraDTO dto : data) {
 				persistSeedUser(dto);
 			}
 			LOG.info("Seeded " + data.length + " users from file");
-			return true;
 		} catch (IOException e) {
 			LOG.error("Failed to read/parse seed file", e);
-			return false;
 		}
 	}
 

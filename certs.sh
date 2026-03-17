@@ -195,6 +195,10 @@ for dir in gateway auth chat forum nginx web; do
 	# --- P12 keystore ---
 	if [[ $FORCE_P12 -eq 1 || ! -f "$P12" ]] && [[ "$dir" != 'nginx' ]] && [[ "$dir" != 'web' ]] && [[ "$dir" != 'forum' ]]; then
 		echo "[$dir] generating PKCS12 keystore..."
+		if [ -d "$P12" ]; then
+			echo "[$dir] warning: $P12 is a directory; removing it to regenerate keystore file"
+			rmdir "$P12"
+		fi
 		openssl pkcs12 -export \
 			-inkey "$KEY" \
 			-in "$CRT" \
@@ -215,6 +219,11 @@ done
 
 if [ ! -f "certs/runtime/truststore/shared-truststore.p12" ] || [ "${ARG:-}" = "svcgenp12" ]; then
 	echo "[truststore] generating shared truststore..."
+
+	if [ -d "certs/runtime/truststore/shared-truststore.p12" ]; then
+		echo "[truststore] warning: shared-truststore.p12 is a directory; removing it"
+		rmdir "certs/runtime/truststore/shared-truststore.p12"
+	fi
 
 	keytool -importcert -noprompt \
 		-alias internal-svc-ca \
@@ -262,6 +271,12 @@ if [ ! -f "$AUTH_PUBLIC_KEY" ]; then
 fi
 
 mkdir -p "$(dirname "$GATEWAY_PUBLIC_KEY")"
+
+if [ -d "$AUTH_PRIVATE_KEY" ] || [ -d "$AUTH_PUBLIC_KEY" ]; then
+	echo "Error: JWT key path points to a directory under $AUTH_KEY_DIR"
+	exit 1
+fi
+
 cp "$AUTH_PUBLIC_KEY" "$GATEWAY_PUBLIC_KEY"
 
 AUTH_PUB_SHA="$(sha256sum "$AUTH_PUBLIC_KEY" | awk '{print $1}')"
