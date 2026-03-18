@@ -8,6 +8,12 @@ RUN npm ci
 # --- Stage 2: Development (WSL2 Optimized) ---
 FROM node:${NODE_VERSION} AS development
 WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    gnupg \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=development
 EXPOSE 3000
 CMD ["npm", "run", "dev"]
