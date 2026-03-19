@@ -27,19 +27,19 @@ sdkman_auto_env=true
 
 ```
 src/main/java/org/bumIntra/gateway/
-├── api/             HTTP endpoints (PingResource, AuthResource, HealthResource)
-├── client/          Outbound REST clients, fault tolerance executor, outbound filter, DTOs
-│   └── dto/         Response DTOs (AuthResult, …)
+├── api/             Dynamic HTTP proxies (GatewayResource, PublicResource, StreamResources)
+├── client/          Outbound REST clients, fault tolerance, DTOs (AuthClient, ChatClient, etc.)
+│   └── dto/         Shared DTOs (AuthResult - deprecated)
 ├── config/          @ConfigMapping beans (auth, rate limit, headers, methods)
 ├── exception/       GatewayException, error codes, error response, exception mapper
 ├── filter/          Inbound/outbound container filters (request + response pipeline)
 ├── obs/             Observer pattern: dispatcher, logging impl, metrics impl
 │   └── event/       Event records (GatewayRequestStart/End, GatewayWsOpen/Auth/Throttle/Close)
-├── policy/          GatewayPolicy interface + implementations + engine
+├── policy/          GatewayPolicy interface + implementations (Currently disabled)
 ├── ratelimit/       RateLimiter interface, Redis + in-mem token-bucket impls, profiles, resolver
 │   └── ws/          WS-specific rate limit service (WsRateLimitService, WsRateLimitProfiles)
 ├── security/        GatewayRequestContext (request-scoped), AuthLevel, IdentityHeaders
-└── websocket/       ChatWebSocketEndPoint, AuthHandshakeConfig
+└── websocket/       WsChatServer endpoint + handlers (WsAuthHandler, WsSessionStateHandler, etc.)
 ```
 
 ---
@@ -49,13 +49,14 @@ src/main/java/org/bumIntra/gateway/
 ### GatewayRequestContext
 
 `@RequestScoped` CDI bean that acts as the per-request shared state between filters.
-All filters read from and write to this, rather than passing data via request properties.
 
 Key fields:
-- `requestId` — UUID set by `RequestContextFilter`, echoed back to client
+- `requestId` — UUID set by `RequestContextFilter`, echoed back to client as `X-Intra-Request-Id`
+- `startTime` — Instant when the request started
 - `auth` — raw Authorization header value
-- `userId`, `roles`, `authLevel` — populated by `ServiceAuthFilter` after successful auth
-- `clientIp` — from `X-Forwarded-For` / `Remote-Addr`
+- `userId`, `roles`, `authLevel` — populated by `RequestPreAuthFilter`
+- `clientIp`, `realIp`, `forwardedFor`, etc. — populated from headers
+- `serviceName` — targeted downstream service name (for observability)
 - `errorCode`, `errorStatus` — set when a `GatewayException` is mapped
 
 ### Observer / Dispatcher Pattern
@@ -76,27 +77,15 @@ the event methods (`onRequestStart`, `onWsOpen`, etc.).
 
 ### Policy Engine
 
-`GatewayPolicyEngine` collects all `GatewayPolicy` CDI beans, sorts them by `order()`,
-and calls `evaluate(ctx)` on each in `PolicyEngineFilter`.
-
-To add a new policy:
-1. Implement `GatewayPolicy`
-2. Annotate with `@ApplicationScoped`
-3. Return a unique `order()` value (lower = earlier)
-
-Current policies:
-| Class                | Order | What it checks                  |
-|----------------------|-------|---------------------------------|
-| `AuthRequiredPolicy` | 100   | Rejects unauthenticated requests when `gateway.auth.required=true` |
+> **Note:** The `PolicyEngineFilter` and `GatewayPolicyEngine` are currently **commented out/disabled**.
+> Basic RBAC is currently handled by `RequestRBACFilter`.
 
 ### Rate Limiter
 
-Production: `RedisTokenBucketRateLimiter` — executes a Lua `EVALSHA` script. If Redis
-doesn't have the script loaded (`NOSCRIPT` error) it reloads via `RedisScriptRegistry`
-and retries once. Failures are **fail-closed** (returns `false` → deny).
+Production: `RedisTokenBucketRateLimiter` — executes a Lua script.
+Access levels are resolved via `RateLimitAccessResolver` (default implementation uses `AuthLevel`).
 
-Dev alternative: `InMemTokenBucketRateLimiter` — uncomment in `RateLimitFilter` and
-comment out the Redis one. No Redis dependency required.
+Profiles are managed in `RateLimitProfiles`, providing different buckets for `GUEST`, `USER`, and `ADMIN/SERVICE`.
 
 ---
 
@@ -104,31 +93,28 @@ comment out the Redis one. No Redis dependency required.
 
 | Priority Value | Filter                       | Direction |
 |----------------|------------------------------|-----------|
-| 700            | `RequestContextFilter`       | Request   |
-| 710            | `MethodAllowListFilter`      | Request   |
-| 720            | `RequestHeaderAllowListFilter` | Request |
-| 730            | `RateLimitFilter`            | Request   |
-| 750            | `ServiceAuthFilter`          | Request   |
-| 760            | `PolicyEngineFilter`         | Request   |
-| 4000           | `ResponseContextFilter`      | Response  |
-| 4050           | `ResponseHeaderStripFilter`  | Response  |
-| (none)         | `MDCResponseCleanFilter`     | Response  |
-
-`ServiceRequestContextFilter` is a **client** filter (outbound to downstream), not a
-container filter — it has no priority conflict with the above.
+| 900            | `RequestContextFilter`       | Request   |
+| 910            | `RequestMethodAllowFilter`   | Request   |
+| 920            | `RequestHeaderAllowFilter`   | Request   |
+| 930            | `RequestPreAuthFilter`       | Request   |
+| 1900           | `RequestRateLimitFilter`     | Request   |
+| 1910           | `RequestRBACFilter`          | Request   |
+| 2900           | `ServiceClientContextFilter` | Client    |
+| 3000           | `ResponseContextFilter`      | Response  |
+| 3050           | `ResponseHeaderStripFilter`  | Response  |
+| 3100           | `ResponseMDCCleanFilter`     | Response  |
 
 ---
 
 ## Dev Mode Config (`%dev` profile)
 
-When running `./mvnw quarkus:dev`, the `%dev.*` properties in `application.properties`
-automatically activate:
+When running `./mvnw quarkus:dev`, the `%dev.*` properties activate:
 
 - Plain HTTP on port 8080 (no TLS)
 - No inbound mTLS (`client-auth=none`)
-- No outbound mTLS to auth service
-- `gateway.auth.required=false` (auth bypass, can be toggled)
-- Auth service URL points to `http://localhost:9000`
+- No outbound mTLS to backend services
+- `gateway.auth.required=false` (auth bypass)
+- Backend service URLs point to `localhost` equivalents (e.g. `${DEV_AUTH_SERVICE_URL}`)
 
 These are never active in the Docker/prod image.
 
@@ -155,17 +141,24 @@ public class GatewayObserverAudit implements GatewayObserver {
 
 ## Common Pitfalls
 
-**`NoClassDefFoundError` on `*_ClientProxy` at startup**
-CDI proxy classes are generated at `mvn package` time. If you add/change methods on a
-`GatewayObserver` implementation and rebuild without `clean`, the proxy is stale.
-Always use `mvn clean package` or `make rebuild-gateway` (which includes `clean`).
+**`NoClassDefFoundError` or stale `*_ClientProxy` classes after structural changes**
+Quarkus generates CDI proxy and build-time helper classes into `target/`. After
+structural CDI changes (bean signatures, record shapes, observer payloads, injected
+types), stale generated classes can survive an incremental rebuild and cause confusing
+runtime linkage/proxy errors.
+Always use `mvn clean package` or `make rebuild-gateway` (which includes `clean`) after
+those changes.
 
 **Observer fires N times per request**
 `GatewayObserverDispatcher` must have `@Typed(GatewayObserverDispatcher.class)`.
 Without it, CDI registers it as a `GatewayObserver` too, so
 `Instance<GatewayObserver>` includes the dispatcher itself — causing infinite recursion.
+There is also a defensive runtime guard (`if (o != this)`), but `@Typed` is the main
+CDI-level protection and should not be removed.
 
 **WS throttle log spam**
-`onWsThrottle` for `MSG` type is debounced per session with a 2-second cooldown stored
-in `session.getUserProperties()`. Do not remove `LAST_THROTTLE_AT` tracking when editing
-`onMessage`.
+The current implementation emits a throttle observer event on every rejected WS message
+or connection attempt. `LAST_THROTTLE_AT` still exists in `WsSessionStateHandler`, but
+the debounce logic is not currently enforced in `WsChatServer`.
+If per-message throttling starts spamming logs or metrics under burst traffic, re-add a
+per-session cooldown before documenting debounce behavior as active.
