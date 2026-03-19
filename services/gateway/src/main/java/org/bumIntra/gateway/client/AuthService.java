@@ -20,23 +20,26 @@ public class AuthService {
 	@Inject
 	FaultToleranceServiceCallExecutor ex;
 
+	@Inject
+	ServiceCallExecutor sce;
+
 	public Response proxyGet(String path) {
 		return ex.execute(() -> authClient.proxyGet(path));
 	}
 
 	public Response proxyPost(String path, byte[] body) {
-		return ex.execute(() -> authClient.proxyPost(path, body));
+		return sce.execute(() -> authClient.proxyPost(path, body));
 	}
 
 	public Response proxyDelete(String path) {
-		return ex.execute(() -> authClient.proxyDelete(path));
+		return sce.execute(() -> authClient.proxyDelete(path));
 	}
 
 	public Response proxyPut(String path, byte[] body) {
-		return ex.execute(() -> authClient.proxyPut(path, body));
+		return sce.execute(() -> authClient.proxyPut(path, body));
 	}
 
 	public Response proxyPatch(String path, byte[] body) {
-		return ex.execute(() -> authClient.proxyPatch(path, body));
+		return sce.execute(() -> authClient.proxyPatch(path, body));
 	}
 }

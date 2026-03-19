@@ -10,8 +10,6 @@ public class GatewayException extends RuntimeException {
 	private final Response.Status _status;
 	private final GatewayErrorCode _code;
 	private final Map<String, Object> _headers = new HashMap<>();
-	// TODO: add header builder in response filters to add headers from exception if
-	// present
 
 	public GatewayException(Response.Status status, GatewayErrorCode code, String message) {
 		super(message);

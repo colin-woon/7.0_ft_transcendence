@@ -29,9 +29,6 @@ public class RequestRBACFilter implements ContainerRequestFilter {
 					GatewayErrorCode.FORBIDDEN,
 					"Insufficient permissions");
 		}
-
-		// TODO: not sure what happens when users with a valid auth trying to request
-		// public login, redirect or block?
 	}
 
 }

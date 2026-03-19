@@ -1,31 +1,45 @@
 package org.bumIntra.gateway.api;
 
 import org.bumIntra.gateway.client.AuthService;
+import org.bumIntra.gateway.security.GatewayRequestContext;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 
 // Public-facing routes — no authentication required.
 @Path("/api/public")
 public class PublicResource {
 
+	private static final String AUTH_SERVICE = "auth-service";
+
 	@Inject
 	AuthService authService;
 
+	@Inject
+	GatewayRequestContext grc;
+
 	@GET
-	@Path("/{service}/{subpath: .*}")
-	public Response proxyPublicGet(@PathParam("service") String service,
-			@PathParam("subpath") String subpath) {
-		if ("auth".equals(service) && (subpath.startsWith("login/") || subpath.startsWith("callback/"))) {
-			return authService.proxyGet(buildUrl(service, subpath));
+	@Path("/auth/login/{provider: .*}")
+	public Response proxyPublicLogin(@PathParam("provider") String provider) {
+		if (provider.contains("/") || provider.isBlank() || provider.equals(".") || provider.equals("..")) {
+			return Response.status(Response.Status.NOT_FOUND).build();
 		}
-		return Response.status(Response.Status.NOT_FOUND).build();
+		grc.setServiceName(AUTH_SERVICE);
+		return authService.proxyGet("auth/login/" + provider);
+	}
+
+	@GET
+	@Path("/auth/callback/{provider: .*}")
+	public Response proxyPublicCallback(@PathParam("provider") String provider) {
+		if (provider.contains("/") || provider.isBlank() || provider.equals(".") || provider.equals("..")) {
+			return Response.status(Response.Status.NOT_FOUND).build();
+		}
+		grc.setServiceName(AUTH_SERVICE);
+		return authService.proxyGet("api/public/auth/callback/" + provider);
 	}
 
 	@POST
@@ -33,15 +47,21 @@ public class PublicResource {
 	public Response proxyPublicPost(@PathParam("service") String service, @PathParam("subpath") String subpath,
 			byte[] body) {
 		if ("auth".equals(service) && "refresh".equals(subpath)) {
+			grc.setServiceName(AUTH_SERVICE);
 			return authService.proxyPost(buildUrl(service, subpath), body);
 		}
 		return Response.status(Response.Status.NOT_FOUND).build();
 	}
 
 	private String buildUrl(String service, String subpath) {
+		// for strict auth callback path OIDC
 		if (service.equals("auth") && subpath.startsWith("callback/")) {
 			return "api/public/" + service + "/" + subpath;
 		}
-		return service + "/" + subpath;
+
+		if (service.equals("auth")) {
+			return service + "/" + subpath;
+		}
+		return subpath;
 	}
 }

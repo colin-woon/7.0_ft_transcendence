@@ -29,7 +29,7 @@ public class GatewayRequestContext {
 	private String _forwardedFor;
 	private String _forwardedHost;
 	private String _forwardedProto;
-	// TODO: consided the pros and cons of using List for forwardedFor
+	private String _serviceName;
 
 	// ServiceAuthFilter
 	private Set<String> _roles = Collections.emptySet();
@@ -38,7 +38,6 @@ public class GatewayRequestContext {
 
 	// SSE
 	private boolean _isSse;
-	// TODO: last event id
 
 	public String getAuth() {
 		return _auth;
@@ -203,5 +202,13 @@ public class GatewayRequestContext {
 
 	public Instant getStartTime() {
 		return _st;
+	}
+
+	public String getServiceName() {
+		return _serviceName;
+	}
+
+	public void setServiceName(String serviceName) {
+		_serviceName = serviceName;
 	}
 }
