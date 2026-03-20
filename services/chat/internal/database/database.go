@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	// "github.com/joho/godotenv/autoload"
@@ -27,7 +28,7 @@ type Service interface {
 	CreateFriendship(ctx context.Context, arg CreateFriendshipParams) (ChatServiceFriendship, error)
 	UpdateFriendshipStatus(ctx context.Context, arg UpdateFriendshipStatusParams) error
 	CreateMessage(ctx context.Context, arg CreateMessageParams) (ChatServiceMessage, error)
-	GetMessageHistoryByUserPair(ctx context.Context, arg GetMessageHistoryByUserPairParams) ([]ChatServiceMessage, error)
+	GetMessageHistoryByChatId(ctx context.Context, chatID pgtype.UUID) ([]GetMessageHistoryByChatIdRow, error)
 }
 
 type service struct {

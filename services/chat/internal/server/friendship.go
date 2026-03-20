@@ -1,6 +1,7 @@
 package server
 
 import (
+	"app/internal/api"
 	"app/internal/database"
 	"net/http"
 	"strings"
@@ -25,14 +26,34 @@ func (s *Server) SendFriendRequest(w http.ResponseWriter, r *http.Request, reque
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (s *Server) AcceptFriendRequest(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int) {
+func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int, params api.UpdateFriendshipStatusParams) {
 	ctx := r.Context()
+
+	if !params.Status.Valid() {
+		http.Error(w, "Invalid status value", http.StatusBadRequest)
+		return
+	}
+
+	var dbStatus database.ChatServiceFriendStatus
+	switch params.Status {
+	case api.Accepted:
+		dbStatus = database.ChatServiceFriendStatusAccepted
+	case api.Declined:
+		dbStatus = database.ChatServiceFriendStatusDeclined
+	case api.Blocked:
+		dbStatus = database.ChatServiceFriendStatusBlocked
+	case api.None:
+		dbStatus = database.ChatServiceFriendStatusNone
+	default:
+		http.Error(w, "Invalid status value", http.StatusBadRequest)
+		return
+	}
 
 	err := s.db.UpdateFriendshipStatus(ctx, database.UpdateFriendshipStatusParams{
 		RequesterID: int32(requesterId),
 		AddresseeID: int32(receiverId),
 		Status: database.NullChatServiceFriendStatus{
-			ChatServiceFriendStatus: database.ChatServiceFriendStatusACCEPTED,
+			ChatServiceFriendStatus: dbStatus,
 			Valid:                   true,
 		},
 	})

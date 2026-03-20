@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+
+	"github.com/jackc/pgx/v5/pgtype"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 type SseConnectionHub struct {
@@ -14,7 +17,7 @@ type SseConnectionHub struct {
 	mutex        sync.RWMutex
 }
 
-func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, senderId int, receiverId int) {
+func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempSenderId int, tempReceiverId int) {
 	ctx := r.Context()
 
 	var body api.SendMessageJSONRequestBody
@@ -25,8 +28,9 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, senderId in
 	}
 
 	_, err := s.db.CreateMessage(ctx, database.CreateMessageParams{
-		SenderID:   int32(senderId),
-		ReceiverID: int32(receiverId),
+		ChatID:     pgtype.UUID{Bytes: [16]byte(chatId), Valid: true},
+		SenderID:   int32(tempSenderId),
+		ReceiverID: int32(tempReceiverId),
 		Content:    body.Content,
 	})
 
@@ -34,21 +38,17 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, senderId in
 		http.Error(w, "Failed to send message", http.StatusInternalServerError)
 	}
 	s.sseHub.mutex.RLock()
-	if ch, exists := s.sseHub.userChannels[receiverId]; exists {
+	if ch, exists := s.sseHub.userChannels[tempReceiverId]; exists {
 		ch <- fmt.Sprintf("%s", body.Content)
 	}
 	s.sseHub.mutex.RUnlock()
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (s *Server) GetMessageHistory(w http.ResponseWriter, r *http.Request, senderId int, receiverId int) {
+func (s *Server) GetMessageHistory(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID) {
 	ctx := r.Context()
 
-	history, err := s.db.GetMessageHistoryByUserPair(ctx, database.GetMessageHistoryByUserPairParams{
-		SenderID:   int32(senderId),
-		ReceiverID: int32(receiverId),
-	})
-
+	history, err := s.db.GetMessageHistoryByChatId(ctx, pgtype.UUID{Bytes: [16]byte(chatId), Valid: true})
 	if err != nil {
 		http.Error(w, "Failed to retrieve chat history", http.StatusInternalServerError)
 		return
