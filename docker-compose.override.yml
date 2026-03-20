@@ -58,6 +58,8 @@ services:
     web-service:
         build:
             target: development
+            args:
+                NEXT_PUBLIC_API_URL: https://localhost
         ports:
             - '${WEB_PORT}:3000'
         volumes:
