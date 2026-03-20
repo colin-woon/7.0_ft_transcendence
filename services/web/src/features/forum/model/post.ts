@@ -31,6 +31,50 @@ export interface ForumApiProjectSummary {
   name: string;
 }
 
+export interface ForumApiPostDetail {
+  id: number;
+  project_id: number;
+  author_id: number;
+  title: string;
+  content: string;
+  view_count: number;
+  created_at: string;
+  vote_score: number;
+  comment_count: number;
+}
+
+export interface ForumApiComment {
+  id: number;
+  post_id: number;
+  author_id: number;
+  content: string;
+  vote_score: number;
+  created_at: string;
+}
+
+export interface ForumPostDetail {
+  id: number;
+  title: string;
+  content: string;
+  author: string;
+  avatar: string;
+  category: string;
+  timestamp: string;
+  views: number;
+  upvotes: number;
+  comments: number;
+  isPinned: boolean;
+}
+
+export interface ForumComment {
+  id: number;
+  author: string;
+  avatar: string;
+  content: string;
+  timestamp: string;
+  upvotes: number;
+}
+
 export const forumCategories = ['All', 'minishell', 'inception', 'philo', 'Tutorial', 'Career'] as const;
 
 export const forumSortOptions: readonly ForumSort[] = ['New', 'Top'];

@@ -380,11 +380,13 @@ def cast_post_vote(db: Session, post_id: int, user_id: int, vote_value: int) -> 
         if existing_vote.vote_value == vote_value:
             db.delete(existing_vote)
             db.commit()
-            return {"message": "Vote removed"}
+            score = get_post_vote_score(db, post_id)
+            return {"message": "Vote removed", "vote_score": score}
 
         existing_vote.vote_value = vote_value
         db.commit()
-        return {"message": "Vote updated"}
+        score = get_post_vote_score(db, post_id)
+        return {"message": "Vote updated", "vote_score": score}
 
     new_vote = models.PostVote(
         post_id=post_id,
@@ -393,7 +395,8 @@ def cast_post_vote(db: Session, post_id: int, user_id: int, vote_value: int) -> 
     )
     db.add(new_vote)
     db.commit()
-    return {"message": "Vote registered"}
+    score = get_post_vote_score(db, post_id)
+    return {"message": "Vote registered", "vote_score": score}
 
 def cast_comment_vote(db: Session, comment_id: int, user_id: int, vote_value: int) -> dict:
     if vote_value not in [1, -1]:
@@ -412,11 +415,13 @@ def cast_comment_vote(db: Session, comment_id: int, user_id: int, vote_value: in
         if existing_vote.vote_value == vote_value:
             db.delete(existing_vote)
             db.commit()
-            return {"message": "Vote removed"}
+            score = get_comment_vote_score(db, comment_id)
+            return {"message": "Vote registered", "vote_score": score}
 
         existing_vote.vote_value = vote_value
         db.commit()
-        return {"message": "Vote updated"}
+        score = get_comment_vote_score(db, comment_id)
+        return {"message": "Vote registered", "vote_score": score}
 
     new_vote = models.CommentVote(
         comment_id=comment_id,
@@ -425,12 +430,18 @@ def cast_comment_vote(db: Session, comment_id: int, user_id: int, vote_value: in
     )
     db.add(new_vote)
     db.commit()
-    return {"message": "Vote registered"}
+    score = get_comment_vote_score(db, comment_id)
+    return {"message": "Vote registered", "vote_score": score}
 
 def get_post_vote_score(db: Session, post_id: int) -> int:
     score = db.query(func.sum(models.PostVote.vote_value))\
         .filter(models.PostVote.post_id == post_id).scalar()
-    return int(score)
+    return int(score or 0)
+
+def get_comment_vote_score(db: Session, id: int) -> int:
+    score = db.query(func.sum(models.CommentVote.vote_value))\
+        .filter(models.CommentVote.comment_id == id).scalar()
+    return int(score or 0)
 
 
 

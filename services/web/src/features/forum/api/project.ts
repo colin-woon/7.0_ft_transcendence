@@ -1,17 +1,15 @@
-import 'server-only';
-
-import type { ForumApiPostSummary, ForumApiProjectSummary, ForumPost } from '../model';
+import type { ForumApiPostSummary, ForumApiProjectSummary, ForumPost, ForumApiPostDetail, ForumPostDetail, ForumApiComment, ForumComment } from '../model';
 import { cache } from 'react'
 
 const FORUM_SERVICE_URL = 'http://forum-service:8080';
 const API_BASE_URL = FORUM_SERVICE_URL;
 //TODO: gateway-service:8080/api/forum/projects
-interface ForumApiProjectListPage {
+export interface ForumApiProjectListPage {
   items: ForumApiProjectSummary[];
   total_pages: number;
 }
 
-function toRelativeTime(isoDate: string) {
+export function toRelativeTime(isoDate: string) {
   const then = new Date(isoDate).getTime();
   const now = Date.now();
   const seconds = Math.max(0, Math.floor((now - then) / 1000));
@@ -25,7 +23,7 @@ function toRelativeTime(isoDate: string) {
   return `${days}d ago`;
 }
 
-function mapApiPostToForumPost(post: ForumApiPostSummary, projectName?: string): ForumPost {
+export function mapApiPostToForumPost(post: ForumApiPostSummary, projectName?: string): ForumPost {
   return {
     id: post.id,
     title: post.title,
@@ -128,21 +126,4 @@ export async function getProjectPosts(projectId: number): Promise<ForumPost[]> {
   ])) as [ForumApiPostSummary[], ForumApiProjectSummary];
 
   return postsData.map((post) => mapApiPostToForumPost(post, projectData.name));
-}
-
-export async function getAllPosts(): Promise<ForumPost[]> {
-  const [postsResponse, projectsById] = await Promise.all([
-    fetch(`${API_BASE_URL}/posts`, {
-      method: 'GET',
-      cache: 'no-store',
-    }),
-    getProjectsByIdMap(),
-  ]);
-
-  if (!postsResponse.ok) {
-    throw new Error('Failed to fetch posts.');
-  }
-
-  const postsData = (await postsResponse.json()) as ForumApiPostSummary[];
-  return postsData.map((post) => mapApiPostToForumPost(post, projectsById.get(post.project_id)));
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useAppShell } from '@/features/app-shell/context/AppShellContext';
+import { useAppShell } from '@/components/ui/ComponentLogic/Appshell/context/AppShellContext';
 import {
   filterPosts,
   forumCategories,

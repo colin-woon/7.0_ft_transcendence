@@ -1,4 +1,5 @@
-import { getAllPosts, getProjectPosts } from '@/features/forum/api';
+import { getProjectPosts } from '@/features/forum/api/project';
+import { getAllPosts } from '@/features/forum/api/post'
 import type { ForumPost } from '@/features/forum/model';
 import ForumPostsClient from '@/features/forum/ui/home/screen/ForumPostsClient';
 
@@ -18,6 +19,7 @@ export default async function ForumRoute({ searchParams }: ForumRouteProps) {
   let posts: ForumPost[] = [];
   let fetchError: string | null = null;
 
+  
   try {
     posts = hasValidProjectId ? await getProjectPosts(parsedProjectId) : await getAllPosts();
   } catch (error: unknown) {
