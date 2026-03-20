@@ -24,6 +24,8 @@ WORKDIR /app
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY services/web/ . 
 ENV NODE_ENV=production
+ARG NEXT_PUBLIC_API_URL=https://localhost
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 RUN npm run build
 
 # --- Stage 4: Runner (Production Only) ---

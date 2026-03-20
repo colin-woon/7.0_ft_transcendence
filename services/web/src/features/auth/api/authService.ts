@@ -1,6 +1,6 @@
 'use client'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
 export interface User {
   id: number
@@ -28,7 +28,7 @@ class AuthService {
   private refreshTimer: ReturnType<typeof setTimeout> | null = null
 
   loginWithProvider(provider: 'google' | '42') {
-    window.location.href = `${API_BASE_URL}/public/auth/login/${provider}`
+    window.location.href = `${API_BASE_URL}/api/public/auth/login/${provider}`
   }
 
   async handleOAuthCallback(): Promise<User | null> {
@@ -42,7 +42,7 @@ class AuthService {
   }
 
   async refreshAccessToken(): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/refresh`, {
+    const response = await fetch(`${API_BASE_URL}/api/public/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
     })
@@ -90,7 +90,7 @@ class AuthService {
 
   async logout(): Promise<void> {
     try {
-      await fetch(`${API_BASE_URL}/logout`, {
+      await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       })
