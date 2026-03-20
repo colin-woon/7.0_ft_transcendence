@@ -54,12 +54,12 @@ paths:
         "404":
           description: User not found
 
-  /friendship/{requesterId}/{receiverId}/accept:
+  /friendship/{requesterId}/{receiverId}/update:
     patch:
       tags:
         - Friendship
-      summary: Accept a friend request
-      operationId: acceptFriendRequest
+      summary: Update friendship status
+      operationId: updateFriendshipStatus
       parameters:
         - name: requesterId
           in: path
@@ -71,25 +71,41 @@ paths:
           required: true
           schema:
             type: integer
+        - name: status
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [pending, accepted, declined, blocked, none]
       responses:
         "200":
-          description: Friend request accepted successfully
+          description: Status updated successfully
+        "400":
+          description: Invalid status value
         "404":
           description: Request not found
+        "500":
+          description: Internal Server Error
 
-  /message/{senderId}/{receiverId}:
+  /message/{chatId}/{tempSenderId}/{tempReceiverId}:
     post:
       tags:
         - Message
       summary: Send a chat message
       operationId: sendMessage
       parameters:
-        - name: senderId
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tempSenderId
           in: path
           required: true
           schema:
             type: integer
-        - name: receiverId
+        - name: tempReceiverId
           in: path
           required: true
           schema:
@@ -111,23 +127,19 @@ paths:
         "400":
           description: Invalid user IDs or message content
 
-  /message/history/{senderId}/{receiverId}:
+  /message/history/{chatId}:
     get:
       tags:
         - Message
-      summary: Get chat history between two users
+      summary: Get chat history for a specific chat
       operationId: getMessageHistory
       parameters:
-        - name: senderId
+        - name: chatId
           in: path
           required: true
           schema:
-            type: integer
-        - name: receiverId
-          in: path
-          required: true
-          schema:
-            type: integer
+            type: string
+            format: uuid
       responses:
         "200":
           description: Chat history retrieved successfully
@@ -138,7 +150,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/ChatMessage"
         "400":
-          description: Invalid user IDs
+          description: Invalid chat ID
         "404":
           description: No chat history found
 

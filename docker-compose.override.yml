@@ -26,6 +26,7 @@ services:
             - ./environment/chat.env
         ports:
             - '${CHAT_PORT}:8080'
+            - '2345:2345' # Delve debugging port
         volumes:
             - ./services/chat:/app
         environment:
