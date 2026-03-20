@@ -4,6 +4,7 @@ COMPOSE         ?= docker compose
 COMPOSE_PROD    := $(COMPOSE) -f docker-compose.yml --env-file ./environment/shared.env
 COMPOSE_DEV     := $(COMPOSE) -f docker-compose.yml -f docker-compose.override.yml --env-file ./environment/shared.env
 PROFILE         ?= all
+DEV_PROFILES    ?= --profile all
 
 .PHONY: help
 help:
@@ -18,6 +19,7 @@ help:
 	@echo ""
 	@echo "Development (docker-compose.yml + docker-compose.override.yml):"
 	@echo "  make dev-auth | dev-chat | dev-forum | dev-web | dev-gateway | dev-all"
+	@echo "    note: dev-auth/chat/forum/web also start gateway"
 	@echo "  make dev-build    PROFILE=<profile>   # no-cache build only"
 	@echo "  make dev-rebuild  PROFILE=<profile>   # no-cache build + start"
 	@echo "  make dev-recreate PROFILE=<profile>   # restart without rebuild"
@@ -59,26 +61,26 @@ logs:
 
 # ---- Development targets ------------------------------------------------
 .PHONY: dev-auth dev-chat dev-forum dev-web dev-gateway dev-all dev-up dev-recreate dev-build dev-rebuild
-dev-auth:     PROFILE=auth
-dev-chat:     PROFILE=chat
-dev-forum:    PROFILE=forum
-dev-web:      PROFILE=web
-dev-gateway:  PROFILE=gateway
-dev-all:      PROFILE=all
+dev-auth:     DEV_PROFILES=--profile auth --profile gateway
+dev-chat:     DEV_PROFILES=--profile chat --profile gateway
+dev-forum:    DEV_PROFILES=--profile forum --profile gateway
+dev-web:      DEV_PROFILES=--profile web --profile gateway
+dev-gateway:  DEV_PROFILES=--profile gateway
+dev-all:      DEV_PROFILES=--profile all
 dev-auth dev-chat dev-forum dev-web dev-gateway dev-all: dev-up
 
 dev-up:
-	$(COMPOSE_DEV) --profile $(PROFILE) up -d --build
+	$(COMPOSE_DEV) $(DEV_PROFILES) up -d --build
 
 dev-recreate:
-	$(COMPOSE_DEV) --profile $(PROFILE) up -d --force-recreate --no-build
+	$(COMPOSE_DEV) $(DEV_PROFILES) up -d --force-recreate --no-build
 
 dev-build:
-	$(COMPOSE_DEV) --profile $(PROFILE) build --no-cache
+	$(COMPOSE_DEV) $(DEV_PROFILES) build --no-cache
 
 dev-rebuild:
-	$(COMPOSE_DEV) --profile $(PROFILE) build --no-cache
-	$(COMPOSE_DEV) --profile $(PROFILE) up -d --force-recreate
+	$(COMPOSE_DEV) $(DEV_PROFILES) build --no-cache
+	$(COMPOSE_DEV) $(DEV_PROFILES) up -d --force-recreate
 
 # ---- Shared targets -----------------------------------------------------
 .PHONY: ps config stop pull clean

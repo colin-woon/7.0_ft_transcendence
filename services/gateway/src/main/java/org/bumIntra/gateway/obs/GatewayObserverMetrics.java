@@ -164,9 +164,10 @@ public class GatewayObserverMetrics implements GatewayObserver {
 
 		// ----- Record Timeouts -----
 		if ("SERVICE_TIMEOUT".equals(errorCode)) {
+			String serviceName = gre.serviceName().orElse("unknown");
 			Counter.builder("gateway_timeouts_total")
 					.description("Total services timeouts")
-					.tag("service", "auth-service") // TODO: Make dynamic when more services are added
+					.tag("service", serviceName)
 					.register(_meterRegistry)
 					.increment();
 		}

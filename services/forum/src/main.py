@@ -64,7 +64,7 @@ def get_current_user_id():
 
 # --- ROUTES ---
 
-router = APIRouter(prefix="/forum")
+router = APIRouter(prefix="")
 
 # --- PROJECTS API ENDPOINT ---
 

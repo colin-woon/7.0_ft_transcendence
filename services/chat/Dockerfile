@@ -16,6 +16,7 @@ ENV PATH="/go/bin:${PATH}"
 ENV GOPATH="/go/bin"
 # Expose port (default for Go apps varies, adjust as needed)
 EXPOSE 8080
+EXPOSE 8443
 
 # Air will handle the build and run process
 CMD ["air"]
@@ -33,4 +34,5 @@ COPY --from=builder /app/main /app/main
 # # Add ca-certificates in case your chat service talks to external APIs (HTTPS)
 # RUN apk add --no-cache ca-certificates
 EXPOSE 8080
+EXPOSE 8443
 CMD ["./main"]

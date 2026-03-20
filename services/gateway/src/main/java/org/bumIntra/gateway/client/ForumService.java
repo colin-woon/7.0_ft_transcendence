@@ -16,23 +16,26 @@ public class ForumService {
 	@Inject
 	FaultToleranceServiceCallExecutor ex;
 
+	@Inject
+	ServiceCallExecutor sce;
+
 	public Response proxyGet(String path) {
 		return ex.execute(() -> forumClient.proxyGet(path));
 	}
 
 	public Response proxyPost(String path, byte[] body) {
-		return ex.execute(() -> forumClient.proxyPost(path, body));
+		return sce.execute(() -> forumClient.proxyPost(path, body));
 	}
 
 	public Response proxyDelete(String path) {
-		return ex.execute(() -> forumClient.proxyDelete(path));
+		return sce.execute(() -> forumClient.proxyDelete(path));
 	}
 
 	public Response proxyPut(String path, byte[] body) {
-		return ex.execute(() -> forumClient.proxyPut(path, body));
+		return sce.execute(() -> forumClient.proxyPut(path, body));
 	}
 
 	public Response proxyPatch(String path, byte[] body) {
-		return ex.execute(() -> forumClient.proxyPatch(path, body));
+		return sce.execute(() -> forumClient.proxyPatch(path, body));
 	}
 }

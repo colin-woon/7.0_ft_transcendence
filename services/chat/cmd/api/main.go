@@ -41,7 +41,7 @@ func gracefulShutdown(apiServer *http.Server, dbCleanup func(), done chan bool) 
 
 func main() {
 
-	server, dbCleanup := server.NewServer()
+	server, dbCleanup, transportConfig := server.NewServer()
 
 	// Create a done channel to signal when the shutdown is complete
 	done := make(chan bool, 1)
@@ -49,7 +49,12 @@ func main() {
 	// Run graceful shutdown in a separate goroutine
 	go gracefulShutdown(server, dbCleanup, done)
 
-	err := server.ListenAndServe()
+	var err error
+	if transportConfig.TLSEnabled {
+		err = server.ListenAndServeTLS("", "")
+	} else {
+		err = server.ListenAndServe()
+	}
 	if err != nil && err != http.ErrServerClosed {
 		panic(fmt.Sprintf("http server error: %s", err))
 	}
