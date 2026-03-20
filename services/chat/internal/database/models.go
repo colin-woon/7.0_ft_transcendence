@@ -14,9 +14,11 @@ import (
 type ChatServiceFriendStatus string
 
 const (
-	ChatServiceFriendStatusPENDING  ChatServiceFriendStatus = "PENDING"
-	ChatServiceFriendStatusACCEPTED ChatServiceFriendStatus = "ACCEPTED"
-	ChatServiceFriendStatusBLOCKED  ChatServiceFriendStatus = "BLOCKED"
+	ChatServiceFriendStatusPending  ChatServiceFriendStatus = "pending"
+	ChatServiceFriendStatusAccepted ChatServiceFriendStatus = "accepted"
+	ChatServiceFriendStatusBlocked  ChatServiceFriendStatus = "blocked"
+	ChatServiceFriendStatusDeclined ChatServiceFriendStatus = "declined"
+	ChatServiceFriendStatusNone     ChatServiceFriendStatus = "none"
 )
 
 func (e *ChatServiceFriendStatus) Scan(src interface{}) error {
@@ -55,6 +57,7 @@ func (ns NullChatServiceFriendStatus) Value() (driver.Value, error) {
 }
 
 type ChatServiceFriendship struct {
+	ChatID      pgtype.UUID
 	RequesterID int32
 	AddresseeID int32
 	Status      NullChatServiceFriendStatus
@@ -64,6 +67,7 @@ type ChatServiceFriendship struct {
 
 type ChatServiceMessage struct {
 	ID         int64
+	ChatID     pgtype.UUID
 	SenderID   int32
 	ReceiverID int32
 	Content    string

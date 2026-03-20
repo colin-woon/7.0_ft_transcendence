@@ -11,8 +11,8 @@ import (
 
 const createFriendship = `-- name: CreateFriendship :one
 INSERT INTO chat_service.friendships (requester_id, addressee_id, status)
-VALUES ($1, $2, 'PENDING')
-RETURNING requester_id, addressee_id, status, created_at, updated_at
+VALUES ($1, $2, 'pending')
+RETURNING chat_id, requester_id, addressee_id, status, created_at, updated_at
 `
 
 type CreateFriendshipParams struct {
@@ -24,6 +24,7 @@ func (q *Queries) CreateFriendship(ctx context.Context, arg CreateFriendshipPara
 	row := q.db.QueryRow(ctx, createFriendship, arg.RequesterID, arg.AddresseeID)
 	var i ChatServiceFriendship
 	err := row.Scan(
+		&i.ChatID,
 		&i.RequesterID,
 		&i.AddresseeID,
 		&i.Status,

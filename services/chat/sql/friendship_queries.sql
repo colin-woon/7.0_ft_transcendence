@@ -1,6 +1,6 @@
 -- name: CreateFriendship :one
 INSERT INTO chat_service.friendships (requester_id, addressee_id, status)
-VALUES ($1, $2, 'PENDING')
+VALUES ($1, $2, 'pending')
 RETURNING *;
 
 -- name: UpdateFriendshipStatus :exec
