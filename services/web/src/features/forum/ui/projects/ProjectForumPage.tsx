@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Zap, Clock, Users, Star, MessageSquare, Plus } from "lucide-react";
 import { projects, type Difficulty } from "../../models/projects";
+import ProjectCard from "./ProjectCard";
 
 const difficultyColor: Record<Difficulty, string> = {
   Beginner: "bg-green-100 text-green-700",
@@ -27,7 +28,7 @@ export default function ProjectForumPage() {
         <div className="text-center">
           <p className="text-4xl mb-2">🔍</p>
           <p className="text-sm">Project not found.</p>
-          <Link href="/home/projects" className="text-[#0f6f6b] text-sm mt-2 inline-block hover:underline">
+          <Link href="/" className="text-[#0f6f6b] text-sm mt-2 inline-block hover:underline">
             ← Back to Projects
           </Link>
         </div>
@@ -62,56 +63,7 @@ export default function ProjectForumPage() {
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-5">
 
         {/* ── Project description card ── */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className={`h-2 w-full bg-gradient-to-r ${project.color}`} />
-          <div className="p-6">
-            <div className="flex items-start gap-4">
-              <span className="text-5xl">{project.icon}</span>
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <h1 className="text-2xl font-bold text-slate-800">{project.name}</h1>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${difficultyColor[project.difficulty]}`}>
-                    {project.difficulty}
-                  </span>
-                </div>
-                <p className="text-sm text-slate-600 leading-relaxed mb-4">{project.description}</p>
-
-                {/* Tags */}
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {project.tags.map((tag) => (
-                    <span key={tag} className="text-xs px-2.5 py-0.5 bg-gray-100 text-slate-500 rounded-full">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Stats */}
-                <div className="flex flex-wrap items-center gap-5 text-sm text-slate-500">
-                  <span className="flex items-center gap-1.5">
-                    <Zap size={14} className="text-amber-400" />
-                    <span className="font-semibold text-slate-700">{project.xp}</span> XP
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Clock size={14} />
-                    {project.duration}
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Users size={14} />
-                    {project.teamSize}
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Star size={14} className="text-yellow-400" />
-                    {project.students.toLocaleString()} students
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <MessageSquare size={14} className="text-[#0f6f6b]" />
-                    {project.posts.length} question{project.posts.length !== 1 ? "s" : ""}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProjectCard project={project} />
 
         {/* ── Forum section ── */}
         <div>
@@ -206,8 +158,8 @@ export default function ProjectForumPage() {
                         <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400">
                           <span>{post.avatar} {post.author}</span>
                           <span>{post.timestamp}</span>
-                          <span>💬 {post.replies} replies</span>
-                          <span>👁 {post.views} views</span>
+                          <span> {post.replies} replies</span>
+                          <span> {post.views} views</span>
                         </div>
                       </div>
                     </div>

@@ -69,7 +69,7 @@ export default function ProjectsPage() {
           {filtered.map((project) => (
             <Link
               key={project.id}
-              href={`/home/projects/${project.slug}`}
+              href={`projects/${project.slug}`}
               className="bg-white rounded-xl border border-gray-200 hover:border-[#8EE7E3] hover:shadow-md transition-all duration-200 overflow-hidden group cursor-pointer flex flex-col"
             >
               {/* Gradient strip */}

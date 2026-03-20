@@ -1,5 +1,7 @@
-import HomeForumPage from '@/features/forum/ui/HomeForumPage'
+
+import ProjectGridPage from '@/features/forum/ui/projects/ProjectsGridPage'
 
 export default function HomePage() {
-  return <HomeForumPage />
+  return <ProjectGridPage />
 }
+  
