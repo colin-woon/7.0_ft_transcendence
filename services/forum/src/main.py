@@ -2,6 +2,7 @@ import logging
 import os
 from typing import List
 from fastapi import APIRouter, FastAPI, Depends, status, Query
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from contextlib import asynccontextmanager
 
@@ -54,17 +55,29 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Forum Service API", lifespan=lifespan)
 
+# TODO:ALLOW CORS FOR NOW, REMOVE LATER DURING GATEWAY INTEGRATION
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
 # Mock User ID (Replace with real Auth later)
 def get_current_user_id():
-    return 2
+    return 3 #request object
 
 # --- ROUTES ---
 
-router = APIRouter(prefix="/forum")
+router = APIRouter(prefix="")
 
 # --- PROJECTS API ENDPOINT ---
 
