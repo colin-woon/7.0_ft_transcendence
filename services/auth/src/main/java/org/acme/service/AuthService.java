@@ -160,6 +160,20 @@ public class AuthService {
 		return new NewCookie[] { clearDefault, clearGoogle, clear42 };
 	}
 
+	public NewCookie createAccessTokenCookie(String accessToken) {
+		return new NewCookie.Builder("accessToken")
+			.value(accessToken)
+			.path("/")
+			.domain(domain)
+			.expiry(Date.from(Instant.now().plusSeconds(accessExpiry)))
+			.maxAge(accessExpiry.intValue())
+			.sameSite(NewCookie.SameSite.LAX)
+			.secure(secureCookies)
+			.httpOnly(true)
+			.comment("The access token for websocket and SSE use")
+			.build();
+	}
+
 	@Transactional
 	public UserResponseDTO refreshToken(String sessionId) {
 		if (sessionId == null || sessionId.isEmpty()) {

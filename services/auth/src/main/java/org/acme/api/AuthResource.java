@@ -5,6 +5,7 @@ import java.util.List;
 import org.acme.dto.AdminUpdateDTO;
 import org.acme.dto.SessionDTO;
 import org.acme.dto.UserInfoDTO;
+import org.acme.dto.UserResponseDTO;
 import org.acme.dto.UserSummaryDTO;
 import org.acme.dto.UserUpdateDTO;
 import org.acme.service.AdminService;
@@ -62,22 +63,36 @@ public class AuthResource {
 	@GET
 	@Path("/login/{provider}")
 	@Authenticated
-	public Response login(@PathParam("provider") String provider) {
-		return Response.status(200)
-			.entity(authService.createToken(identity))
+	public Response login(
+						@PathParam("provider") @DefaultValue("google") String provider,
+						@QueryParam("isCookie") @DefaultValue("true") Boolean isCookie) {
+		UserResponseDTO userResponse = authService.createToken(identity);
+		Response.ResponseBuilder responseBuilder = Response
+			.status(200)
+			.entity(userResponse)
 			.cookie(authService.createSessionCookie(identity))
-			.cookie(authService.clearOIDCCookies())
-			.build();
+			.cookie(authService.clearOIDCCookies());
+		if (isCookie)
+			responseBuilder.cookie(authService.createAccessTokenCookie(userResponse.accessToken));
+
+		return responseBuilder.build();
 	}
 
 	// To refresh the user after access token expires
 	@POST
 	@Path("/refresh")
 	@PermitAll
-	public Response refresh(@CookieParam("sessionId") String sessionId) {
-		return Response.status(200)
-			.entity(authService.refreshToken(sessionId))
-			.build();
+	public Response refresh(
+						@CookieParam("sessionId") String sessionId,
+						@QueryParam("isCookie") @DefaultValue("true") Boolean isCookie) {
+		UserResponseDTO userResponse = authService.refreshToken(sessionId);
+		Response.ResponseBuilder responseBuilder = Response
+			.status(200)
+			.entity(userResponse);
+		if (isCookie)
+			responseBuilder.cookie(authService.createAccessTokenCookie(userResponse.accessToken));
+
+		return responseBuilder.build();
 	}
 
 	// To Logout the user from the current session, or a specific session
