@@ -3,6 +3,7 @@ package server
 import (
 	"app/internal/api"
 	"app/internal/database"
+	"encoding/json"
 	"net/http"
 	"strings"
 )
@@ -10,7 +11,7 @@ import (
 func (s *Server) SendFriendRequest(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int) {
 	ctx := r.Context()
 
-	_, err := s.db.CreateFriendship(ctx, database.CreateFriendshipParams{
+	_, err := s.db.Queries().CreateFriendship(ctx, database.CreateFriendshipParams{
 		RequesterID: int32(requesterId),
 		AddresseeID: int32(receiverId),
 	})
@@ -49,7 +50,7 @@ func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	err := s.db.UpdateFriendshipStatus(ctx, database.UpdateFriendshipStatusParams{
+	err := s.db.Queries().UpdateFriendshipStatus(ctx, database.UpdateFriendshipStatusParams{
 		RequesterID: int32(requesterId),
 		AddresseeID: int32(receiverId),
 		Status: database.NullChatServiceFriendStatus{
@@ -64,4 +65,17 @@ func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, 
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) GetFriendList(w http.ResponseWriter, r *http.Request, tempUserId int) {
+	ctx := r.Context()
+
+	friends, err := s.db.Queries().GetFriendList(ctx, int32(tempUserId))
+	if err != nil {
+		http.Error(w, "Failed to retrieve friend list", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(friends)
 }

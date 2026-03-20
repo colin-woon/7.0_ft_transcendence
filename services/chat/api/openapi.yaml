@@ -87,6 +87,35 @@ paths:
         "500":
           description: Internal Server Error
 
+  /friendship/{tempUserId}:
+    get:
+      tags:
+        - Friendship
+      summary: Get friend list for a user
+      operationId: getFriendList
+      parameters:
+        - name: tempUserId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Friend list retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+                example: [101, 202, 305, 410]
+        "400":
+          description: Invalid user ID
+        "404":
+          description: User not found
+        "500":
+          description: Internal Server Error
+
   /message/{chatId}/{tempSenderId}/{tempReceiverId}:
     post:
       tags:

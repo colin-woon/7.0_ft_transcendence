@@ -27,7 +27,7 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId open
 		return
 	}
 
-	_, err := s.db.CreateMessage(ctx, database.CreateMessageParams{
+	_, err := s.db.Queries().CreateMessage(ctx, database.CreateMessageParams{
 		ChatID:     pgtype.UUID{Bytes: [16]byte(chatId), Valid: true},
 		SenderID:   int32(tempSenderId),
 		ReceiverID: int32(tempReceiverId),
@@ -48,7 +48,7 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId open
 func (s *Server) GetMessageHistory(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID) {
 	ctx := r.Context()
 
-	history, err := s.db.GetMessageHistoryByChatId(ctx, pgtype.UUID{Bytes: [16]byte(chatId), Valid: true})
+	history, err := s.db.Queries().GetMessageHistoryByChatId(ctx, pgtype.UUID{Bytes: [16]byte(chatId), Valid: true})
 	if err != nil {
 		http.Error(w, "Failed to retrieve chat history", http.StatusInternalServerError)
 		return

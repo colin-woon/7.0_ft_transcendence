@@ -34,6 +34,37 @@ func (q *Queries) CreateFriendship(ctx context.Context, arg CreateFriendshipPara
 	return i, err
 }
 
+const getFriendList = `-- name: GetFriendList :many
+SELECT
+    CASE
+        WHEN requester_id = $1 THEN addressee_id
+        ELSE requester_id
+    END AS friend_id
+FROM chat_service.friendships
+WHERE (requester_id = $1 OR addressee_id = $1)
+  AND status = 'accepted'
+`
+
+func (q *Queries) GetFriendList(ctx context.Context, requesterID int32) ([]interface{}, error) {
+	rows, err := q.db.Query(ctx, getFriendList, requesterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []interface{}
+	for rows.Next() {
+		var friend_id interface{}
+		if err := rows.Scan(&friend_id); err != nil {
+			return nil, err
+		}
+		items = append(items, friend_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateFriendshipStatus = `-- name: UpdateFriendshipStatus :exec
 UPDATE chat_service.friendships
 SET status = $3, updated_at = CURRENT_TIMESTAMP
