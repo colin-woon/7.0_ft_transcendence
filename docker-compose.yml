@@ -57,9 +57,18 @@ services:
         env_file:
             - ./environment/shared.env
             - ./environment/chat.env
+        environment:
+            - CHAT_PORT=8443
+            - CHAT_TLS_ENABLED=true
+            - CHAT_TLS_CERT_FILE=/certs/chat.crt
+            - CHAT_TLS_KEY_FILE=/certs/chat.key
+            - CHAT_TLS_CA_FILE=/certs/internal-ca.crt
         volumes:
             - ./certs/runtime/chat/chat-keystore.p12:/certs/chat-keystore.p12:ro
             - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
+            - ./certs/runtime/chat/chat.crt:/certs/chat.crt:ro
+            - ./certs/runtime/chat/chat.key:/certs/chat.key:ro
+            - ./certs/ca/ca.crt:/certs/internal-ca.crt:ro
         # ports:
         #     - '8003:8080'
 
