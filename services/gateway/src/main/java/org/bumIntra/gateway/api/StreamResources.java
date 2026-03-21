@@ -116,6 +116,7 @@ public class StreamResources {
 				Duration.between(grc.getStartTime(), Instant.now()),
 				success,
 				Optional.ofNullable(grc.getErrorCode()),
-				Optional.ofNullable(grc.getServiceName())));
+				Optional.ofNullable(grc.getServiceName()),
+				Optional.ofNullable(grc.getPathType())));
 	}
 }

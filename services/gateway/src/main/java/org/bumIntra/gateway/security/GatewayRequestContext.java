@@ -23,6 +23,7 @@ public class GatewayRequestContext {
 	private boolean _internal;
 	private String _userId;
 	private String _path;
+	private String _pathType;
 	private MultivaluedMap<String, String> _queryParams;
 	private MultivaluedMap<String, String> _headers;
 	private String _realIp;
@@ -210,5 +211,13 @@ public class GatewayRequestContext {
 
 	public void setServiceName(String serviceName) {
 		_serviceName = serviceName;
+	}
+
+	public String getPathType() {
+		return _pathType;
+	}
+
+	public void setPathType(String pathType) {
+		_pathType = pathType;
 	}
 }
