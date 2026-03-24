@@ -70,7 +70,7 @@ func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, 
 func (s *Server) GetFriendList(w http.ResponseWriter, r *http.Request, tempUserId int) {
 	ctx := r.Context()
 
-	friends, err := s.db.Queries().GetFriendList(ctx, int32(tempUserId))
+	friends, err := s.db.Queries().GetFriendListWithChatIds(ctx, int32(tempUserId))
 	if err != nil {
 		http.Error(w, "Failed to retrieve friend list", http.StatusInternalServerError)
 		return

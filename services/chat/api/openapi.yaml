@@ -91,7 +91,7 @@ paths:
     get:
       tags:
         - Friendship
-      summary: Get friend list for a user
+      summary: Get friend list for a user with chat ID references
       operationId: getFriendList
       parameters:
         - name: tempUserId
@@ -101,14 +101,24 @@ paths:
             type: integer
       responses:
         "200":
-          description: Friend list retrieved successfully
+          description: Friend list and associated chat IDs retrieved successfully
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  type: integer
-                example: [101, 202, 305, 410]
+                  type: object
+                  properties:
+                    friendId:
+                      type: integer
+                      description: Unique identifier for the friend
+                    chatId:
+                      type: string
+                      format: uuid
+                      description: Unique identifier for the chat between the user and the friend
+                example:
+                  friendId: 123
+                  chatId: "550e8400-e29b-41d4-a716"
         "400":
           description: Invalid user ID
         "404":

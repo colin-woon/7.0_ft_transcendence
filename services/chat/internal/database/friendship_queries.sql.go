@@ -7,6 +7,8 @@ package database
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createFriendship = `-- name: CreateFriendship :one
@@ -34,8 +36,9 @@ func (q *Queries) CreateFriendship(ctx context.Context, arg CreateFriendshipPara
 	return i, err
 }
 
-const getFriendList = `-- name: GetFriendList :many
+const getFriendListWithChatIds = `-- name: GetFriendListWithChatIds :many
 SELECT
+    chat_id,
     CASE
         WHEN requester_id = $1 THEN addressee_id
         ELSE requester_id
@@ -45,19 +48,24 @@ WHERE (requester_id = $1 OR addressee_id = $1)
   AND status = 'accepted'
 `
 
-func (q *Queries) GetFriendList(ctx context.Context, requesterID int32) ([]interface{}, error) {
-	rows, err := q.db.Query(ctx, getFriendList, requesterID)
+type GetFriendListWithChatIdsRow struct {
+	ChatID   pgtype.UUID
+	FriendID interface{}
+}
+
+func (q *Queries) GetFriendListWithChatIds(ctx context.Context, requesterID int32) ([]GetFriendListWithChatIdsRow, error) {
+	rows, err := q.db.Query(ctx, getFriendListWithChatIds, requesterID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []interface{}
+	var items []GetFriendListWithChatIdsRow
 	for rows.Next() {
-		var friend_id interface{}
-		if err := rows.Scan(&friend_id); err != nil {
+		var i GetFriendListWithChatIdsRow
+		if err := rows.Scan(&i.ChatID, &i.FriendID); err != nil {
 			return nil, err
 		}
-		items = append(items, friend_id)
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

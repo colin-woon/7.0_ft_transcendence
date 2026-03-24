@@ -8,8 +8,9 @@ UPDATE chat_service.friendships
 SET status = $3, updated_at = CURRENT_TIMESTAMP
 WHERE requester_id = $1 AND addressee_id = $2;
 
--- name: GetFriendList :many
+-- name: GetFriendListWithChatIds :many
 SELECT
+    chat_id,
     CASE
         WHEN requester_id = $1 THEN addressee_id
         ELSE requester_id

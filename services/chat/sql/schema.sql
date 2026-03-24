@@ -5,7 +5,7 @@ CREATE TYPE chat_service.friend_status AS ENUM ('pending', 'accepted', 'blocked'
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE chat_service.friendships (
-	chat_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    chat_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     requester_id INTEGER NOT NULL, -- auth_service.users(id)
     addressee_id INTEGER NOT NULL, -- auth_service.users(id)
     status chat_service.friend_status DEFAULT 'none',
@@ -16,7 +16,7 @@ CREATE TABLE chat_service.friendships (
 
 CREATE TABLE chat_service.messages (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, -- Chat grows fast, use BIGINT
-	chat_id UUID NOT NULL,
+    chat_id UUID NOT NULL,
     sender_id INTEGER NOT NULL,
     receiver_id INTEGER NOT NULL,
     content TEXT NOT NULL,
