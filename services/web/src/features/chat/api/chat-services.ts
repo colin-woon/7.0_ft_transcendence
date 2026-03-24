@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/apiClient';
-import type { SendMessagePayload, ChatId, ChatMessage, FriendStatus, FriendId, FriendList } from '../models/types';
+import type { SendMessagePayload, ChatId, ChatMessage, FriendStatus, FriendId, FriendList } from '../models/chat-types';
 
 // export async function login(credentials: LoginInput): Promise<User> {
 //   return apiClient.post<User>('/auth/login', credentials);
