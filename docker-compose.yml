@@ -225,6 +225,9 @@ services:
             - ./certs/runtime/prometheus/prometheus.crt:/certs/prometheus.crt:ro
             - ./certs/runtime/prometheus/prometheus.key:/certs/prometheus.key:ro
             - ./certs/ca/ca.crt:/certs/internal-ca.crt:ro
+        ports:
+            - '9090:9090'
+        # TODO: remove ports once done setting up prom, reason this here is for prod to test mTLS
 
     # usefull for internal ping test , uncomment to use
     # toolbox:

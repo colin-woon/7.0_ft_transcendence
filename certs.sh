@@ -223,7 +223,11 @@ for dir in gateway auth chat forum nginx web prometheus grafana; do
 	# --- Key ---
 	echo "[$dir] generating key..."
 	openssl genrsa -out "$KEY" 2048
-	chmod 600 "$KEY"
+	if [[ $NEEDS_P12 -eq 1 ]]; then
+		chmod 600 "$KEY"
+	else
+		chmod 644 "$KEY"
+	fi
 
 	# --- CSR ---
 	echo "[$dir] generating csr..."
