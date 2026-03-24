@@ -204,9 +204,7 @@ services:
             retries: 3
 
     prometheus-service:
-        build:
-            context: ./infra/obs/prometheus
-            dockerfile: Dockerfile
+        image: prom/prometheus:v3.10.0
         container_name: prometheus
         profiles: ['prometheus', 'all']
         networks:
@@ -216,6 +214,8 @@ services:
         #         condition: service_healthy
         ports:
             - '9090:9090'
+        volumes:
+            - ./infra/obs/prometheus/prometheus.prod.yml:/etc/prometheus/prometheus.yml:ro
 
     # usefull for internal ping test , uncomment to use
     # toolbox:
