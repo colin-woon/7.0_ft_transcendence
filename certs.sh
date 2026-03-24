@@ -31,6 +31,7 @@ AUTH_KEY_DIR="services/auth/src/main/resources"
 AUTH_PRIVATE_KEY="${AUTH_KEY_DIR}/privateKey.pem"
 AUTH_PUBLIC_KEY="${AUTH_KEY_DIR}/publicKey.pem"
 GATEWAY_PUBLIC_KEY="services/gateway/src/main/resources/publicKey.pem"
+GRAFANA_DS_PROD="infra/obs/grafana/provisioning/datasources/prometheus.prod.yml"
 
 ensure_dirs() {
 	mkdir -p certs/ca
@@ -174,6 +175,40 @@ verify_all() {
 	else
 		echo "[auth] JWT public keys missing"
 	fi
+}
+
+write_grafana_prod_datasource() {
+	echo "[grafana] generating prod datasource provisioning..."
+
+	local ca_cert client_cert client_key
+	ca_cert="$(sed 's/^/              /' certs/ca/ca.crt)"
+	client_cert="$(sed 's/^/              /' certs/runtime/grafana/grafana.crt)"
+	client_key="$(sed 's/^/              /' certs/runtime/grafana/grafana.key)"
+
+	cat >"$GRAFANA_DS_PROD" <<EOF
+apiVersion: 1
+
+datasources:
+    - name: Prometheus
+      type: prometheus
+      access: proxy
+      url: https://prometheus-service:9090/prometheus/
+      isDefault: true
+      editable: false
+      jsonData:
+          tlsAuth: true
+          tlsAuthWithCACert: true
+          serverName: prometheus-service
+      secureJsonData:
+          tlsCACert: |
+$ca_cert
+          tlsClientCert: |
+$client_cert
+          tlsClientKey: |
+$client_key
+EOF
+	echo "[grafana] prod datasource provisioning written"
+	echo "-----------------------------------"
 }
 
 case "$MODE" in
@@ -320,3 +355,4 @@ if [ "$AUTH_PUB_SHA" != "$GW_PUB_SHA" ]; then
 fi
 
 echo "[auth] public key synced to gateway and verified"
+write_grafana_prod_datasource
