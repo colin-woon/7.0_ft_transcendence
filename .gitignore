@@ -73,3 +73,4 @@ AGENTS.md
 # === Local planning notes ===
 TODO.local.md
 ft_transcendence.pdf
+infra/obs/grafana/provisioning/datasources/prometheus.prod.yml
