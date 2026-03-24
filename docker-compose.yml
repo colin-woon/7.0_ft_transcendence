@@ -141,7 +141,17 @@ services:
         networks:
             - 42_overflow
         healthcheck:
-            test: ['CMD', 'curl', '-f', 'http://localhost:8180/q/health']
+            test:
+                [
+                    'CMD',
+                    'curl',
+                    '-fk',
+                    '--cert-type',
+                    'P12',
+                    '--cert',
+                    '/certs/gateway-keystore.p12:bumintra',
+                    'https://localhost:8180/q/health',
+                ]
             interval: 10s
             timeout: 5s
             start_period: 40s
@@ -205,17 +215,16 @@ services:
 
     prometheus-service:
         image: prom/prometheus:v3.10.0
-        container_name: prometheus
+        container_name: prometheus-service
         profiles: ['prometheus', 'all']
         networks:
             - 42_overflow
-        # depends_on:
-        #     gateway-service:
-        #         condition: service_healthy
-        ports:
-            - '9090:9090'
         volumes:
             - ./infra/obs/prometheus/prometheus.prod.yml:/etc/prometheus/prometheus.yml:ro
+            - prometheus_data:/prometheus
+            - ./certs/runtime/prometheus/prometheus.crt:/certs/prometheus.crt:ro
+            - ./certs/runtime/prometheus/prometheus.key:/certs/prometheus.key:ro
+            - ./certs/ca/ca.crt:/certs/internal-ca.crt:ro
 
     # usefull for internal ping test , uncomment to use
     # toolbox:
@@ -237,3 +246,4 @@ networks:
 
 volumes:
     postgres_data:
+    prometheus_data:

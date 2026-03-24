@@ -105,3 +105,5 @@ services:
     prometheus-service:
         volumes:
             - ./infra/obs/prometheus/prometheus.dev.yml:/etc/prometheus/prometheus.yml:ro
+        ports:
+            - '9090:9090'
