@@ -61,6 +61,7 @@ public class RequestContextFilter implements ContainerRequestFilter {
 		grc.setRequestId(requestId);
 		grc.setPath(request.getUriInfo().getPath());
 		grc.setPathType(extractPathType(grc.getPath()));
+		grc.setServiceName(extractServiceName(grc.getPath(), grc.getPathType()));
 		grc.setQueryParams(request.getUriInfo().getQueryParameters());
 		grc.setHeaders(request.getHeaders());
 
@@ -81,7 +82,7 @@ public class RequestContextFilter implements ContainerRequestFilter {
 		}
 
 		// SSE event checks, default to false for java.
-		if ((grc.getPath().startsWith("stream/") || grc.getPath().startsWith("/stream/"))
+		if (grc.getPath().startsWith("/stream/")
 				&& "GET".equalsIgnoreCase(request.getMethod())
 				&& request.getHeaderString("Accept") != null
 				&& request.getHeaderString("Accept").toLowerCase(Locale.ROOT).contains("text/event-stream")) {
@@ -94,18 +95,37 @@ public class RequestContextFilter implements ContainerRequestFilter {
 			return "unknown";
 		}
 
-		if (path.startsWith("api/public")) {
+		if (path.startsWith("/api/public")) {
 			return "public";
-		} else if (path.startsWith("api/admin")) {
+		} else if (path.startsWith("/api/admin")) {
 			return "admin";
-		} else if (path.startsWith("api")) {
+		} else if (path.startsWith("/api")) {
 			return "api";
-		} else if (path.startsWith("stream")) {
+		} else if (path.startsWith("/stream")) {
 			return "stream";
-		} else if (path.startsWith("ws")) {
+		} else if (path.startsWith("/ws")) {
 			return "websocket";
 		} else {
 			return "other";
+		}
+	}
+
+	private String extractServiceName(String path, String pathType) {
+		if (path == null || path.isBlank()) {
+			return "unknown";
+		}
+
+		String[] segments = path.split("/");
+		switch (pathType) {
+			case "public", "admin" -> {
+				return segments.length > 3 ? segments[3] : "unknown";
+			}
+			case "api", "stream", "websocket" -> {
+				return segments.length > 2 ? segments[2] : "unknown";
+			}
+			default -> {
+				return "other";
+			}
 		}
 	}
 }

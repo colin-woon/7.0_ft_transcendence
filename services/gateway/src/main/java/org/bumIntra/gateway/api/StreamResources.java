@@ -47,10 +47,7 @@ public class StreamResources {
 		return switch (service) {
 			// case "auth" -> authService.proxyStream(buildPath(service, subpath));
 			// case "forum" -> forumService.proxyStream(buildPath(service, subpath));
-			case "chat" -> {
-				grc.setServiceName("chat-service");
-				yield buildStream(chat.proxyStream(buildPath(service, subpath)));
-			}
+			case "chat" -> buildStream(chat.proxyStream(buildPath(service, subpath)));
 			default -> Response.status(Response.Status.NOT_FOUND).entity("Service not found").build();
 		};
 	}

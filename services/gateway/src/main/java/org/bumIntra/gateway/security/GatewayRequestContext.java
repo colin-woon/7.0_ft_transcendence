@@ -138,7 +138,8 @@ public class GatewayRequestContext {
 	}
 
 	public void setPath(String path) {
-		_path = path.trim().toLowerCase().replaceAll("/+", "/");
+		String p = path.trim().toLowerCase().replaceAll("/+", "/");
+		_path = p.startsWith("/") ? p : "/" + p;
 	}
 
 	public void setRealIp(String realIp) {
