@@ -17,6 +17,9 @@ help:
 	@echo "  make down             Stop and remove project containers, networks, and orphans"
 	@echo "  make clean            Remove project containers, volumes, and orphans"
 	@echo "  make prune            Run docker system prune -f"
+	@echo "  make certs            Reset and regenerate all TLS/JWT cert artifacts"
+	@echo "  make certs-clean      Remove generated TLS/JWT cert artifacts"
+	@echo "  make certs-verify     Verify generated certs and key sync"
 	@echo ""
 	@echo "Service Targets (replace <service> with gateway | auth | chat | forum | web | nginx | prometheus | grafana ):"
 	@echo "  [PROD] make build-<service>    | [DEV] make dev-build-<service>"
@@ -116,7 +119,7 @@ dev-logs-%:
 	$(COMPOSE_DEV) logs -f --tail=200 $(*)-service
 
 # ---- Maintenance --------------------------------------------------------
-.PHONY: ps config clean prune
+.PHONY: ps config clean prune certs certs-clean certs-verify
 
 ps:
 	$(COMPOSE_PROD) ps
@@ -126,3 +129,12 @@ config:
 
 prune:
 	docker system prune -f
+
+certs:
+	./certs.sh
+
+certs-clean:
+	./certs.sh clean
+
+certs-verify:
+	./certs.sh verify
