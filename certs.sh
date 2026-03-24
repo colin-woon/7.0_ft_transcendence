@@ -190,6 +190,7 @@ apiVersion: 1
 
 datasources:
     - name: Prometheus
+      uid: prometheus
       type: prometheus
       access: proxy
       url: https://prometheus-service:9090/prometheus/

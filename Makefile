@@ -4,6 +4,7 @@
 COMPOSE          ?= docker compose
 COMPOSE_PROD     := $(COMPOSE) -f docker-compose.yml --env-file ./environment/shared.env
 COMPOSE_DEV      := $(COMPOSE) -f docker-compose.yml -f docker-compose.override.yml --env-file ./environment/shared.env
+GRAFANA_PROD_DS  := ./infra/obs/grafana/provisioning/datasources/prometheus.prod.yml
 
 .PHONY: help
 help:
@@ -30,20 +31,20 @@ help:
 	@echo "========================================================================"
 
 # ---- Production (Group Targets) -----------------------------------------
-.PHONY: all up build rebuild restart logs stop down
+.PHONY: all up build rebuild restart logs stop down ensure-prod-certs
 
 all: up-all
 
 up: up-all
-up-all:
+up-all: ensure-prod-certs
 	$(COMPOSE_PROD) --profile all up -d --build
 
 build: build-all
-build-all:
+build-all: ensure-prod-certs
 	$(COMPOSE_PROD) --profile all build --no-cache
 
 rebuild: rebuild-all
-rebuild-all:
+rebuild-all: ensure-prod-certs
 	$(COMPOSE_PROD) --profile all down
 	$(COMPOSE_PROD) --profile all up -d --build --force-recreate
 
@@ -67,23 +68,23 @@ clean:
 # ---- Production (Surgical Targets) --------------------------------------
 # Usage: make build-gateway, make up-auth, etc.
 
-build-%:
-	$(COMPOSE_PROD) build --no-cache $(*)-service
+build-%: ensure-prod-certs
+	$(COMPOSE_PROD) build --no-cache $*-service
 
-up-%:
-	$(COMPOSE_PROD) up -d --build $(*)-service
+up-%: ensure-prod-certs
+	$(COMPOSE_PROD) up -d --build $*-service
 
-rebuild-%:
-	$(COMPOSE_PROD) up -d --build --force-recreate $(*)-service
+rebuild-%: ensure-prod-certs
+	$(COMPOSE_PROD) up -d --build --force-recreate $*-service
 
 restart-%:
-	$(COMPOSE_PROD) restart $(*)-service
+	$(COMPOSE_PROD) restart $*-service
 
 logs-%:
-	$(COMPOSE_PROD) logs -f --tail=200 $(*)-service
+	$(COMPOSE_PROD) logs -f --tail=200 $*-service
 
 # Legacy shorthands for quick start
-auth chat forum web gateway nginx prometheus:
+auth chat forum web gateway nginx prometheus grafana: ensure-prod-certs
 	$(COMPOSE_PROD) up -d --build $@-service
 
 # ---- Development Targets (Group) ----------------------------------------
@@ -104,22 +105,22 @@ dev-rebuild:
 # Usage: make dev-build-gateway, make dev-up-auth, etc.
 
 dev-build-%:
-	$(COMPOSE_DEV) build --no-cache $(*)-service
+	$(COMPOSE_DEV) build --no-cache $*-service
 
 dev-up-%:
-	$(COMPOSE_DEV) up -d --build $(*)-service
+	$(COMPOSE_DEV) up -d --build $*-service
 
 dev-rebuild-%:
-	$(COMPOSE_DEV) up -d --build --force-recreate $(*)-service
+	$(COMPOSE_DEV) up -d --build --force-recreate $*-service
 
 dev-restart-%:
-	$(COMPOSE_DEV) restart $(*)-service
+	$(COMPOSE_DEV) restart $*-service
 
 dev-logs-%:
-	$(COMPOSE_DEV) logs -f --tail=200 $(*)-service
+	$(COMPOSE_DEV) logs -f --tail=200 $*-service
 
 # ---- Maintenance --------------------------------------------------------
-.PHONY: ps config clean prune certs certs-clean certs-verify
+.PHONY: ps config clean prune certs certs-clean certs-verify grafana
 
 ps:
 	$(COMPOSE_PROD) ps
@@ -129,6 +130,9 @@ config:
 
 prune:
 	docker system prune -f
+
+ensure-prod-certs:
+	@test -f $(GRAFANA_PROD_DS) || ./certs.sh
 
 certs:
 	./certs.sh

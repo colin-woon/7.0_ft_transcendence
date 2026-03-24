@@ -105,11 +105,16 @@ services:
     prometheus-service:
         volumes:
             - ./infra/obs/prometheus/prometheus.dev.yml:/etc/prometheus/prometheus.yml:ro
+            - ./infra/obs/prometheus/web.dev.yml:/etc/prometheus/web.yml:ro
         ports:
             - '9090:9090'
 
     grafana-service:
         ports:
             - '9091:3000'
+        environment:
+            - GF_SERVER_PROTOCOL=http
+            - GF_SERVER_CERT_FILE=
+            - GF_SERVER_CERT_KEY=
         volumes:
             - ./infra/obs/grafana/provisioning/datasources/prometheus.dev.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
