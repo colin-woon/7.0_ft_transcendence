@@ -18,7 +18,7 @@ help:
 	@echo "  make clean            Remove project containers, volumes, and orphans"
 	@echo "  make prune            Run docker system prune -f"
 	@echo ""
-	@echo "Service Targets (replace <service> with gateway | auth | chat | forum | web | nginx | prometheus ):"
+	@echo "Service Targets (replace <service> with gateway | auth | chat | forum | web | nginx | prometheus | grafana ):"
 	@echo "  [PROD] make build-<service>    | [DEV] make dev-build-<service>"
 	@echo "  [PROD] make up-<service>       | [DEV] make dev-up-<service>"
 	@echo "  [PROD] make rebuild-<service>  | [DEV] make dev-rebuild-<service>"

@@ -107,3 +107,6 @@ services:
             - ./infra/obs/prometheus/prometheus.dev.yml:/etc/prometheus/prometheus.yml:ro
         ports:
             - '9090:9090'
+    grafana-service:
+        ports:
+            - '9091:3000'

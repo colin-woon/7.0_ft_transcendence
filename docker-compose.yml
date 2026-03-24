@@ -219,8 +219,14 @@ services:
         profiles: ['prometheus', 'all']
         networks:
             - 42_overflow
+        command:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --web.config.file=/etc/prometheus/web.yml
+            - --web.external-url=https://localhost/prometheus/
+            - --web.route-prefix=/prometheus/
         volumes:
             - ./infra/obs/prometheus/prometheus.prod.yml:/etc/prometheus/prometheus.yml:ro
+            - ./infra/obs/prometheus/web.prod.yml:/etc/prometheus/web.yml:ro
             - prometheus_data:/prometheus
             - ./certs/runtime/prometheus/prometheus.crt:/certs/prometheus.crt:ro
             - ./certs/runtime/prometheus/prometheus.key:/certs/prometheus.key:ro
@@ -228,6 +234,31 @@ services:
         ports:
             - '9090:9090'
         # TODO: remove ports once done setting up prom, reason this here is for prod to test mTLS
+
+    grafana-service:
+        image: grafana/grafana:12.4.1
+        container_name: grafana-service
+        profiles: ['grafana', 'all']
+        networks:
+            - 42_overflow
+        environment:
+            - GF_SERVER_ROOT_URL=https://localhost/grafana/
+            - GF_SERVER_SERVE_FROM_SUB_PATH=true
+            - GF_SERVER_PROTOCOL=https
+            - GF_SERVER_CERT_FILE=/certs/grafana.crt
+            - GF_SERVER_CERT_KEY=/certs/grafana.key
+        volumes:
+            - grafana_data:/var/lib/grafana
+            - ./infra/obs/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+            - ./infra/obs/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+            - ./infra/obs/grafana/dashboards:/etc/grafana/dashboards:ro
+            - ./certs/runtime/grafana/grafana.crt:/certs/grafana.crt:ro
+            - ./certs/runtime/grafana/grafana.key:/certs/grafana.key:ro
+            - ./certs/ca/ca.crt:/certs/internal-ca.crt:ro
+        ports:
+            - '9091:3000'
+        # TODO: remove ports once done setting up, reason this here is for prod to test mTLS
+        # grafana to be plugged into nginx route for dashboard capabilities
 
     # usefull for internal ping test , uncomment to use
     # toolbox:
@@ -250,3 +281,4 @@ networks:
 volumes:
     postgres_data:
     prometheus_data:
+    grafana_data:
