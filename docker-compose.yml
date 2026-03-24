@@ -72,24 +72,6 @@ services:
         # ports:
         #     - '8003:8080'
 
-    # chat-service:
-    #     build:
-    #         context: .
-    #         dockerfile: services/chat/src/main/docker/Dockerfile.custom
-    #     container_name: chat-service
-    #     profiles: ['chat', 'all']
-    #     depends_on:
-    #         db-service:
-    #             condition: service_healthy
-    #     networks:
-    #         - 42_overflow
-    #     env_file:
-    #         - ./environment/shared.env
-    #         - ./environment/chat.env
-    #     volumes:
-    #         - ./certs/runtime/chat/chat-keystore.p12:/certs/chat-keystore.p12:ro
-    #         - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
-
     forum-service:
         build:
             context: ./services/forum
@@ -220,6 +202,20 @@ services:
             timeout: 5s
             start_period: 10s
             retries: 3
+
+    prometheus-service:
+        build:
+            context: ./infra/obs/prometheus
+            dockerfile: Dockerfile
+        container_name: prometheus
+        profiles: ['prometheus', 'all']
+        networks:
+            - 42_overflow
+        # depends_on:
+        #     gateway-service:
+        #         condition: service_healthy
+        ports:
+            - '9090:9090'
 
     # usefull for internal ping test , uncomment to use
     # toolbox:
