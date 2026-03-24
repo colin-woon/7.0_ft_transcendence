@@ -22,6 +22,14 @@ public class PublicResource {
 	@Inject
 	GatewayRequestContext grc;
 
+	// Temporary endpoint for testing public access
+	@GET
+	@Path("/ping")
+	public Response ping() {
+		System.out.println("called public ping");
+		return Response.ok("pong from public endpoint").build();
+	}
+
 	@GET
 	@Path("/auth/login/{provider: .*}")
 	public Response proxyPublicLogin(@PathParam("provider") String provider) {

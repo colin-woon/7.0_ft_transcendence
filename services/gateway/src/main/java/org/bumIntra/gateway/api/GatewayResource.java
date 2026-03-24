@@ -40,7 +40,7 @@ public class GatewayResource {
 	@GET
 	@Path("/ping")
 	public Response ping() {
-		System.out.println("insinde ping");
+		System.out.println("called gateway ping");
 		return Response.ok(Map.of("message", "pong from gateway"))
 				.header("X-Internal-Debug", "true")
 				.build();
