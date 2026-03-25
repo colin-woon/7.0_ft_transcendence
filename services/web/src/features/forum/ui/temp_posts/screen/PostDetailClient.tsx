@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, MessageCircle, Eye, ThumbsUp } from 'lucide-react';
-import type { ForumPostDetail, ForumComment } from '@/features/forum/model';
+import type { ForumPostDetail, ForumComment } from '@/features/forum/models';
 import PostVoteButtons from '../components/PostVoteButtons';
 import CommentVoteButtons from '../components/CommentVoteButtons';
 

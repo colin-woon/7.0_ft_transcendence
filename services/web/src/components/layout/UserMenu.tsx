@@ -23,7 +23,7 @@ export default function UserMenu() {
 
   const initials = user
     ? user.fullName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
-    : 'U'
+    : null
 
   return (
     <div ref={ref} className="relative">
@@ -33,9 +33,19 @@ export default function UserMenu() {
         className="flex items-center gap-1 group"
         aria-label="User menu"
       >
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm border-2 border-[#8EE7E3]">
-          {initials}
-        </div>
+        {user ? (
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm border-2 border-gray-300">
+            {initials}
+          </div>
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center border-2 border-gray-300">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6">
+              <circle cx="12" cy="12" r="12" fill="#fff" />
+              <circle cx="12" cy="10" r="4" stroke="#222" strokeWidth="1.5" fill="#fff" />
+              <path d="M6 19c0-2.2 2.7-4 6-4s6 1.8 6 4" stroke="#222" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+            </svg>
+          </div>
+        )}
         <ChevronDown
           size={14}
           className={`text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}

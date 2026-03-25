@@ -1,6 +1,6 @@
 'use server'
 
-import type { ForumApiPostSummary, ForumPost, ForumApiPostDetail, ForumPostDetail, ForumApiComment, ForumComment } from '../model';
+import type { ForumApiPostSummary, ForumPost, ForumApiPostDetail, ForumPostDetail, ForumApiComment, ForumComment } from '../models';
 import { getProjectsByIdMap, mapApiPostToForumPost, toRelativeTime } from './project';
 import { cache } from 'react'
 
