@@ -1,4 +1,4 @@
-import type { ForumApiPostSummary, ForumApiProjectSummary, ForumPost, ForumApiPostDetail, ForumPostDetail, ForumApiComment, ForumComment } from '../model';
+import type { ForumApiPostSummary, ForumApiProjectSummary, ForumPost, ForumApiPostDetail, ForumPostDetail, ForumApiComment, ForumComment } from '../models';
 import type { Project } from '../models/projects';
 import { cache } from 'react'
 

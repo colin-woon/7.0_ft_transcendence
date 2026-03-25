@@ -1,4 +1,4 @@
-import type { ForumSort, ForumViewMode } from '../../../model';
+import type { ForumSort, ForumViewMode } from '../../../models';
 
 interface PostListControlsProps {
   activeSort: ForumSort;

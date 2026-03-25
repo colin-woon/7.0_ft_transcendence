@@ -10,7 +10,7 @@ import {
   type ForumPost,
   type ForumSort,
   type ForumViewMode,
-} from '@/features/forum/model';
+} from '@/features/forum/models';
 import EmptyPostsState from '../components/EmptyPostsState';
 import PostListControls from '../components/PostListControls';
 import PostRow from '../components/PostRow';

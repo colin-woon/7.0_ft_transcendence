@@ -1,6 +1,6 @@
 import { getProjectPosts } from '@/features/forum/api/project';
 import { getAllPosts } from '@/features/forum/api/post'
-import type { ForumPost } from '@/features/forum/model';
+import type { ForumPost } from '@/features/forum/models';
 import ForumPostsClient from '@/features/forum/ui/temp_posts/screen/ForumPostsClient';
 
 interface ForumRouteProps {
