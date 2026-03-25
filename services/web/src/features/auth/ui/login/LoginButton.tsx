@@ -2,9 +2,9 @@
 
 import { useAuth } from '@/features/auth/models/AuthContext'
 
-export default function App() {
+export default function LoginButton() {
     const { login } = useAuth()
-    return [
+    return (
         <button
               onClick={() => login('google')}
               className="w-full flex items-center justify-center gap-3 bg-white/60 hover:bg-white/80 active:scale-[0.98] border border-white/60 text-slate-700 py-2.5 px-4 rounded-xl transition-all duration-150 shadow-sm animate-[fade-up_0.5s_0.25s_ease-out_both]"
@@ -17,5 +17,5 @@ export default function App() {
               </svg>
               <span className="text-sm font-medium">Continue with Google</span>
             </button>
-    ]
+    )
 }

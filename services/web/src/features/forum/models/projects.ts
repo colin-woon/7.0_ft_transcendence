@@ -55,7 +55,7 @@ export const projects: Project[] = [
   {
     id: 2,
     slug: "ft_printf",
-    name: "ft_printf",
+    name: "Ft_Printf",
     description: "Recode the printf function from scratch. Learn variadic functions, format specifiers, and how to handle complex formatted output in C.",
     icon: "🖨️",
     difficulty: "Beginner",
@@ -74,7 +74,7 @@ export const projects: Project[] = [
   {
     id: 3,
     slug: "get_next_line",
-    name: "get_next_line",
+    name: "Get_Next_Line",
     description: "Write a function that reads a line from a file descriptor. Master static variables, buffer management, and edge case handling in C.",
     icon: "📄",
     difficulty: "Beginner",
@@ -112,7 +112,7 @@ export const projects: Project[] = [
   {
     id: 5,
     slug: "push_swap",
-    name: "push_swap",
+    name: "Push_Swap",
     description: "Sort a stack of integers using a limited set of operations. Optimize for the fewest moves possible — performance is graded.",
     icon: "🔀",
     difficulty: "Intermediate",
@@ -224,7 +224,7 @@ export const projects: Project[] = [
   {
     id: 11,
     slug: "minirt",
-    name: "miniRT",
+    name: "MiniRT",
     description: "Build a raytracer from scratch. Render spheres, planes, and cylinders with ambient, diffuse lighting and hard shadows in C.",
     icon: "✨",
     difficulty: "Advanced",
@@ -261,7 +261,7 @@ export const projects: Project[] = [
   {
     id: 13,
     slug: "ft_irc",
-    name: "ft_irc",
+    name: "Ft_Irc",
     description: "Build a fully functional IRC server in C++98. Handle multiple clients with poll(), channels, operators, and all required IRC commands.",
     icon: "💬",
     difficulty: "Advanced",
@@ -279,7 +279,7 @@ export const projects: Project[] = [
   {
     id: 14,
     slug: "ft_transcendence",
-    name: "ft_transcendence",
+    name: "Ft_Transcendence",
     description: "The final 42 project. Build a full-stack Pong web application with real-time multiplayer, tournament mode, live chat, and OAuth login.",
     icon: "🏓",
     difficulty: "Expert",
