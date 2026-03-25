@@ -1,7 +1,13 @@
 export type FriendId = number; 
 export type ChatId = string; 
-export type FriendList = FriendId[];
-export type AllSessions = Record<FriendId, ChatMessage[]>;
+export type AllSessions = Record<ChatId, ChatMessage[]>;
+
+export interface Friendship {
+  chatIds: ChatId;
+  friends: FriendId;
+}
+
+export type FriendList = Friendship[];
 
 export interface ChatMessage {
     id: ChatId;
@@ -18,14 +24,15 @@ export interface SendMessagePayload {
 }
 
 export interface UserSession {
-    userId: FriendId | null;
+    chatId: ChatId | null;
     messages: ChatMessage[];
 }
 
 export interface ChatContextType {
+  tempCurrentUserId: FriendId | null;
   session: UserSession;   // All chat messages between current user + 1 friend
   sessions: AllSessions;  // All chats by one user, keyed by friendId
-  setSession: (userId: FriendId) => void;
+  setSession: (chatId: ChatId) => void;
   addMessage: (msg: ChatMessage) => void;
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
 }

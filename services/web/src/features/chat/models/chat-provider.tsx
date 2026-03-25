@@ -45,16 +45,16 @@ export const useCurrentChatSession = (): UserSession => {
   const store = useContext(ChatStoreContext);
   if (!store) throw new Error('useCurrentSession must be used within ChatStoreProvider');
 
-  const currentUserId = useStore(store, (s) => s.currentUserId);
+  const currentChatId = useStore(store, (s) => s.currentChatId);
   const messages = useStore(store, (s) => {
-    if (!currentUserId) return EMPTY_MESSAGES;
-    return s.sessions[currentUserId] || EMPTY_MESSAGES;
+    if (!currentChatId) return EMPTY_MESSAGES;
+    return s.sessions[currentChatId] || EMPTY_MESSAGES;
   });
 
   return useMemo(() => ({
-    userId: currentUserId,
+    chatId: currentChatId,
     messages
-  }), [currentUserId, messages]);
+  }), [currentChatId, messages]);
 };
 
 // Exposes exact ChatContextType API
@@ -63,6 +63,7 @@ export const useChat = (): ChatContextType => {
   const store = useContext(ChatStoreContext);
   if (!store) throw new Error('useChat must be used within a ChatStoreProvider');
 
+  const tempCurrentUserId = useStore(store, (s) => s.tempCurrentUserId);
   const session = useCurrentChatSession();
   const sessions = useStore(store, (s) => s.sessions);
   const setSession = useStore(store, (s) => s.setSession);
@@ -70,6 +71,7 @@ export const useChat = (): ChatContextType => {
   const setMessages = useStore(store, (s) => s.setMessages);
 
   return {
+    tempCurrentUserId,
     session,
     sessions,
     setSession,

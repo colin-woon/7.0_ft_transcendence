@@ -1,15 +1,16 @@
 import { createStore } from 'zustand/vanilla';
 import { immer } from 'zustand/middleware/immer';
-import type { AllSessions, FriendId, ChatMessage } from './chat-types';
+import type { AllSessions, FriendId, ChatMessage, ChatId } from './chat-types';
 import { useMemo, SetStateAction } from 'react';
 
 export interface ChatState {
-  currentUserId: FriendId | null;
+  tempCurrentUserId: FriendId | null;
+  currentChatId: ChatId | null;
   sessions: AllSessions;
 }
 
 export interface ChatActions {
-  setSession: (userId: FriendId) => void;
+  setSession: (chatId: ChatId) => void;
   addMessage: (msg: ChatMessage) => void;
   setMessages: (updater: SetStateAction<ChatMessage[]>) => void;
 }
@@ -21,33 +22,34 @@ export const createChatStore = (initialSessions: AllSessions = {}) => {
   return createStore<ChatStore>()(
     immer((set) => ({
       sessions: initialSessions,
-      currentUserId: 1, // TEMP Hardcoded on mount as requested
+      currentChatId: null,
+      tempCurrentUserId: 1, // TEMP Hardcoded on mount as requested
 
-      setSession: (userId: FriendId) => 
+      setSession: (chatId: ChatId) => 
         set((state) => {
-          state.currentUserId = userId;
+          state.currentChatId = chatId;
         }),
 
       addMessage: (msg: ChatMessage) => 
         set((state) => {
-          const userId = state.currentUserId;
-          if (!userId) return;
+          const chatId = state.currentChatId;
+          if (!chatId) return;
           
-          if (!state.sessions[userId]) {
-            state.sessions[userId] = [];
+          if (!state.sessions[chatId]) {
+            state.sessions[chatId] = [];
           }
-          state.sessions[userId].push(msg);
+          state.sessions[chatId].push(msg);
         }),
 
       setMessages: (updater: SetStateAction<ChatMessage[]>) => 
         set((state) => {
-          const userId = state.currentUserId;
-          if (!userId) return;
+          const chatId = state.currentChatId;
+          if (!chatId) return;
 
-          const current = state.sessions[userId] || [];
+          const current = state.sessions[chatId] || [];
           
           // Apply functional updater or direct array replacement
-          state.sessions[userId] = typeof updater === 'function' 
+          state.sessions[chatId] = typeof updater === 'function' 
             ? updater(current) 
             : updater;
         })

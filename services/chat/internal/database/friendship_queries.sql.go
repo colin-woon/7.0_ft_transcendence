@@ -18,8 +18,8 @@ RETURNING chat_id, requester_id, addressee_id, status, created_at, updated_at
 `
 
 type CreateFriendshipParams struct {
-	RequesterID int32
-	AddresseeID int32
+	RequesterID int32 `json:"requesterId"`
+	AddresseeID int32 `json:"addresseeId"`
 }
 
 func (q *Queries) CreateFriendship(ctx context.Context, arg CreateFriendshipParams) (ChatServiceFriendship, error) {
@@ -49,8 +49,8 @@ WHERE (requester_id = $1 OR addressee_id = $1)
 `
 
 type GetFriendListWithChatIdsRow struct {
-	ChatID   pgtype.UUID
-	FriendID interface{}
+	ChatID   pgtype.UUID `json:"chatId"`
+	FriendID interface{} `json:"friendId"`
 }
 
 func (q *Queries) GetFriendListWithChatIds(ctx context.Context, requesterID int32) ([]GetFriendListWithChatIdsRow, error) {
@@ -80,9 +80,9 @@ WHERE requester_id = $1 AND addressee_id = $2
 `
 
 type UpdateFriendshipStatusParams struct {
-	RequesterID int32
-	AddresseeID int32
-	Status      NullChatServiceFriendStatus
+	RequesterID int32                       `json:"requesterId"`
+	AddresseeID int32                       `json:"addresseeId"`
+	Status      NullChatServiceFriendStatus `json:"status"`
 }
 
 func (q *Queries) UpdateFriendshipStatus(ctx context.Context, arg UpdateFriendshipStatusParams) error {
