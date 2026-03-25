@@ -128,6 +128,8 @@ CREATE TABLE forum_service.projects (
     description TEXT,
     objectives TEXT[],
     estimate_time VARCHAR(50),
+    difficulty VARCHAR(10),
+    solo BOOLEAN DEFAULT TRUE,
     post_count INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP

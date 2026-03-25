@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
   async rewrites() {
     return [
       {

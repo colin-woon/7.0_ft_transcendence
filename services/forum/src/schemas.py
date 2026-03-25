@@ -12,7 +12,9 @@ class ProjectCreate(BaseModel):
     slug: str
     name: str
     objectives: List[str] = []
+    solo: bool = True
     estimate_time: Optional[str] = None
+    difficulty: Optional[str] = None
     description: Optional[str] = None
     post_count: int = 0
 
