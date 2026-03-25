@@ -72,24 +72,6 @@ services:
         # ports:
         #     - '8003:8080'
 
-    # chat-service:
-    #     build:
-    #         context: .
-    #         dockerfile: services/chat/src/main/docker/Dockerfile.custom
-    #     container_name: chat-service
-    #     profiles: ['chat', 'all']
-    #     depends_on:
-    #         db-service:
-    #             condition: service_healthy
-    #     networks:
-    #         - 42_overflow
-    #     env_file:
-    #         - ./environment/shared.env
-    #         - ./environment/chat.env
-    #     volumes:
-    #         - ./certs/runtime/chat/chat-keystore.p12:/certs/chat-keystore.p12:ro
-    #         - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
-
     forum-service:
         build:
             context: ./services/forum
@@ -159,7 +141,17 @@ services:
         networks:
             - 42_overflow
         healthcheck:
-            test: ['CMD', 'curl', '-f', 'http://localhost:8180/q/health']
+            test:
+                [
+                    'CMD',
+                    'curl',
+                    '-fk',
+                    '--cert-type',
+                    'P12',
+                    '--cert',
+                    '/certs/gateway-keystore.p12:bumintra',
+                    'https://localhost:8180/q/health',
+                ]
             interval: 10s
             timeout: 5s
             start_period: 40s
@@ -221,6 +213,46 @@ services:
             start_period: 10s
             retries: 3
 
+    prometheus-service:
+        image: prom/prometheus:v3.10.0
+        container_name: prometheus-service
+        profiles: ['prometheus', 'all']
+        networks:
+            - 42_overflow
+        command:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --web.config.file=/etc/prometheus/web.yml
+            - --web.external-url=https://localhost/prometheus/
+            - --web.route-prefix=/prometheus/
+        volumes:
+            - ./infra/obs/prometheus/prometheus.prod.yml:/etc/prometheus/prometheus.yml:ro
+            - ./infra/obs/prometheus/web.prod.yml:/etc/prometheus/web.yml:ro
+            - prometheus_data:/prometheus
+            - ./certs/runtime/prometheus/prometheus.crt:/certs/prometheus.crt:ro
+            - ./certs/runtime/prometheus/prometheus.key:/certs/prometheus.key:ro
+            - ./certs/ca/ca.crt:/certs/internal-ca.crt:ro
+
+    grafana-service:
+        image: grafana/grafana:12.4.1
+        container_name: grafana-service
+        profiles: ['grafana', 'all']
+        networks:
+            - 42_overflow
+        environment:
+            - GF_SERVER_ROOT_URL=https://localhost/grafana/
+            - GF_SERVER_SERVE_FROM_SUB_PATH=true
+            - GF_SERVER_PROTOCOL=https
+            - GF_SERVER_CERT_FILE=/certs/grafana.crt
+            - GF_SERVER_CERT_KEY=/certs/grafana.key
+        volumes:
+            - grafana_data:/var/lib/grafana
+            - ./infra/obs/grafana/provisioning/datasources/prometheus.prod.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
+            - ./infra/obs/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+            - ./infra/obs/grafana/dashboards:/etc/grafana/dashboards:ro
+            - ./certs/runtime/grafana/grafana.crt:/certs/grafana.crt:ro
+            - ./certs/runtime/grafana/grafana.key:/certs/grafana.key:ro
+            - ./certs/ca/ca.crt:/certs/internal-ca.crt:ro
+
     # usefull for internal ping test , uncomment to use
     # toolbox:
     #     # profiles:
@@ -241,3 +273,5 @@ networks:
 
 volumes:
     postgres_data:
+    prometheus_data:
+    grafana_data:

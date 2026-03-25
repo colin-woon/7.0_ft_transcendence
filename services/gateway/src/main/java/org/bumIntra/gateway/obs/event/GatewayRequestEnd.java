@@ -9,5 +9,6 @@ public record GatewayRequestEnd(
 		Duration latency,
 		boolean success,
 		Optional<String> errorCode,
-		Optional<String> serviceName) {
+		Optional<String> serviceName,
+		Optional<String> pathType) {
 }

@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -21,14 +22,21 @@ public class GatewayObserverMetrics implements GatewayObserver {
 
 	private final MeterRegistry _meterRegistry;
 
+	// --- HTTP Request Metrics ---
+	private final Map<ReqKey, Counter> _requestCounters = new ConcurrentHashMap<>();
+	private final Map<ReqErrorKey, Counter> _requestErrorCounters = new ConcurrentHashMap<>();
+	private final Map<ReqTimerKey, Timer> _requestTimerCounters = new ConcurrentHashMap<>();
+	private final Map<String, Counter> _requestTimeoutCounters = new ConcurrentHashMap<>();
+
+	// --- WebSocket Metrics ---
 	private final Counter _wsOpenTotal;
 	private final Counter _wsCloseTotal;
-	private final Counter _wsAuthSuccessTotal;
-	private final Counter _wsAuthFailureTotal;
+	private final Map<String, Counter> _wsAuthResultCounters = new ConcurrentHashMap<>();
 	private final AtomicInteger _activeWsSessions = new AtomicInteger(0);
 	private final Map<GatewayWsThrottle.WsThrottleType, Counter> _wsThrottleCounters;
-	private final Map<String, Counter> _wsCloseCodesCounters;
+	private final Map<String, Counter> _wsCloseCodesCounters = new ConcurrentHashMap<>();
 	private final Timer _wsAuthTimer;
+	private final Counter _wsErrorTotal;
 	private static final Set<String> COMMON_CLOSE_CODES = Set.of(
 			"1000", // Normal Closure
 			"1001", // Going Away
@@ -45,28 +53,39 @@ public class GatewayObserverMetrics implements GatewayObserver {
 			"1015" // TLS Handshake Failure
 	);
 
+	private record ReqKey(String result, String errorCode, String downstream, String service, String path) {
+	}
+
+	private record ReqTimerKey(String result, String downstream, String service, String path) {
+	}
+
+	private record ReqErrorKey(String errorCode, String service, String path) {
+	}
+
 	@Inject
 	public GatewayObserverMetrics(MeterRegistry meterRegistry) {
 		_meterRegistry = meterRegistry;
 
 		// --- WebSocket Metrics Registration ---
-		_wsOpenTotal = Counter.builder("gateway_ws_open_total")
+		_wsOpenTotal = Counter.builder("gateway_ws_sessions_open_total")
 				.tag("action", "open")
 				.description("Total WebSocket sessions opened")
 				.register(meterRegistry);
 
-		_wsCloseTotal = Counter.builder("gateway_ws_close_total")
+		_wsCloseTotal = Counter.builder("gateway_ws_sessions_close_total")
 				.tag("action", "close")
 				.description("Total WebSocket sessions closed")
 				.register(meterRegistry);
 
-		_wsAuthSuccessTotal = Counter.builder("gateway_ws_auth_success_total")
+		_wsAuthResultCounters.put("success", Counter.builder("gateway_ws_auth_total")
+				.description("Total WebSocket authentication attempts by result")
 				.tag("result", "success")
-				.register(meterRegistry);
+				.register(meterRegistry));
 
-		_wsAuthFailureTotal = Counter.builder("gateway_ws_auth_failure_total")
+		_wsAuthResultCounters.put("failure", Counter.builder("gateway_ws_auth_total")
+				.description("Total WebSocket authentication attempts by result")
 				.tag("result", "failure")
-				.register(meterRegistry);
+				.register(meterRegistry));
 
 		_wsAuthTimer = Timer.builder("gateway_ws_auth_duration_seconds")
 				.description("WebSocket authentication latency in seconds")
@@ -100,51 +119,53 @@ public class GatewayObserverMetrics implements GatewayObserver {
 					.register(meterRegistry));
 		}
 
-		// Initialize close code counters for common close codes
-		_wsCloseCodesCounters = new java.util.HashMap<>();
-		for (String code : COMMON_CLOSE_CODES) {
-			_wsCloseCodesCounters.put(code, Counter.builder("gateway_ws_close_total")
-					.description("Total WebSocket close events by code")
-					.tag("close_code", code)
-					.register(meterRegistry));
-		}
-
-		_wsCloseCodesCounters.put("other", Counter.builder("gateway_ws_close_total")
-				.description("Total WebSocket close events with uncommon codes")
-				.tag("close_code", "other")
-				.register(meterRegistry));
+		_wsErrorTotal = Counter.builder("gateway_ws_errors_total")
+				.description("Total WebSocket errors")
+				.register(meterRegistry);
 	}
 
-	// TODO: move counter and builder into constructor
 	@Override
 	public void onRequestEnd(GatewayRequestEnd gre) {
 
 		String result = gre.success() ? "success" : "failure";
 		String errorCode = gre.errorCode().orElse("NONE");
 		String downstream = gre.latency().isZero() ? "cb_fast_fail" : "called";
+		String serviceName = gre.serviceName().orElse("unknown");
+		String pathType = gre.pathType().orElse("unknown");
+
+		ReqKey key = new ReqKey(result, errorCode, downstream, serviceName, pathType);
+		ReqTimerKey timerKey = new ReqTimerKey(result, downstream, serviceName, pathType);
+		ReqErrorKey errorKey = new ReqErrorKey(errorCode, serviceName, pathType);
 
 		// ----- Record request count -----
-		Counter.builder("gateway_requests_total")
-				.description("Total gateway requests")
-				.tag("result", result)
-				.tag("error_code", errorCode)
-				.register(_meterRegistry)
+		_requestCounters.computeIfAbsent(key, k -> Counter.builder("gateway_http_requests_total")
+				.description("Total HTTP requests processed by the gateway")
+				.tag("result", k.result())
+				.tag("error_code", k.errorCode())
+				.tag("downstream", k.downstream())
+				.tag("service", k.service())
+				.tag("path", k.path())
+				.register(_meterRegistry))
 				.increment();
 
 		// ----- Record Error count -----
 		if (!gre.success()) {
-			Counter.builder("gateway_errors_total")
-					.description("Gateway errors by code")
-					.tag("error_code", errorCode)
-					.register(_meterRegistry)
+			_requestErrorCounters.computeIfAbsent(errorKey, k -> Counter.builder("gateway_http_errors_total")
+					.description("Total HTTP request errors by error code")
+					.tag("error_code", k.errorCode())
+					.tag("service", k.service())
+					.tag("path", k.path())
+					.register(_meterRegistry))
 					.increment();
 		}
 
 		// ----- Record latency -----
-		Timer.builder("gateway_request_duration_seconds")
-				.description("Gateway request latency in seconds")
-				.tag("result", result)
-				.tag("downstream", downstream)
+		_requestTimerCounters.computeIfAbsent(timerKey, k -> Timer.builder("gateway_http_request_duration_seconds")
+				.description("HTTP request latency in seconds")
+				.tag("result", k.result())
+				.tag("service", k.service())
+				.tag("downstream", k.downstream())
+				.tag("path", k.path())
 				.publishPercentileHistogram()
 				.serviceLevelObjectives(
 						Duration.ofMillis(10),
@@ -159,16 +180,16 @@ public class GatewayObserverMetrics implements GatewayObserver {
 						Duration.ofMillis(1500),
 						Duration.ofMillis(2500),
 						Duration.ofSeconds(5))
-				.register(_meterRegistry)
+				.register(_meterRegistry))
 				.record(gre.latency());
 
 		// ----- Record Timeouts -----
 		if ("SERVICE_TIMEOUT".equals(errorCode)) {
-			String serviceName = gre.serviceName().orElse("unknown");
-			Counter.builder("gateway_timeouts_total")
-					.description("Total services timeouts")
-					.tag("service", serviceName)
-					.register(_meterRegistry)
+			_requestTimeoutCounters
+					.computeIfAbsent(serviceName, k -> Counter.builder("gateway_downstream_timeouts_total")
+							.description("Total downstream timeouts by service")
+							.tag("service", k)
+							.register(_meterRegistry))
 					.increment();
 		}
 	}
@@ -185,40 +206,32 @@ public class GatewayObserverMetrics implements GatewayObserver {
 		_activeWsSessions.decrementAndGet();
 
 		String closeCode = String.valueOf(e.closeCode());
-		Counter byCode = _wsCloseCodesCounters.get(COMMON_CLOSE_CODES.contains(closeCode) ? closeCode : "other");
-		byCode.increment();
+		if (COMMON_CLOSE_CODES.contains(closeCode)) {
+			_wsCloseCodesCounters
+					.computeIfAbsent(closeCode, k -> Counter.builder("gateway_ws_sessions_close_by_code_total")
+							.description("Total WebSocket close events by code")
+							.tag("close_code", k)
+							.register(_meterRegistry))
+					.increment();
+		} else {
+			_wsCloseCodesCounters
+					.computeIfAbsent("other", k -> Counter.builder("gateway_ws_sessions_close_by_code_total")
+							.description("Total WebSocket close events with uncommon codes")
+							.tag("close_code", k)
+							.register(_meterRegistry))
+					.increment();
+		}
 	}
 
 	@Override
 	public void onWsAuth(GatewayWsAuth e) {
-		if (e.success()) {
-			_wsAuthSuccessTotal.increment();
-		} else {
-			_wsAuthFailureTotal.increment();
+		String result = e.success() ? "success" : "failure";
+		Counter counter = _wsAuthResultCounters.get(result);
+		if (counter != null) {
+			counter.increment();
 		}
 
 		_wsAuthTimer.record(e.latency().map(Duration::toMillis).orElse(0L), TimeUnit.MILLISECONDS);
-
-		// Record authentication latency
-		// Timer.builder("gateway_ws_auth_duration_seconds")
-		// .description("WebSocket authentication latency in seconds")
-		// .tag("result", e.success() ? "success" : "failure")
-		// .publishPercentileHistogram()
-		// .serviceLevelObjectives(
-		// Duration.ofMillis(10),
-		// Duration.ofMillis(25),
-		// Duration.ofMillis(50),
-		// Duration.ofMillis(100),
-		// Duration.ofMillis(200),
-		// Duration.ofMillis(350),
-		// Duration.ofMillis(500),
-		// Duration.ofMillis(750),
-		// Duration.ofSeconds(1),
-		// Duration.ofMillis(1500),
-		// Duration.ofMillis(2500),
-		// Duration.ofSeconds(5))
-		// .register(_meterRegistry)
-		// .record(e.latency());
 	}
 
 	@Override
@@ -231,9 +244,6 @@ public class GatewayObserverMetrics implements GatewayObserver {
 
 	@Override
 	public void onWsError(String sessionId, Throwable t) {
-		Counter.builder("gateway_ws_errors_total")
-				.description("Total WebSocket errors")
-				.register(_meterRegistry)
-				.increment();
+		_wsErrorTotal.increment();
 	}
 }
