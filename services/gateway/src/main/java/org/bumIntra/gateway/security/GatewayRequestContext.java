@@ -23,13 +23,14 @@ public class GatewayRequestContext {
 	private boolean _internal;
 	private String _userId;
 	private String _path;
+	private String _pathType;
 	private MultivaluedMap<String, String> _queryParams;
 	private MultivaluedMap<String, String> _headers;
 	private String _realIp;
 	private String _forwardedFor;
 	private String _forwardedHost;
 	private String _forwardedProto;
-	// TODO: consided the pros and cons of using List for forwardedFor
+	private String _serviceName;
 
 	// ServiceAuthFilter
 	private Set<String> _roles = Collections.emptySet();
@@ -38,7 +39,6 @@ public class GatewayRequestContext {
 
 	// SSE
 	private boolean _isSse;
-	// TODO: last event id
 
 	public String getAuth() {
 		return _auth;
@@ -138,7 +138,8 @@ public class GatewayRequestContext {
 	}
 
 	public void setPath(String path) {
-		_path = path.trim().toLowerCase().replaceAll("/+", "/");
+		String p = path.trim().toLowerCase().replaceAll("/+", "/");
+		_path = p.startsWith("/") ? p : "/" + p;
 	}
 
 	public void setRealIp(String realIp) {
@@ -203,5 +204,21 @@ public class GatewayRequestContext {
 
 	public Instant getStartTime() {
 		return _st;
+	}
+
+	public String getServiceName() {
+		return _serviceName;
+	}
+
+	public void setServiceName(String serviceName) {
+		_serviceName = serviceName;
+	}
+
+	public String getPathType() {
+		return _pathType;
+	}
+
+	public void setPathType(String pathType) {
+		_pathType = pathType;
 	}
 }

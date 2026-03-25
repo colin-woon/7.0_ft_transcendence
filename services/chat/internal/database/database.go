@@ -23,16 +23,12 @@ type Service interface {
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
 	Close() error
-
-	CreateFriendship(ctx context.Context, arg CreateFriendshipParams) (ChatServiceFriendship, error)
-	UpdateFriendshipStatus(ctx context.Context, arg UpdateFriendshipStatusParams) error
-	CreateMessage(ctx context.Context, arg CreateMessageParams) (ChatServiceMessage, error)
-	GetMessageHistoryByUserPair(ctx context.Context, arg GetMessageHistoryByUserPairParams) ([]ChatServiceMessage, error)
+	Queries() *Queries
 }
 
 type service struct {
 	db *sql.DB
-	*Queries
+	q  *Queries
 }
 
 var (
@@ -67,8 +63,8 @@ func NewConnection() Service {
 	sqlcQueries := New(pool)
 
 	dbInstance = &service{
-		db:      stdlib.OpenDBFromPool(pool),
-		Queries: sqlcQueries,
+		db: stdlib.OpenDBFromPool(pool),
+		q:  sqlcQueries,
 	}
 	return dbInstance
 }
@@ -131,4 +127,8 @@ func (s *service) Health() map[string]string {
 func (s *service) Close() error {
 	log.Printf("Disconnected from database: %s", database)
 	return s.db.Close()
+}
+
+func (s *service) Queries() *Queries {
+	return s.q
 }

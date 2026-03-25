@@ -12,7 +12,8 @@ import io.smallrye.config.WithDefault;
 @ConfigMapping(prefix = "gateway.config.headers")
 public interface GatewayRequestHeaderConfig {
 
-	// TODO: remove defaults and rely on app properties?
+	// Remove default value to force explicit configuration, as this is a critical
+	// security setting.
 	// @WithDefault("accept, accept-language, content-type, authorization,
 	// user-agent, x-request-id")
 	List<String> requestAllowList();

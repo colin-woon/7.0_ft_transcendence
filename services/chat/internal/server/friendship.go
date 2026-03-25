@@ -1,7 +1,9 @@
 package server
 
 import (
+	"app/internal/api"
 	"app/internal/database"
+	"encoding/json"
 	"net/http"
 	"strings"
 )
@@ -9,7 +11,7 @@ import (
 func (s *Server) SendFriendRequest(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int) {
 	ctx := r.Context()
 
-	_, err := s.db.CreateFriendship(ctx, database.CreateFriendshipParams{
+	_, err := s.db.Queries().CreateFriendship(ctx, database.CreateFriendshipParams{
 		RequesterID: int32(requesterId),
 		AddresseeID: int32(receiverId),
 	})
@@ -25,14 +27,34 @@ func (s *Server) SendFriendRequest(w http.ResponseWriter, r *http.Request, reque
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (s *Server) AcceptFriendRequest(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int) {
+func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int, params api.UpdateFriendshipStatusParams) {
 	ctx := r.Context()
 
-	err := s.db.UpdateFriendshipStatus(ctx, database.UpdateFriendshipStatusParams{
+	if !params.Status.Valid() {
+		http.Error(w, "Invalid status value", http.StatusBadRequest)
+		return
+	}
+
+	var dbStatus database.ChatServiceFriendStatus
+	switch params.Status {
+	case api.Accepted:
+		dbStatus = database.ChatServiceFriendStatusAccepted
+	case api.Declined:
+		dbStatus = database.ChatServiceFriendStatusDeclined
+	case api.Blocked:
+		dbStatus = database.ChatServiceFriendStatusBlocked
+	case api.None:
+		dbStatus = database.ChatServiceFriendStatusNone
+	default:
+		http.Error(w, "Invalid status value", http.StatusBadRequest)
+		return
+	}
+
+	err := s.db.Queries().UpdateFriendshipStatus(ctx, database.UpdateFriendshipStatusParams{
 		RequesterID: int32(requesterId),
 		AddresseeID: int32(receiverId),
 		Status: database.NullChatServiceFriendStatus{
-			ChatServiceFriendStatus: database.ChatServiceFriendStatusACCEPTED,
+			ChatServiceFriendStatus: dbStatus,
 			Valid:                   true,
 		},
 	})
@@ -43,4 +65,17 @@ func (s *Server) AcceptFriendRequest(w http.ResponseWriter, r *http.Request, req
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) GetFriendList(w http.ResponseWriter, r *http.Request, tempUserId int) {
+	ctx := r.Context()
+
+	friends, err := s.db.Queries().GetFriendListWithChatIds(ctx, int32(tempUserId))
+	if err != nil {
+		http.Error(w, "Failed to retrieve friend list", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(friends)
 }

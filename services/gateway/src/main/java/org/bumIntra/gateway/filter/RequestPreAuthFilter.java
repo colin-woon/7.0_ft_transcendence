@@ -62,7 +62,7 @@ public class RequestPreAuthFilter implements ContainerRequestFilter {
 			return;
 		}
 
-		if (si.isAnonymous()) {
+		if (si.getPrincipal() == null || !(si.getPrincipal() instanceof JsonWebToken)) {
 			throw new GatewayException(Response.Status.UNAUTHORIZED, GatewayErrorCode.AUTH_REQUIRED,
 					"Authentication is required");
 		}

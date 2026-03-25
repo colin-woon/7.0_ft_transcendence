@@ -1,5 +1,5 @@
 import React from "react";
-import { Difficulty } from "../../../models/projects";
+import { Difficulty } from "../../models/projects";
 
 interface FilterButtonsProps {
   filters: ("All" | Difficulty)[];

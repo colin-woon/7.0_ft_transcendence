@@ -54,7 +54,9 @@ public class ResponseContextFilter implements ContainerResponseFilter {
 				status,
 				Duration.between(st, Instant.now()),
 				status >= 200 && status < 400,
-				Optional.ofNullable(grc.getErrorCode())));
+				Optional.ofNullable(grc.getErrorCode()),
+				Optional.ofNullable(grc.getServiceName()),
+				Optional.ofNullable(grc.getPathType())));
 
 		// for (var ob : obs) {
 		// ob.onRequestEnd(

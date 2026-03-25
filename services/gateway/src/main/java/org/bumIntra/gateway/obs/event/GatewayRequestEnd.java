@@ -8,5 +8,7 @@ public record GatewayRequestEnd(
 		int httpStatus,
 		Duration latency,
 		boolean success,
-		Optional<String> errorCode) {
+		Optional<String> errorCode,
+		Optional<String> serviceName,
+		Optional<String> pathType) {
 }

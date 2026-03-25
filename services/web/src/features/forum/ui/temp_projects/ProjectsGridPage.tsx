@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Search, Star, Users, Clock, ChevronRight, Zap, Globe, MessageSquare } from "lucide-react";
-import { projects, type Difficulty } from "../../models/projects";
+import type { Project, Difficulty } from "../../models/projects";
 
 const difficultyColor: Record<Difficulty, string> = {
   Beginner: "bg-green-100 text-green-700",
@@ -11,7 +11,7 @@ const difficultyColor: Record<Difficulty, string> = {
   Expert: "bg-red-100 text-red-700",
 };
 
-export default function ProjectsPage() {
+export default function ProjectsPage({ projects }: { projects: Project[] }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"All" | Difficulty>("All");
 
@@ -69,7 +69,7 @@ export default function ProjectsPage() {
           {filtered.map((project) => (
             <Link
               key={project.id}
-              href={`projects/${project.slug}`}
+              href={`projects/${project.id}`}
               className="bg-white rounded-xl border border-gray-200 hover:border-[#8EE7E3] hover:shadow-md transition-all duration-200 overflow-hidden group cursor-pointer flex flex-col"
             >
               {/* Gradient strip */}
