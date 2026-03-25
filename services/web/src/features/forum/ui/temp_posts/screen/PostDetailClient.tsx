@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, MessageCircle, Eye, ThumbsUp } from 'lucide-react';
 import type { ForumPostDetail, ForumComment } from '@/features/forum/model';
 import PostVoteButtons from '../components/PostVoteButtons';
@@ -12,17 +12,19 @@ interface PostDetailClientProps {
 }
 
 export default function PostDetailClient({ post, comments }: PostDetailClientProps) {
+  const router = useRouter();
+
   return (
     <div className="max-w-4xl mx-auto">
       {/* Back button */}
-      <Link
-        href="/posts"
+      <button
+        onClick={() => router.back()}
         className="flex items-center gap-2 text-[#0f6f6b] hover:text-[#0c5d5a] font-medium mb-6 transition"
       >
         <ArrowLeft size={18} />
         Back to forum
-      </Link>
-
+      </button>
+    
       {/* Post header */}
       <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
         <div className="flex gap-4">
@@ -58,7 +60,7 @@ export default function PostDetailClient({ post, comments }: PostDetailClientPro
                 <span>{post.upvotes} upvotes</span>
               </div>
             </div>
-            <div className="prose prose-sm max-w-none text-slate-900">
+            <div className="prose prose-sm max-w-none whitespace-pre-wrap break-words text-slate-900">
               {post.content}
             </div>
           </div>

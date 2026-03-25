@@ -1,7 +1,7 @@
 import { getProjectPosts } from '@/features/forum/api/project';
 import { getAllPosts } from '@/features/forum/api/post'
 import type { ForumPost } from '@/features/forum/model';
-import ForumPostsClient from '@/features/forum/ui/home/screen/ForumPostsClient';
+import ForumPostsClient from '@/features/forum/ui/temp_posts/screen/ForumPostsClient';
 
 interface ForumRouteProps {
   searchParams?: Promise<{

@@ -9,12 +9,10 @@ interface PostVoteButtonsProps {
 }
 
 export default function PostVoteButtons({ postId, initialUpvotes }: PostVoteButtonsProps) {
-  // Use local state to allow for 'Optimistic UI' updates
   const [upvotes, setUpvotes] = useState(initialUpvotes);
   const [isVoting, setIsVoting] = useState(false);
 
   const handleVote = async (e: React.MouseEvent, value: 1 | -1) => {
-    // prevent the parent Link/Route from triggering
     e.preventDefault();
     e.stopPropagation();
 
@@ -27,7 +25,6 @@ export default function PostVoteButtons({ postId, initialUpvotes }: PostVoteButt
       const newVoteCount = await voteOnPost(postId, value);
       setUpvotes(newVoteCount);
     } catch (error) {
-    // 2. Rollback on failure: If the API fails, revert the number
       setUpvotes(previousUpvotes);
       console.error('Voting failed:', error);
       alert('Could not register your vote. Please try again.');

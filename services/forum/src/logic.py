@@ -39,6 +39,7 @@ def seed_projects_from_json(db: Session, json_path: str | Path) -> dict[str, int
         for obj in rows:
             slug = obj.get("slug")
             name = obj.get("name")
+            difficulty = obj.get("difficulty")
 
             if not slug or not name:
                 skipped += 1
@@ -55,7 +56,9 @@ def seed_projects_from_json(db: Session, json_path: str | Path) -> dict[str, int
             new_project = models.Project(
                 slug=slug,
                 name=name,
+                difficulty = difficulty,
                 description=first_session.get("description"),
+                solo=first_session.get("solo"),
                 objectives=first_session.get("objectives") or [],
                 estimate_time=first_session.get("estimate_time"),
             )

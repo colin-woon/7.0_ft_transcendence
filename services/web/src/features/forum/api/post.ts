@@ -10,7 +10,7 @@ const API_BASE_URL = FORUM_SERVICE_URL;
 
 export async function getAllPosts(): Promise<ForumPost[]> {
   const [postsResponse, projectsById] = await Promise.all([
-    fetch(`${API_BASE_URL}/posts`, {
+    fetch(`${API_BASE_URL}/posts/top`, {
       method: 'GET',
       cache: 'no-store',
     }),
