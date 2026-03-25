@@ -1,0 +1,16 @@
+global:
+    scrape_interval: 15s
+    evaluation_interval: 15s
+
+scrape_configs:
+    - job_name: 'gateway'
+      metrics_path: '/metrics'
+      scheme: https
+      tls_config:
+          ca_file: /certs/internal-ca.crt
+          cert_file: /certs/prometheus.crt
+          key_file: /certs/prometheus.key
+      static_configs:
+          - targets: ['gateway-service:8180']
+            labels:
+                env: 'production'

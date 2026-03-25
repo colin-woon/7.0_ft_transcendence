@@ -14,24 +14,26 @@ import static org.bumIntra.gateway.exception.GatewayErrorMessageResolver.resolve
 public class GatewayExceptionMapper implements ExceptionMapper<GatewayException> {
 
 	@Inject
-	GatewayRequestContext ctx;
+	GatewayRequestContext grc;
 
 	@Override
 	public Response toResponse(GatewayException ge) {
 
-		ctx.setError(ge.getCode().toString(), ge.getStatus().getStatusCode());
+		grc.setError(ge.getCode().toString(), ge.getStatus().getStatusCode());
 
 		GatewayErrorResponse body = new GatewayErrorResponse(
 				ge.getStatus().getStatusCode(),
 				ge.getStatus().name(),
 				ge.getCode(),
 				resolveMessage(ge.getCode()),
-				ctx.getRequestId());
+				grc.getRequestId());
 
-		return Response
+		var responseBuilder = Response
 				.status(ge.getStatus())
 				.type(MediaType.APPLICATION_JSON)
-				.entity(body)
-				.build();
+				.entity(body);
+
+		ge.getHeaders().forEach(responseBuilder::header);
+		return responseBuilder.build();
 	}
 }

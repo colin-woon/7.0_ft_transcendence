@@ -14,8 +14,6 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 
 @Path("/api")
@@ -34,7 +32,7 @@ public class GatewayResource {
 	@GET
 	@Path("/ping")
 	public Response ping() {
-		System.out.println("insinde ping");
+		System.out.println("called gateway ping");
 		return Response.ok(Map.of("message", "pong from gateway"))
 				.header("X-Internal-Debug", "true")
 				.build();
@@ -98,9 +96,9 @@ public class GatewayResource {
 	}
 
 	private String buildPath(String service, String subpath) {
-		// TODO: Strip "<service>/" prefix after downstream services adopt normalized
-		// base paths.
-		// return subpath;
-		return service + "/" + subpath;
+		if (service.equals("auth")) {
+			return service + "/" + subpath;
+		}
+		return subpath;
 	}
 }

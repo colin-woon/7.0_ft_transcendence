@@ -1,5 +1,10 @@
 package org.bumIntra.gateway.filter;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+
 import org.bumIntra.gateway.config.GatewayRateLimitConfig;
 import org.bumIntra.gateway.exception.GatewayErrorCode;
 import org.bumIntra.gateway.exception.RateLimitException;
@@ -57,7 +62,7 @@ public class RequestRateLimitFilter implements ContainerRequestFilter {
 		RateLimitAccess access = rlas.resolve(grc);
 		RateLimitProfile profile = profiles.getProfile(access);
 		String key = access + ":" + (grc.getRateLimitKey() == null || grc.getRateLimitKey().isBlank() ? "unknown"
-				: grc.getRateLimitKey()); // TODO: hash the key
+				: hash(grc.getRateLimitKey()));
 
 		boolean allowed = rateLimiter.tryConsume(key, profile);
 		if (!allowed) {
@@ -65,6 +70,16 @@ public class RequestRateLimitFilter implements ContainerRequestFilter {
 					GatewayErrorCode.RATE_LIMITED.toString(),
 					Response.Status.TOO_MANY_REQUESTS.getStatusCode());
 			throw new RateLimitException();
+		}
+	}
+
+	private String hash(String input) {
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA-256");
+			byte[] hashBytes = md.digest(input.getBytes(StandardCharsets.UTF_8));
+			return HexFormat.of().formatHex(hashBytes);
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException("SHA-256 not available", e);
 		}
 	}
 }

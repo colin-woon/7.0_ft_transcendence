@@ -25,10 +25,6 @@ public class ServiceClientContextFilter implements ClientRequestFilter {
 	@Override
 	public void filter(ClientRequestContext request) {
 
-		// if (grc.isSse()) {
-		// return;
-		// }
-
 		if (grc.getQueryParams() != null && !grc.getQueryParams().isEmpty()) {
 
 			var uriBuilder = UriBuilder.fromUri(request.getUri());

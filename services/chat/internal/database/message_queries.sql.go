@@ -7,25 +7,34 @@ package database
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createMessage = `-- name: CreateMessage :one
-INSERT INTO chat_service.messages (sender_id, receiver_id, content)
-VALUES ($1, $2, $3)
-RETURNING id, sender_id, receiver_id, content, is_read, read_at, created_at
+INSERT INTO chat_service.messages (chat_id, sender_id, receiver_id, content)
+VALUES ($1, $2, $3, $4)
+RETURNING id, chat_id, sender_id, receiver_id, content, is_read, read_at, created_at
 `
 
 type CreateMessageParams struct {
-	SenderID   int32
-	ReceiverID int32
-	Content    string
+	ChatID     pgtype.UUID `json:"chatId"`
+	SenderID   int32       `json:"senderId"`
+	ReceiverID int32       `json:"receiverId"`
+	Content    string      `json:"content"`
 }
 
 func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (ChatServiceMessage, error) {
-	row := q.db.QueryRow(ctx, createMessage, arg.SenderID, arg.ReceiverID, arg.Content)
+	row := q.db.QueryRow(ctx, createMessage,
+		arg.ChatID,
+		arg.SenderID,
+		arg.ReceiverID,
+		arg.Content,
+	)
 	var i ChatServiceMessage
 	err := row.Scan(
 		&i.ID,
+		&i.ChatID,
 		&i.SenderID,
 		&i.ReceiverID,
 		&i.Content,
@@ -36,30 +45,34 @@ func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (C
 	return i, err
 }
 
-const getMessageHistoryByUserPair = `-- name: GetMessageHistoryByUserPair :many
-SELECT id, sender_id, receiver_id, content, is_read, read_at, created_at
+const getMessageHistoryByChatId = `-- name: GetMessageHistoryByChatId :many
+SELECT chat_id, sender_id, receiver_id, content, is_read, read_at, created_at
 FROM chat_service.messages
-WHERE (sender_id = $1 AND receiver_id = $2)
- OR (sender_id = $2 AND receiver_id = $1)
+WHERE chat_id = $1
 ORDER BY created_at ASC
 `
 
-type GetMessageHistoryByUserPairParams struct {
-	SenderID   int32
-	ReceiverID int32
+type GetMessageHistoryByChatIdRow struct {
+	ChatID     pgtype.UUID        `json:"chatId"`
+	SenderID   int32              `json:"senderId"`
+	ReceiverID int32              `json:"receiverId"`
+	Content    string             `json:"content"`
+	IsRead     pgtype.Bool        `json:"isRead"`
+	ReadAt     pgtype.Timestamptz `json:"readAt"`
+	CreatedAt  pgtype.Timestamptz `json:"createdAt"`
 }
 
-func (q *Queries) GetMessageHistoryByUserPair(ctx context.Context, arg GetMessageHistoryByUserPairParams) ([]ChatServiceMessage, error) {
-	rows, err := q.db.Query(ctx, getMessageHistoryByUserPair, arg.SenderID, arg.ReceiverID)
+func (q *Queries) GetMessageHistoryByChatId(ctx context.Context, chatID pgtype.UUID) ([]GetMessageHistoryByChatIdRow, error) {
+	rows, err := q.db.Query(ctx, getMessageHistoryByChatId, chatID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ChatServiceMessage
+	var items []GetMessageHistoryByChatIdRow
 	for rows.Next() {
-		var i ChatServiceMessage
+		var i GetMessageHistoryByChatIdRow
 		if err := rows.Scan(
-			&i.ID,
+			&i.ChatID,
 			&i.SenderID,
 			&i.ReceiverID,
 			&i.Content,

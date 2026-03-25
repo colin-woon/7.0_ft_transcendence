@@ -7,23 +7,26 @@ package database
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createFriendship = `-- name: CreateFriendship :one
 INSERT INTO chat_service.friendships (requester_id, addressee_id, status)
-VALUES ($1, $2, 'PENDING')
-RETURNING requester_id, addressee_id, status, created_at, updated_at
+VALUES ($1, $2, 'pending')
+RETURNING chat_id, requester_id, addressee_id, status, created_at, updated_at
 `
 
 type CreateFriendshipParams struct {
-	RequesterID int32
-	AddresseeID int32
+	RequesterID int32 `json:"requesterId"`
+	AddresseeID int32 `json:"addresseeId"`
 }
 
 func (q *Queries) CreateFriendship(ctx context.Context, arg CreateFriendshipParams) (ChatServiceFriendship, error) {
 	row := q.db.QueryRow(ctx, createFriendship, arg.RequesterID, arg.AddresseeID)
 	var i ChatServiceFriendship
 	err := row.Scan(
+		&i.ChatID,
 		&i.RequesterID,
 		&i.AddresseeID,
 		&i.Status,
@@ -33,6 +36,43 @@ func (q *Queries) CreateFriendship(ctx context.Context, arg CreateFriendshipPara
 	return i, err
 }
 
+const getFriendListWithChatIds = `-- name: GetFriendListWithChatIds :many
+SELECT
+    chat_id,
+    CASE
+        WHEN requester_id = $1 THEN addressee_id
+        ELSE requester_id
+    END AS friend_id
+FROM chat_service.friendships
+WHERE (requester_id = $1 OR addressee_id = $1)
+  AND status = 'accepted'
+`
+
+type GetFriendListWithChatIdsRow struct {
+	ChatID   pgtype.UUID `json:"chatId"`
+	FriendID interface{} `json:"friendId"`
+}
+
+func (q *Queries) GetFriendListWithChatIds(ctx context.Context, requesterID int32) ([]GetFriendListWithChatIdsRow, error) {
+	rows, err := q.db.Query(ctx, getFriendListWithChatIds, requesterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetFriendListWithChatIdsRow
+	for rows.Next() {
+		var i GetFriendListWithChatIdsRow
+		if err := rows.Scan(&i.ChatID, &i.FriendID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateFriendshipStatus = `-- name: UpdateFriendshipStatus :exec
 UPDATE chat_service.friendships
 SET status = $3, updated_at = CURRENT_TIMESTAMP
@@ -40,9 +80,9 @@ WHERE requester_id = $1 AND addressee_id = $2
 `
 
 type UpdateFriendshipStatusParams struct {
-	RequesterID int32
-	AddresseeID int32
-	Status      NullChatServiceFriendStatus
+	RequesterID int32                       `json:"requesterId"`
+	AddresseeID int32                       `json:"addresseeId"`
+	Status      NullChatServiceFriendStatus `json:"status"`
 }
 
 func (q *Queries) UpdateFriendshipStatus(ctx context.Context, arg UpdateFriendshipStatusParams) error {

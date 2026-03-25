@@ -32,13 +32,13 @@ public class StreamResourcesTest {
 
 	@Test
 	public void testPreserveUnauthorized() {
-		when(chat.proxyStream("/test"))
+		when(chat.proxyStream("test"))
 				.thenReturn(Response.status(401).build());
 	}
 
 	@Test
 	public void testServerErrorToBadGateway() {
-		when(chat.proxyStream("/test"))
+		when(chat.proxyStream("test"))
 				.thenReturn(Response.status(500).build());
 		given().header("Accept", "text/event-stream")
 				.when().get("stream/chat/test")
@@ -47,7 +47,7 @@ public class StreamResourcesTest {
 
 	@Test
 	public void testSseSuccessWithHeader() {
-		when(chat.proxyStream("/test"))
+		when(chat.proxyStream("test"))
 				.thenReturn(Response
 						.ok(new ByteArrayInputStream("data: hello\n\n".getBytes(StandardCharsets.UTF_8)))
 						.type(MediaType.SERVER_SENT_EVENTS)

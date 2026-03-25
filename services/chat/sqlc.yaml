@@ -12,6 +12,8 @@ sql:
         sql_package: "pgx/v5"
         out: "internal/database"
         output_db_file_name: "db_engine.go"
+        emit_json_tags: true
+        json_tags_case_style: "camel"
 plugins: []
 rules: []
-options: {}
+options:

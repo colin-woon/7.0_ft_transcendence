@@ -57,11 +57,13 @@ public class StreamResources {
 
 		if (status == 401 || status == 403 || status == 404) {
 			upstream.close();
+			emitRequestEnd(status, false);
 			return Response.status(status).build();
 		}
 
 		if (upstream.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
 			upstream.close();
+			emitRequestEnd(Response.Status.BAD_GATEWAY.getStatusCode(), false);
 			return Response.status(Response.Status.BAD_GATEWAY)
 					.entity("Failed to connect to upstream service")
 					.build();
@@ -85,12 +87,7 @@ public class StreamResources {
 				streamError.set(true);
 				LOG.errorf(e, "Unexpected SSE streaming failure: requestId=%s", grc.getRequestId());
 			} finally {
-				obs.onRequestEnd(new GatewayRequestEnd(
-						grc.getRequestId(),
-						status,
-						Duration.between(grc.getStartTime(), Instant.now()),
-						!streamError.get(),
-						Optional.ofNullable(grc.getErrorCode())));
+				emitRequestEnd(status, !streamError.get());
 
 				MDC.clear();
 			}
@@ -103,7 +100,20 @@ public class StreamResources {
 	}
 
 	private String buildPath(String service, String subpath) {
-		// Services prefix is removed, leaving this for future use if needed
-		return "/" + subpath;
+		if (service.equals("auth")) {
+			return service + "/" + subpath;
+		}
+		return subpath;
+	}
+
+	private void emitRequestEnd(int status, boolean success) {
+		obs.onRequestEnd(new GatewayRequestEnd(
+				grc.getRequestId(),
+				status,
+				Duration.between(grc.getStartTime(), Instant.now()),
+				success,
+				Optional.ofNullable(grc.getErrorCode()),
+				Optional.ofNullable(grc.getServiceName()),
+				Optional.ofNullable(grc.getPathType())));
 	}
 }

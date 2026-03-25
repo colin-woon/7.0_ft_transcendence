@@ -16,23 +16,26 @@ public class ChatService {
 	@Inject
 	FaultToleranceServiceCallExecutor ex;
 
+	@Inject
+	ServiceCallExecutor sce;
+
 	public Response proxyGet(String path) {
 		return ex.execute(() -> chatClient.proxyGet(path));
 	}
 
 	public Response proxyPost(String path, byte[] body) {
-		return ex.execute(() -> chatClient.proxyPost(path, body));
+		return sce.execute(() -> chatClient.proxyPost(path, body));
 	}
 
 	public Response proxyDelete(String path) {
-		return ex.execute(() -> chatClient.proxyDelete(path));
+		return sce.execute(() -> chatClient.proxyDelete(path));
 	}
 
 	public Response proxyPut(String path, byte[] body) {
-		return ex.execute(() -> chatClient.proxyPut(path, body));
+		return sce.execute(() -> chatClient.proxyPut(path, body));
 	}
 
 	public Response proxyPatch(String path, byte[] body) {
-		return ex.execute(() -> chatClient.proxyPatch(path, body));
+		return sce.execute(() -> chatClient.proxyPatch(path, body));
 	}
 }

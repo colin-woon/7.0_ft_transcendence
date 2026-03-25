@@ -26,8 +26,12 @@ services:
             - ./environment/chat.env
         ports:
             - '${CHAT_PORT}:8080'
+            - '2345:2345' # Delve debugging port
         volumes:
             - ./services/chat:/app
+        environment:
+            - CHAT_PORT=8080
+            - CHAT_TLS_ENABLED=false
 
     forum-service:
         build:
@@ -54,6 +58,8 @@ services:
     web-service:
         build:
             target: development
+            args:
+                NEXT_PUBLIC_API_URL: https://localhost
         ports:
             - '${WEB_PORT}:3000'
         volumes:
@@ -91,3 +97,24 @@ services:
     gw-redis-service:
         ports:
             - '6379:6379'
+
+    nginx-service:
+        volumes:
+            - ./infra/nginx/nginx.dev.conf:/etc/nginx/conf.d/default.conf:ro
+
+    prometheus-service:
+        volumes:
+            - ./infra/obs/prometheus/prometheus.dev.yml:/etc/prometheus/prometheus.yml:ro
+            - ./infra/obs/prometheus/web.dev.yml:/etc/prometheus/web.yml:ro
+        ports:
+            - '9090:9090'
+
+    grafana-service:
+        ports:
+            - '9091:3000'
+        environment:
+            - GF_SERVER_PROTOCOL=http
+            - GF_SERVER_CERT_FILE=
+            - GF_SERVER_CERT_KEY=
+        volumes:
+            - ./infra/obs/grafana/provisioning/datasources/prometheus.dev.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
