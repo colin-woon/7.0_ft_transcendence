@@ -18,10 +18,10 @@ RETURNING id, chat_id, sender_id, receiver_id, content, is_read, read_at, create
 `
 
 type CreateMessageParams struct {
-	ChatID     pgtype.UUID
-	SenderID   int32
-	ReceiverID int32
-	Content    string
+	ChatID     pgtype.UUID `json:"chatId"`
+	SenderID   int32       `json:"senderId"`
+	ReceiverID int32       `json:"receiverId"`
+	Content    string      `json:"content"`
 }
 
 func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (ChatServiceMessage, error) {
@@ -53,13 +53,13 @@ ORDER BY created_at ASC
 `
 
 type GetMessageHistoryByChatIdRow struct {
-	ChatID     pgtype.UUID
-	SenderID   int32
-	ReceiverID int32
-	Content    string
-	IsRead     pgtype.Bool
-	ReadAt     pgtype.Timestamptz
-	CreatedAt  pgtype.Timestamptz
+	ChatID     pgtype.UUID        `json:"chatId"`
+	SenderID   int32              `json:"senderId"`
+	ReceiverID int32              `json:"receiverId"`
+	Content    string             `json:"content"`
+	IsRead     pgtype.Bool        `json:"isRead"`
+	ReadAt     pgtype.Timestamptz `json:"readAt"`
+	CreatedAt  pgtype.Timestamptz `json:"createdAt"`
 }
 
 func (q *Queries) GetMessageHistoryByChatId(ctx context.Context, chatID pgtype.UUID) ([]GetMessageHistoryByChatIdRow, error) {

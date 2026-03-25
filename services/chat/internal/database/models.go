@@ -34,8 +34,8 @@ func (e *ChatServiceFriendStatus) Scan(src interface{}) error {
 }
 
 type NullChatServiceFriendStatus struct {
-	ChatServiceFriendStatus ChatServiceFriendStatus
-	Valid                   bool // Valid is true if ChatServiceFriendStatus is not NULL
+	ChatServiceFriendStatus ChatServiceFriendStatus `json:"chatServiceFriendStatus"`
+	Valid                   bool                    `json:"valid"` // Valid is true if ChatServiceFriendStatus is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -57,21 +57,21 @@ func (ns NullChatServiceFriendStatus) Value() (driver.Value, error) {
 }
 
 type ChatServiceFriendship struct {
-	ChatID      pgtype.UUID
-	RequesterID int32
-	AddresseeID int32
-	Status      NullChatServiceFriendStatus
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
+	ChatID      pgtype.UUID                 `json:"chatId"`
+	RequesterID int32                       `json:"requesterId"`
+	AddresseeID int32                       `json:"addresseeId"`
+	Status      NullChatServiceFriendStatus `json:"status"`
+	CreatedAt   pgtype.Timestamptz          `json:"createdAt"`
+	UpdatedAt   pgtype.Timestamptz          `json:"updatedAt"`
 }
 
 type ChatServiceMessage struct {
-	ID         int64
-	ChatID     pgtype.UUID
-	SenderID   int32
-	ReceiverID int32
-	Content    string
-	IsRead     pgtype.Bool
-	ReadAt     pgtype.Timestamptz
-	CreatedAt  pgtype.Timestamptz
+	ID         int64              `json:"id"`
+	ChatID     pgtype.UUID        `json:"chatId"`
+	SenderID   int32              `json:"senderId"`
+	ReceiverID int32              `json:"receiverId"`
+	Content    string             `json:"content"`
+	IsRead     pgtype.Bool        `json:"isRead"`
+	ReadAt     pgtype.Timestamptz `json:"readAt"`
+	CreatedAt  pgtype.Timestamptz `json:"createdAt"`
 }
