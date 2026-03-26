@@ -82,6 +82,10 @@ services:
         ports:
             - '${GATEWAY_PORT:-8001}:8080'
             - '${GATEWAY_MGMT_PORT:-8180}:8180'
+        environment:
+            - HOME=/tmp
+            - MAVEN_CONFIG=/tmp/.m2
+            - MAVEN_OPTS=-Dmaven.repo.local=/tmp/.m2/repository
         volumes:
             - ./services/gateway:/app
         depends_on:
