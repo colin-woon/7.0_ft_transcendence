@@ -8,6 +8,7 @@ The gateway is the single entry point for all external traffic in the bumIntra p
 - **Header control** — strips forbidden inbound headers and internal headers from responses
 - **Policy enforcement** — pluggable policy engine evaluated per request
 - **WebSocket proxying** — authenticated, rate-limited WS sessions for the chat service
+- **SSE proxying** — dedicated `/api/stream/**` routes for server-sent event traffic
 - **Observability** — structured logging and Prometheus metrics via a dispatcher pattern
 
 Built with **Quarkus 3.x** on JVM (Java 21).
@@ -44,7 +45,7 @@ Incoming HTTPS request
 [1910] RequestRBACFilter             — check permissions (e.g. /admin/ paths)
         │
         ▼
-      Handler / Proxy (GatewayResource / StreamResources)
+      Handler / Proxy (GatewayResource / PublicResource / StreamResources)
         │
         ▼
 [3000] ResponseContextFilter         — echo X-Intra-Request-Id, fire obs.onRequestEnd
@@ -96,6 +97,29 @@ Controlled by `gateway.auth.required` (default: `true`).
 - `authLevel` (set to `ADMIN` if groups contains "ADMIN", else `USER`)
 
 Requests from internal IPs/headers are marked as `SERVICE` level.
+
+---
+
+## Stream Routes (`/api/stream/**`)
+
+SSE traffic is handled by `StreamResources` under the dedicated `/api/stream/{service}/...` namespace.
+
+Current downstream support:
+
+- `chat` → forwarded through `StreamChatService`
+
+Gateway contract for stream requests:
+
+- method must be `GET`
+- path must be `/api/stream/{service}/...`
+- `Accept` must include `text/event-stream`
+
+Requests to `/api/stream/**` without a valid SSE `Accept` header are rejected with:
+
+- HTTP `406 Not Acceptable`
+- error code `SSE_ACCEPT_REQUIRED`
+
+Legacy `/stream/**` routes are no longer supported.
 
 ---
 
@@ -190,6 +214,7 @@ All gateway errors return JSON:
 | `AUTH_INVALID`             | 401         | Token rejected by auth service       |
 | `FORBIDDEN`                | 405 / 403   | Method not allowed / access denied   |
 | `RATE_LIMITED`             | 429         | Token bucket exhausted               |
+| `SSE_ACCEPT_REQUIRED`      | 406         | Stream request missing SSE `Accept`  |
 | `SERVICE_TIMEOUT`          | 504         | Downstream timed out                 |
 | `SERVICE_UNAVAILABLE`      | 503         | Downstream unreachable               |
 | `SERVICE_INVALID_RESPONSE` | 502         | Downstream returned invalid response |

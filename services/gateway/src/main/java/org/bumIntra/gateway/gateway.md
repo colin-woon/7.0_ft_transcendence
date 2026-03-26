@@ -9,6 +9,7 @@
 
 **Contains:**
 - Gateway routes (e.g. `/api/auth/**`)
+- Dedicated SSE routes (e.g. `/api/stream/chat/**`)
 - No business logic
 - No database access
 
@@ -106,4 +107,3 @@ This structure is designed to scale cleanly as new services,
 security mechanisms, and transport layers are added.
 
 ---
-
