@@ -1,27 +1,26 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Zap, Clock, Users, Star, MessageSquare, Plus } from "lucide-react";
 import type { Project } from "../../models/projects";
 import PostVoteButtons from '../temp_posts/components/PostVoteButtons';
 import ProjectCard from "./ProjectCard";
 
-const sortOptions = ["Hot", "New", "Top"];
+const sortOptions = ["New", "Top"];
 
 export default function ProjectForumPage({ project }: { project: Project }) {
-  const [activeSort, setActiveSort] = useState("Hot");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeSort = searchParams.get('sort') === 'New' ? 'New' : 'Top';
   const [viewMode, setViewMode] = useState<"card" | "compact">("card");
 
-  const sortedPosts = [...project.posts].sort((a, b) => {
-    if (a.isPinned && !b.isPinned) return -1;
-    if (!a.isPinned && b.isPinned) return 1;
-    switch (activeSort) {
-      case "Hot": return (b.upvotes + b.replies * 2) - (a.upvotes + a.replies * 2);
-      case "Top": return b.upvotes - a.upvotes;
-      case "New": return b.id - a.id;
-      default: return 0;
-    }
-  });
+  const handleSortChange = (sort: string) => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set('sort', sort);
+    router.replace(`${pathname}?${nextParams.toString()}`);
+  };
 
   return (
       <div className="min-h-screen bg-[#f9f9f9]">
@@ -49,7 +48,7 @@ export default function ProjectForumPage({ project }: { project: Project }) {
                 <span className="text-sm text-slate-500">Sort by</span>
                 <select
                   value={activeSort}
-                  onChange={(e) => setActiveSort(e.target.value)}
+                  onChange={(e) => handleSortChange(e.target.value)}
                   className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
                 >
                   {sortOptions.map((o) => <option key={o}>{o}</option>)}
@@ -72,23 +71,23 @@ export default function ProjectForumPage({ project }: { project: Project }) {
                     </button>
                   ))}
                 </div>
-                <button className="flex items-center gap-1.5 bg-[#0f6f6b] text-white text-sm font-medium px-4 py-1.5 rounded-full hover:bg-[#0c5d5a] transition">
+                <Link href={`/projects/${project.id}/create`} className="flex items-center gap-1.5 bg-[#0f6f6b] text-white text-sm font-medium px-4 py-1.5 rounded-full hover:bg-[#0c5d5a] transition">
                   <Plus size={15} />
                   Ask a question
-                </button>
+                </Link>
               </div>
             </div>
 
             {/* Posts */}
             <div className="space-y-3">
-              {sortedPosts.length === 0 ? (
+              {project.posts.length === 0 ? (
                 <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
                   <p className="text-3xl mb-2">💬</p>
                   <h3 className="text-base font-semibold text-slate-800 mb-1">No questions yet</h3>
                   <p className="text-sm text-slate-500">Be the first to ask something about {project.name}.</p>
                 </div>
               ) : (
-                sortedPosts.map((post) => (
+                project.posts.map((post) => (
                   <div
                     key={post.id}
                     className={`bg-white border border-gray-200 hover:border-gray-300 transition ${

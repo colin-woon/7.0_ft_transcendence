@@ -67,7 +67,7 @@ export default function ProjectForumPage() {
                     </div>
                   </div>
               </div>
-              <Link href={`/create`} className="flex items-center gap-1.5 rounded-full border border-slate-300 bg-transparent px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-600 transition-colors duration-300 hover:bg-slate-700 hover:text-white active:scale-95">
+                <Link href={`/projects/${project.id}/create`} className="flex items-center gap-1.5 rounded-full border border-slate-300 bg-transparent px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-600 transition-colors duration-300 hover:bg-slate-700 hover:text-white active:scale-95">
                    <Plus size={14} />
                     Create Post
               </Link>

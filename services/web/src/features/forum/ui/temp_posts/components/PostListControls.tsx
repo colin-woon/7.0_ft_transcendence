@@ -2,7 +2,7 @@ import type { ForumSort, ForumViewMode } from '../../../models';
 
 interface PostListControlsProps {
   activeSort: ForumSort;
-  setActiveSort: (value: ForumSort) => void;
+  onSortChange: (value: ForumSort) => void;
   sortOptions: readonly ForumSort[];
   viewMode: ForumViewMode;
   setViewMode: (value: ForumViewMode) => void;
@@ -13,7 +13,7 @@ interface PostListControlsProps {
 
 export default function PostListControls({
   activeSort,
-  setActiveSort,
+  onSortChange,
   sortOptions,
   viewMode,
   setViewMode,
@@ -28,7 +28,7 @@ export default function PostListControls({
           <span className="text-slate-500">Sort by</span>
           <select
             value={activeSort}
-            onChange={(e) => setActiveSort(e.target.value as ForumSort)}
+            onChange={(e) => onSortChange(e.target.value as ForumSort)}
             className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
           >
             {sortOptions.map((option) => (

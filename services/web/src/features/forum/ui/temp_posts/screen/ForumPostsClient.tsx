@@ -1,12 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAppShell } from '@/components/ui/ComponentLogic/Appshell/context/AppShellContext';
 import {
   filterPosts,
   forumCategories,
   forumSortOptions,
-  sortPosts,
   type ForumPost,
   type ForumSort,
   type ForumViewMode,
@@ -18,24 +18,32 @@ import PostRow from '../components/PostRow';
 interface ForumPostsClientProps {
   initialPosts: ForumPost[];
   fetchError: string | null;
+  activeSort: ForumSort;
 }
 
-export default function ForumPostsClient({ initialPosts, fetchError }: ForumPostsClientProps) {
+export default function ForumPostsClient({ initialPosts, fetchError, activeSort }: ForumPostsClientProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { searchQuery } = useAppShell();
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [viewMode, setViewMode] = useState<ForumViewMode>('card');
-  const [activeSort, setActiveSort] = useState<ForumSort>('Top');
+ 
+  const handleSortChange = (sort: ForumSort) => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set('sort', sort);
+    router.replace(`${pathname}?${nextParams.toString()}`);
+  };
 
-  const sortedPosts = useMemo(() => {
-    const filtered = filterPosts(initialPosts, searchQuery, activeCategory);
-    return sortPosts(filtered, activeSort);
-  }, [initialPosts, searchQuery, activeCategory, activeSort]);
+  const filteredPosts = useMemo(() => {
+    return filterPosts(initialPosts, searchQuery, activeCategory);
+  }, [initialPosts, searchQuery, activeCategory]);
 
   return (
     <div className="max-w-5xl mx-auto">
       <PostListControls
         activeSort={activeSort}
-        setActiveSort={setActiveSort}
+        onSortChange={handleSortChange}
         sortOptions={forumSortOptions}
         viewMode={viewMode}
         setViewMode={setViewMode}
@@ -49,10 +57,10 @@ export default function ForumPostsClient({ initialPosts, fetchError }: ForumPost
           <div className="bg-white border border-red-200 rounded-lg p-8 text-center text-red-600">
             {fetchError}
           </div>
-        ) : sortedPosts.length === 0 ? (
+        ) : filteredPosts.length === 0 ? (
           <EmptyPostsState />
         ) : (
-          sortedPosts.map((post) => <PostRow key={post.id} post={post} viewMode={viewMode} />)
+          filteredPosts.map((post) => <PostRow key={post.id} post={post} viewMode={viewMode} />)
         )}
       </div>
     </div>
