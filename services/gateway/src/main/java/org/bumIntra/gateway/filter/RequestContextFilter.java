@@ -82,7 +82,7 @@ public class RequestContextFilter implements ContainerRequestFilter {
 		}
 
 		// SSE event checks, default to false for java.
-		if (grc.getPath().startsWith("/stream/")
+		if (grc.getPath().startsWith("/api/stream/")
 				&& "GET".equalsIgnoreCase(request.getMethod())
 				&& request.getHeaderString("Accept") != null
 				&& request.getHeaderString("Accept").toLowerCase(Locale.ROOT).contains("text/event-stream")) {
@@ -95,14 +95,14 @@ public class RequestContextFilter implements ContainerRequestFilter {
 			return "unknown";
 		}
 
-		if (path.startsWith("/api/public")) {
+		if (path.startsWith("/api/stream")) {
+			return "stream";
+		} else if (path.startsWith("/api/public")) {
 			return "public";
 		} else if (path.startsWith("/api/admin")) {
 			return "admin";
 		} else if (path.startsWith("/api")) {
 			return "api";
-		} else if (path.startsWith("/stream")) {
-			return "stream";
 		} else if (path.startsWith("/ws")) {
 			return "websocket";
 		} else {
@@ -117,10 +117,10 @@ public class RequestContextFilter implements ContainerRequestFilter {
 
 		String[] segments = path.split("/");
 		switch (pathType) {
-			case "public", "admin" -> {
+			case "public", "admin", "stream" -> {
 				return segments.length > 3 ? segments[3] : "unknown";
 			}
-			case "api", "stream", "websocket" -> {
+			case "api", "websocket" -> {
 				return segments.length > 2 ? segments[2] : "unknown";
 			}
 			default -> {

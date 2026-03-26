@@ -25,7 +25,7 @@ public class StreamResourcesTest {
 	@Test
 	public void testStreamChat() {
 		given()
-				.when().get("/stream/unknown/test")
+				.when().get("/api/stream/unknown/test")
 				.then()
 				.statusCode(404);
 	}
@@ -34,6 +34,10 @@ public class StreamResourcesTest {
 	public void testPreserveUnauthorized() {
 		when(chat.proxyStream("test"))
 				.thenReturn(Response.status(401).build());
+
+		given().header("Accept", "text/event-stream")
+				.when().get("/api/stream/chat/test")
+				.then().statusCode(401);
 	}
 
 	@Test
@@ -41,7 +45,7 @@ public class StreamResourcesTest {
 		when(chat.proxyStream("test"))
 				.thenReturn(Response.status(500).build());
 		given().header("Accept", "text/event-stream")
-				.when().get("stream/chat/test")
+				.when().get("/api/stream/chat/test")
 				.then().statusCode(502);
 	}
 
@@ -55,10 +59,19 @@ public class StreamResourcesTest {
 
 		given()
 				.header("Accept", "text/event-stream")
-				.when().get("/stream/chat/test")
+				.when().get("/api/stream/chat/test")
 				.then()
 				.statusCode(200)
 				.header("Cache-Control", "no-cache")
 				.contentType(containsString("text/event-stream"));
+	}
+
+	@Test
+	public void testLegacyStreamPathNoLongerSupported() {
+		given()
+				.header("Accept", "text/event-stream")
+				.when().get("/stream/chat/test")
+				.then()
+				.statusCode(404);
 	}
 }
