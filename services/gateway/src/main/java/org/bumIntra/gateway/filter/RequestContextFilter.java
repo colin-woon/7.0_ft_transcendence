@@ -6,6 +6,8 @@ import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
 
+import org.bumIntra.gateway.exception.GatewayErrorCode;
+import org.bumIntra.gateway.exception.GatewayException;
 import org.bumIntra.gateway.security.GatewayRequestContext;
 import org.bumIntra.gateway.security.IdentityHeaders;
 import org.bumIntra.gateway.obs.GatewayObserverDispatcher;
@@ -16,6 +18,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 
 @Provider
@@ -83,9 +86,16 @@ public class RequestContextFilter implements ContainerRequestFilter {
 
 		// SSE event checks, default to false for java.
 		if (grc.getPath().startsWith("/api/stream/")
-				&& "GET".equalsIgnoreCase(request.getMethod())
-				&& request.getHeaderString("Accept") != null
-				&& request.getHeaderString("Accept").toLowerCase(Locale.ROOT).contains("text/event-stream")) {
+				&& "GET".equalsIgnoreCase(request.getMethod())) {
+			String accept = request.getHeaderString("Accept");
+
+			if (accept == null || !accept.toLowerCase(Locale.ROOT).contains("text/event-stream")) {
+				throw new GatewayException(
+						Response.Status.NOT_ACCEPTABLE,
+						GatewayErrorCode.SSE_ACCEPT_REQUIRED,
+						"Stream requests must accept text/event-stream");
+			}
+
 			grc.setSse(true);
 		}
 	}
