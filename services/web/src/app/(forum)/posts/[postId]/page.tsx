@@ -1,5 +1,5 @@
 import { getPostDetail, getPostComments } from '@/features/forum/api/post';
-import PostDetailClient from '@/features/forum/ui/temp_posts/screen/PostDetailClient';
+import PostDetailClient from '@/features/forum/ui/wesley_posts/screen/PostDetailClient';
 import { notFound } from 'next/navigation';
 
 interface PostDetailPageProps {

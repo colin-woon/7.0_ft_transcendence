@@ -1,7 +1,7 @@
 import { getProjectPostsBySort } from '@/features/forum/api/project';
 import { getAllPosts } from '@/features/forum/api/post'
 import type { ForumPost, ForumSort } from '@/features/forum/models';
-import ForumPostsClient from '@/features/forum/ui/temp_posts/screen/ForumPostsClient';
+import ForumPostsClient from '@/features/forum/ui/wesley_posts/screen/ForumPostsClient';
 
 interface ForumRouteProps {
   searchParams?: Promise<{

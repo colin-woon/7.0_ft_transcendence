@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Zap, Clock, Users, Star, MessageSquare, Plus } from "lucide-react";
 import type { Project } from "../../models/projects";
-import PostVoteButtons from '../temp_posts/components/PostVoteButtons';
+import PostVoteButtons from '../wesley_posts/components/PostVoteButtons';
 import ProjectCard from "./ProjectCard";
 
 const sortOptions = ["New", "Top"];
