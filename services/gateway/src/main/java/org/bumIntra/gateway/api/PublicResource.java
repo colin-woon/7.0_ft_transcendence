@@ -29,7 +29,8 @@ public class PublicResource {
 			return Response.status(Response.Status.NOT_FOUND).build();
 		}
 		grc.setServiceName(AUTH_SERVICE);
-		return authService.proxyGet("auth/login/" + provider);
+		// Route to public auth endpoint on auth-service, preserving full path
+		return authService.proxyGet("api/public/auth/login/" + provider);
 	}
 
 	@GET
@@ -40,16 +41,6 @@ public class PublicResource {
 		}
 		grc.setServiceName(AUTH_SERVICE);
 		return authService.proxyGet("api/public/auth/callback/" + provider);
-	}
-
-	@GET
-	@Path("/auth/redirect/{provider: .*}")
-	public Response proxyPublicRedirect(@PathParam("provider") String provider) {
-		if (provider.contains("/") || provider.isBlank() || provider.equals(".") || provider.equals("..")) {
-			return Response.status(Response.Status.NOT_FOUND).build();
-		}
-		grc.setServiceName(AUTH_SERVICE);
-		return authService.proxyGet("api/public/auth/login/" + provider);
 	}
 
 	@POST

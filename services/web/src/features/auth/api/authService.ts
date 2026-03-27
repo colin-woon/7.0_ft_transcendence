@@ -98,8 +98,8 @@ class AuthService {
   loginWithProvider(provider: 'google' | '42') {
     // Capture current page for return_to redirect after OAuth
     const currentPath = window.location.pathname + window.location.search
-    // Redirect to backend OAuth initiator endpoint
-    window.location.href = `${getApiBaseUrl()}/api/auth/login/${provider}`
+    // Redirect to backend OAuth initiator endpoint through gateway (with /api/public prefix)
+    window.location.href = `${getApiBaseUrl()}/api/public/auth/login/${provider}`
   }
 
   /**
