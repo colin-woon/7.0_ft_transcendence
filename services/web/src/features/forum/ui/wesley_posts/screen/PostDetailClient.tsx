@@ -5,6 +5,7 @@ import { ArrowLeft, MessageCircle, Eye, ThumbsUp } from 'lucide-react';
 import type { ForumPostDetail, ForumComment } from '@/features/forum/models';
 import PostVoteButtons from '../components/PostVoteButtons';
 import CommentVoteButtons from '../components/CommentVoteButtons';
+import WriteCommentBox from '../components/WriteCommentBox';
 
 interface PostDetailClientProps {
   post: ForumPostDetail;
@@ -120,6 +121,10 @@ export default function PostDetailClient({ post, comments }: PostDetailClientPro
             ))}
           </div>
         )}
+      </div>
+
+      <div className="mb-2">
+        <WriteCommentBox postId={post.id} />
       </div>
     </div>
   );

@@ -42,6 +42,7 @@ Thumbs.db
 .vscode/
 .idea/
 *.iml
+.aiexclude
 
 # === Vicky Misc ===
 certs/
@@ -63,6 +64,7 @@ infra/obs/grafana/provisioning/datasources/prometheus.prod.yml
 *.dylib
 tmp/
 AGENTS.md
+
 
 
 # === certs ===

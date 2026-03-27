@@ -7,12 +7,12 @@ export default function EmptyPostsState() {
         0
       </div>
       <h3 className="text-lg font-semibold text-slate-900 mb-1">No posts yet</h3>
-      <p className="text-sm text-slate-600 mb-5">Try a different search, or be the first to create a post.</p>
+      <p className="text-sm text-slate-600 mb-5">Try a different search, or pick a project to create the first post.</p>
       <Link
-        href="/create"
+        href="/projects"
         className="inline-flex items-center justify-center rounded-full bg-[#0f6f6b] px-5 py-2 text-sm font-semibold text-white hover:bg-[#0c5d5a]"
       >
-        Create a post
+        Browse projects
       </Link>
     </div>
   );

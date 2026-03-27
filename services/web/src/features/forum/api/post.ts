@@ -1,6 +1,7 @@
 'use server'
 
 import type { ForumApiPostSummary, ForumPost, ForumApiPostDetail, ForumPostDetail, ForumApiComment, ForumComment } from '../models';
+import type { ForumSort } from '../models';
 import { getProjectsByIdMap, mapApiPostToForumPost, toRelativeTime } from './project';
 import { cache } from 'react'
 
@@ -8,9 +9,16 @@ const FORUM_SERVICE_URL = 'http://forum-service:8080';
 const API_BASE_URL = FORUM_SERVICE_URL;
 //TODO: gateway-service:8080/api/forum/projects
 
-export async function getAllPosts(): Promise<ForumPost[]> {
+export async function getAllPosts(sort: ForumSort = 'Top'): Promise<ForumPost[]> {
+  var postsPath;
+
+    if (sort ==='New')
+      postsPath = '/posts/new';
+    else if (sort === 'Top')
+      postsPath = '/posts/top';
+
   const [postsResponse, projectsById] = await Promise.all([
-    fetch(`${API_BASE_URL}/posts/top`, {
+    fetch(`${API_BASE_URL}${postsPath}`, {
       method: 'GET',
       cache: 'no-store',
     }),
@@ -76,6 +84,87 @@ export async function getPostComments(postId: number): Promise<ForumComment[]> {
     timestamp: toRelativeTime(comment.created_at),
     upvotes: comment.vote_score,
   }));
+}
+
+interface CreateProjectPostPayload {
+  title: string;
+  content: string;
+}
+
+interface CreateProjectPostResponse {
+  id: number;
+}
+
+interface CreatePostCommentPayload {
+  content: string;
+}
+
+interface CreatePostCommentResponse {
+  id: number;
+}
+
+export async function createProjectPost(
+  projectId: number,
+  payload: CreateProjectPostPayload,
+): Promise<CreateProjectPostResponse> {
+  const response = await fetch(`${API_BASE_URL}/projects/${projectId}/posts`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    let errorMessage = 'Failed to create post';
+
+    try {
+      const errorData = JSON.parse(errorText) as { detail?: string; message?: string };
+      errorMessage = errorData.detail || errorData.message || errorMessage;
+    } catch {
+      if (errorText.trim().length > 0) {
+        errorMessage = errorText;
+      }
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return (await response.json()) as CreateProjectPostResponse;
+}
+
+export async function createPostComment(
+  postId: number,
+  payload: CreatePostCommentPayload,
+): Promise<CreatePostCommentResponse> {
+  const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    let errorMessage = 'Failed to create comment';
+
+    try {
+      const errorData = JSON.parse(errorText) as { detail?: string; message?: string };
+      errorMessage = errorData.detail || errorData.message || errorMessage;
+    } catch {
+      if (errorText.trim().length > 0) {
+        errorMessage = errorText;
+      }
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return (await response.json()) as CreatePostCommentResponse;
 }
 
 export async function voteOnPost(postId: number, value: 1 | -1): Promise<number> {

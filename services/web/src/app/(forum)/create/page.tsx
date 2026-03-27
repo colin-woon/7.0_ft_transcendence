@@ -1,5 +1,5 @@
-import CreatePage from '@/features/forum/ui/create/CreatePage'
+import { redirect } from 'next/navigation'
 
 export default function CreateRoutePage() {
-  return <CreatePage />
+  redirect('/projects')
 }

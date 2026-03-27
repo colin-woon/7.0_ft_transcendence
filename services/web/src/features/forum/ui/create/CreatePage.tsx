@@ -3,23 +3,21 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Type, Link2, ImageIcon, ChevronDown,
+  Type, Link2, ImageIcon,
   AlertCircle, Eye, EyeOff, Send,
 } from 'lucide-react'
 
-import { projects } from "../../models/projects"
+import { createProjectPost } from '@/features/forum/api/post'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type PostType = 'text' | 'link' | 'image'
 
-const PROJECT_OPTIONS = projects.map((project) => project.name)
-
 const RULES = [
   'Be respectful and constructive.',
   'No spam or self-promotion.',
   'Use descriptive titles.',
-  'Choose the correct project before posting.',
+  'Posts created here belong to this project.',
   'Include error output when asking for help.',
 ]
 
@@ -46,34 +44,59 @@ function TypeTab({
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
-export default function CreatePage() {
+interface CreatePageProps {
+  projectId: number
+  projectName: string
+}
+
+export default function CreatePage({ projectId, projectName }: CreatePageProps) {
   const router = useRouter()
   const [postType, setPostType] = useState<PostType>('text')
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [url, setUrl] = useState('')
-  const [projectType, setProjectType] = useState(PROJECT_OPTIONS[0] ?? '')
-  const [projectOpen, setProjectOpen] = useState(false)
   const [preview, setPreview] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const TITLE_MAX = 300
 
-  const canSubmit = title.trim().length > 0 && (
+  const canSubmit = !isSubmitting && title.trim().length > 0 && (
     postType === 'text' ? body.trim().length > 0
     : postType === 'link' ? url.trim().length > 0
     : true
   )
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!canSubmit) return
+
+    setIsSubmitting(true)
+    try {
+      const payload = {
+        title: title,
+        content: postType === 'text' ? body : url // Backend expects title/content
+      }
+
+      const newPost = await createProjectPost(projectId, payload)
+      router.push(`/posts/${newPost.id}`)
+    } catch (error) {
+      console.error('Error creating post:', error)
+      alert(error instanceof Error ? error.message : 'Something went wrong')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
       <div className="mb-5">
-        <h1 className="text-2xl font-bold text-slate-900">Create a post</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Create a post in {projectName}</h1>
         <p className="text-sm text-slate-500 mt-0.5">Share a question, project, or idea with the 42 community.</p>
       </div>
 
-      <div className="flex gap-6 items-start">
+      <form onSubmit={handleSubmit} className="flex gap-6 items-start">
 
         {/* ── Editor card ──────────────────────────────────── */}
         <div className="flex-1 min-w-0 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -89,36 +112,8 @@ export default function CreatePage() {
 
             {/* Project row */}
             <div className="flex flex-wrap gap-3">
-
-              {/* Project dropdown */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProjectOpen((v) => !v)}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border border-gray-200 bg-white hover:border-[#8EE7E3] transition text-slate-700"
-                >
-                  {projectType || 'Select project'}
-                  <ChevronDown size={14} className={`transition-transform ${projectOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {projectOpen && (
-                  <div className="absolute top-full mt-1 left-0 z-20 bg-white border border-gray-100 rounded-xl shadow-lg py-1 min-w-[160px]">
-                    {PROJECT_OPTIONS.map((project) => (
-                      <button
-                        key={project}
-                        type="button"
-                        onClick={() => {
-                          setProjectType(project)
-                          setProjectOpen(false)
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm hover:bg-[#8EE7E3]/10 transition ${
-                          project === projectType ? 'font-semibold text-[#0f6f6b]' : 'text-slate-700'
-                        }`}
-                      >
-                        {project}
-                      </button>
-                    ))}
-                  </div>
-                )}
+              <div className="inline-flex items-center rounded-full border border-[#8EE7E3] bg-[#8EE7E3]/15 px-4 py-2 text-sm font-semibold text-[#0f6f6b]">
+                Project: {projectName}
               </div>
             </div>
 
@@ -136,7 +131,7 @@ export default function CreatePage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Give your post a clear, descriptive title"
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70 focus:border-transparent focus:bg-white transition"
+                className="w-full rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70 focus:border-transparent focus:bg-white transition"
               />
             </div>
 
@@ -230,8 +225,12 @@ export default function CreatePage() {
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 }`}
               >
-                <Send size={15} />
-                Publish post
+                {isSubmitting ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                    <Send size={15} />
+                )}
+                {isSubmitting ? 'Publishing...' : 'Publish post'}
               </button>
             </div>
 
@@ -265,7 +264,7 @@ export default function CreatePage() {
           </div>
 
         </div>
-      </div>
+      </form>
     </div>
   )
 }

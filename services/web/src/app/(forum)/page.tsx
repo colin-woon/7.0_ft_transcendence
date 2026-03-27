@@ -1,7 +1,8 @@
+import ProjectsGridPage from '@/features/forum/ui/wesley_projects/ProjectsGridPage'
+import { getAllProjects } from '@/features/forum/api/project'
 
-import ProjectGridPage from '@/features/forum/ui/temp_projects/ProjectsGridPage'
-
-export default function HomePage() {
-  return <ProjectGridPage />
+export default async function HomePage() {
+  const projects = await getAllProjects();
+  return <ProjectsGridPage projects={projects} />
 }
   

@@ -1,5 +1,6 @@
 import type { ForumApiPostSummary, ForumApiProjectSummary, ForumPost, ForumApiPostDetail, ForumPostDetail, ForumApiComment, ForumComment } from '../models';
-import type { Project } from '../models/projects';
+import type { Project, ForumPost as ProjectForumPost } from '../models/projects';
+import type { ForumSort } from '../models';
 import { cache } from 'react'
 
 const FORUM_SERVICE_URL = 'http://forum-service:8080';
@@ -136,7 +137,7 @@ export async function getAllProjects(): Promise<Project[]> {
     xp: apiProj.difficulty || 0,
     duration: apiProj.estimate_time || "~1 week",
     teamSize: getTeamSize(apiProj.solo),
-    tags: apiProj.tags || ["42"],
+    tags: apiProj.objectives || ["42"],
     students: apiProj.students || 0,
     color: apiProj.color || "from-blue-400 to-blue-600",
     posts: apiProj.posts || [],
@@ -153,8 +154,16 @@ export const getProjectsByIdMap = cache(async (): Promise<Map<number, string>> =
 });
 
 export async function getProjectPosts(projectId: number): Promise<ForumPost[]> {
+  return getProjectPostsBySort(projectId, 'Top');
+}
+
+export async function getProjectPostsBySort(projectId: number, sort: ForumSort): Promise<ForumPost[]> {
+  const postsPath = sort === 'New'
+    ? `/projects/${projectId}/posts/new`
+    : `/projects/${projectId}/posts/top`;
+
   const [postsResponse, projectResponse] = await Promise.all([
-    fetch(`${API_BASE_URL}/projects/${projectId}/posts`, {
+    fetch(`${API_BASE_URL}${postsPath}`, {
       method: 'GET',
       cache: 'no-store',
     }),
@@ -181,13 +190,30 @@ export async function getProjectPosts(projectId: number): Promise<ForumPost[]> {
 }
 
 export async function getProjectDetails(projectId: number): Promise<Project | undefined> {
+  return getProjectDetailsBySort(projectId, 'Top');
+}
+
+export async function getProjectDetailsBySort(projectId: number, sort: ForumSort): Promise<Project | undefined> {
   const allProjects = await getAllProjects();
   const project = allProjects.find((p) => p.id === projectId);
   
   if (!project) return undefined;
 
   try {
-    const posts = await getProjectPosts(projectId);
+    const posts = (await getProjectPostsBySort(projectId, sort)).map((post): ProjectForumPost => ({
+      id: post.id,
+      title: post.title,
+      author: post.author,
+      avatar: post.avatar,
+      replies: post.comments,
+      views: post.views,
+      upvotes: post.upvotes,
+      category: post.category,
+      timestamp: post.timestamp,
+      preview: '',
+      isHot: false,
+      isPinned: post.isPinned,
+    }));
     return { ...project, posts };
   } catch (err) {
     console.error(`Failed to fetch posts for project ${projectId}`, err);
