@@ -10,7 +10,8 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const { isSidebarOpen, closeSidebar, searchQuery, isChatOpen } = useAppShell()
+  // Context tells AppShell what state everything is in
+  const { isSidebarOpen, closeSidebar, isChatOpen } = useAppShell()
   
   return (
     <div className="min-h-screen bg-[#f9f9f9] text-slate-900 flex flex-col">
