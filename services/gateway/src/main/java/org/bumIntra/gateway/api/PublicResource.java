@@ -30,6 +30,8 @@ public class PublicResource {
 		if (provider.contains("/") || provider.isBlank() || provider.equals(".") || provider.equals("..")) {
 			return Response.status(Response.Status.NOT_FOUND).build();
 		}
+		grc.setServiceName(AUTH_SERVICE);
+		// Route to public auth endpoint on auth-service, preserving full path
 		return authService.proxyGet("api/public/auth/login/" + provider);
 	}
 
@@ -54,7 +56,7 @@ public class PublicResource {
 
 	private String buildUrl(String service, String subpath) {
 		// for strict auth callback path OIDC
-		if (service.equals("auth") && (subpath.startsWith("callback/") || subpath.startsWith("login/"))) {
+		if (service.equals("auth") && subpath.startsWith("callback/")) {
 			return "api/public/" + service + "/" + subpath;
 		}
 

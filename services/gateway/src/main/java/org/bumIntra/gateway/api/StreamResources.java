@@ -26,7 +26,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.StreamingOutput;
 
-@Path("/api/stream")
+@Path("/stream")
 @Produces(MediaType.SERVER_SENT_EVENTS)
 public class StreamResources {
 

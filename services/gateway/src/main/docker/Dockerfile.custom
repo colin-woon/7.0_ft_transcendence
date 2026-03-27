@@ -9,10 +9,7 @@ RUN chmod +x mvnw && ./mvnw dependency:go-offline
 
 # --- Stage 2: Development (Hot Reloading) ---
 FROM base AS development
-COPY services/gateway/src/main/docker/dev-entrypoint.sh /usr/local/bin/dev-entrypoint.sh
-RUN chmod +x /usr/local/bin/dev-entrypoint.sh
 EXPOSE 8080 5005
-ENTRYPOINT ["/usr/local/bin/dev-entrypoint.sh"]
 CMD ["./mvnw", "quarkus:dev", "-Dquarkus.http.host=0.0.0.0"]
 
 # --- Stage 3.0: Intermediate Build ---

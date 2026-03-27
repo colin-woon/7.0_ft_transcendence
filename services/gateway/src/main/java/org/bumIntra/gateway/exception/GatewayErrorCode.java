@@ -6,7 +6,6 @@ public enum GatewayErrorCode {
 	AUTH_INVALID,
 	FORBIDDEN,
 	RATE_LIMITED,
-	SSE_ACCEPT_REQUIRED,
 
 	// ───── Service / Downstream errors ─────
 	SERVICE_TIMEOUT,

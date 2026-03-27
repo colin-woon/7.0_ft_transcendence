@@ -59,10 +59,6 @@ Key fields:
 - `serviceName` — targeted downstream service name (for observability)
 - `errorCode`, `errorStatus` — set when a `GatewayException` is mapped
 
-`RequestContextFilter` also classifies `/api/stream/**` requests as `pathType=stream`.
-For valid stream requests it requires `Accept: text/event-stream`; otherwise it throws
-`GatewayException` with `SSE_ACCEPT_REQUIRED` and HTTP `406`.
-
 ### Observer / Dispatcher Pattern
 
 ```
