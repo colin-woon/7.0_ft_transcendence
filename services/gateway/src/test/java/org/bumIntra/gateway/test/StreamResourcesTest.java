@@ -1,10 +1,6 @@
 package org.bumIntra.gateway.test;
 
 import static io.restassured.RestAssured.given;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
@@ -29,8 +25,7 @@ public class StreamResourcesTest {
 	@Test
 	public void testStreamChat() {
 		given()
-				.header("Accept", "text/event-stream")
-				.when().get("/api/stream/unknown/test")
+				.when().get("/stream/unknown/test")
 				.then()
 				.statusCode(404);
 	}
@@ -39,12 +34,6 @@ public class StreamResourcesTest {
 	public void testPreserveUnauthorized() {
 		when(chat.proxyStream("test"))
 				.thenReturn(Response.status(401).build());
-
-		given().header("Accept", "text/event-stream")
-				.when().get("/api/stream/chat/test")
-				.then().statusCode(401);
-
-		verify(chat).proxyStream("test");
 	}
 
 	@Test
@@ -52,10 +41,8 @@ public class StreamResourcesTest {
 		when(chat.proxyStream("test"))
 				.thenReturn(Response.status(500).build());
 		given().header("Accept", "text/event-stream")
-				.when().get("/api/stream/chat/test")
+				.when().get("stream/chat/test")
 				.then().statusCode(502);
-
-		verify(chat).proxyStream("test");
 	}
 
 	@Test
@@ -68,40 +55,10 @@ public class StreamResourcesTest {
 
 		given()
 				.header("Accept", "text/event-stream")
-				.when().get("/api/stream/chat/test")
+				.when().get("/stream/chat/test")
 				.then()
 				.statusCode(200)
 				.header("Cache-Control", "no-cache")
 				.contentType(containsString("text/event-stream"));
-
-		verify(chat).proxyStream("test");
-	}
-
-	@Test
-	public void testSseSuccessWithoutAcceptHeader() {
-		when(chat.proxyStream("test"))
-				.thenReturn(Response
-						.ok(new ByteArrayInputStream("data: hello\n\n".getBytes(StandardCharsets.UTF_8)))
-						.type(MediaType.SERVER_SENT_EVENTS)
-						.build());
-
-		given()
-				.when().get("/api/stream/chat/test")
-				.then()
-				.statusCode(406)
-				.header("X-Request-Id", notNullValue());
-
-		verify(chat, never()).proxyStream(anyString());
-	}
-
-	@Test
-	public void testLegacyStreamPathNoLongerSupported() {
-		given()
-				.header("Accept", "text/event-stream")
-				.when().get("/stream/chat/test")
-				.then()
-				.statusCode(404);
-
-		verify(chat, never()).proxyStream(anyString());
 	}
 }

@@ -23,8 +23,6 @@ public final class GatewayErrorMessageResolver {
 				"Access is forbidden";
 			case RATE_LIMITED ->
 				"Too many requests";
-			case SSE_ACCEPT_REQUIRED ->
-				"Stream requests must accept text/event-stream";
 
 			// ───── Downstream ─────
 			case SERVICE_TIMEOUT ->
