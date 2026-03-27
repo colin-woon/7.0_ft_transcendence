@@ -10,7 +10,7 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   // Context tells AppShell what state everything is in
-  const { isSidebarOpen, closeSidebar, searchQuery, isChatOpen } = useAppShell()
+  const { isSidebarOpen, closeSidebar, isChatOpen } = useAppShell()
   
   return (
     <div className="bg-white">

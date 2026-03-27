@@ -34,12 +34,11 @@ export default function App() {
               </p>
             </div>
 
-            {/* Google Login */}
-            <LoginButton>
-            </LoginButton>
+            {/* Login Buttons */}
+            <LoginButton />
 
-            <p className="text-xs text-slate-500 text-center animate-[fade-up_0.5s_0.3s_ease-out_both]">
-              We only support Google sign-in for now.
+            <p className="text-xs text-slate-500 text-center animate-[fade-up_0.5s_0.4s_ease-out_both]">
+              Sign in with your Google account or 42 (Intra) school account.
             </p>
             <p className="text-xs text-slate-500 text-center animate-[fade-up_0.5s_0.35s_ease-out_both]">
               New here? Your Google account will create a profile on first sign-in.

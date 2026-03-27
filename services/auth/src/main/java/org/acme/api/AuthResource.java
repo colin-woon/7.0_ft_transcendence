@@ -1,5 +1,6 @@
 package org.acme.api;
 
+import java.net.URI;
 import java.util.List;
 
 import org.acme.dto.AdminUpdateDTO;
@@ -59,16 +60,20 @@ public class AuthResource {
 	// =============================================================
 	// AUTH RESOURCE ENDPOINTS
 	// =============================================================
-	// To Login the user, giving an access and refresh token
+	/**
+	 * OAuth login endpoint - called AFTER successful OAuth authentication
+	 * Quarkus OIDC automatically redirects here once Google/42 confirms identity
+	 * Creates session + access tokens, then redirects to login endpoint for cleanup
+	 */
 	@GET
 	@Path("/login/{provider}")
 	@Authenticated
 	public Response login(
 						@PathParam("provider") @DefaultValue("google") String provider,
-						@QueryParam("isCookie") @DefaultValue("true") Boolean isCookie) {
+						@QueryParam("isCookie") @DefaultValue("true") Boolean isCookie) throws java.net.URISyntaxException {
 		UserResponseDTO userResponse = authService.createToken(identity);
 		Response.ResponseBuilder responseBuilder = Response
-			.status(200)
+			.seeOther(new URI("https://localhost/profile"))
 			.entity(userResponse)
 			.cookie(authService.createSessionCookie(identity))
 			.cookie(authService.clearOIDCCookies());
