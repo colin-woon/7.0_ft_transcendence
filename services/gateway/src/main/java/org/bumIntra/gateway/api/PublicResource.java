@@ -1,7 +1,6 @@
 package org.bumIntra.gateway.api;
 
 import org.bumIntra.gateway.client.AuthService;
-import org.bumIntra.gateway.security.GatewayRequestContext;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -14,13 +13,16 @@ import jakarta.ws.rs.core.Response;
 @Path("/api/public")
 public class PublicResource {
 
-	private static final String AUTH_SERVICE = "auth-service";
-
 	@Inject
 	AuthService authService;
 
-	@Inject
-	GatewayRequestContext grc;
+	// Temporary endpoint for testing public access
+	@GET
+	@Path("/ping")
+	public Response ping() {
+		System.out.println("called public ping");
+		return Response.ok("pong from public endpoint").build();
+	}
 
 	@GET
 	@Path("/auth/login/{provider: .*}")
@@ -39,7 +41,6 @@ public class PublicResource {
 		if (provider.contains("/") || provider.isBlank() || provider.equals(".") || provider.equals("..")) {
 			return Response.status(Response.Status.NOT_FOUND).build();
 		}
-		grc.setServiceName(AUTH_SERVICE);
 		return authService.proxyGet("api/public/auth/callback/" + provider);
 	}
 
@@ -48,7 +49,6 @@ public class PublicResource {
 	public Response proxyPublicPost(@PathParam("service") String service, @PathParam("subpath") String subpath,
 			byte[] body) {
 		if ("auth".equals(service) && "refresh".equals(subpath)) {
-			grc.setServiceName(AUTH_SERVICE);
 			return authService.proxyPost(buildUrl(service, subpath), body);
 		}
 		return Response.status(Response.Status.NOT_FOUND).build();

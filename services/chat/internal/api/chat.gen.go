@@ -56,6 +56,15 @@ type ChatMessage struct {
 	SenderId   int       `json:"senderId"`
 }
 
+// FriendList defines model for FriendList.
+type FriendList = []struct {
+	// ChatId Unique identifier for the chat between the user and the friend
+	ChatId *openapi_types.UUID `json:"chatId,omitempty"`
+
+	// FriendId Unique identifier for the friend
+	FriendId *int `json:"friendId,omitempty"`
+}
+
 // UpdateFriendshipStatusParams defines parameters for UpdateFriendshipStatus.
 type UpdateFriendshipStatusParams struct {
 	Status UpdateFriendshipStatusParamsStatus `form:"status" json:"status"`
@@ -80,6 +89,9 @@ type ServerInterface interface {
 	// Update friendship status
 	// (PATCH /friendship/{requesterId}/{receiverId}/update)
 	UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int, params UpdateFriendshipStatusParams)
+	// Get friend list for a user with chat ID references
+	// (GET /friendship/{tempUserId})
+	GetFriendList(w http.ResponseWriter, r *http.Request, tempUserId int)
 	// Get chat history for a specific chat
 	// (GET /message/history/{chatId})
 	GetMessageHistory(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID)
@@ -104,6 +116,12 @@ func (_ Unimplemented) SendFriendRequest(w http.ResponseWriter, r *http.Request,
 // Update friendship status
 // (PATCH /friendship/{requesterId}/{receiverId}/update)
 func (_ Unimplemented) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int, params UpdateFriendshipStatusParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get friend list for a user with chat ID references
+// (GET /friendship/{tempUserId})
+func (_ Unimplemented) GetFriendList(w http.ResponseWriter, r *http.Request, tempUserId int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -211,6 +229,31 @@ func (siw *ServerInterfaceWrapper) UpdateFriendshipStatus(w http.ResponseWriter,
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateFriendshipStatus(w, r, requesterId, receiverId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetFriendList operation middleware
+func (siw *ServerInterfaceWrapper) GetFriendList(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "tempUserId" -------------
+	var tempUserId int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tempUserId", chi.URLParam(r, "tempUserId"), &tempUserId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetFriendList(w, r, tempUserId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -433,6 +476,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Patch(options.BaseURL+"/friendship/{requesterId}/{receiverId}/update", wrapper.UpdateFriendshipStatus)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/friendship/{tempUserId}", wrapper.GetFriendList)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/message/history/{chatId}", wrapper.GetMessageHistory)
 	})
 	r.Group(func(r chi.Router) {
@@ -448,22 +494,25 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

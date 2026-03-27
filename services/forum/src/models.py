@@ -14,9 +14,11 @@ class Project(Base):
     slug: Mapped[str] = mapped_column(String(100), unique=True)
     name: Mapped[str] = mapped_column(String(255))
     description: Mapped[Optional[str]] = mapped_column(Text)
+    solo: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     objectives: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
     estimate_time: Mapped[Optional[str]] = mapped_column(String(50))
+    difficulty: Mapped[Optional[str]] = mapped_column(String(10))
     post_count: Mapped[int] = mapped_column(Integer, default=0)
     posts: Mapped[List["ForumPost"]] = relationship(back_populates="project")
 

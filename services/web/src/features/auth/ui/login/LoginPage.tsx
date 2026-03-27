@@ -1,25 +1,21 @@
 "use client"
-import React from 'react'
-import { Layers } from 'lucide-react'
 import { useAuth } from '@/features/auth/models/AuthContext'
-import LoginButton from "@/features/auth/ui/login/LoginButton";
+import LoginButton from "@/features/auth/ui/login/LoginButton"
+import { BackgroundBlobs } from "@/features/auth/ui/login/BackgroundBlobs"
+import { GlassCard } from "@/features/auth/ui/login/GlassCard"
+import { LoginHeader } from "@/features/auth/ui/login/LoginHeader"
+import { LoginFooterText } from "@/features/auth/ui/login/LoginFooterText"
 
 
 export default function App() {
   const { login } = useAuth()
 
   return (
-    <div className="min-h-[100svh] w-full flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-gray-100 p-4 sm:p-6 font-sans text-slate-800 overflow-hidden relative">
-      {/* Decorative background blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-200/20 blur-[100px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-200/20 blur-[100px]" />
+    <div className="min-h-[100svh] w-full flex items-center justify-center bg-white p-8 sm:p-12 font-sans text-slate-800 overflow-hidden relative">
+      <BackgroundBlobs />
 
       <div className="w-full max-w-md relative animate-[fade-up_0.7s_ease-out_both]">
-        {/* Glass Card */}
-        <div className="relative backdrop-blur-xl bg-white/30 border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl p-8 sm:p-10 overflow-hidden">
-          {/* Shine */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent" />
-
+        <GlassCard>
           <div className="flex flex-col items-center space-y-8">
             {/* Header */}
             <div className="text-center space-y-2">
@@ -44,7 +40,7 @@ export default function App() {
               New here? Your Google account will create a profile on first sign-in.
             </p>
           </div>
-        </div>
+        </GlassCard>
       </div>
     </div>
   )

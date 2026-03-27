@@ -1,89 +1,126 @@
 .DEFAULT_GOAL := help
 
-COMPOSE         ?= docker compose
-COMPOSE_PROD    := $(COMPOSE) -f docker-compose.yml --env-file ./environment/shared.env
-COMPOSE_DEV     := $(COMPOSE) -f docker-compose.yml -f docker-compose.override.yml --env-file ./environment/shared.env
-PROFILE         ?= all
-DEV_PROFILES    ?= --profile all
+# ---- Configuration ------------------------------------------------------
+COMPOSE          ?= docker compose
+COMPOSE_PROD     := $(COMPOSE) -f docker-compose.yml --env-file ./environment/shared.env
+COMPOSE_DEV      := $(COMPOSE) -f docker-compose.yml -f docker-compose.override.yml --env-file ./environment/shared.env
+GRAFANA_PROD_DS  := ./infra/obs/grafana/provisioning/datasources/prometheus.prod.yml
 
 .PHONY: help
 help:
+	@echo "========================================================================"
+	@echo "42 Overflow - Infrastructure Management"
+	@echo "========================================================================"
+	@echo "All Targets:"
+	@echo "  make all              Start all services (production mode)"
+	@echo "  make dev-all          Start all services (development mode)"
+	@echo "  make stop             Stop all running containers"
+	@echo "  make down             Stop and remove project containers, networks, and orphans"
+	@echo "  make clean            Remove project containers, volumes, and orphans"
+	@echo "  make prune            Run docker system prune -f"
+	@echo "  make certs            Reset and regenerate all TLS/JWT cert artifacts"
+	@echo "  make certs-clean      Remove generated TLS/JWT cert artifacts"
+	@echo "  make certs-verify     Verify generated certs and key sync"
 	@echo ""
-	@echo "Production (docker-compose.yml only):"
-	@echo "  make auth | chat | forum | web | gateway | nginx | all"
-	@echo "  make down        PROFILE=<profile>"
-	@echo "  make build       PROFILE=<profile>   # no-cache fresh build"
-	@echo "  make rebuild     PROFILE=<profile>   # no-cache fresh build + start"
-	@echo "  make logs        PROFILE=<profile>"
-	@echo "  make restart     PROFILE=<profile>"
-	@echo ""
-	@echo "Development (docker-compose.yml + docker-compose.override.yml):"
-	@echo "  make dev-auth | dev-chat | dev-forum | dev-web | dev-gateway | dev-all"
-	@echo "    note: dev-auth/chat/forum/web also start gateway"
-	@echo "  make dev-build    PROFILE=<profile>   # no-cache build only"
-	@echo "  make dev-rebuild  PROFILE=<profile>   # no-cache build + start"
-	@echo "  make dev-recreate PROFILE=<profile>   # restart without rebuild"
-	@echo "  (use make down / logs / restart for stop/logs/restart)"
-	@echo ""
-	@echo "Shared:"
-	@echo "  make ps | config | clean"
-	@echo ""
+	@echo "Service Targets (replace <service> with gateway | auth | chat | forum | web | nginx | prometheus | grafana ):"
+	@echo "  [PROD] make build-<service>    | [DEV] make dev-build-<service>"
+	@echo "  [PROD] make up-<service>       | [DEV] make dev-up-<service>"
+	@echo "  [PROD] make rebuild-<service>  | [DEV] make dev-rebuild-<service>"
+	@echo "  [PROD] make logs-<service>     | [DEV] make dev-logs-<service>"
+	@echo "  [PROD] make restart-<service>  | [DEV] make dev-restart-<service>"
+	@echo "========================================================================"
 
-# ---- Production targets ------------------------------------------------
-.PHONY: auth chat forum web gateway nginx all
-auth:     PROFILE=auth
-chat:     PROFILE=chat
-forum:    PROFILE=forum
-web:      PROFILE=web
-gateway:  PROFILE=gateway
-nginx:    PROFILE=nginx
-all:      PROFILE=all
-auth chat forum web gateway nginx all: prod-up
+# ---- Production (Group Targets) -----------------------------------------
+.PHONY: all up build rebuild restart logs stop down ensure-prod-certs
 
-prod-up:
-	$(COMPOSE_PROD) --profile $(PROFILE) up -d --build
+all: up-all
+
+up: up-all
+up-all: ensure-prod-certs
+	$(COMPOSE_PROD) --profile all up -d --build
+
+build: build-all
+build-all: ensure-prod-certs
+	$(COMPOSE_PROD) --profile all build --no-cache
+
+rebuild: rebuild-all
+rebuild-all: ensure-prod-certs
+	$(COMPOSE_PROD) --profile all down
+	$(COMPOSE_PROD) --profile all up -d --build --force-recreate
+
+restart: restart-all
+restart-all:
+	$(COMPOSE_PROD) --profile all restart
+
+logs: logs-all
+logs-all:
+	$(COMPOSE_PROD) --profile all logs -f --tail=200
+
+stop:
+	$(COMPOSE_PROD) --profile all stop
 
 down:
-	$(COMPOSE_PROD) --profile $(PROFILE) stop
+	$(COMPOSE_PROD) --profile all down --remove-orphans
 
-build:
-	$(COMPOSE_PROD) --profile $(PROFILE) build --no-cache
+clean:
+	$(COMPOSE_PROD) --profile all down -v --remove-orphans
 
-rebuild:
-	$(COMPOSE_PROD) --profile $(PROFILE) build --no-cache
-	$(COMPOSE_PROD) --profile $(PROFILE) up -d
+# ---- Production (Surgical Targets) --------------------------------------
+# Usage: make build-gateway, make up-auth, etc.
 
-restart:
-	$(COMPOSE_PROD) --profile $(PROFILE) restart
+build-%: ensure-prod-certs
+	$(COMPOSE_PROD) build --no-cache $*-service
 
-logs:
-	$(COMPOSE_PROD) --profile $(PROFILE) logs -f --tail=200
+up-%: ensure-prod-certs
+	$(COMPOSE_PROD) up -d --build $*-service
 
-# ---- Development targets ------------------------------------------------
-.PHONY: dev-auth dev-chat dev-forum dev-web dev-gateway dev-all dev-up dev-recreate dev-build dev-rebuild
-dev-auth:     DEV_PROFILES=--profile auth --profile gateway
-dev-chat:     DEV_PROFILES=--profile chat --profile gateway
-dev-forum:    DEV_PROFILES=--profile forum --profile gateway
-dev-web:      DEV_PROFILES=--profile web --profile gateway
-dev-gateway:  DEV_PROFILES=--profile gateway
-dev-all:      DEV_PROFILES=--profile all
-dev-auth dev-chat dev-forum dev-web dev-gateway dev-all: dev-up
+rebuild-%: ensure-prod-certs
+	$(COMPOSE_PROD) up -d --build --force-recreate $*-service
 
+restart-%:
+	$(COMPOSE_PROD) restart $*-service
+
+logs-%:
+	$(COMPOSE_PROD) logs -f --tail=200 $*-service
+
+# Legacy shorthands for quick start
+auth chat forum web gateway nginx prometheus grafana: ensure-prod-certs
+	$(COMPOSE_PROD) up -d --build $@-service
+
+# ---- Development Targets (Group) ----------------------------------------
+.PHONY: dev-all dev-up dev-build dev-rebuild
+
+dev-all: dev-up
 dev-up:
-	$(COMPOSE_DEV) $(DEV_PROFILES) up -d --build
-
-dev-recreate:
-	$(COMPOSE_DEV) $(DEV_PROFILES) up -d --force-recreate --no-build
+	$(COMPOSE_DEV) --profile all up -d --build
 
 dev-build:
-	$(COMPOSE_DEV) $(DEV_PROFILES) build --no-cache
+	$(COMPOSE_DEV) --profile all build --no-cache
 
 dev-rebuild:
-	$(COMPOSE_DEV) $(DEV_PROFILES) build --no-cache
-	$(COMPOSE_DEV) $(DEV_PROFILES) up -d --force-recreate
+	$(COMPOSE_DEV) --profile all down
+	$(COMPOSE_DEV) --profile all up -d --build --force-recreate
 
-# ---- Shared targets -----------------------------------------------------
-.PHONY: ps config stop pull clean
+# ---- Development Targets (Surgical) -------------------------------------
+# Usage: make dev-build-gateway, make dev-up-auth, etc.
+
+dev-build-%:
+	$(COMPOSE_DEV) build --no-cache $*-service
+
+dev-up-%:
+	$(COMPOSE_DEV) up -d --build $*-service
+
+dev-rebuild-%:
+	$(COMPOSE_DEV) up -d --build --force-recreate $*-service
+
+dev-restart-%:
+	$(COMPOSE_DEV) restart $*-service
+
+dev-logs-%:
+	$(COMPOSE_DEV) logs -f --tail=200 $*-service
+
+# ---- Maintenance --------------------------------------------------------
+.PHONY: ps config clean prune certs certs-clean certs-verify grafana
 
 ps:
 	$(COMPOSE_PROD) ps
@@ -91,11 +128,17 @@ ps:
 config:
 	$(COMPOSE_PROD) config
 
-stop:
-	$(COMPOSE_PROD) stop
+prune:
+	docker system prune -f
 
-pull:
-	$(COMPOSE_PROD) --profile $(PROFILE) pull
+ensure-prod-certs:
+	@test -f $(GRAFANA_PROD_DS) || ./certs.sh
 
-clean:
-	$(COMPOSE_PROD) down -v --remove-orphans
+certs:
+	./certs.sh
+
+certs-clean:
+	./certs.sh clean
+
+certs-verify:
+	./certs.sh verify
