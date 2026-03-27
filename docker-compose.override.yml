@@ -86,6 +86,12 @@ services:
             - HOME=/tmp
             - MAVEN_CONFIG=/tmp/.m2
             - MAVEN_OPTS=-Dmaven.repo.local=/tmp/.m2/repository
+        healthcheck:
+            test: ['CMD', 'curl', '-f', 'http://localhost:8180/q/health']
+            interval: 10s
+            timeout: 5s
+            start_period: 40s
+            retries: 3
         volumes:
             - ./services/gateway:/app
         depends_on:
