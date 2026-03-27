@@ -30,9 +30,7 @@ public class PublicResource {
 		if (provider.contains("/") || provider.isBlank() || provider.equals(".") || provider.equals("..")) {
 			return Response.status(Response.Status.NOT_FOUND).build();
 		}
-		grc.setServiceName(AUTH_SERVICE);
-		// Route to public auth endpoint on auth-service, preserving full path
-		return authService.proxyGet("api/public/auth/login/" + provider);
+		return authService.proxyGet("auth/login/" + provider);
 	}
 
 	@GET

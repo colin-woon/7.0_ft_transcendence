@@ -59,23 +59,24 @@ public class AuthResource {
 	// =============================================================
 	// AUTH RESOURCE ENDPOINTS
 	// =============================================================
-	// @GET
-	// @Path("/login/{provider}")
-	// @Authenticated
-	// public Response login(
-	// 					@PathParam("provider") @DefaultValue("google") String provider,
-	// 					@QueryParam("isCookie") @DefaultValue("true") Boolean isCookie) throws java.net.URISyntaxException {
-	// 	UserResponseDTO userResponse = authService.createToken(identity);
-	// 	Response.ResponseBuilder responseBuilder = Response
-	// 		.seeOther(new URI("https://localhost/profile"))
-	// 		.entity(userResponse)
-	// 		.cookie(authService.createSessionCookie(identity))
-	// 		.cookie(authService.clearOIDCCookies());
-	// 	if (isCookie)
-	// 		responseBuilder.cookie(authService.createAccessTokenCookie(userResponse.accessToken));
+	// To Login the user, giving an access and refresh token
+	@GET
+	@Path("/login/{provider}")
+	@Authenticated
+	public Response login(
+						@PathParam("provider") @DefaultValue("google") String provider,
+						@QueryParam("isCookie") @DefaultValue("true") Boolean isCookie) {
+		UserResponseDTO userResponse = authService.createToken(identity);
+		Response.ResponseBuilder responseBuilder = Response
+			.status(200)
+			.entity(userResponse)
+			.cookie(authService.createSessionCookie(identity))
+			.cookie(authService.clearOIDCCookies());
+		if (isCookie)
+			responseBuilder.cookie(authService.createAccessTokenCookie(userResponse.accessToken));
 
-	// 	return responseBuilder.build();
-	// }
+		return responseBuilder.build();
+	}
 
 	// To refresh the user after access token expires
 	@POST

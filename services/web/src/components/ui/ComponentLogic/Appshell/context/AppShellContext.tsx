@@ -6,6 +6,8 @@ interface AppShellContextType {
   isSidebarOpen: boolean
   toggleSidebar: () => void
   closeSidebar: () => void
+  searchQuery: string
+  setSearchQuery: (query: string) => void
   isChatOpen: boolean
   openChatInbox: () => void
   closeChatInbox: () => void
@@ -15,6 +17,7 @@ const AppShellContext = createContext<AppShellContextType | undefined>(undefined
 
 export function AppShellProvider({ children }: { children: ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [isChatOpen, setIsChatOpen] = useState(false)
 
   const toggleSidebar = () => setIsSidebarOpen(prev => !prev)
@@ -26,6 +29,8 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
     isSidebarOpen,
     toggleSidebar,
     closeSidebar,
+    searchQuery,
+    setSearchQuery,
     isChatOpen,
     openChatInbox,
     closeChatInbox,

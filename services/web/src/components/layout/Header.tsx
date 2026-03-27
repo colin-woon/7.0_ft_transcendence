@@ -1,41 +1,12 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { Search, Download, Coins, MessageCircle, Bell, Plus, Menu, X, Loader2 } from 'lucide-react'
+import { Search, Download, Coins, MessageCircle, Bell, Plus, Menu } from 'lucide-react'
 import UserMenu from '@/components/layout/UserMenu'
 import { useAppShell } from '@/components/ui/ComponentLogic/Appshell/context/AppShellContext'
-import { useUserSearch } from '@/features/auth/hooks/useUserSearch'
 
 export default function Header() {
-  const { isSidebarOpen, toggleSidebar } = useAppShell()
-  const { query, setQuery, results, loading, error, clear } = useUserSearch()
-  const [showResults, setShowResults] = useState(false)
-  const searchContainerRef = useRef<HTMLDivElement>(null)
-
-  // Close results when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
-        setShowResults(false)
-      }
-    }
-
-    if (showResults) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showResults])
-
-  const handleSearch = (value: string) => {
-    setQuery(value)
-    setShowResults(true)
-  }
-
-  const handleClear = () => {
-    clear()
-    setShowResults(false)
-  }
+  const { isSidebarOpen, toggleSidebar, searchQuery, setSearchQuery} = useAppShell()
 
   return (
     <header className="bg-white text-slate-900 sticky top-0 z-[60] border-b border-gray-200 w-full shadow-sm">
@@ -65,73 +36,17 @@ export default function Header() {
           </div>
 
           {/* Center: search */}
-          <div className="flex-1 max-w-3xl" ref={searchContainerRef}>
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+          <div className="flex-1 max-w-2xl ml-[-24px]">
+            <div className="relative flex items-center justify-center">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={22} />
               <input
                 type="text"
-                placeholder="Search users, projects..."
-                value={query}
-                onChange={(e) => handleSearch(e.target.value)}
-                onFocus={() => setShowResults(true)}
-                className="w-full pl-10 pr-10 py-2.5 bg-white rounded-full text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60 border border-gray-200"
+                placeholder="Search 42 overflow"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-[#f6f7f8] rounded-full text-base placeholder-gray-500 border-2 border-[#8EE7E3] shadow-inner text-center transition-colors focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]"
+                style={{ boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03)' }}
               />
-              {query && (
-                <button
-                  onClick={handleClear}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  <X size={16} />
-                </button>
-              )}
-
-              {/* Search dropdown */}
-              {showResults && query && (
-                <div className="absolute top-full mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
-                  {loading && (
-                    <div className="p-4 text-center">
-                      <Loader2 size={18} className="animate-spin mx-auto text-blue-500" />
-                      <p className="text-xs text-slate-500 mt-2">Searching...</p>
-                    </div>
-                  )}
-
-                  {error && (
-                    <div className="p-4 text-center">
-                      <p className="text-sm text-red-600">{error}</p>
-                    </div>
-                  )}
-
-                  {!loading && results.length > 0 && (
-                    <div className="max-h-96 overflow-y-auto">
-                      {results.map((user) => (
-                        <Link
-                          key={user.id}
-                          href={`/users/${user.id}`}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b border-gray-100 last:border-b-0"
-                          onClick={() => {
-                            setShowResults(false)
-                            clear()
-                          }}
-                        >
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-semibold">
-                            {user.fullName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-slate-900 truncate">{user.fullName}</p>
-                            <p className="text-xs text-slate-500">@{user.username}</p>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-
-                  {!loading && results.length === 0 && query && (
-                    <div className="p-6 text-center">
-                      <p className="text-sm text-slate-500">No users found matching "{query}"</p>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 

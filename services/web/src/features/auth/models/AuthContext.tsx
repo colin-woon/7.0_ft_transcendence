@@ -7,13 +7,11 @@ interface AuthState {
   user: User | null
   accessToken: string | null
   isLoading: boolean
-  error: string | null
   login: (provider: 'google' | '42') => void
   mockLogin: () => void
   handleOAuthCallback: () => Promise<User | null>
   logout: () => Promise<void>
   refresh: () => Promise<boolean>
-  clearError: () => void
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -28,34 +26,25 @@ const mockUser: User = {
   role: 'STUDENT',
   isBanned: false,
   lastSeenAt: null,
-  updatedAt: new Date().toISOString(),
   createdAt: new Date().toISOString(),
   linkedWithGoogle: false,
   linkedWithIntra: false,
-  intraInfo: null,
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-  // ── Session Restoration ────────────────────────────────────────────────────
-  // On app start, check if user is already authenticated via session cookie
   useEffect(() => {
     const restoreSession = async () => {
       try {
         const response = await authService.refreshAccessToken()
         setUser(response.user)
         setAccessToken(response.accessToken)
-        setError(null)
-      } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : 'Session restore failed'
-        console.warn('Session restore failed:', errorMsg)
+      } catch {
         setUser(null)
         setAccessToken(null)
-        setError(null)  // Don't show error on initial load failure - just means not logged in
       } finally {
         setIsLoading(false)
       }
@@ -65,68 +54,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const login = (provider: 'google' | '42') => {
-    setError(null)
     authService.loginWithProvider(provider)
   }
 
   const mockLogin = () => {
     setUser(mockUser)
-    setAccessToken('mock-token-for-demo')
-    setError(null)
+    setAccessToken('mock-token')
   }
 
   const handleOAuthCallback = async (): Promise<User | null> => {
-    try {
-      setError(null)
-      const userData = await authService.handleOAuthCallback()
-      if (userData) {
-        setUser(userData)
-        setAccessToken(authService.getAccessToken())
-      }
-      return userData
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'OAuth callback failed'
-      setError(errorMsg)
-      console.error('OAuth callback error:', errorMsg)
-      return null
+    const userData = await authService.handleOAuthCallback()
+    if (userData) {
+      setUser(userData)
+      setAccessToken(authService.getAccessToken())
     }
+    return userData
   }
 
   const logout = async () => {
-    try {
-      setError(null)
-      await authService.logout()
-      setUser(null)
-      setAccessToken(null)
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Logout failed'
-      console.error('Logout error:', errorMsg)
-      setError(errorMsg)
-      // Still clear local state even if logout fails
-      setUser(null)
-      setAccessToken(null)
-    }
+    await authService.logout()
+    setUser(null)
+    setAccessToken(null)
   }
 
   const refresh = async (): Promise<boolean> => {
     try {
-      setError(null)
       const response = await authService.refreshAccessToken()
       setUser(response.user)
       setAccessToken(response.accessToken)
       return true
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Token refresh failed'
-      console.warn('Token refresh failed:', errorMsg)
+    } catch {
       setUser(null)
       setAccessToken(null)
-      setError(errorMsg)
       return false
     }
-  }
-
-  const clearError = () => {
-    setError(null)
   }
 
   return (
@@ -135,13 +96,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         accessToken,
         isLoading,
-        error,
         login,
         mockLogin,
         handleOAuthCallback,
         logout,
         refresh,
-        clearError,
       }}
     >
       {children}
