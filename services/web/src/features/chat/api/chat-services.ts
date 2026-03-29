@@ -21,8 +21,8 @@ export async function sendMessage(chatId: ChatId, tempSenderId: FriendId, tempRe
   return apiClient.post<void>(`/message/${chatId}/${tempSenderId}/${tempReceiverId}`, message);
 }
 
-export async function getMessageHistory(chatId: ChatId): Promise<ChatMessage> {
-  return apiClient.get<ChatMessage>(`/message/history/${chatId}`);
+export async function getMessageHistory(chatId: ChatId): Promise<ChatMessage[]> {
+  return apiClient.get<ChatMessage[]>(`/message/history/${chatId}`);
 }
 
 export async function getMessageStream(tempUserId: FriendId): Promise<ChatMessage> {

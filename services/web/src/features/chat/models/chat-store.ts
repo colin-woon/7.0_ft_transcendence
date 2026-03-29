@@ -12,7 +12,7 @@ export interface ChatState {
 export interface ChatActions {
   setSession: (chatId: ChatId) => void;
   addMessage: (msg: ChatMessage) => void;
-  setMessages: (updater: SetStateAction<ChatMessage[]>) => void;
+  setMessages: (messages: ChatMessage[]) => void;
 }
 
 export type ChatStore = ChatState & ChatActions;
@@ -23,7 +23,7 @@ export const createChatStore = (initialSessions: AllSessions = {}) => {
     immer((set) => ({
       sessions: initialSessions,
       currentChatId: null,
-      tempCurrentUserId: 1, // TEMP Hardcoded on mount as requested
+      tempCurrentUserId: 2, // TEMP Hardcoded on mount as requested
 
       setSession: (chatId: ChatId) => 
         set((state) => {
@@ -41,17 +41,11 @@ export const createChatStore = (initialSessions: AllSessions = {}) => {
           state.sessions[chatId].push(msg);
         }),
 
-      setMessages: (updater: SetStateAction<ChatMessage[]>) => 
+      setMessages: (messages: ChatMessage[]) => 
         set((state) => {
           const chatId = state.currentChatId;
           if (!chatId) return;
-
-          const current = state.sessions[chatId] || [];
-          
-          // Apply functional updater or direct array replacement
-          state.sessions[chatId] = typeof updater === 'function' 
-            ? updater(current) 
-            : updater;
+          state.sessions[chatId] = messages; // Directly set the array
         })
     }))
   );
