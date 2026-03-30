@@ -33,18 +33,13 @@ export function ChatBox() {
 
   return (
     // 3. Logic: If I sent it, move to the right. If friend sent it, stay left.
-    <div className="flex flex-col h-[500px] w-full border rounded-lg bg-base-200 p-4 overflow-y-auto gap-4">
+    <div className="flex flex-col-reverse h-[500px] w-full border rounded-lg bg-base-200 p-4 overflow-y-auto">
       {messages.map((msg) => {
         const isMe = msg.senderId === tempCurrentUserId;
 
         return (
-          <div
-            key={msg.id}
-            className={`chat ${isMe ? 'chat-end' : 'chat-start'}`}>
-            <div className="chat-header opacity-50 text-xs mb-1">
-              {isMe ? 'You' : 'Friend'}
-            </div>
-            <div className={`chat-bubble ${isMe ? 'chat-bubble-primary' : 'chat-bubble-secondary'}`}>
+          <div key={msg.id} className={`chat ${isMe ? 'chat-end' : 'chat-start'}`}>
+            <div key={msg.id} className={`chat-bubble ${isMe ? 'chat-bubble-primary' : 'chat-bubble-secondary'}`}>
               {msg.content}
             </div>
           </div>

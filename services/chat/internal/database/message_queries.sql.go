@@ -49,7 +49,7 @@ const getMessageHistoryByChatId = `-- name: GetMessageHistoryByChatId :many
 SELECT chat_id, sender_id, receiver_id, content, is_read, read_at, created_at
 FROM chat_service.messages
 WHERE chat_id = $1
-ORDER BY created_at ASC
+ORDER BY created_at DESC
 `
 
 type GetMessageHistoryByChatIdRow struct {

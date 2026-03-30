@@ -37,7 +37,7 @@ export const createChatStore = (initialSessions: AllSessions = {}) => {
           if (!state.sessions[chatId]) {
             state.sessions[chatId] = [];
           }
-          state.sessions[chatId].push(msg);
+          state.sessions[chatId].unshift(msg);
         }),
 
       setMessages: (messages: ChatMessage[]) => 
