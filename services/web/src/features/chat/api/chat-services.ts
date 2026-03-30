@@ -27,7 +27,7 @@ export async function getMessageHistory(chatId: ChatId): Promise<ChatMessage[]> 
 
 export function getMessageStream(
   tempUserId: number, 
-  onMessageReceived: (message: ChatMessage) => void
+  onStreamChunkReceived: (chunkContent: string) => void
 ): EventSource {
   // 2. Initialize the connection
   const sse = new EventSource(`http://localhost:8003/message/stream/${tempUserId}`);
@@ -36,13 +36,10 @@ export function getMessageStream(
   sse.onmessage = (event) => {
     try {
       // SSE sends data as a string. We must parse it to match your ChatMessage schema.
-      const rawMessage = JSON.parse(event.data);
+      const chunkContent = event.data;
 
-      const formattedMessage: ChatMessage = {
-        
-      }
       // Pass the parsed object to the UI (which will push it to Zustand)
-      onMessageReceived(formattedMessage);
+      onStreamChunkReceived(chunkContent);
       
     } catch (error) {
       console.error("Error parsing incoming chat message:", error);

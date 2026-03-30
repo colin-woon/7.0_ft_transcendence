@@ -1,7 +1,6 @@
 import { createStore } from 'zustand/vanilla';
 import { immer } from 'zustand/middleware/immer';
 import type { AllSessions, FriendId, ChatMessage, ChatId } from './chat-types';
-import { useMemo, SetStateAction } from 'react';
 
 export interface ChatState {
   tempCurrentUserId: FriendId | null;

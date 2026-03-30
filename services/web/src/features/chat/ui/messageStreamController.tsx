@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useChat } from '../models';
 import { getMessageStream } from '../api/chat-services';
 
@@ -11,11 +11,20 @@ export function MessageStreamController() {
     // Only open a stream if we have an active chat and user
     if (!session.chatId || !tempCurrentUserId) return;
 
-    // 1. Open the SSE connection
-    // Pass a callback that the API layer will fire when a message arrives
-    // 2. Pipe the new message directly into Zustand
-    const eventSource = getMessageStream(tempCurrentUserId, (newMessage) => {
-      addMessage(newMessage); 
+    // TEMPORARY LOGIC: We assume the current chat context defines the participants. 
+    // You should properly extract the `recipientId` from your context or JWT
+    // when you have real user objects.
+    const mockRecipientId = tempCurrentUserId === 2 ? 1 : 2; 
+
+    // Open the SSE connection
+    const eventSource = getMessageStream(tempCurrentUserId, (eventContent) => {
+      addMessage({
+        id: session.chatId!,
+        senderId: mockRecipientId,     
+        recipientId: tempCurrentUserId, 
+        content: eventContent,
+        createdAt: new Date().toISOString() // Or grab from backend payload if available
+      });
     });
 
     // 3. Cleanup: Close connection when navigating away or changing chats
