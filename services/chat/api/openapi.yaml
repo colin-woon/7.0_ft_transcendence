@@ -13,10 +13,13 @@ components:
   schemas:
     ChatMessage:
       type: object
-      required: [id, senderId, receiverId, content, createdAt]
+      required: [id, chatId, senderId, receiverId, content, createdAt]
       properties:
         id:
           type: integer
+        chatId:
+          type: string
+          format: uuid
         senderId:
           type: integer
         receiverId:

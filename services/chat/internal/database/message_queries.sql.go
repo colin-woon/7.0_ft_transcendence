@@ -46,32 +46,23 @@ func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (C
 }
 
 const getMessageHistoryByChatId = `-- name: GetMessageHistoryByChatId :many
-SELECT chat_id, sender_id, receiver_id, content, is_read, read_at, created_at
+SELECT id, chat_id, sender_id, receiver_id, content, is_read, read_at, created_at
 FROM chat_service.messages
 WHERE chat_id = $1
 ORDER BY created_at DESC
 `
 
-type GetMessageHistoryByChatIdRow struct {
-	ChatID     pgtype.UUID        `json:"chatId"`
-	SenderID   int32              `json:"senderId"`
-	ReceiverID int32              `json:"receiverId"`
-	Content    string             `json:"content"`
-	IsRead     pgtype.Bool        `json:"isRead"`
-	ReadAt     pgtype.Timestamptz `json:"readAt"`
-	CreatedAt  pgtype.Timestamptz `json:"createdAt"`
-}
-
-func (q *Queries) GetMessageHistoryByChatId(ctx context.Context, chatID pgtype.UUID) ([]GetMessageHistoryByChatIdRow, error) {
+func (q *Queries) GetMessageHistoryByChatId(ctx context.Context, chatID pgtype.UUID) ([]ChatServiceMessage, error) {
 	rows, err := q.db.Query(ctx, getMessageHistoryByChatId, chatID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetMessageHistoryByChatIdRow
+	var items []ChatServiceMessage
 	for rows.Next() {
-		var i GetMessageHistoryByChatIdRow
+		var i ChatServiceMessage
 		if err := rows.Scan(
+			&i.ID,
 			&i.ChatID,
 			&i.SenderID,
 			&i.ReceiverID,

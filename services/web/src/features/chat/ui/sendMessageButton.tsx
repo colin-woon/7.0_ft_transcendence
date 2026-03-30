@@ -10,10 +10,10 @@ export function SendMessageButton() {
 
   // 1. Create a state variable for the input text
   const [messageText, setMessageText] = useState('');
+  const tempTargetFriendId = 1;
 
   useEffect(() => {
     const fetchFriends = async () => {
-      const tempTargetFriendId = 1;
       if (!userSession.chatId && userChat.tempCurrentUserId) {
         try {
           const friends = await getFriendList(userChat.tempCurrentUserId);
@@ -37,10 +37,18 @@ export function SendMessageButton() {
       sendMessage(
         userSession.chatId,
         userChat.tempCurrentUserId!,
-        2,
+        1,
         { content: messageText }
       );
       setMessageText('');
+      userChat.addMessage({
+        id: "msg-" + userChat.tempCurrentUserId + '-' + Date.now(),
+        chatId: userSession.chatId!,
+        senderId: userChat.tempCurrentUserId!,     
+        recipientId: tempTargetFriendId, 
+        content: messageText,
+        createdAt: new Date().toISOString() // Or grab from backend payload if available
+      });
     }
   };
 

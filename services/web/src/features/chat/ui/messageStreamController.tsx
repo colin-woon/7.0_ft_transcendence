@@ -19,7 +19,8 @@ export function MessageStreamController() {
     // Open the SSE connection
     const eventSource = getMessageStream(tempCurrentUserId, (eventContent) => {
       addMessage({
-        id: session.chatId!,
+        id: "msg-" + tempCurrentUserId + '-' + Date.now(),
+        chatId: session.chatId!,
         senderId: mockRecipientId,     
         recipientId: tempCurrentUserId, 
         content: eventContent,

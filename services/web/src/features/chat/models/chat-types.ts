@@ -10,7 +10,8 @@ export interface Friendship {
 export type FriendList = Friendship[];
 
 export interface ChatMessage {
-    id: ChatId;
+    id: number | string;
+    chatId: ChatId;
     senderId: FriendId;
     recipientId: FriendId;
     content: string;

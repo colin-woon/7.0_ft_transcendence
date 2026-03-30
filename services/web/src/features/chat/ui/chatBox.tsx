@@ -39,7 +39,7 @@ export function ChatBox() {
 
         return (
           <div key={msg.id} className={`chat ${isMe ? 'chat-end' : 'chat-start'}`}>
-            <div key={msg.id} className={`chat-bubble ${isMe ? 'chat-bubble-primary' : 'chat-bubble-secondary'}`}>
+            <div className={`chat-bubble ${isMe ? 'chat-bubble-primary' : 'chat-bubble-secondary'}`}>
               {msg.content}
             </div>
           </div>
