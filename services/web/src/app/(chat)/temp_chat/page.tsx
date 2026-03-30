@@ -2,7 +2,7 @@
 
 import { getMessageStream } from '@/features/chat/api/chat-services';
 import { ChatStoreProvider } from '@/features/chat/models';
-import { SendFriendRequestButton, SendMessageButton, FriendRequestChoices, ChatBox } from '@/features/chat/ui';
+import { SendFriendRequestButton, SendMessageButton, FriendRequestChoices, ChatBox, MessageStreamController } from '@/features/chat/ui';
 
 export default function MessagesPage() {
   return (
@@ -12,7 +12,7 @@ export default function MessagesPage() {
         <FriendRequestChoices />
         <ChatBox />
         <SendMessageButton />
-        <button className="btn btn-primary" onClick={() => getMessageStream(2)}>Get Message Stream</button>
+        <MessageStreamController />
       </div>
     </ChatStoreProvider>
   );

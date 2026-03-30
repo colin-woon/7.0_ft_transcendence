@@ -25,6 +25,37 @@ export async function getMessageHistory(chatId: ChatId): Promise<ChatMessage[]> 
   return apiClient.get<ChatMessage[]>(`/message/history/${chatId}`);
 }
 
-export async function getMessageStream(tempUserId: FriendId): Promise<ChatMessage> {
-  return apiClient.get<ChatMessage>(`/message/stream/${tempUserId}`);
+export function getMessageStream(
+  tempUserId: number, 
+  onMessageReceived: (message: ChatMessage) => void
+): EventSource {
+  // 2. Initialize the connection
+  const sse = new EventSource(`http://localhost:8003/message/stream/${tempUserId}`);
+
+  // 3. Listen for incoming messages
+  sse.onmessage = (event) => {
+    try {
+      // SSE sends data as a string. We must parse it to match your ChatMessage schema.
+      const rawMessage = JSON.parse(event.data);
+
+      const formattedMessage: ChatMessage = {
+        
+      }
+      // Pass the parsed object to the UI (which will push it to Zustand)
+      onMessageReceived(formattedMessage);
+      
+    } catch (error) {
+      console.error("Error parsing incoming chat message:", error);
+    }
+  };
+
+  // 4. Handle errors (like network drops or 401 Unauthorized)
+  sse.onerror = (error) => {
+    console.error("SSE Connection Error. Attempting to reconnect...", error);
+    // Note: EventSource automatically attempts to reconnect on its own.
+    // If you receive a 401, you might want to explicitly call sse.close() here.
+  };
+
+  // 5. Return the object so your MessageStreamController can call .close() on unmount
+  return sse;
 }
