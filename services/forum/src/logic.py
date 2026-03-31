@@ -119,13 +119,25 @@ def get_all_projects(db: Session) -> List[models.Project]:
 def get_all_projects_paginated(db: Session, page: int, page_size: int) -> dict:
     offset = (page - 1) * page_size
     total = db.query(models.Project).count()
-    items = (
-        db.query(models.Project)
-        .order_by(models.Project.id.asc())
+    results = (
+        db.query(
+            models.Project,
+            (
+                models.Project.post_count + 
+                func.coalesce(func.sum(models.ForumPost.comment_count), 0)
+            ).label("hot_score")
+        )
+        .outerjoin(models.ForumPost, models.Project.id == models.ForumPost.project_id)
+        .group_by(models.Project.id)
+        .order_by(text("hot_score DESC"), models.Project.id.asc())
         .offset(offset)
         .limit(page_size)
         .all()
     )
+    
+    #unpack tuple to get project list with list comprehension
+    items = [project for project, hot_score in results]
+
     total_pages = (total + page_size - 1) // page_size
     return {
         "items": items,
