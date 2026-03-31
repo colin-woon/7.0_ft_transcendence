@@ -24,11 +24,13 @@ export default function PostVoteButtons({ postId, initialUpvotes }: PostVoteButt
     try {
       const newVoteCount = await voteOnPost(postId, value);
       setUpvotes(newVoteCount);
-    } catch (error) {
+    }
+    catch (error) {
       setUpvotes(previousUpvotes);
       console.error('Voting failed:', error);
       alert('Could not register your vote. Please try again.');
-    } finally {
+    }
+    finally {
       setIsVoting(false);
     }
   };

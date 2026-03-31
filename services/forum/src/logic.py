@@ -303,12 +303,19 @@ def get_comments_by_post(db: Session, post_id: int) -> List[models.Comment]:
             .outerjoin(models.CommentVote, models.Comment.id == models.CommentVote.comment_id)
             .filter(models.Comment.post_id == post_id)
             .group_by(models.Comment.id)
+            .order_by(text("vote_score DESC"), models.Comment.created_at.asc(), models.Comment.id.asc())
             .all()
         )
     comments = []
     for comment_obj, score in results:
         comment_obj.vote_score = score
+        comment_obj.is_best_answer = False
         comments.append(comment_obj)
+
+    # Mark only one best answer when there is at least one positive-vote comment.
+    if comments and int(comments[0].vote_score or 0) > 0:
+        comments[0].is_best_answer = True
+
     return comments
 
 def get_comments_by_post_sort_by_top(db: Session, post_id: int) -> List[models.Comment]:
@@ -320,13 +327,19 @@ def get_comments_by_post_sort_by_top(db: Session, post_id: int) -> List[models.C
             .outerjoin(models.CommentVote, models.Comment.id == models.CommentVote.comment_id)
             .filter(models.Comment.post_id == post_id)
             .group_by(models.Comment.id)
-            .order_by(text ("vote_score DESC"))
+            .order_by(text("vote_score DESC"), models.Comment.created_at.asc(), models.Comment.id.asc())
             .all()
         )
     comments = []
     for comment_obj, score in results:
         comment_obj.vote_score = score
+        comment_obj.is_best_answer = False
         comments.append(comment_obj)
+
+    # Top-sorted comments can use the first positive entry as best answer.
+    if comments and int(comments[0].vote_score or 0) > 0:
+        comments[0].is_best_answer = True
+
     return comments
 
 def get_comments_by_post_sort_by_new(db: Session, post_id: int) -> List[models.Comment]:
@@ -344,7 +357,15 @@ def get_comments_by_post_sort_by_new(db: Session, post_id: int) -> List[models.C
     comments = []
     for comment_obj, score in results:
         comment_obj.vote_score = score
+        comment_obj.is_best_answer = False
         comments.append(comment_obj)
+
+    # Newest sort still exposes best answer by score for consistent UI badge behavior.
+    if comments:
+        best_comment = max(comments, key=lambda comment: int(comment.vote_score or 0))
+        if int(best_comment.vote_score or 0) > 0:
+            best_comment.is_best_answer = True
+
     return comments
 
 def create_comment(db: Session, post_id: int, user_id: int, data: schemas.CommentCreate) -> models.Comment:

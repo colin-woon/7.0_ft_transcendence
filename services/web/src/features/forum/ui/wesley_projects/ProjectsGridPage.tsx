@@ -1,6 +1,7 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, Star, Users, Clock, ChevronRight, Zap, Globe, MessageSquare } from "lucide-react";
 import type { Project, Difficulty } from "../../models/projects";
 
@@ -11,19 +12,47 @@ const difficultyColor: Record<Difficulty, string> = {
   Expert: "bg-red-100 text-red-700",
 };
 
-export default function ProjectsPage({ projects }: { projects: Project[] }) {
-  const [search, setSearch] = useState("");
+export default function ProjectsPage({ projects, initialSearch = "" }: { projects: Project[]; initialSearch?: string }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(initialSearch);
   const [filter, setFilter] = useState<"All" | Difficulty>("All");
 
   const filters: ("All" | Difficulty)[] = ["All", "Beginner", "Intermediate", "Advanced", "Expert"];
 
+  useEffect(() => {
+    setSearch(initialSearch);
+  }, [initialSearch]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const nextParams = new URLSearchParams(searchParams.toString());
+      const trimmedSearch = search.trim();
+
+      if (trimmedSearch.length >= 2) {
+        nextParams.set("q", trimmedSearch);
+      } else {
+        nextParams.delete("q");
+      }
+
+      const currentParams = searchParams.toString();
+      const nextParamsString = nextParams.toString();
+
+      if (currentParams === nextParamsString) {
+        return;
+      }
+
+      const nextUrl = nextParamsString ? `${pathname}?${nextParamsString}` : pathname;
+      router.replace(nextUrl);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [search, searchParams, pathname, router]);
+
   const filtered = projects.filter((p) => {
-    const matchesSearch =
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.description.toLowerCase().includes(search.toLowerCase()) ||
-      p.tags.some((t) => t.toLowerCase().includes(search.toLowerCase()));
     const matchesFilter = filter === "All" || p.difficulty === filter;
-    return matchesSearch && matchesFilter;
+    return matchesFilter;
   });
 
   return (
