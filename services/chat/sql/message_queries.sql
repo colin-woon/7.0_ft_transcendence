@@ -30,3 +30,22 @@ WHERE c.id IN (
     WHERE rm_sub.user_id = $1
 )
 GROUP BY c.id, c.type, c.name;
+
+-- name: CreateGroupChatRoom :one
+INSERT INTO chat_service.rooms (type, name)
+VALUES ('group', $1)
+RETURNING id, type, name;
+
+-- name: CreateRoomMembersForGroupChat :exec
+INSERT INTO chat_service.room_members (chat_id, user_id, role)
+SELECT
+    $1::uuid,
+    $2::int,
+    'admin'
+UNION ALL
+SELECT
+    $1::uuid,
+    u_id,
+    'member'
+FROM unnest($3::int[]) AS u_id
+WHERE u_id <> $2::int;

@@ -13,6 +13,25 @@ import (
 	"github.com/lib/pq"
 )
 
+const createGroupChatRoom = `-- name: CreateGroupChatRoom :one
+INSERT INTO chat_service.rooms (type, name)
+VALUES ('group', $1)
+RETURNING id, type, name
+`
+
+type CreateGroupChatRoomRow struct {
+	ID   uuid.UUID      `json:"id"`
+	Type string         `json:"type"`
+	Name sql.NullString `json:"name"`
+}
+
+func (q *Queries) CreateGroupChatRoom(ctx context.Context, name sql.NullString) (CreateGroupChatRoomRow, error) {
+	row := q.db.QueryRowContext(ctx, createGroupChatRoom, name)
+	var i CreateGroupChatRoomRow
+	err := row.Scan(&i.ID, &i.Type, &i.Name)
+	return i, err
+}
+
 const createMessage = `-- name: CreateMessage :one
 INSERT INTO chat_service.messages (chat_id, sender_id, content)
 VALUES ($1, $2, $3)
@@ -36,6 +55,32 @@ func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (C
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const createRoomMembersForGroupChat = `-- name: CreateRoomMembersForGroupChat :exec
+INSERT INTO chat_service.room_members (chat_id, user_id, role)
+SELECT
+    $1::uuid,
+    $2::int,
+    'admin'
+UNION ALL
+SELECT
+    $1::uuid,
+    u_id,
+    'member'
+FROM unnest($3::int[]) AS u_id
+WHERE u_id <> $2::int
+`
+
+type CreateRoomMembersForGroupChatParams struct {
+	Column1 uuid.UUID `json:"column1"`
+	Column2 int32     `json:"column2"`
+	Column3 []int32   `json:"column3"`
+}
+
+func (q *Queries) CreateRoomMembersForGroupChat(ctx context.Context, arg CreateRoomMembersForGroupChatParams) error {
+	_, err := q.db.ExecContext(ctx, createRoomMembersForGroupChat, arg.Column1, arg.Column2, pq.Array(arg.Column3))
+	return err
 }
 
 const getMessageHistoryByChatId = `-- name: GetMessageHistoryByChatId :many

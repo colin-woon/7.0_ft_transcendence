@@ -3,8 +3,10 @@ package server
 import (
 	"app/internal/api"
 	"app/internal/database"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -200,4 +202,77 @@ func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId
 		http.Error(w, "Failed to encode user chats", http.StatusInternalServerError)
 		return
 	}
+}
+
+func (s *Server) CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUserId int) {
+	ctx := r.Context()
+
+	var body api.CreateGroupChatJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	tx, err := s.db.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback()
+	qtx := s.db.GetQueries().WithTx(tx)
+
+	chatRoom, err := qtx.CreateGroupChatRoom(ctx, sql.NullString{
+		String: body.Name,
+		Valid:  true,
+	})
+
+	if err != nil {
+		log.Printf("Error creating group chat room: %v", err)
+		http.Error(w, "Failed to create group chat", http.StatusInternalServerError)
+		return
+	}
+
+	// 1. Create a slice of the correct type ([]int32) with the right capacity
+	members32 := make([]int32, 0, len(body.MemberIds)+1)
+
+	// 2. Convert and append the members from the request body
+	for _, id := range body.MemberIds {
+		members32 = append(members32, int32(id))
+	}
+
+	// 3. Append the creator (tempUserId) converted to int32
+	members32 = append(members32, int32(tempUserId))
+
+	// 4. Use it in your database params
+	err = qtx.CreateRoomMembersForGroupChat(ctx, database.CreateRoomMembersForGroupChatParams{
+		Column1: chatRoom.ID,
+		Column2: int32(tempUserId),
+		Column3: members32, // No cast needed here now
+	})
+
+	// 5. Explicitly Commit the Transaction
+	if err := tx.Commit(); err != nil {
+		http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
+		return
+	}
+
+	// Create the response slice with the type the API expects ([]int)
+	apiMemberIDs := make([]int, len(members32))
+	for i, v := range members32 {
+		apiMemberIDs[i] = int(v)
+	}
+
+	response := api.ChatRoom{
+		ChatId:    chatRoom.ID,
+		Type:      api.ChatRoomType(chatRoom.Type),
+		Name:      &chatRoom.Name.String, // Handle nullable strings correctly
+		MemberIds: &apiMemberIDs,         // Just use what the user sent you!
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
 }

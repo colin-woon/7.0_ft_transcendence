@@ -150,8 +150,20 @@ type SendMessageJSONBody struct {
 	Content string `json:"content"`
 }
 
+// CreateGroupChatJSONBody defines parameters for CreateGroupChat.
+type CreateGroupChatJSONBody struct {
+	// MemberIds List of user IDs to add to the group
+	MemberIds []int `json:"memberIds"`
+
+	// Name Name of the group chat
+	Name string `json:"name"`
+}
+
 // SendMessageJSONRequestBody defines body for SendMessage for application/json ContentType.
 type SendMessageJSONRequestBody SendMessageJSONBody
+
+// CreateGroupChatJSONRequestBody defines body for CreateGroupChat for application/json ContentType.
+type CreateGroupChatJSONRequestBody CreateGroupChatJSONBody
 
 // AsChatMessage returns the union data inside the StreamEvent_Payload as a ChatMessage
 func (t StreamEvent_Payload) AsChatMessage() (ChatMessage, error) {
@@ -209,6 +221,9 @@ type ServerInterface interface {
 	// Send a chat message
 	// (POST /message/{chatId}/{tempSenderId})
 	SendMessage(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempSenderId int)
+	// Create a new group chat
+	// (POST /messages/group/create/{tempUserId})
+	CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUserId int)
 	// Get all chats (direct and group) for a user's inbox
 	// (GET /messages/inbox/{tempUserId})
 	GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId int)
@@ -251,6 +266,12 @@ func (_ Unimplemented) GetMessageStream(w http.ResponseWriter, r *http.Request, 
 // Send a chat message
 // (POST /message/{chatId}/{tempSenderId})
 func (_ Unimplemented) SendMessage(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempSenderId int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a new group chat
+// (POST /messages/group/create/{tempUserId})
+func (_ Unimplemented) CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUserId int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -464,6 +485,31 @@ func (siw *ServerInterfaceWrapper) SendMessage(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// CreateGroupChat operation middleware
+func (siw *ServerInterfaceWrapper) CreateGroupChat(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "tempUserId" -------------
+	var tempUserId int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tempUserId", chi.URLParam(r, "tempUserId"), &tempUserId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateGroupChat(w, r, tempUserId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetUserInbox operation middleware
 func (siw *ServerInterfaceWrapper) GetUserInbox(w http.ResponseWriter, r *http.Request) {
 
@@ -621,6 +667,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/message/{chatId}/{tempSenderId}", wrapper.SendMessage)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/messages/group/create/{tempUserId}", wrapper.CreateGroupChat)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/messages/inbox/{tempUserId}", wrapper.GetUserInbox)
 	})
 
@@ -630,30 +679,32 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"YMPUpge2/jMAAP//NGpLAN8XAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

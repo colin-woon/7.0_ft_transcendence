@@ -269,32 +269,38 @@ paths:
                 items:
                   $ref: "#/components/schemas/ChatRoom"
 
-  # /chats/group:
-  #   post:
-  #     tags:
-  #       - Chat
-  #     summary: Create a new group chat
-  #     operationId: createGroupChat
-  #     requestBody:
-  #       required: true
-  #       content:
-  #         application/json:
-  #           schema:
-  #             type: object
-  #             required: [name, memberIds]
-  #             properties:
-  #               name:
-  #                 type: string
-  #                 description: "Name of the group chat"
-  #               memberIds:
-  #                 type: array
-  #                 items:
-  #                   type: integer
-  #                 description: "List of user IDs to add to the group"
-  #     responses:
-  #       "201":
-  #         description: Group chat created successfully
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: "#/components/schemas/ChatRoom"
+  /messages/group/create/{tempUserId}:
+    post:
+      tags:
+        - Message
+      summary: Create a new group chat
+      operationId: createGroupChat
+      parameters:
+        - name: tempUserId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, memberIds]
+              properties:
+                name:
+                  type: string
+                  description: "Name of the group chat"
+                memberIds:
+                  type: array
+                  items:
+                    type: integer
+                  description: "List of user IDs to add to the group"
+      responses:
+        "201":
+          description: Group chat created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatRoom"
