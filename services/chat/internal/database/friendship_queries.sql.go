@@ -46,7 +46,6 @@ type CreateDirectRoomWithMembersParams struct {
 	UserID_2 int32 `json:"userId2"`
 }
 
-// Return the existing ID if found, otherwise return the newly inserted ID
 func (q *Queries) CreateDirectRoomWithMembers(ctx context.Context, arg CreateDirectRoomWithMembersParams) (uuid.UUID, error) {
 	row := q.db.QueryRowContext(ctx, createDirectRoomWithMembers, arg.UserID, arg.UserID_2)
 	var chat_id uuid.UUID
@@ -76,6 +75,62 @@ func (q *Queries) CreateFriendship(ctx context.Context, arg CreateFriendshipPara
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getFriendListWithChatIds = `-- name: GetFriendListWithChatIds :many
+WITH friends AS (
+    -- 1. Extract the friend's ID just like before
+    SELECT
+        CASE
+            WHEN requester_id = $1 THEN addressee_id
+            ELSE requester_id
+        END AS friend_id
+    FROM chat_service.friendships
+    WHERE (requester_id = $1 OR addressee_id = $1)
+      AND status = 'accepted'
+)
+SELECT
+    f.friend_id,
+    -- 2. Find the direct chat room shared by the user and this specific friend
+    (
+        SELECT rm_friend.chat_id
+        FROM chat_service.room_members rm_friend
+        JOIN chat_service.rooms r ON r.id = rm_friend.chat_id
+        JOIN chat_service.room_members rm_me ON rm_me.chat_id = r.id
+        WHERE r.type = 'direct'
+          AND rm_me.user_id = $1
+          AND rm_friend.user_id = f.friend_id
+        LIMIT 1
+    ) AS chat_id
+FROM friends f
+`
+
+type GetFriendListWithChatIdsRow struct {
+	FriendID interface{} `json:"friendId"`
+	ChatID   uuid.UUID   `json:"chatId"`
+}
+
+func (q *Queries) GetFriendListWithChatIds(ctx context.Context, userID int32) ([]GetFriendListWithChatIdsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getFriendListWithChatIds, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetFriendListWithChatIdsRow
+	for rows.Next() {
+		var i GetFriendListWithChatIdsRow
+		if err := rows.Scan(&i.FriendID, &i.ChatID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateFriendshipStatus = `-- name: UpdateFriendshipStatus :exec

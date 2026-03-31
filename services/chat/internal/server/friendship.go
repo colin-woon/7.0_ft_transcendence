@@ -3,6 +3,7 @@ package server
 import (
 	"app/internal/api"
 	"app/internal/database"
+	"encoding/json"
 	"log"
 	"net/http"
 	"strings"
@@ -100,14 +101,14 @@ func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, 
 }
 
 func (s *Server) GetFriendList(w http.ResponseWriter, r *http.Request, tempUserId int) {
-	// ctx := r.Context()
+	ctx := r.Context()
 
-	// friends, err := s.db.GetQueries().GetFriendListWithRoomIds(ctx, int32(tempUserId))
-	// if err != nil {
-	// 	http.Error(w, "Failed to retrieve friend list", http.StatusInternalServerError)
-	// 	return
-	// }
+	friends, err := s.db.GetQueries().GetFriendListWithChatIds(ctx, int32(tempUserId))
+	if err != nil {
+		http.Error(w, "Failed to retrieve friend list", http.StatusInternalServerError)
+		return
+	}
 
-	// w.Header().Set("Content-Type", "application/json")
-	// json.NewEncoder(w).Encode(friends)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(friends)
 }

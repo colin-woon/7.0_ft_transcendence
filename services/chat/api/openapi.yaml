@@ -25,6 +25,11 @@ components:
           type: string
           nullable: true
           description: "Will be null for direct chats"
+        memberIds:
+          type: array
+          items:
+            type: integer
+          description: "List of all user IDs in this chat. Frontend uses this to fetch avatars/names."
     ChatMessage:
       type: object
       required: [id, chatId, senderId, content, createdAt]

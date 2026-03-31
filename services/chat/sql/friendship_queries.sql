@@ -37,13 +37,29 @@ UNION ALL
 SELECT chat_id FROM existing_room
 LIMIT 1;
 
--- -- name: GetFriendListWithChatIds :many
--- SELECT
---     id,
---     CASE
---         WHEN requester_id = $1 THEN addressee_id
---         ELSE requester_id
---     END AS friend_id
--- FROM chat_service.friendships
--- WHERE (requester_id = $1 OR addressee_id = $1)
---   AND status = 'accepted';
+-- name: GetFriendListWithChatIds :many
+WITH friends AS (
+    -- 1. Extract the friend's ID just like before
+    SELECT
+        CASE
+            WHEN requester_id = $1 THEN addressee_id
+            ELSE requester_id
+        END AS friend_id
+    FROM chat_service.friendships
+    WHERE (requester_id = $1 OR addressee_id = $1)
+      AND status = 'accepted'
+)
+SELECT
+    f.friend_id,
+    -- 2. Find the direct chat room shared by the user and this specific friend
+    (
+        SELECT rm_friend.chat_id
+        FROM chat_service.room_members rm_friend
+        JOIN chat_service.rooms r ON r.id = rm_friend.chat_id
+        JOIN chat_service.room_members rm_me ON rm_me.chat_id = r.id
+        WHERE r.type = 'direct'
+          AND rm_me.user_id = $1
+          AND rm_friend.user_id = f.friend_id
+        LIMIT 1
+    ) AS chat_id
+FROM friends f;
