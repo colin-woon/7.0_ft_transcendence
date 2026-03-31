@@ -1,5 +1,10 @@
 import React from 'react';
-import SectionCard from './section-card';
+import LogBox from './logBox';
+import UserCard from './userCard';
+import RateLimitCard from './rateLimitCard';
+import RouteCard from './routeCard';
+import BodyBox from './bodyBox';
+import ExecuteCard from './executeCard';
 
 export default function LabHome() {
 	const [motion, setMotion] = React.useState({ x: 0, y: 0 });
@@ -18,20 +23,27 @@ export default function LabHome() {
 		});
 	}
 
+	const testdata = {
+		testPost: {
+			hhehee: '',
+		},
+		testvee: '',
+	};
+
 	return (
 		<main
 			// relative: background layers can use absolute positioning against this root
 			// min-h-screen: page fills the viewport height
 			// overflow-hidden: hide blurred shapes spilling outside the page
 			// bg/text: default page colors
-			className="relative min-h-screen overflow-hidden bg-stone-950 text-stone-100"
+			className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100"
 			onMouseMove={mouseMove}
 			onMouseLeave={() => setMotion({ x: 0, y: 0 })}
 		>
 			<div
 				// absolute inset-0: stretch across the full page
 				// This is the static base atmosphere behind everything else.
-				className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(120,113,108,0.22),transparent_55%),linear-gradient(180deg,#1c1917_0%,#0c0a09_100%)]"
+				className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.24),transparent_55%),linear-gradient(180deg,#0f172a_0%,#020617_100%)]"
 			/>
 
 			<div
@@ -40,7 +52,7 @@ export default function LabHome() {
 				className="absolute left-[22%] top-[28%] h-[44rem] w-[44rem] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-40 blur-3xl"
 				style={{
 					background:
-						'radial-gradient(circle, rgba(148,163,184,0.18) 0%, rgba(71,85,105,0.12) 35%, rgba(12,10,9,0) 72%)',
+						'radial-gradient(circle, rgba(129,140,248,0.18) 0%, rgba(79,70,229,0.12) 35%, rgba(2,6,23,0) 72%)',
 					transform: `translate(calc(-50% + ${motion.x * 8}px), calc(-50% + ${motion.y * 8}px))`,
 				}}
 			/>
@@ -57,7 +69,7 @@ export default function LabHome() {
 				style={{
 					// Radial gradient gives the layer a bright center and faded edge.
 					background:
-						'radial-gradient(circle, rgba(251,191,36,0.34) 0%, rgba(249,115,22,0.18) 35%, rgba(12,10,9,0) 72%)',
+						'radial-gradient(circle, rgba(99,102,241,0.32) 0%, rgba(67,56,202,0.18) 35%, rgba(2,6,23,0) 72%)',
 
 					// Move this layer based on mouse position.
 					// motion.x/y are in -1..1, so multiply them by a small pixel value.
@@ -80,63 +92,52 @@ export default function LabHome() {
 				// px/py: page padding
 				className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col px-6 py-16"
 			>
-				<h1
-					// text-5xl: large heading
-					// font-semibold: slightly strong emphasis
-					// tracking-tight: tighter letter spacing for a sharper display feel
-					className="text-5xl font-semibold tracking-tight"
-				>
-					Gateway Lab
-				</h1>
+				<h3 className="mb-12 font-headline text-4xl font-black uppercase leading-none tracking-tighter text-slate-50">
+					42Overflow Lab
+				</h3>
 
-				<p
-					// mt-4: space below the title
-					// max-w-2xl: keep paragraph width readable
-					// text-sm: small supporting copy
-					// text-stone-300: lighter muted text color
-					className="mt-4 max-w-2xl text-sm text-stone-300"
-				>
-					Interactive traffic console for HTTP, SSE, and WebSocket
-					gateway testing.
-				</p>
+				<section className="overflow-hidden rounded-md border border-slate-700/70 bg-slate-950/80 shadow-2xl ring-1 ring-inset ring-indigo-300/10 backdrop-blur-sm">
+					<div className="border-b border-slate-700/70 bg-slate-900/80 px-5 py-4 flex items-center gap-3">
+						<h2 className="mt-2 font-headline text-2xl font-black uppercase tracking-tight text-indigo-400">
+							Lab Controller
+						</h2>
+						<p className="mt-4 max-w-2xl text-sm text-slate-400">
+							Explore and validate 42Overflow's features with live
+							tests and real-time logs.
+						</p>
+					</div>
+					{/* <div className="divide-dashed divide-indigo-400 divide-x-3 grid grid-cols-1 gap-6 p-6 md:grid-cols-2 lg:grid-cols-3 px-5 py-4 border-b border-outline/20 bg-surface-container-high"> */}
+					{/* <MonoCard /> */}
+					{/* <MonoCard /> */}
+					{/* <MonoCard /> */}
+					{/* </div> */}
 
-				<div className="mt-12 grid gap-6 lg:grid-cols-2">
-					<SectionCard
-						title="API Traffic"
-						description="Simulate healthy requests, bursts, and controlled failures against the gateway."
-					>
-						<div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-sm text-stone-400">
-							API controls will go here.
-						</div>
-					</SectionCard>
-
-					<SectionCard
-						title="SSE Traffic"
-						description="Open valid event streams and trigger invalid stream requests for observability testing."
-					>
-						<div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-sm text-stone-400">
-							SSE controls will go here.
-						</div>
-					</SectionCard>
-
-					<SectionCard
-						title="WebSocket Traffic"
-						description="Create socket sessions, send messages, and trigger throttling scenarios."
-					>
-						<div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-sm text-stone-400">
-							WebSocket controls will go here.
-						</div>
-					</SectionCard>
-
-					<SectionCard
-						title="Activity Log"
-						description="Surface request outcomes, connection changes, and test feedback from this lab."
-					>
-						<div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-sm text-stone-400">
-							Runtime activity will go here.
-						</div>
-					</SectionCard>
-				</div>
+					<div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2 lg:grid-cols-3">
+						<UserCard
+							type="Auth"
+							title="User Type"
+							desc="Fetch and display user information based on the current session or provided credentials."
+						/>
+						<RateLimitCard
+							type="Rate Limit"
+							title="Stress Test"
+							desc="Simulate high request volumes to evaluate how the system handles rate limiting and throttling under load."
+						/>
+						<RouteCard
+							type="Route"
+							title="Route Explorer"
+							desc="Selection of available routes."
+						/>
+					</div>
+					<div className="flex items-center justify-center p-6 gap-6 ">
+						<BodyBox
+							value={JSON.stringify(testdata, null, 4)}
+							method="POST"
+						/>
+						<ExecuteCard />
+					</div>
+				</section>
+				<LogBox />
 			</div>
 		</main>
 	);
