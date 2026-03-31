@@ -21,6 +21,24 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for ChatRoomType.
+const (
+	Direct ChatRoomType = "direct"
+	Group  ChatRoomType = "group"
+)
+
+// Valid indicates whether the value is a known member of the ChatRoomType enum.
+func (e ChatRoomType) Valid() bool {
+	switch e {
+	case Direct:
+		return true
+	case Group:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for StreamEventType.
 const (
 	NEWMESSAGE StreamEventType = "NEW_MESSAGE"
@@ -77,6 +95,21 @@ type ChatMessage struct {
 	Id        int                `json:"id"`
 	SenderId  int                `json:"senderId"`
 }
+
+// ChatRoom defines model for ChatRoom.
+type ChatRoom struct {
+	ChatId openapi_types.UUID `json:"chatId"`
+
+	// MemberIds List of all user IDs in this chat. Frontend uses this to fetch avatars/names.
+	MemberIds *[]int `json:"memberIds,omitempty"`
+
+	// Name Will be null for direct chats
+	Name *string      `json:"name,omitempty"`
+	Type ChatRoomType `json:"type"`
+}
+
+// ChatRoomType defines model for ChatRoom.Type.
+type ChatRoomType string
 
 // FriendList defines model for FriendList.
 type FriendList = []struct {
@@ -176,6 +209,9 @@ type ServerInterface interface {
 	// Send a chat message
 	// (POST /message/{chatId}/{tempSenderId})
 	SendMessage(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempSenderId int)
+	// Get all chats (direct and group) for a user's inbox
+	// (GET /messages/inbox/{tempUserId})
+	GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId int)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -215,6 +251,12 @@ func (_ Unimplemented) GetMessageStream(w http.ResponseWriter, r *http.Request, 
 // Send a chat message
 // (POST /message/{chatId}/{tempSenderId})
 func (_ Unimplemented) SendMessage(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempSenderId int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get all chats (direct and group) for a user's inbox
+// (GET /messages/inbox/{tempUserId})
+func (_ Unimplemented) GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -422,6 +464,31 @@ func (siw *ServerInterfaceWrapper) SendMessage(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// GetUserInbox operation middleware
+func (siw *ServerInterfaceWrapper) GetUserInbox(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "tempUserId" -------------
+	var tempUserId int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tempUserId", chi.URLParam(r, "tempUserId"), &tempUserId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUserInbox(w, r, tempUserId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -553,6 +620,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/message/{chatId}/{tempSenderId}", wrapper.SendMessage)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/messages/inbox/{tempUserId}", wrapper.GetUserInbox)
+	})
 
 	return r
 }
@@ -560,27 +630,30 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/9RXbW/bNhD+KwS3j3Isu+6bv2WrlxnoG6oEw1YEBUOdbXYSqZInp17g/z4cSUWKLSfO",
-	"AmzYN1Ek7+157nh3w6UpK6NBo+PTG+7kCkrhP39eCXwHzokl0LKypgKLCvymXAmc5/S1MLYUyKe8rlXO",
-	"E46bCviUO7RKL/k24dJoBI10dn/PgkDIT/0ufBdlVdCBcTp+MUifDdLX5+mr6XgyHb/8gyetqlwgDFCV",
-	"0KdP5R1VSiMswdJ/BzoHO+/d3SbcwrdaWcj59DP3jkQXOxdbX7qWX97aYK6+gkTS9YtVoPO3yt11rI0b",
-	"f/48hVeTNB3A+PXVYDLKJwPxcvSCvPR36dBo/Iz8QSjdfQjk4KRVFSqj+ZRfaPWtBqZy0KgWCixbGMtw",
-	"BYxusCvAawDtf9QOLBM694ugthvlQ4C2Bh6v+1Z6T+T3ohd/CGvFhtYZWhDlbB1ZdDcOldgURvQYc74C",
-	"JiTWomC5QJEwh7aWWFtgOVSgc8dMiAOQZOa1Jtxo+LDg0883/EcLCz7lPwzbFBnG/Bh2k2N7edCHPpto",
-	"h5lF1HoFSi+Zo8/cXAd7nPeXJxx0XRIf389++/JulmWnZzOe8Its9unL+e8f5+/PmlV2fnp+kXWo2KC1",
-	"Q+zoYxOzfcPpgtILs2/66ce5R7MUWizJ5jK47zyDAr5upSpHICv0eUxRYhnYtZLATj/OecLXYF0QODpJ",
-	"T1IKlalAi0rxKX92kp5MvH248uAOW7nDG3IEHFIqbmklQa39wtPAhFwjaggy2WdZBjoPufgpXPbCrSgB",
-	"wTqPsiJbSCFPuBYlmd1RxLvxQ1tDEktkfxU5IK6x9HHSLum0q4x2genjdLQPS/CORZMDkVwtJTi3qIvC",
-	"588kTfcvzvVaFCoPRWD+xoWDk56kpgPaIFuYWueeUq4uS2E3McBMRPgbK4gBYknhjeYRfvySbh4H6LCu",
-	"qMSH9Ea52gf2wh9opWcosHb/J3Qbad9qsJtWnGscOSyqqQpUwyjJEy6khAqBLMhBFkr7z6vCyD/9lzYa",
-	"+orDPsN6iBJCywIk+ePIFbxha1HUcJBgMTW7HEv4836xCFaLwtcUsGxmrbE7jAzM6BQkdhvSo0iJUFZE",
-	"+VhXltBTVs4AOy/8MaRrpT61BviwdHoqUVWFkt624VdHYbrpCLzvDeu44Ot+b2EplENf4YVzRipPAd9I",
-	"zN84ZgGtgvVjWRFLztEV5wlsOANsipP3hF4wEQy4VrhqXGEWFmBBS7iXJ/HJG66UQ2M3w5vQhN1LlNgl",
-	"/BquHEWW287zMFEeaNKezJvbpvPoJmi3bdtnlO8GYuj+KXUiXgep896EI42avjeLOLFziEjhKpBqoaTf",
-	"67Cg8fAuBUKPdnS5iEKyprP7LysGwncc+u5zEDvNo0tGtxPvQTjLZkwarUHSjw6yAa9R38QgalwZq/6C",
-	"XZg+VKCpuWQ7UgktC6LwA2AAMoIS3yj3IHhN3gb4sjjfPdBHNqL+pQxODrIia+fRx/LCP7Q/mXzzqGKw",
-	"M3i210ql34Je4opPRw+NHs21/pnjriPbYzrfiMcTWl5G40yU0pjX2952SdZPru3t312lM51XRml0d6en",
-	"uwNTRLfz4BD+Rwnq2tYR1Q6n278DAAD//+Kv+VDkEQAA",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

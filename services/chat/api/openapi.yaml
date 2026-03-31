@@ -247,27 +247,27 @@ paths:
         "401":
           description: Unauthorized
 
-  # /chats/{tempUserId}:
-  #   get:
-  #     tags:
-  #       - Chat
-  #     summary: Get all chats (direct and group) for a user's inbox
-  #     operationId: getUserChats
-  #     parameters:
-  #       - name: tempUserId
-  #         in: path
-  #         required: true
-  #         schema:
-  #           type: integer
-  #     responses:
-  #       "200":
-  #         description: Successfully retrieved user's chat rooms
-  #         content:
-  #           application/json:
-  #             schema:
-  #               type: array
-  #               items:
-  #                 $ref: "#/components/schemas/ChatRoom"
+  /messages/inbox/{tempUserId}:
+    get:
+      tags:
+        - Message
+      summary: Get all chats (direct and group) for a user's inbox
+      operationId: getUserInbox
+      parameters:
+        - name: tempUserId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully retrieved user's chat rooms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatRoom"
 
   # /chats/group:
   #   post:

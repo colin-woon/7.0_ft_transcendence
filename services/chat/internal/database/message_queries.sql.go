@@ -7,8 +7,10 @@ package database
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 const createMessage = `-- name: CreateMessage :one
@@ -91,6 +93,59 @@ func (q *Queries) GetRoomMemberIDs(ctx context.Context, chatID uuid.UUID) ([]int
 			return nil, err
 		}
 		items = append(items, user_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUserInbox = `-- name: GetUserInbox :many
+SELECT
+    c.id AS chat_id,
+    c.type,
+    c.name,
+    -- Aggregates all member IDs into a Postgres array
+    array_agg(rm.user_id)::integer[] AS member_ids
+FROM chat_service.rooms c
+JOIN chat_service.room_members rm ON c.id = rm.chat_id
+WHERE c.id IN (
+    -- Subquery: Find all chats the requested user is a part of
+    SELECT rm_sub.chat_id
+    FROM chat_service.room_members rm_sub
+    WHERE rm_sub.user_id = $1
+)
+GROUP BY c.id, c.type, c.name
+`
+
+type GetUserInboxRow struct {
+	ChatID    uuid.UUID      `json:"chatId"`
+	Type      string         `json:"type"`
+	Name      sql.NullString `json:"name"`
+	MemberIds []int32        `json:"memberIds"`
+}
+
+func (q *Queries) GetUserInbox(ctx context.Context, userID int32) ([]GetUserInboxRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUserInbox, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUserInboxRow
+	for rows.Next() {
+		var i GetUserInboxRow
+		if err := rows.Scan(
+			&i.ChatID,
+			&i.Type,
+			&i.Name,
+			pq.Array(&i.MemberIds),
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

@@ -159,3 +159,45 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request, tempUs
 		}
 	}
 }
+
+func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId int) {
+	ctx := r.Context()
+
+	rows, err := s.db.GetQueries().GetUserInbox(ctx, int32(tempUserId))
+	if err != nil {
+		http.Error(w, "Failed to retrieve user chats", http.StatusInternalServerError)
+		return
+	}
+	// 2. Map DB Rows to API Models
+	inbox := make([]api.ChatRoom, 0, len(rows))
+	for _, row := range rows {
+		chat := api.ChatRoom{
+			ChatId: row.ChatID,
+			Type:   api.ChatRoomType(row.Type),
+		}
+
+		// Handle sql.NullString -> *string
+		if row.Name.Valid {
+			nameVal := row.Name.String
+			chat.Name = &nameVal
+		}
+
+		// Handle []int32 -> *[]int
+		if row.MemberIds != nil {
+			ids := make([]int, len(row.MemberIds))
+			for i, v := range row.MemberIds {
+				ids[i] = int(v)
+			}
+			chat.MemberIds = &ids
+		}
+
+		inbox = append(inbox, chat)
+	}
+
+	// 3. Encode the mapped slice
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(inbox); err != nil {
+		http.Error(w, "Failed to encode user chats", http.StatusInternalServerError)
+		return
+	}
+}
