@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
@@ -17,7 +18,7 @@ type SseConnectionHub struct {
 	mutex        sync.RWMutex
 }
 
-func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempSenderId int) {
+func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId uuid.UUID, senderId int) {
 	ctx := r.Context()
 
 	var body api.SendMessageJSONRequestBody
@@ -27,27 +28,72 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId open
 		return
 	}
 
-	_, err := s.db.Queries().CreateMessage(ctx, database.CreateMessageParams{
+	// 1. Save message to DB (using sqlc)
+	savedMsg, err := s.db.GetQueries().CreateMessage(ctx, database.CreateMessageParams{
 		ChatID:   chatId,
-		SenderID: int32(tempSenderId),
+		SenderID: int32(senderId),
 		Content:  body.Content,
 	})
 
 	if err != nil {
-		http.Error(w, "Failed to send message", http.StatusInternalServerError)
+		http.Error(w, "Failed to save message", http.StatusInternalServerError)
+		return
 	}
+
+	// 2. Fetch all members of this room (The Fan-Out Query)
+	memberIDs, err := s.db.GetQueries().GetRoomMemberIDs(ctx, chatId)
+
+	if err != nil {
+		http.Error(w, "Failed to fetch room members", http.StatusInternalServerError)
+		return
+	}
+
+	data := api.StreamEvent{
+		Type: "NEW_MESSAGE",
+	}
+	data.Payload.FromChatMessage(api.ChatMessage{
+		ChatId:    chatId,
+		Content:   savedMsg.Content,
+		CreatedAt: savedMsg.CreatedAt.Time,
+		Id:        int(savedMsg.ID),
+		SenderId:  senderId,
+	})
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		// handle error
+	}
+	payload := string(jsonData)
+
+	// 4. Push to all online members
+	// Use RLock for reading
 	s.sseHub.mutex.RLock()
-	if ch, exists := s.sseHub.userChannels[tempSenderId]; exists {
-		ch <- fmt.Sprintf("%s", body.Content)
+	for _, memberId := range memberIDs {
+		// Don't send the message back to the sender via SSE (they already have it in UI)
+		if int(memberId) == senderId {
+			continue
+		}
+
+		// If the member is online, send it
+		if ch, ok := s.sseHub.userChannels[int(memberId)]; ok {
+			// Non-blocking send to prevent one slow client from freezing the loop
+			select {
+			case ch <- payload:
+			default:
+				fmt.Printf("Warning: channel full for user %d\n", memberId)
+			}
+		}
 	}
 	s.sseHub.mutex.RUnlock()
+
+	// 5. Return 201 Created to the sender
 	w.WriteHeader(http.StatusCreated)
 }
 
 func (s *Server) GetMessageHistory(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID) {
 	ctx := r.Context()
 
-	history, err := s.db.Queries().GetMessageHistoryByChatId(ctx, chatId)
+	history, err := s.db.GetQueries().GetMessageHistoryByChatId(ctx, chatId)
 	if err != nil {
 		http.Error(w, "Failed to retrieve chat history", http.StatusInternalServerError)
 		return

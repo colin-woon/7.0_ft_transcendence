@@ -11,7 +11,7 @@ import (
 func (s *Server) SendFriendRequest(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int) {
 	ctx := r.Context()
 
-	_, err := s.db.Queries().CreateFriendship(ctx, database.CreateFriendshipParams{
+	_, err := s.db.GetQueries().CreateFriendship(ctx, database.CreateFriendshipParams{
 		RequesterID: int32(requesterId),
 		AddresseeID: int32(receiverId),
 	})
@@ -60,7 +60,7 @@ func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, 
 	defer tx.Rollback() // Automatically rolls back if we exit before Commit()
 
 	// 2. Bind the transaction to your sqlc Queries
-	qtx := s.db.Queries().WithTx(tx)
+	qtx := s.db.GetQueries().WithTx(tx)
 
 	log.Printf("updating status")
 	// 3. Update the Friendship Status
@@ -102,7 +102,7 @@ func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, 
 func (s *Server) GetFriendList(w http.ResponseWriter, r *http.Request, tempUserId int) {
 	// ctx := r.Context()
 
-	// friends, err := s.db.Queries().GetFriendListWithRoomIds(ctx, int32(tempUserId))
+	// friends, err := s.db.GetQueries().GetFriendListWithRoomIds(ctx, int32(tempUserId))
 	// if err != nil {
 	// 	http.Error(w, "Failed to retrieve friend list", http.StatusInternalServerError)
 	// 	return

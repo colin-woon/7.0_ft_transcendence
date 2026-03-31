@@ -57,6 +57,21 @@ components:
       example:
         friendId: 123
         chatId: "550e8400-e29b-41d4-a716"
+    StreamEvent:
+      type: object
+      required: [type, payload]
+      properties:
+        type:
+          type: string
+          enum: [NEW_MESSAGE, USER_TYPING, USER_STATUS]
+          description: "The type of event being sent down the stream"
+        payload:
+          type: object
+          description: "The actual data, structure depends on the event type"
+          # We use oneOf to say "If it's a message, expect ChatMessage data"
+          oneOf:
+            - $ref: "#/components/schemas/ChatMessage"
+            # You can add other schemas here later, like TypingIndicator!
 
 paths:
   /friendship/{requesterId}/{receiverId}:
@@ -223,7 +238,7 @@ paths:
           content:
             text/event-stream:
               schema:
-                $ref: "#/components/schemas/ChatMessage"
+                $ref: "#/components/schemas/StreamEvent"
         "401":
           description: Unauthorized
 

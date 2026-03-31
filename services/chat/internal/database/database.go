@@ -23,7 +23,7 @@ type Service interface {
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
 	Close() error
-	Queries() *Queries
+	GetQueries() *Queries
 	GetDB() *sql.DB
 }
 
@@ -141,7 +141,7 @@ func (s *service) Close() error {
 	return s.db.Close()
 }
 
-func (s *service) Queries() *Queries {
+func (s *service) GetQueries() *Queries {
 	return s.q
 }
 

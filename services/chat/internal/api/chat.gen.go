@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -19,6 +20,27 @@ import (
 	"github.com/oapi-codegen/runtime"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// Defines values for StreamEventType.
+const (
+	NEWMESSAGE StreamEventType = "NEW_MESSAGE"
+	USERSTATUS StreamEventType = "USER_STATUS"
+	USERTYPING StreamEventType = "USER_TYPING"
+)
+
+// Valid indicates whether the value is a known member of the StreamEventType enum.
+func (e StreamEventType) Valid() bool {
+	switch e {
+	case NEWMESSAGE:
+		return true
+	case USERSTATUS:
+		return true
+	case USERTYPING:
+		return true
+	default:
+		return false
+	}
+}
 
 // Defines values for UpdateFriendshipStatusParamsStatus.
 const (
@@ -65,6 +87,23 @@ type FriendList = []struct {
 	FriendId *int `json:"friendId,omitempty"`
 }
 
+// StreamEvent defines model for StreamEvent.
+type StreamEvent struct {
+	// Payload The actual data, structure depends on the event type
+	Payload StreamEvent_Payload `json:"payload"`
+
+	// Type The type of event being sent down the stream
+	Type StreamEventType `json:"type"`
+}
+
+// StreamEvent_Payload The actual data, structure depends on the event type
+type StreamEvent_Payload struct {
+	union json.RawMessage
+}
+
+// StreamEventType The type of event being sent down the stream
+type StreamEventType string
+
 // UpdateFriendshipStatusParams defines parameters for UpdateFriendshipStatus.
 type UpdateFriendshipStatusParams struct {
 	Status UpdateFriendshipStatusParamsStatus `form:"status" json:"status"`
@@ -80,6 +119,42 @@ type SendMessageJSONBody struct {
 
 // SendMessageJSONRequestBody defines body for SendMessage for application/json ContentType.
 type SendMessageJSONRequestBody SendMessageJSONBody
+
+// AsChatMessage returns the union data inside the StreamEvent_Payload as a ChatMessage
+func (t StreamEvent_Payload) AsChatMessage() (ChatMessage, error) {
+	var body ChatMessage
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromChatMessage overwrites any union data inside the StreamEvent_Payload as the provided ChatMessage
+func (t *StreamEvent_Payload) FromChatMessage(v ChatMessage) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeChatMessage performs a merge with any union data inside the StreamEvent_Payload, using the provided ChatMessage
+func (t *StreamEvent_Payload) MergeChatMessage(v ChatMessage) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t StreamEvent_Payload) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *StreamEvent_Payload) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -485,25 +560,27 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
