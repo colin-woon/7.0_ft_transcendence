@@ -8,46 +8,47 @@ export function SendMessageButton() {
   const userSession = useCurrentChatSession();
   const userChat = useChat();
 
-  // 1. Create a state variable for the input text
   const [messageText, setMessageText] = useState('');
-  const tempTargetFriendId = 1;
+  const [recipientFriendId, setRecipientFriendId] = useState<number | null>(null);
 
+  // Fetch friends and find the recipient for the current chatId
   useEffect(() => {
-    const fetchFriends = async () => {
-      if (!userSession.chatId && userChat.tempCurrentUserId) {
-        try {
-          const friends = await getFriendList(userChat.tempCurrentUserId);
-          const friend = friends.find(f => f.friendId === tempTargetFriendId);
-          if (friend) {
-            userChat.setSession(friend.chatId);
-          }
-        } catch (error) {
-          console.error("Failed to fetch friends:", error);
+    if (!userSession.chatId || !userChat.tempCurrentUserId) {
+      setRecipientFriendId(null);
+      return;
+    }
+
+    const fetchAndMatchFriend = async () => {
+      try {
+        const friends = await getFriendList(userChat.tempCurrentUserId!);
+        const friend = friends.find(f => f.chatId === userSession.chatId);
+        if (friend) {
+          setRecipientFriendId(friend.friendId);
         }
+      } catch (error) {
+        console.error("Failed to fetch friends:", error);
       }
     };
-    fetchFriends();
-  }, [userChat.tempCurrentUserId, userSession.chatId]);
 
-  // Only send if there is text and a valid chatId
-  // 2. Use the state variable here
-  // 3. Clear the input after sending
+    fetchAndMatchFriend();
+  }, [userSession.chatId, userChat.tempCurrentUserId]);
+
   const handleSend = () => {
-    if (messageText.trim() && userSession.chatId) {
+    if (messageText.trim() && userSession.chatId && recipientFriendId !== null && userChat.tempCurrentUserId) {
       sendMessage(
         userSession.chatId,
-        userChat.tempCurrentUserId!,
-        1,
+        userChat.tempCurrentUserId,
+        recipientFriendId,
         { content: messageText }
       );
       setMessageText('');
       userChat.addMessage({
         id: "msg-" + userChat.tempCurrentUserId + '-' + Date.now(),
-        chatId: userSession.chatId!,
-        senderId: userChat.tempCurrentUserId!,     
-        recipientId: tempTargetFriendId, 
+        chatId: userSession.chatId,
+        senderId: userChat.tempCurrentUserId,
+        recipientId: recipientFriendId,
         content: messageText,
-        createdAt: new Date().toISOString() // Or grab from backend payload if available
+        createdAt: new Date().toISOString(),
       });
     }
   };
@@ -64,7 +65,7 @@ export function SendMessageButton() {
       <button
         className="btn btn-primary"
         onClick={handleSend}
-        disabled={!messageText.trim()}
+        disabled={!messageText.trim() || !userSession.chatId}
       >
         Send Message
       </button>

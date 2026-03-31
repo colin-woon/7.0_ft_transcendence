@@ -22,7 +22,7 @@ export const createChatStore = (initialSessions: AllSessions = {}) => {
     immer((set) => ({
       sessions: initialSessions,
       currentChatId: null,
-      tempCurrentUserId: 2, // TEMP Hardcoded on mount as requested
+      tempCurrentUserId: 1, // TEMP Hardcoded on mount as requested
 
       setSession: (chatId: ChatId) => 
         set((state) => {
