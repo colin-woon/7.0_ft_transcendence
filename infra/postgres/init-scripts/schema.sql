@@ -25,23 +25,23 @@ CREATE TYPE auth_service.user_role AS ENUM ('STUDENT', 'ADMIN');
 
 CREATE TABLE auth_service.users (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    
+
     -- Identity Providers (OAuth)
     email VARCHAR(255) UNIQUE NOT NULL,
     intra_id VARCHAR(50) UNIQUE, -- For 42 OAuth
     google_id VARCHAR(255) UNIQUE, -- For Google OAuth
-    
+
     -- Profile Data
     username VARCHAR(50) UNIQUE NOT NULL, -- Display name (could be 42 login)
     full_name VARCHAR(100),
     avatar_url TEXT,
     bio TEXT,
-         
+
     -- Security & Status
     role auth_service.user_role DEFAULT 'STUDENT',
     is_banned BOOLEAN DEFAULT FALSE,
     last_seen_at TIMESTAMPTZ, -- Persisted "last known online" (Real-time status goes in Redis)
-    
+
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
@@ -102,13 +102,13 @@ CREATE TABLE auth_service.intra (
 );
 
 -- Trigger for Auth User
-CREATE TRIGGER update_users_modtime 
-BEFORE UPDATE ON auth_service.users 
+CREATE TRIGGER update_users_modtime
+BEFORE UPDATE ON auth_service.users
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Trigger for Auth Intra
-CREATE TRIGGER update_intra_modtime 
-BEFORE UPDATE ON auth_service.intra 
+CREATE TRIGGER update_intra_modtime
+BEFORE UPDATE ON auth_service.intra
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Indexes for session management
@@ -140,10 +140,10 @@ CREATE TABLE forum_service.forum_posts (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     project_id INTEGER REFERENCES forum_service.projects(id) ON DELETE SET NULL,
     author_id INTEGER NOT NULL, -- LOOSE REFERENCE to auth_service.users(id)
-    
+
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL, -- Markdown content
-    
+
     comment_count INTEGER DEFAULT 0,
     view_count INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -155,17 +155,17 @@ CREATE TABLE forum_service.comments (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     post_id INTEGER REFERENCES forum_service.forum_posts(id) ON DELETE CASCADE,
     author_id INTEGER NOT NULL, -- LOOSE REFERENCE to auth_service.users(id)
-    
+
     content TEXT NOT NULL,
     parent_id INTEGER REFERENCES forum_service.comments(id), -- For nested replies (future proofing)
     is_best_answer BOOLEAN DEFAULT FALSE, -- For "Best Answer" marking
-    
+
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Votes (Up/Down logic)
--- Using a single table for both posts and comments (Polymorphic-ish) 
+-- Using a single table for both posts and comments (Polymorphic-ish)
 -- OR distinct tables. Distinct tables are safer in SQL.
 CREATE TABLE forum_service.post_votes (
     post_id INTEGER REFERENCES forum_service.forum_posts(id) ON DELETE CASCADE,
@@ -200,28 +200,40 @@ CREATE TYPE chat_service.friend_status AS ENUM ('pending', 'accepted', 'blocked'
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE chat_service.friendships (
-	chat_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    requester_id INTEGER NOT NULL, -- auth_service.users(id)
-    addressee_id INTEGER NOT NULL, -- auth_service.users(id)
+    requester_id INTEGER NOT NULL,
+    addressee_id INTEGER NOT NULL,
     status chat_service.friend_status DEFAULT 'none',
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (requester_id, addressee_id)
+    PRIMARY KEY (requester_id, addressee_id)
 );
 
-CREATE TABLE chat_service.messages (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, -- Chat grows fast, use BIGINT
-    chat_id UUID NOT NULL,
-    sender_id INTEGER NOT NULL,
-    receiver_id INTEGER NOT NULL,
-    content TEXT NOT NULL,
-
-    is_read BOOLEAN DEFAULT FALSE,
-    read_at TIMESTAMPTZ,
-
+-- UNIFIED ROOM (room identify [direct/group])
+CREATE TABLE chat_service.rooms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    type VARCHAR(20) NOT NULL CHECK (type IN ('direct', 'group')),
+    name VARCHAR(255), -- Null for direct, optionally populated for groups
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- Indexes (sqlc ignores these, but DB loves them, its here for documentation)
-CREATE INDEX idx_friendships_user ON chat_service.friendships(requester_id);
-CREATE INDEX idx_chat_id_created_at ON chat_service.messages (chat_id, created_at);
+-- JUNCTION TABLE (who is in which room, their role/authority)
+CREATE TABLE chat_service.room_members (
+    chat_id UUID NOT NULL REFERENCES chat_service.rooms(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL,
+    role VARCHAR(20) DEFAULT 'member' CHECK (role IN ('admin', 'member')),
+    joined_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    last_read_message_id BIGINT, -- Replaces is_read on the message table
+    PRIMARY KEY (chat_id, user_id)
+);
+
+CREATE TABLE chat_service.messages (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    chat_id UUID NOT NULL REFERENCES chat_service.rooms(id) ON DELETE CASCADE,
+    sender_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_room_members_user_id ON chat_service.room_members(user_id);
+CREATE INDEX idx_friendships_requester ON chat_service.friendships(requester_id);
+CREATE INDEX idx_messages_chat_history ON chat_service.messages (chat_id, created_at DESC);
