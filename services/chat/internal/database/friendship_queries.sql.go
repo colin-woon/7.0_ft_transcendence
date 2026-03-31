@@ -8,13 +8,56 @@ package database
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
+
+const createDirectRoomWithMembers = `-- name: CreateDirectRoomWithMembers :one
+WITH existing_room AS (
+    SELECT rm1.chat_id
+    FROM chat_service.room_members rm1
+    JOIN chat_service.room_members rm2 ON rm1.chat_id = rm2.chat_id
+    JOIN chat_service.rooms r ON rm1.chat_id = r.id
+    WHERE r.type = 'direct'
+      AND rm1.user_id = $1
+      AND rm2.user_id = $2
+    LIMIT 1
+),
+new_room AS (
+    INSERT INTO chat_service.rooms (type, name)
+    SELECT 'direct', NULL
+    WHERE NOT EXISTS (SELECT 1 FROM existing_room)
+    RETURNING id
+),
+inserted_members AS (
+    INSERT INTO chat_service.room_members (chat_id, user_id, role)
+    SELECT id, $1, 'member' FROM new_room
+    UNION ALL
+    SELECT id, $2, 'member' FROM new_room
+    RETURNING chat_id
+)
+SELECT chat_id FROM inserted_members
+UNION ALL
+SELECT chat_id FROM existing_room
+LIMIT 1
+`
+
+type CreateDirectRoomWithMembersParams struct {
+	UserID   int32 `json:"userId"`
+	UserID_2 int32 `json:"userId2"`
+}
+
+// Return the existing ID if found, otherwise return the newly inserted ID
+func (q *Queries) CreateDirectRoomWithMembers(ctx context.Context, arg CreateDirectRoomWithMembersParams) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, createDirectRoomWithMembers, arg.UserID, arg.UserID_2)
+	var chat_id uuid.UUID
+	err := row.Scan(&chat_id)
+	return chat_id, err
+}
 
 const createFriendship = `-- name: CreateFriendship :one
 INSERT INTO chat_service.friendships (requester_id, addressee_id, status)
 VALUES ($1, $2, 'pending')
-RETURNING chat_id, requester_id, addressee_id, status, created_at, updated_at
+RETURNING requester_id, addressee_id, status, created_at, updated_at
 `
 
 type CreateFriendshipParams struct {
@@ -23,10 +66,9 @@ type CreateFriendshipParams struct {
 }
 
 func (q *Queries) CreateFriendship(ctx context.Context, arg CreateFriendshipParams) (ChatServiceFriendship, error) {
-	row := q.db.QueryRow(ctx, createFriendship, arg.RequesterID, arg.AddresseeID)
+	row := q.db.QueryRowContext(ctx, createFriendship, arg.RequesterID, arg.AddresseeID)
 	var i ChatServiceFriendship
 	err := row.Scan(
-		&i.ChatID,
 		&i.RequesterID,
 		&i.AddresseeID,
 		&i.Status,
@@ -34,43 +76,6 @@ func (q *Queries) CreateFriendship(ctx context.Context, arg CreateFriendshipPara
 		&i.UpdatedAt,
 	)
 	return i, err
-}
-
-const getFriendListWithChatIds = `-- name: GetFriendListWithChatIds :many
-SELECT
-    chat_id,
-    CASE
-        WHEN requester_id = $1 THEN addressee_id
-        ELSE requester_id
-    END AS friend_id
-FROM chat_service.friendships
-WHERE (requester_id = $1 OR addressee_id = $1)
-  AND status = 'accepted'
-`
-
-type GetFriendListWithChatIdsRow struct {
-	ChatID   pgtype.UUID `json:"chatId"`
-	FriendID interface{} `json:"friendId"`
-}
-
-func (q *Queries) GetFriendListWithChatIds(ctx context.Context, requesterID int32) ([]GetFriendListWithChatIdsRow, error) {
-	rows, err := q.db.Query(ctx, getFriendListWithChatIds, requesterID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetFriendListWithChatIdsRow
-	for rows.Next() {
-		var i GetFriendListWithChatIdsRow
-		if err := rows.Scan(&i.ChatID, &i.FriendID); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const updateFriendshipStatus = `-- name: UpdateFriendshipStatus :exec
@@ -86,6 +91,6 @@ type UpdateFriendshipStatusParams struct {
 }
 
 func (q *Queries) UpdateFriendshipStatus(ctx context.Context, arg UpdateFriendshipStatusParams) error {
-	_, err := q.db.Exec(ctx, updateFriendshipStatus, arg.RequesterID, arg.AddresseeID, arg.Status)
+	_, err := q.db.ExecContext(ctx, updateFriendshipStatus, arg.RequesterID, arg.AddresseeID, arg.Status)
 	return err
 }

@@ -3,7 +3,7 @@ package server
 import (
 	"app/internal/api"
 	"app/internal/database"
-	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -50,7 +50,21 @@ func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	err := s.db.Queries().UpdateFriendshipStatus(ctx, database.UpdateFriendshipStatusParams{
+	// 1. Start the Database Transaction
+	// Note: s.db should be your *sql.DB connection pool
+	tx, err := s.db.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback() // Automatically rolls back if we exit before Commit()
+
+	// 2. Bind the transaction to your sqlc Queries
+	qtx := s.db.Queries().WithTx(tx)
+
+	log.Printf("updating status")
+	// 3. Update the Friendship Status
+	err = qtx.UpdateFriendshipStatus(ctx, database.UpdateFriendshipStatusParams{
 		RequesterID: int32(requesterId),
 		AddresseeID: int32(receiverId),
 		Status: database.NullChatServiceFriendStatus{
@@ -64,18 +78,36 @@ func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
+	// 4. The Side Effect: Create Room if Accepted
+	if dbStatus == database.ChatServiceFriendStatusAccepted {
+		_, err = qtx.CreateDirectRoomWithMembers(ctx, database.CreateDirectRoomWithMembersParams{
+			UserID:   int32(requesterId),
+			UserID_2: int32(receiverId), // sqlc numbers identical parameters
+		})
+		if err != nil {
+			http.Error(w, "Failed to initialize chat room", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// 5. Explicitly Commit the Transaction
+	if err := tx.Commit(); err != nil {
+		http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) GetFriendList(w http.ResponseWriter, r *http.Request, tempUserId int) {
-	ctx := r.Context()
+	// ctx := r.Context()
 
-	friends, err := s.db.Queries().GetFriendListWithChatIds(ctx, int32(tempUserId))
-	if err != nil {
-		http.Error(w, "Failed to retrieve friend list", http.StatusInternalServerError)
-		return
-	}
+	// friends, err := s.db.Queries().GetFriendListWithRoomIds(ctx, int32(tempUserId))
+	// if err != nil {
+	// 	http.Error(w, "Failed to retrieve friend list", http.StatusInternalServerError)
+	// 	return
+	// }
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(friends)
+	// w.Header().Set("Content-Type", "application/json")
+	// json.NewEncoder(w).Encode(friends)
 }

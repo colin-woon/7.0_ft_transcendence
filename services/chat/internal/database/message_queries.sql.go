@@ -8,52 +8,43 @@ package database
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
 
 const createMessage = `-- name: CreateMessage :one
-INSERT INTO chat_service.messages (chat_id, sender_id, receiver_id, content)
-VALUES ($1, $2, $3, $4)
-RETURNING id, chat_id, sender_id, receiver_id, content, is_read, read_at, created_at
+INSERT INTO chat_service.messages (chat_id, sender_id, content)
+VALUES ($1, $2, $3)
+RETURNING id, chat_id, sender_id, content, created_at
 `
 
 type CreateMessageParams struct {
-	ChatID     pgtype.UUID `json:"chatId"`
-	SenderID   int32       `json:"senderId"`
-	ReceiverID int32       `json:"receiverId"`
-	Content    string      `json:"content"`
+	ChatID   uuid.UUID `json:"chatId"`
+	SenderID int32     `json:"senderId"`
+	Content  string    `json:"content"`
 }
 
 func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (ChatServiceMessage, error) {
-	row := q.db.QueryRow(ctx, createMessage,
-		arg.ChatID,
-		arg.SenderID,
-		arg.ReceiverID,
-		arg.Content,
-	)
+	row := q.db.QueryRowContext(ctx, createMessage, arg.ChatID, arg.SenderID, arg.Content)
 	var i ChatServiceMessage
 	err := row.Scan(
 		&i.ID,
 		&i.ChatID,
 		&i.SenderID,
-		&i.ReceiverID,
 		&i.Content,
-		&i.IsRead,
-		&i.ReadAt,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getMessageHistoryByChatId = `-- name: GetMessageHistoryByChatId :many
-SELECT id, chat_id, sender_id, receiver_id, content, is_read, read_at, created_at
+SELECT id, chat_id, sender_id, content, created_at
 FROM chat_service.messages
 WHERE chat_id = $1
 ORDER BY created_at DESC
 `
 
-func (q *Queries) GetMessageHistoryByChatId(ctx context.Context, chatID pgtype.UUID) ([]ChatServiceMessage, error) {
-	rows, err := q.db.Query(ctx, getMessageHistoryByChatId, chatID)
+func (q *Queries) GetMessageHistoryByChatId(ctx context.Context, chatID uuid.UUID) ([]ChatServiceMessage, error) {
+	rows, err := q.db.QueryContext(ctx, getMessageHistoryByChatId, chatID)
 	if err != nil {
 		return nil, err
 	}
@@ -65,15 +56,44 @@ func (q *Queries) GetMessageHistoryByChatId(ctx context.Context, chatID pgtype.U
 			&i.ID,
 			&i.ChatID,
 			&i.SenderID,
-			&i.ReceiverID,
 			&i.Content,
-			&i.IsRead,
-			&i.ReadAt,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRoomMemberIDs = `-- name: GetRoomMemberIDs :many
+SELECT user_id
+FROM chat_service.room_members
+WHERE chat_id = $1
+`
+
+func (q *Queries) GetRoomMemberIDs(ctx context.Context, chatID uuid.UUID) ([]int32, error) {
+	rows, err := q.db.QueryContext(ctx, getRoomMemberIDs, chatID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int32
+	for rows.Next() {
+		var user_id int32
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
