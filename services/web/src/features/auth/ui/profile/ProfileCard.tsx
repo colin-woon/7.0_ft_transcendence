@@ -34,9 +34,17 @@ export default function ProfileCard({ user, profile, initials }: ProfileCardProp
     <Card className="overflow-visible">
       <div className="h-15 bg-gradient-to-r from-[#0f6f6b] via-[#1a9e99] to-[#8EE7E3] relative rounded-t-2xl">
         <div className="absolute -bottom-10 left-6">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-2xl font-bold ring-4 ring-white shadow-md">
-            {initials}
-          </div>
+          {user?.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt={`${user.fullName} avatar`}
+              className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-md"
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-2xl font-bold ring-4 ring-white shadow-md">
+              {initials}
+            </div>
+          )}
         </div>
       </div>
 
@@ -52,7 +60,7 @@ export default function ProfileCard({ user, profile, initials }: ProfileCardProp
             <p className="text-sm text-slate-500">@{user?.username ?? 'jdoe'} · {profile.cursus}</p>
             <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
               <span className="flex items-center gap-1"><Mail size={11} />{user?.email ?? profile.email}</span>
-              <span className="flex items-center gap-1"><MapPin size={11} />{profile.location}</span>
+              {profile.location ? <span className="flex items-center gap-1"><MapPin size={11} />{profile.location}</span> : null}
               <span className="flex items-center gap-1"><Calendar size={11} />Since {profile.since}</span>
             </div>
           </div>

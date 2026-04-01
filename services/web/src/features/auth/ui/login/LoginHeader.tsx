@@ -10,7 +10,7 @@ export function LoginHeader() {
         Welcome back
       </h1>
       <p className="text-sm text-slate-500 animate-[fade-up_0.5s_0.2s_ease-out_both]">
-        Sign in securely with your Google account
+        Sign in securely with Google or 42
       </p>
     </div>
   )

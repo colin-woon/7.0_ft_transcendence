@@ -4,6 +4,7 @@ import java.time.Instant;
 
 public class SessionDTO {
 	public String sessionId;
+	public boolean isCurrent;
 	public String deviceType;
 	public String browser;
 	public String os;
@@ -13,9 +14,10 @@ public class SessionDTO {
 
 	public SessionDTO() {}
 
-	public SessionDTO(String sessionId, String deviceType, String browser,
+	public SessionDTO(String sessionId, boolean isCurrent, String deviceType, String browser,
 			String os, String ipAddress, Instant expiresAt, Instant createdAt) {
 		this.sessionId = sessionId;
+		this.isCurrent = isCurrent;
 		this.deviceType = deviceType;
 		this.browser = browser;
 		this.os = os;
