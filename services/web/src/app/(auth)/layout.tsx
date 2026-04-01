@@ -4,7 +4,6 @@ import { AppShell } from '@/components/ui/ComponentLogic/Appshell/Appshell'
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
       <body>
-        <AuthProvider>
           <AppShellProvider>
             <AppShell>
               <div className='flex-col overflow-y-auto'>
@@ -12,7 +11,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </AppShell>
           </AppShellProvider>
-        </AuthProvider>
       </body>
   )
 }
