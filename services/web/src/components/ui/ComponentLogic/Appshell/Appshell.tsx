@@ -14,9 +14,9 @@ export function AppShell({ children }: AppShellProps) {
   
   return (
     // h-screen + overflow-hidden locks the browser window size
-    <div className="h-screen bg-[#f9f9f9] text-slate-900">
+    <div className="h-screen bg-[#f9f9f9] text-slate-900 flex flex-col">
       <Header />
-      <div className="w-full py-6">
+      <div className="w-full py-6 overflow-y-auto flex-1">
             {children}
       </div>
       <div className="min-h-0">
