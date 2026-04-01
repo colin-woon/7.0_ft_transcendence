@@ -20,8 +20,8 @@ export interface Project {
   slug: string;
   name: string;
   description: string;
-  icon: string;
-  difficulty: Difficulty;
+  
+  difficulty: string;
   xp: number;
   duration: string;
   teamSize: string;
@@ -37,7 +37,7 @@ export const projects: Project[] = [
     slug: "libft",
     name: "Libft",
     description: "Re-implement a set of standard C library functions. The foundation of all future 42 projects — you'll use this library throughout the whole cursus.",
-    icon: "📚",
+    
     difficulty: "Beginner",
     xp: 462,
     duration: "~1 week",
@@ -57,7 +57,6 @@ export const projects: Project[] = [
     slug: "ft_printf",
     name: "ft_printf",
     description: "Recode the printf function from scratch. Learn variadic functions, format specifiers, and how to handle complex formatted output in C.",
-    icon: "🖨️",
     difficulty: "Beginner",
     xp: 462,
     duration: "~1 week",
@@ -76,7 +75,6 @@ export const projects: Project[] = [
     slug: "get_next_line",
     name: "get_next_line",
     description: "Write a function that reads a line from a file descriptor. Master static variables, buffer management, and edge case handling in C.",
-    icon: "📄",
     difficulty: "Beginner",
     xp: 462,
     duration: "~1 week",
@@ -95,7 +93,6 @@ export const projects: Project[] = [
     slug: "born2beroot",
     name: "Born2beRoot",
     description: "Set up a minimal Debian/Rocky Linux server with strict security rules. Introduction to system administration, firewalls, and user management.",
-    icon: "🖥️",
     difficulty: "Beginner",
     xp: 462,
     duration: "~2 weeks",
@@ -114,7 +111,6 @@ export const projects: Project[] = [
     slug: "push_swap",
     name: "push_swap",
     description: "Sort a stack of integers using a limited set of operations. Optimize for the fewest moves possible — performance is graded.",
-    icon: "🔀",
     difficulty: "Intermediate",
     xp: 462,
     duration: "~2 weeks",
@@ -133,7 +129,6 @@ export const projects: Project[] = [
     slug: "pipex",
     name: "Pipex",
     description: "Replicate the behavior of the shell `|` operator. Understand process creation, file descriptors, dup2, and execve in depth.",
-    icon: "🔧",
     difficulty: "Intermediate",
     xp: 462,
     duration: "~1 week",
@@ -151,7 +146,6 @@ export const projects: Project[] = [
     slug: "philosophers",
     name: "Philosophers",
     description: "Solve the dining philosophers problem with threads and mutexes. Deep dive into concurrency, race conditions, and deadlock prevention.",
-    icon: "🍝",
     difficulty: "Intermediate",
     xp: 462,
     duration: "~2 weeks",
@@ -170,7 +164,6 @@ export const projects: Project[] = [
     slug: "minishell",
     name: "Minishell",
     description: "Build a mini bash. Implement a lexer, parser, redirections, pipes, signal handling, and all required built-in commands.",
-    icon: "🐚",
     difficulty: "Intermediate",
     xp: 882,
     duration: "~4 weeks",
@@ -190,7 +183,6 @@ export const projects: Project[] = [
     slug: "netpractice",
     name: "NetPractice",
     description: "Learn TCP/IP networking through 10 practical exercises. Configure hosts, routers, and fix broken network topologies.",
-    icon: "🌐",
     difficulty: "Intermediate",
     xp: 462,
     duration: "~1 week",
@@ -208,7 +200,6 @@ export const projects: Project[] = [
     slug: "cub3d",
     name: "cub3D",
     description: "Create a 3D maze game using raycasting inspired by Wolfenstein 3D. Render textured walls in real-time using only the MiniLibX graphics library.",
-    icon: "🎮",
     difficulty: "Advanced",
     xp: 882,
     duration: "~4 weeks",
@@ -226,7 +217,6 @@ export const projects: Project[] = [
     slug: "minirt",
     name: "miniRT",
     description: "Build a raytracer from scratch. Render spheres, planes, and cylinders with ambient, diffuse lighting and hard shadows in C.",
-    icon: "✨",
     difficulty: "Advanced",
     xp: 882,
     duration: "~4 weeks",
@@ -244,7 +234,6 @@ export const projects: Project[] = [
     slug: "inception",
     name: "Inception",
     description: "Orchestrate a multi-service infrastructure using Docker Compose. Set up NGINX, WordPress, and MariaDB — all from custom Dockerfiles.",
-    icon: "🐳",
     difficulty: "Advanced",
     xp: 882,
     duration: "~3 weeks",
@@ -263,7 +252,6 @@ export const projects: Project[] = [
     slug: "ft_irc",
     name: "ft_irc",
     description: "Build a fully functional IRC server in C++98. Handle multiple clients with poll(), channels, operators, and all required IRC commands.",
-    icon: "💬",
     difficulty: "Advanced",
     xp: 882,
     duration: "~4 weeks",
@@ -281,7 +269,6 @@ export const projects: Project[] = [
     slug: "ft_transcendence",
     name: "ft_transcendence",
     description: "The final 42 project. Build a full-stack Pong web application with real-time multiplayer, tournament mode, live chat, and OAuth login.",
-    icon: "🏓",
     difficulty: "Expert",
     xp: 7140,
     duration: "~8 weeks",

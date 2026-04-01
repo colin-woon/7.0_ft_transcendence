@@ -1,9 +1,21 @@
 import ProjectsGridPage from '@/features/forum/ui/wesley_projects/ProjectsGridPage'
-import { getAllProjects } from '@/features/forum/api/project'
+import { getAllProjects, searchProjects } from '@/features/forum/api/project'
 
-export const dynamic = 'force-dynamic';
+interface ProjectsRouteProps {
+  searchParams?: Promise<{
+    q?: string | string[];
+  }>;
+}
 
-export default async function ProjectsPage() {
-  const projects = await getAllProjects();
-  return <ProjectsGridPage projects={projects} />
+export default async function ProjectsPage({ searchParams }: ProjectsRouteProps) {
+  const params = searchParams ? await searchParams : undefined;
+  const qRaw = params?.q;
+  const q = Array.isArray(qRaw) ? qRaw[0] : qRaw;
+  const searchQuery = (q ?? '').trim();
+
+  const projects = searchQuery.length >= 2
+    ? await searchProjects(searchQuery)
+    : await getAllProjects();
+
+  return <ProjectsGridPage projects={projects} initialSearch={searchQuery} />
 }

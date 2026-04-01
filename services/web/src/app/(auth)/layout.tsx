@@ -3,10 +3,16 @@ import { AppShell } from '@/components/ui/ComponentLogic/Appshell/Appshell'
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AppShellProvider>
-      <AppShell>
-        {children}
-      </AppShell>
-    </AppShellProvider>
+      <body>
+        <AuthProvider>
+          <AppShellProvider>
+            <AppShell>
+              <div className='flex-col overflow-y-auto'>
+                {children}
+              </div>
+            </AppShell>
+          </AppShellProvider>
+        </AuthProvider>
+      </body>
   )
 }

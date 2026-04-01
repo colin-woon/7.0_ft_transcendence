@@ -1,4 +1,4 @@
-import ProfilePage from '@/features/auth/ui/profile/ProfilePage'
+import ProfilePage from '@/features/auth/ui/profile/ProfilePage3'
 import { getServerCurrentUser, getServerSessions } from '@/features/auth/api/serverAuthData'
 
 export const dynamic = 'force-dynamic'

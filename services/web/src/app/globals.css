@@ -1,11 +1,179 @@
 @import "tailwindcss";
-@plugin "daisyui";
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark, winter;
+}
+
+@plugin "daisyui/theme" {
+  name: "winter";
+  default: false;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: oklch(100% 0 0);
+  --color-base-200: oklch(97.466% 0.011 259.822);
+  --color-base-300: oklch(93.268% 0.016 262.751);
+  --color-base-content: oklch(41.886% 0.053 255.824);
+  --color-primary: oklch(95% 0.052 163.051);
+  --color-primary-content: oklch(95% 0.052 163.051);
+  --color-secondary: oklch(42.551% 0.161 282.339);
+  --color-secondary-content: oklch(88.51% 0.032 282.339);
+  --color-accent: oklch(59.939% 0.191 335.171);
+  --color-accent-content: oklch(11.988% 0.038 335.171);
+  --color-neutral: oklch(19.616% 0.063 257.651);
+  --color-neutral-content: oklch(83.923% 0.012 257.651);
+  --color-info: oklch(88.127% 0.085 214.515);
+  --color-info-content: oklch(17.625% 0.017 214.515);
+  --color-success: oklch(80.494% 0.077 197.823);
+  --color-success-content: oklch(16.098% 0.015 197.823);
+  --color-warning: oklch(89.172% 0.045 71.47);
+  --color-warning-content: oklch(17.834% 0.009 71.47);
+  --color-error: oklch(73.092% 0.11 20.076);
+  --color-error-content: oklch(14.618% 0.022 20.076);
+  --radius-selector: 1rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+  name: "light-teal";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  /* ─── Base surfaces ─────────────────────────────────────
+     base-100  →  main chat pane background
+     base-200  →  sidebar / panel background
+     base-300  →  hover states, dividers, input backgrounds
+  ──────────────────────────────────────────────────────── */
+  --color-base-100: oklch(99.5% 0.004 185);
+  /* #FBFEFE — chat area bg */
+  --color-base-200: oklch(97% 0.008 185);
+  /* #F5FAFA — sidebar bg */
+  --color-base-300: oklch(93% 0.014 185);
+  /* #E8F4F4 — hover/divider */
+  --color-base-content: oklch(20% 0.008 185);
+  /* near-black with teal cast */
+
+  /* ─── Primary — mid-tone teal ───────────────────────────
+     Send button, active conversation border, input focus
+     ring, unread badge, links. ~4.6:1 contrast on white.
+  ──────────────────────────────────────────────────────── */
+  --color-primary: oklch(68% 0.09 185);
+  /* #3AADA7 */
+  --color-primary-content: oklch(100% 0 0);
+  /* #ffffff */
+
+  /* ─── Secondary — deep teal ─────────────────────────────
+     Sent message bubbles (via .chat-bubble-primary),
+     active avatar backgrounds, hover on primary actions.
+  ──────────────────────────────────────────────────────── */
+  --color-secondary: oklch(56% 0.09 185);
+  /* #1F8882 */
+  --color-secondary-content: oklch(100% 0 0);
+  /* #ffffff */
+
+  /* ─── Accent — warm coral ───────────────────────────────
+     Notification badges, mention highlights, decorative tags.
+  ──────────────────────────────────────────────────────── */
+  --color-accent: oklch(72% 0.11 30);
+  /* #E87461 */
+  --color-accent-content: oklch(100% 0 0);
+
+  /* ─── Neutral — tinted off-white ────────────────────────
+     DaisyUI's .chat-bubble (received) uses neutral as its
+     background by default, so this drives received bubbles.
+  ──────────────────────────────────────────────────────── */
+  --color-neutral: oklch(94% 0.004 185);
+  /* #EEF5F5 */
+  --color-neutral-content: oklch(37% 0.02 185);
+
+  /* ─── Status colors ─────────────────────────────────────
+     info    →  system notifications, info banners
+     success →  delivered/read ticks, online dot
+     warning →  away status, draft indicator
+     error   →  failed messages, destructive actions
+  ──────────────────────────────────────────────────────── */
+  --color-info: oklch(68% 0.09 210);
+  /* #3A9BB5 */
+  --color-info-content: oklch(100% 0 0);
+
+  --color-success: oklch(67% 0.12 145);
+  /* #4EAB70 */
+  --color-success-content: oklch(100% 0 0);
+
+  --color-warning: oklch(78% 0.13 85);
+  /* #E8B84B */
+  --color-warning-content: oklch(28% 0.04 85);
+
+  --color-error: oklch(60% 0.18 20);
+  /* #C8432E */
+  --color-error-content: oklch(100% 0 0);
+
+  /* ─── Shape ─────────────────────────────────────────────
+     radius-field → pill inputs (search, message input)
+     radius-box   → bubbles, cards, modals
+  ──────────────────────────────────────────────────────── */
+  --radius-selector: 0.5rem;
+  --radius-field: 1.25rem;
+  --radius-box: 1rem;
+
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0.3;
+  --noise: 0;
+}
+
+/* ─────────────────────────────────────────────────────────
+   Custom classes — only for things DaisyUI doesn't cover.
+ 
+   For everything else, use DaisyUI directly:
+     Received bubble  →  <div class="chat-bubble">
+     Sent bubble      →  <div class="chat-bubble chat-bubble-primary">
+     Send button      →  <button class="btn btn-primary btn-circle">
+     Message input    →  <input class="input input-bordered w-full">
+     Unread count     →  <span class="badge badge-primary badge-sm">
+───────────────────────────────────────────────────────── */
+
+/* Sidebar active conversation item */
+.conv-active {
+  border-left: 3px solid var(--color-primary);
+  background-color: var(--color-base-300);
+}
+
+/* Unread dot — standalone indicator next to a name */
+.unread-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background-color: var(--color-primary);
+}
+
+/* Presence status */
+.status-online {
+  color: var(--color-success);
+}
+
+.status-away {
+  color: var(--color-warning);
+}
+
+.status-offline {
+  color: var(--color-neutral-content);
+}
+
 
 @keyframes fade-up {
   from {
     opacity: 0;
     transform: translateY(14px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -15,13 +183,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --navbar-height: 4rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -31,11 +193,14 @@
   }
 }
 
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
   padding: 0;
+  overflow: hidden;
 }
+
 body {
   background: var(--background);
   color: var(--foreground);

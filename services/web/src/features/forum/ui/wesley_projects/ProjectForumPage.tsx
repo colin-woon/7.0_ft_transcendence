@@ -1,8 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Zap, Clock, Users, Star, MessageSquare, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Search } from "lucide-react";
 import type { Project } from "../../models/projects";
 import PostVoteButtons from '../wesley_posts/components/PostVoteButtons';
 import ProjectCard from "./ProjectCard";
@@ -15,12 +15,28 @@ export default function ProjectForumPage({ project }: { project: Project }) {
   const searchParams = useSearchParams();
   const activeSort = searchParams.get('sort') === 'New' ? 'New' : 'Top';
   const [viewMode, setViewMode] = useState<"card" | "compact">("card");
+  const [postSearch, setPostSearch] = useState("");
 
   const handleSortChange = (sort: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.set('sort', sort);
     router.replace(`${pathname}?${nextParams.toString()}`);
   };
+
+  const filteredPosts = useMemo(() => {
+    const normalizedSearch = postSearch.trim().toLowerCase();
+
+    if (normalizedSearch.length === 0) {
+      return project.posts;
+    }
+
+    return project.posts.filter((post) => {
+      const titleMatch = post.title.toLowerCase().includes(normalizedSearch);
+      const previewMatch = post.preview.toLowerCase().includes(normalizedSearch);
+      const authorMatch = post.author.toLowerCase().includes(normalizedSearch);
+      return titleMatch || previewMatch || authorMatch;
+    });
+  }, [project.posts, postSearch]);
 
   return (
       <div className="min-h-screen bg-[#f9f9f9]">
@@ -78,16 +94,33 @@ export default function ProjectForumPage({ project }: { project: Project }) {
               </div>
             </div>
 
+            <div className="relative mb-3">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={postSearch}
+                onChange={(e) => setPostSearch(e.target.value)}
+                placeholder={`Search posts in ${project.name}...`}
+                className="w-full rounded-md border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
+              />
+            </div>
+
             {/* Posts */}
             <div className="space-y-3">
-              {project.posts.length === 0 ? (
+              {filteredPosts.length === 0 ? (
                 <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
                   <p className="text-3xl mb-2">💬</p>
-                  <h3 className="text-base font-semibold text-slate-800 mb-1">No questions yet</h3>
-                  <p className="text-sm text-slate-500">Be the first to ask something about {project.name}.</p>
+                  <h3 className="text-base font-semibold text-slate-800 mb-1">
+                    {postSearch.trim().length > 0 ? 'No matching questions' : 'No questions yet'}
+                  </h3>
+                  <p className="text-sm text-slate-500">
+                    {postSearch.trim().length > 0
+                      ? `Try another keyword for ${project.name}.`
+                      : `Be the first to ask something about ${project.name}.`}
+                  </p>
                 </div>
               ) : (
-                project.posts.map((post) => (
+                filteredPosts.map((post) => (
                   <div
                     key={post.id}
                     className={`bg-white border border-gray-200 hover:border-gray-300 transition ${
