@@ -1,7 +1,7 @@
 import logging
 import os
 from typing import List
-from fastapi import APIRouter, FastAPI, Depends, status, Query, Header
+from fastapi import APIRouter, FastAPI, Depends, status, Query, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from contextlib import asynccontextmanager
@@ -71,9 +71,18 @@ app.add_middleware(
 def health():
     return {"status": "ok"}
 
-# Mock User ID (Replace with real Auth later)
-def get_current_user_id():
-    return 3 #request object
+# Read user id from gateway-injected identity header.
+# If missing (e.g. local dev without gateway auth), fall back to user_id=1.
+def get_current_user_id(
+    x_intra_user_id: str | None = Header(default=None, alias="X-Intra-User-Id")
+) -> int:
+    if x_intra_user_id is None:
+        return 1
+
+    try:
+        return int(x_intra_user_id.strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail="Invalid X-Intra-User-Id header") from exc
 
 # --- ROUTES ---
 

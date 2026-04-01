@@ -124,6 +124,7 @@ def get_all_projects_paginated(db: Session, page: int, page_size: int) -> dict:
             models.Project,
             (
                 models.Project.post_count + 
+                #coalesce is needed here because the sum of an empty set in sql = NULL, not 0
                 func.coalesce(func.sum(models.ForumPost.comment_count), 0)
             ).label("hot_score")
         )
