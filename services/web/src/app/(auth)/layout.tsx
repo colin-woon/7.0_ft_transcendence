@@ -4,16 +4,16 @@ import { AuthProvider } from '@/features/auth/models/AuthContext'
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html>
       <body>
         <AuthProvider>
           <AppShellProvider>
             <AppShell>
-              {children}
+              <div className='flex-col overflow-y-auto'>
+                {children}
+              </div>
             </AppShell>
           </AppShellProvider>
         </AuthProvider>
       </body>
-    </html>
   )
 }

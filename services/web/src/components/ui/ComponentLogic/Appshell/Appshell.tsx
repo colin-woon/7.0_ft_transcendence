@@ -10,18 +10,19 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const { isSidebarOpen, closeSidebar, searchQuery, isChatOpen } = useAppShell()
+  const { isSidebarOpen, closeSidebar } = useAppShell()
   
   return (
-    <div className="min-h-screen bg-[#f9f9f9] text-slate-900 flex flex-col">
+    // h-screen + overflow-hidden locks the browser window size
+    <div className="h-screen bg-[#f9f9f9] text-slate-900">
       <Header />
-      <div className="flex flex-1 min-h-0">
-        <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
-        <main className="flex-1 flex flex-col min-h-0">
-          <div className="w-full max-w-7xl px-4 mx-auto h-full flex flex-col min-h-0">
+      <div className="w-full py-6">
             {children}
-          </div>
-        </main>
+      </div>
+      <div className="min-h-0">
+        {/* Sidebar stays locked to the left */}
+        <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
+        
       </div>
     </div>
   )

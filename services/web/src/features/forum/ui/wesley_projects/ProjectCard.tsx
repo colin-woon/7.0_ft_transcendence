@@ -15,11 +15,11 @@ export default function ProjectCard({ project }: { project: typeof projects[0] }
           <div className={`h-2 w-full bg-gradient-to-r ${project.color}`} />
           <div className="p-6">
             <div className="flex items-start gap-4">
-              <span className="text-5xl">{project.icon}</span>
+              {/* <span className="text-5xl">{project.icon}</span> */}
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <h1 className="text-2xl font-bold text-slate-800">{project.name}</h1>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${difficultyColor[project.difficulty]}`}>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full `}>
                     {project.difficulty}
                   </span>
                 </div>
