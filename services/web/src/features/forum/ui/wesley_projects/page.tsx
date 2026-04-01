@@ -1,8 +1,21 @@
 import ProjectsPage from "./ProjectsGridPage";
-import { getAllProjects } from "../../api/project";
+import { getAllProjects, searchProjects } from "../../api/project";
 
-export default async function ProjectsRoute() {
-  const projects = await getAllProjects();
+interface ProjectsRouteProps {
+  searchParams?: Promise<{
+    q?: string | string[];
+  }>;
+}
 
-  return <ProjectsPage projects={projects} />;
+export default async function ProjectsRoute({ searchParams }: ProjectsRouteProps) {
+  const params = searchParams ? await searchParams : undefined;
+  const qRaw = params?.q;
+  const q = Array.isArray(qRaw) ? qRaw[0] : qRaw;
+  const searchQuery = (q ?? '').trim();
+
+  const projects = searchQuery.length >= 2
+    ? await searchProjects(searchQuery)
+    : await getAllProjects();
+
+  return <ProjectsPage projects={projects} initialSearch={searchQuery} />;
 }

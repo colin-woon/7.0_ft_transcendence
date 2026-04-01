@@ -133,10 +133,10 @@ public class AuthResource {
 	@GET
 	@Path("/sessions")
 	@Authenticated
-	public List<@NonNull SessionDTO> listSessions() {
+	public List<@NonNull SessionDTO> listSessions(@CookieParam("sessionId") String cookieSessionId) {
 		JsonWebToken jwt = (JsonWebToken) identity.getPrincipal();
 
-		return authService.listSessions(Long.valueOf(jwt.getSubject()));
+		return authService.listSessions(Long.valueOf(jwt.getSubject()), cookieSessionId);
 	}
 
 	// To check the health of the service

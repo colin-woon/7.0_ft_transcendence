@@ -8,20 +8,16 @@ export const dynamic = 'force-dynamic'
 
 export default function AuthCallback() {
   const router = useRouter()
-  const { refresh } = useAuth()
+  const { handleOAuthCallback } = useAuth()
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // After backend OAuth flow, the session should be established via cookies
-        // Try to refresh the auth state to verify we're authenticated
-        const success = await refresh()
+        const user = await handleOAuthCallback()
 
-        if (success) {
-          // Successfully authenticated, redirect to profile
+        if (user) {
           router.push('/profile')
         } else {
-          // Authentication failed
           router.push('/login?error=auth_failed')
         }
       } catch (err) {
@@ -31,7 +27,7 @@ export default function AuthCallback() {
     }
 
     handleCallback()
-  }, [refresh, router])
+  }, [handleOAuthCallback, router])
 
   return (
     <div className="min-h-screen flex items-center justify-center text-slate-500">

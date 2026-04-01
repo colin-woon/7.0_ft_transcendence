@@ -48,6 +48,7 @@ export interface ForumApiComment {
   post_id: number;
   author_id: number;
   content: string;
+  is_best_answer: boolean;
   vote_score: number;
   created_at: string;
 }
@@ -73,6 +74,7 @@ export interface ForumComment {
   content: string;
   timestamp: string;
   upvotes: number;
+  isBestAnswer: boolean;
 }
 
 export const forumCategories = ['All', 'minishell', 'inception', 'philo', 'Tutorial', 'Career'] as const;
