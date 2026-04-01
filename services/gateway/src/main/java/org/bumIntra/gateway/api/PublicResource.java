@@ -30,7 +30,7 @@ public class PublicResource {
 		if (provider.contains("/") || provider.isBlank() || provider.equals(".") || provider.equals("..")) {
 			return Response.status(Response.Status.NOT_FOUND).build();
 		}
-		return authService.proxyGet("auth/login/" + provider);
+		return authService.proxyGet("api/public/auth/login/" + provider);
 	}
 
 	@GET
@@ -54,7 +54,7 @@ public class PublicResource {
 
 	private String buildUrl(String service, String subpath) {
 		// for strict auth callback path OIDC
-		if (service.equals("auth") && subpath.startsWith("callback/")) {
+		if (service.equals("auth") && (subpath.startsWith("callback/") || subpath.startsWith("login/"))) {
 			return "api/public/" + service + "/" + subpath;
 		}
 
