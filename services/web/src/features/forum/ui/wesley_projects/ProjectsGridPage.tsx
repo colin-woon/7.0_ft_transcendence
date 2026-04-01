@@ -56,7 +56,7 @@ export default function ProjectsPage({ projects, initialSearch = "" }: { project
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
+    <div className="h-screen bg-gray-50 font-sans mt-14 overflow-y-auto">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-5">
         <h1 className="text-2xl font-bold text-slate-800 mb-1">42 Projects</h1>
@@ -108,12 +108,12 @@ export default function ProjectsPage({ projects, initialSearch = "" }: { project
                 {/* Icon + name */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{project.icon}</span>
+                    {/* <span className="text-2xl">{project.icon}</span> */}
                     <div>
                       <h3 className="font-semibold text-slate-800 text-sm group-hover:text-[#0f6f6b] transition-colors">
                         {project.name}
                       </h3>
-                      <span className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded-full mt-0.5 ${difficultyColor[project.difficulty]}`}>
+                      <span className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded-full mt-0.5`}>
                         {project.difficulty}
                       </span>
                     </div>

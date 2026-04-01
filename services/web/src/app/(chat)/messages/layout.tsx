@@ -8,9 +8,11 @@ import { ReactNode } from 'react'
 export default function MainLayout({ children }: { children: ReactNode }) {
   return (
     <AppShellProvider>
-      <AppShell>
-        {children}
-      </AppShell>
+      <div data-theme="light-teal">
+        <AppShell>
+          {children}
+        </AppShell>
+      </div>
     </AppShellProvider>
   )
 }
