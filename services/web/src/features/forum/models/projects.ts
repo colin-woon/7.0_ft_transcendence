@@ -20,8 +20,8 @@ export interface Project {
   slug: string;
   name: string;
   description: string;
-  // icon: string;
-  difficulty: string;
+  icon: string;
+  difficulty: Difficulty;
   xp: number;
   duration: string;
   teamSize: string;

@@ -6,34 +6,16 @@ import { useAuth } from '@/features/auth/models/AuthContext'
 import Link from 'next/link'
 
 export default function Home() {
-  const { user, logout } = useAuth()
+  const { user, isLoading, logout } = useAuth()
   const router = useRouter()
 
-	
   useEffect(() => {
-	console.log('RootPage mounted')
-
-	return () => {
-		console.log('RootPage unmounted')
-	}
-	}, [])
-
-  useEffect(() => {
-    if (!user) {
+    if (!isLoading && !user) {
       router.push('/login')
     }
-  }, [user, router])
+  }, [isLoading, user, router])
 
-  useEffect(() => {
-	if (user) {
-		console.log('User changed:', user.username)
-	}
-	}, [user])
-
-  
-  if (!user) return null
-
-	console.log('👤 Current user:', user)
+  if (isLoading || !user) return null
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-8 font-sans text-slate-800">
       <h1 className="text-3xl font-semibold">Welcome, {user.fullName} 👋</h1>

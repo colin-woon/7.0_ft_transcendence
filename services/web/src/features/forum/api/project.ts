@@ -132,7 +132,7 @@ export async function getAllProjects(): Promise<Project[]> {
     name: apiProj.name,
     slug: apiProj.slug || apiProj.name.toLowerCase().replace(/\s+/g, '-'),
     description: apiProj.description || 'No description provided for this project.',
-    // icon: apiProj.icon || "📚",
+    icon: apiProj.icon || '📚',
     difficulty: calculateDifficulty(apiProj.difficulty),
     xp: apiProj.difficulty || 0,
     duration: apiProj.estimate_time || "~1 week",

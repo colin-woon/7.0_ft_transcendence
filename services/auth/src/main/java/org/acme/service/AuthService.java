@@ -273,7 +273,7 @@ public class AuthService {
 			.build();
 	}
 
-	public List<@NonNull SessionDTO> listSessions(Long userId) {
+	public List<@NonNull SessionDTO> listSessions(Long userId, String currentSessionId) {
 		User user = userRepository.findById(userId);
 		if (user == null) {
 			LOG.error("User not found for listing sessions: " + userId);
@@ -282,7 +282,7 @@ public class AuthService {
 
 		List<@NonNull Session> sessions = sessionRepository.findByUserId(userId);
 		return sessions.stream()
-			.map(s -> new SessionDTO(s.sessionId, s.deviceType, s.browser,
+			.map(s -> new SessionDTO(s.sessionId, s.sessionId.equals(currentSessionId), s.deviceType, s.browser,
 				s.os, s.ipAddress, s.expiresAt, s.createdAt))
 			.toList();
 	}

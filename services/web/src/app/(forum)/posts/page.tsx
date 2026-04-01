@@ -3,6 +3,8 @@ import { getAllPosts } from '@/features/forum/api/post'
 import type { ForumPost, ForumSort } from '@/features/forum/models';
 import ForumPostsClient from '@/features/forum/ui/wesley_posts/screen/ForumPostsClient';
 
+export const dynamic = 'force-dynamic';
+
 interface ForumRouteProps {
   searchParams?: Promise<{
     projectId?: string | string[];
