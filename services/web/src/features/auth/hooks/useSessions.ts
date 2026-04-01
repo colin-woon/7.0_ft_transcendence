@@ -4,9 +4,13 @@ import { useCallback, useState } from 'react'
 import { useAuth } from '@/features/auth/models/AuthContext'
 import type { SessionInfo } from '@/features/auth/api/authService'
 
-export function useSessions() {
+interface UseSessionsOptions {
+  initialSessions?: SessionInfo[]
+}
+
+export function useSessions(options?: UseSessionsOptions) {
   const { user, listSessions, terminateSession, logoutAll } = useAuth()
-  const [sessions, setSessions] = useState<SessionInfo[]>([])
+  const [sessions, setSessions] = useState<SessionInfo[]>(() => options?.initialSessions ?? [])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [endingSessionId, setEndingSessionId] = useState<string | null>(null)

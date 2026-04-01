@@ -1,7 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import type { SessionInfo, User } from '@/features/auth/api/authService'
 import { useAuth } from '@/features/auth/models/AuthContext'
 import { useUserProfile } from '@/features/auth/hooks/useUserProfile'
 import { useUserSearch } from '@/features/auth/hooks/useUserSearch'
@@ -98,9 +99,19 @@ function UserAvatar({ fullName, avatarUrl }: { fullName: string; avatarUrl: stri
 
 interface ProfilePageProps {
   viewedUserId?: number
+  initialProfile?: User | null
+  initialProfileError?: string | null
+  initialProfileErrorStatus?: number | null
+  initialSessions?: SessionInfo[]
 }
 
-export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
+export default function ProfilePage({
+  viewedUserId,
+  initialProfile,
+  initialProfileError,
+  initialProfileErrorStatus,
+  initialSessions,
+}: ProfilePageProps) {
   const router = useRouter()
   const {
     user,
@@ -124,6 +135,9 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
     refetch,
   } = useUserProfile(viewedUserId, {
     skip: !user || (!!viewedUserId && viewedUserId <= 0),
+    initialProfile,
+    initialError: initialProfileError,
+    initialErrorStatus: initialProfileErrorStatus,
   })
 
   const {
@@ -146,7 +160,7 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
     refresh: refreshSessions,
     endSession,
     endAllSessions,
-  } = useSessions()
+  } = useSessions({ initialSessions })
 
   const { prefetchLookup } = useUserLookup({ cacheTtlMs: 20_000 })
   const {
@@ -172,6 +186,8 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
     avatarUrl: '',
     bio: '',
   })
+  const editDraftDirtyRef = useRef(false)
+  const lastSeededProfileIdRef = useRef<number | null>(null)
 
   const [adminUpdateForm, setAdminUpdateForm] = useState({
     userId: '',
@@ -190,9 +206,14 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
   const activeProfile = profile ?? (viewingOwnProfile ? user : null)
   const isGuest = !user
   const isLoading = authLoading || (!!user && profileLoading && !!viewedUserId)
+  const skipInitialSessionsRefreshRef = useRef(Boolean(initialSessions))
 
   useEffect(() => {
     if (!user || !viewingOwnProfile) return
+    if (skipInitialSessionsRefreshRef.current) {
+      skipInitialSessionsRefreshRef.current = false
+      return
+    }
     void refreshSessions()
   }, [user, viewingOwnProfile, refreshSessions])
 
@@ -295,10 +316,19 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
     }
     const updated = await saveProfile(payload)
     if (updated) {
+      editDraftDirtyRef.current = false
       setAdminActionSuccess('Profile update demo succeeded.')
       await refetch()
     }
   }
+
+  const handleEditDraftChange = useCallback((next: Partial<typeof editDraft>) => {
+    editDraftDirtyRef.current = true
+    setEditDraft((prev) => ({
+      ...prev,
+      ...next,
+    }))
+  }, [])
 
   const handleDeleteProfileDemo = async () => {
     setAdminActionError(null)
@@ -353,6 +383,17 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
 
   useEffect(() => {
     if (!activeProfile) return
+
+    // Seed from profile only before local editing starts, or when switching to another user.
+    if (lastSeededProfileIdRef.current !== activeProfile.id) {
+      lastSeededProfileIdRef.current = activeProfile.id
+      editDraftDirtyRef.current = false
+    }
+
+    if (editDraftDirtyRef.current) {
+      return
+    }
+
     setEditDraft({
       username: activeProfile.username,
       fullName: activeProfile.fullName,
@@ -438,6 +479,36 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
           >
             Back to my profile
           </button>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!viewingOwnProfile && profileError) {
+    return (
+      <div className="max-w-3xl mx-auto p-4">
+        <Card className="p-8 text-center">
+          <h2 className="text-xl font-bold text-slate-900">Failed to load profile</h2>
+          <p className="text-sm text-slate-500 mt-2">{profileError}</p>
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                clearProfileError()
+                void refetch()
+              }}
+              className="px-4 py-2 text-sm font-medium rounded-xl bg-slate-900 text-white hover:bg-slate-800"
+            >
+              Try again
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push('/profile')}
+              className="px-4 py-2 text-sm font-medium rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
+              Back to my profile
+            </button>
+          </div>
         </Card>
       </div>
     )
@@ -589,7 +660,7 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
                 placeholder="Username"
                 value={editDraft.username}
-                onChange={(event) => setEditDraft((prev) => ({ ...prev, username: event.target.value }))}
+                onChange={(event) => handleEditDraftChange({ username: event.target.value })}
                 minLength={3}
                 maxLength={30}
               />
@@ -601,7 +672,7 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
                 placeholder="Full name"
                 value={editDraft.fullName}
-                onChange={(event) => setEditDraft((prev) => ({ ...prev, fullName: event.target.value }))}
+                onChange={(event) => handleEditDraftChange({ fullName: event.target.value })}
               />
               <label htmlFor="edit-profile-avatar" className="sr-only">
                 Avatar URL
@@ -611,7 +682,7 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
                 placeholder="Avatar URL"
                 value={editDraft.avatarUrl}
-                onChange={(event) => setEditDraft((prev) => ({ ...prev, avatarUrl: event.target.value }))}
+                onChange={(event) => handleEditDraftChange({ avatarUrl: event.target.value })}
               />
               <label htmlFor="edit-profile-bio" className="sr-only">
                 Bio
@@ -622,7 +693,7 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
                 placeholder="Bio"
                 rows={3}
                 value={editDraft.bio}
-                onChange={(event) => setEditDraft((prev) => ({ ...prev, bio: event.target.value }))}
+                onChange={(event) => handleEditDraftChange({ bio: event.target.value })}
               />
               <div className="flex items-center gap-2">
                 <button

@@ -7,15 +7,23 @@ import { useAuth } from '@/features/auth/models/AuthContext'
 interface UseUserProfileOptions {
   skip?: boolean
   forceFresh?: boolean
+  initialProfile?: User | null
+  initialError?: string | null
+  initialErrorStatus?: number | null
 }
 
 export function useUserProfile(userId?: number, options?: UseUserProfileOptions) {
   const { user: authUser, accessToken, updateProfile: updateMyProfile } = useAuth()
   const requestIdRef = useRef(0)
-  const [profile, setProfile] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [errorStatus, setErrorStatus] = useState<number | null>(null)
+  const hasInitialState =
+    options !== undefined &&
+    ('initialProfile' in options || 'initialError' in options || 'initialErrorStatus' in options)
+  const skipInitialFetchRef = useRef(hasInitialState)
+
+  const [profile, setProfile] = useState<User | null>(options?.initialProfile ?? null)
+  const [loading, setLoading] = useState(!hasInitialState)
+  const [error, setError] = useState<string | null>(options?.initialError ?? null)
+  const [errorStatus, setErrorStatus] = useState<number | null>(options?.initialErrorStatus ?? null)
 
   const targetUserId = userId ?? authUser?.id
   const skip = options?.skip || !targetUserId || !accessToken
@@ -64,6 +72,13 @@ export function useUserProfile(userId?: number, options?: UseUserProfileOptions)
   )
 
   useEffect(() => {
+    if (skipInitialFetchRef.current) {
+      skipInitialFetchRef.current = false
+      return () => {
+        requestIdRef.current += 1
+      }
+    }
+
     fetchProfile(false)
     return () => {
       requestIdRef.current += 1

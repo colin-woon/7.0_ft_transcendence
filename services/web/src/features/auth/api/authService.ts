@@ -331,20 +331,16 @@ class AuthService {
   }
 
   async logout(): Promise<void> {
-    let response: Response | null = null
-    try {
-      response = await fetch(getApiUrl('/api/auth/logout'), {
-        method: 'POST',
-        credentials: 'include',
-        cache: 'no-store',
-      })
-    } finally {
-      this.resetLocalAuthState()
-    }
+    const response = await this.authenticatedFetch(getApiUrl('/api/auth/logout'), {
+      method: 'POST',
+      cache: 'no-store',
+    })
 
     if (!response.ok && response.status !== 204) {
       throw this.asAuthApiError(response, 'Failed to logout')
     }
+
+    this.resetLocalAuthState()
   }
 
   async logoutSession(sessionId: string): Promise<void> {
@@ -359,20 +355,16 @@ class AuthService {
   }
 
   async logoutAll(): Promise<void> {
-    let response: Response | null = null
-    try {
-      response = await fetch(getApiUrl('/api/auth/logout/all'), {
-        method: 'POST',
-        credentials: 'include',
-        cache: 'no-store',
-      })
-    } finally {
-      this.resetLocalAuthState()
-    }
+    const response = await this.authenticatedFetch(getApiUrl('/api/auth/logout/all'), {
+      method: 'POST',
+      cache: 'no-store',
+    })
 
     if (!response.ok && response.status !== 204) {
       throw this.asAuthApiError(response, 'Failed to logout all sessions')
     }
+
+    this.resetLocalAuthState()
   }
 
   async adminUpdateUser(userId: number, payload: AdminUpdatePayload): Promise<User> {

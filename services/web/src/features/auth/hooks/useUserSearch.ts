@@ -22,6 +22,7 @@ export function useUserSearch(options?: UseUserSearchOptions) {
   const [page, setPage] = useState(0)
 
   const requestId = useRef(0)
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const runSearch = useCallback(
     async (term: string, pageValue = 0) => {
@@ -59,14 +60,23 @@ export function useUserSearch(options?: UseUserSearchOptions) {
   )
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    debounceTimerRef.current = setTimeout(() => {
       runSearch(query, page)
     }, debounceMs)
 
-    return () => clearTimeout(timer)
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+        debounceTimerRef.current = null
+      }
+    }
   }, [query, page, runSearch, debounceMs])
 
   const clear = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+      debounceTimerRef.current = null
+    }
     requestId.current += 1
     setQuery('')
     setResults([])
@@ -75,7 +85,14 @@ export function useUserSearch(options?: UseUserSearchOptions) {
     setLoading(false)
   }, [])
 
-  const searchNow = useCallback(async () => runSearch(query, page), [runSearch, query, page])
+  const searchNow = useCallback(async () => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+      debounceTimerRef.current = null
+    }
+
+    await runSearch(query, page)
+  }, [runSearch, query, page])
 
   const clearError = useCallback(() => {
     setError(null)
