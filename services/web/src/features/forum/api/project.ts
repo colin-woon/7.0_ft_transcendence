@@ -68,6 +68,24 @@ function getTeamSize(soloStr: boolean): "Solo" | "Team"{
   return "Team";
 }
 
+function mapApiProjectToProject(apiProj: any): Project {
+  return {
+    id: apiProj.id,
+    name: apiProj.name,
+    slug: apiProj.slug || apiProj.name.toLowerCase().replace(/\s+/g, '-'),
+    description: apiProj.description || 'No description provided for this project.',
+    // icon: apiProj.icon || "📚",
+    difficulty: calculateDifficulty(apiProj.difficulty),
+    xp: apiProj.difficulty || 0,
+    duration: apiProj.estimate_time || "~1 week",
+    teamSize: getTeamSize(Boolean(apiProj.solo)),
+    tags: apiProj.objectives || ["42"],
+    students: apiProj.students || 0,
+    color: apiProj.color || "from-blue-400 to-blue-600",
+    posts: apiProj.posts || [],
+  };
+}
+
 
 // base function to fetch all projects from API, utilizes Next.js cache
 export const getCachedApiProjects = cache(async (): Promise<ForumApiProjectSummary[]> => {
@@ -127,21 +145,30 @@ export const getCachedApiProjects = cache(async (): Promise<ForumApiProjectSumma
 export async function getAllProjects(): Promise<Project[]> {
   const apiProjects = await getCachedApiProjects();
 
-  return apiProjects.map((apiProj: any) => ({
-    id: apiProj.id,
-    name: apiProj.name,
-    slug: apiProj.slug || apiProj.name.toLowerCase().replace(/\s+/g, '-'),
-    description: apiProj.description || 'No description provided for this project.',
-    // icon: apiProj.icon || "📚",
-    difficulty: calculateDifficulty(apiProj.difficulty),
-    xp: apiProj.difficulty || 0,
-    duration: apiProj.estimate_time || "~1 week",
-    teamSize: getTeamSize(apiProj.solo),
-    tags: apiProj.objectives || ["42"],
-    students: apiProj.students || 0,
-    color: apiProj.color || "from-blue-400 to-blue-600",
-    posts: apiProj.posts || [],
-  }));
+  return apiProjects.map(mapApiProjectToProject);
+}
+
+export async function searchProjects(searchQuery: string): Promise<Project[]> {
+  const trimmedQuery = searchQuery.trim();
+
+  if (trimmedQuery.length < 2) {
+    return getAllProjects();
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/search/projects?search_query=${encodeURIComponent(trimmedQuery)}`,
+    {
+      method: 'GET',
+      cache: 'no-store',
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to search projects.');
+  }
+
+  const projectsData = (await response.json()) as any[];
+  return projectsData.map(mapApiProjectToProject);
 }
 
 // fetches all projects and maps them id:name, utilizes nextjs cache

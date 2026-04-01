@@ -15,11 +15,12 @@ export default function CommentVoteButtons({ postId, commentId, initialUpvotes }
   const [isVoting, setIsVoting] = useState(false);
 
   const handleVote = async (e: React.MouseEvent, value: 1 | -1) => {
-    // prevent the parent Link/Route from triggering
+    // prevent parent link/route from triggering
     e.preventDefault();
     e.stopPropagation();
 
-    if (isVoting) return;
+    if (isVoting)
+      return;
 
     const previousUpvotes = upvotes;
     setIsVoting(true);
@@ -27,12 +28,13 @@ export default function CommentVoteButtons({ postId, commentId, initialUpvotes }
     try {
       const newVoteCount = await voteOnComment(postId, commentId, value);
       setUpvotes(newVoteCount);
-    } catch (error) {
-    // 2. Rollback on failure: If the API fails, revert the number
+    }
+    catch (error) {
       setUpvotes(previousUpvotes);
       console.error('Voting failed:', error);
       alert('Could not register your vote. Please try again.');
-    } finally {
+    }
+    finally {
       setIsVoting(false);
     }
   };
