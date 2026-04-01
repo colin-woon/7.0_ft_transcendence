@@ -111,7 +111,7 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
     clearError,
   } = useAuth()
 
-  const { loginWith, logoutNow, refreshNow, actionLoading, actionError } = useAuthActions()
+  const { loginWith, logoutNow, refreshNow, actionLoading, actionError, clearActionError } = useAuthActions()
 
   const viewingOwnProfile = !viewedUserId || viewedUserId === user?.id
 
@@ -120,6 +120,7 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
     loading: profileLoading,
     error: profileError,
     errorStatus: profileErrorStatus,
+    clearError: clearProfileError,
     refetch,
   } = useUserProfile(viewedUserId, {
     skip: !user || (!!viewedUserId && viewedUserId <= 0),
@@ -131,6 +132,7 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
     results,
     loading: searchLoading,
     error: searchError,
+    clearError: clearSearchError,
     clear: clearSearch,
   } = useUserSearch({ minChars: 1, debounceMs: 300, pageSize: 12 })
 
@@ -138,6 +140,7 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
     sessions,
     loading: sessionsLoading,
     error: sessionsError,
+    clearError: clearSessionsError,
     endingSessionId,
     endingAll,
     refresh: refreshSessions,
@@ -450,6 +453,10 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
             <button
               onClick={() => {
                 clearError()
+                clearProfileError()
+                clearSessionsError()
+                clearSearchError()
+                clearActionError()
                 setAdminActionError(null)
               }}
               className="ml-auto text-red-500 hover:text-red-700"
@@ -574,7 +581,11 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
           <Card className="p-6">
             <SectionLabel>Edit Profile</SectionLabel>
             <form className="space-y-3" onSubmit={handleProfileEditDemo}>
+              <label htmlFor="edit-profile-username" className="sr-only">
+                Username
+              </label>
               <input
+                id="edit-profile-username"
                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
                 placeholder="Username"
                 value={editDraft.username}
@@ -582,19 +593,31 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
                 minLength={3}
                 maxLength={30}
               />
+              <label htmlFor="edit-profile-fullname" className="sr-only">
+                Full name
+              </label>
               <input
+                id="edit-profile-fullname"
                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
                 placeholder="Full name"
                 value={editDraft.fullName}
                 onChange={(event) => setEditDraft((prev) => ({ ...prev, fullName: event.target.value }))}
               />
+              <label htmlFor="edit-profile-avatar" className="sr-only">
+                Avatar URL
+              </label>
               <input
+                id="edit-profile-avatar"
                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
                 placeholder="Avatar URL"
                 value={editDraft.avatarUrl}
                 onChange={(event) => setEditDraft((prev) => ({ ...prev, avatarUrl: event.target.value }))}
               />
+              <label htmlFor="edit-profile-bio" className="sr-only">
+                Bio
+              </label>
               <textarea
+                id="edit-profile-bio"
                 className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
                 placeholder="Bio"
                 rows={3}
@@ -722,8 +745,12 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
         <Card className="p-6">
           <SectionLabel>User Search</SectionLabel>
           <div className="relative">
+            <label htmlFor="user-search" className="sr-only">
+              Search users
+            </label>
             <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
             <input
+              id="user-search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search by username, email, or name"
@@ -805,14 +832,22 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
         <Card className="p-6">
           <SectionLabel>Admin Update User</SectionLabel>
           <form className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-5" onSubmit={handleAdminUpdateUser}>
+            <label htmlFor="admin-update-user-id" className="sr-only">
+              User id
+            </label>
             <input
+              id="admin-update-user-id"
               className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
               placeholder="User id"
               value={adminUpdateForm.userId}
               onChange={(event) => setAdminUpdateForm((prev) => ({ ...prev, userId: event.target.value }))}
               required
             />
+            <label htmlFor="admin-update-role" className="sr-only">
+              Role update
+            </label>
             <select
+              id="admin-update-role"
               className="px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
               value={adminUpdateForm.role}
               onChange={(event) => setAdminUpdateForm((prev) => ({ ...prev, role: event.target.value }))}
@@ -821,7 +856,11 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
               <option value="STUDENT">STUDENT</option>
               <option value="ADMIN">ADMIN</option>
             </select>
+            <label htmlFor="admin-update-ban" className="sr-only">
+              Ban state update
+            </label>
             <select
+              id="admin-update-ban"
               className="px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
               value={adminUpdateForm.isBanned}
               onChange={(event) => setAdminUpdateForm((prev) => ({ ...prev, isBanned: event.target.value }))}
@@ -840,7 +879,11 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
 
           <SectionLabel>Admin Create User</SectionLabel>
           <form className="grid grid-cols-1 md:grid-cols-5 gap-3" onSubmit={handleAdminCreateUser}>
+            <label htmlFor="admin-create-username" className="sr-only">
+              Username
+            </label>
             <input
+              id="admin-create-username"
               className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
               placeholder="Username"
               value={newUserForm.username}
@@ -848,14 +891,22 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
               required
               minLength={3}
             />
+            <label htmlFor="admin-create-fullname" className="sr-only">
+              Full name
+            </label>
             <input
+              id="admin-create-fullname"
               className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
               placeholder="Full name"
               value={newUserForm.fullName}
               onChange={(event) => setNewUserForm((prev) => ({ ...prev, fullName: event.target.value }))}
               required
             />
+            <label htmlFor="admin-create-email" className="sr-only">
+              Email
+            </label>
             <input
+              id="admin-create-email"
               className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
               placeholder="Email"
               value={newUserForm.email}
@@ -863,7 +914,11 @@ export default function ProfilePage({ viewedUserId }: ProfilePageProps) {
               onChange={(event) => setNewUserForm((prev) => ({ ...prev, email: event.target.value }))}
               required
             />
+            <label htmlFor="admin-create-role" className="sr-only">
+              Role
+            </label>
             <select
+              id="admin-create-role"
               className="px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
               value={newUserForm.role}
               onChange={(event) =>

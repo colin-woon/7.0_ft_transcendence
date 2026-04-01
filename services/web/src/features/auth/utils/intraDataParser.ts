@@ -35,9 +35,21 @@ export function extractLevelProgress(intraInfo: IntraInfo | null | undefined): n
   const mainCursus = intraInfo.cursusUsers.find((c: any) => c.cursus?.name === '42cursus') as any
   if (!mainCursus) return 0
 
-  const rawGrade = mainCursus.grade ?? '0'
-  const parsed = Number.parseFloat(String(rawGrade).replace('%', ''))
-  return Number.isFinite(parsed) ? Math.round(parsed) : 0
+  const level = toNumber(mainCursus.level, 0)
+  if (Number.isFinite(level) && level > 0) {
+    const fractional = level - Math.floor(level)
+    return Math.max(0, Math.min(99, Math.round(fractional * 100)))
+  }
+
+  const rawGrade = mainCursus.grade
+  if (typeof rawGrade === 'string' && rawGrade.includes('%')) {
+    const parsed = Number.parseFloat(rawGrade.replace('%', ''))
+    if (Number.isFinite(parsed)) {
+      return Math.max(0, Math.min(100, Math.round(parsed)))
+    }
+  }
+
+  return 0
 }
 
 export function extractCursusInfo(intraInfo: IntraInfo | null | undefined): CursusInfo[] {

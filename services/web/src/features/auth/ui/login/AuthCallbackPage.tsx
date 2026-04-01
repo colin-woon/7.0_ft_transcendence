@@ -10,12 +10,16 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const finalize = async () => {
-      const user = await handleOAuthCallback()
-      if (user) {
-        router.push('/profile')
-        return
+      try {
+        const user = await handleOAuthCallback()
+        if (user) {
+          router.push('/profile')
+          return
+        }
+        router.push('/login?error=oauth_failed')
+      } catch {
+        router.push('/login?error=oauth_failed')
       }
-      router.push('/login?error=oauth_failed')
     }
 
     finalize()

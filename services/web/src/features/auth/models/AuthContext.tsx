@@ -91,12 +91,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await authService.logout()
       setError(null)
+      updateAuthState(null, null)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Logout failed'
       setError(msg)
       throw err
-    } finally {
-      updateAuthState(null, null)
     }
   }
 
@@ -116,12 +115,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await authService.logoutAll()
       setError(null)
+      updateAuthState(null, null)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to logout all sessions'
       setError(msg)
       throw err
-    } finally {
-      updateAuthState(null, null)
     }
   }
 
@@ -149,12 +147,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await authService.deleteCurrentUser()
       setError(null)
+      updateAuthState(null, null)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to delete account'
       setError(msg)
       throw err
-    } finally {
-      updateAuthState(null, null)
     }
   }
 

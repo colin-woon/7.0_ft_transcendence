@@ -27,6 +27,7 @@ export function useUserSearch(options?: UseUserSearchOptions) {
     async (term: string, pageValue = 0) => {
       const trimmed = term.trim()
       if (trimmed.length < minChars) {
+        requestId.current += 1
         setResults([])
         setError(null)
         setLoading(false)
@@ -76,12 +77,17 @@ export function useUserSearch(options?: UseUserSearchOptions) {
 
   const searchNow = useCallback(async () => runSearch(query, page), [runSearch, query, page])
 
+  const clearError = useCallback(() => {
+    setError(null)
+  }, [])
+
   return {
     query,
     setQuery,
     results,
     loading,
     error,
+    clearError,
     page,
     setPage,
     clear,

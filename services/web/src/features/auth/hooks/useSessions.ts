@@ -40,11 +40,19 @@ export function useSessions() {
       setEndingSessionId(sessionId)
       try {
         const ok = await terminateSession(sessionId)
-        if (ok) {
+        if (!ok) {
+          setError('Failed to terminate session')
+          return false
+        }
+
+        try {
           const data = await listSessions()
           setSessions(data)
+        } catch (refreshErr) {
+          const message = refreshErr instanceof Error ? refreshErr.message : 'Session ended, but refresh failed'
+          setError(message)
         }
-        return ok
+        return true
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to terminate session'
         setError(message)
@@ -72,10 +80,15 @@ export function useSessions() {
     }
   }, [logoutAll])
 
+  const clearError = useCallback(() => {
+    setError(null)
+  }, [])
+
   return {
     sessions,
     loading,
     error,
+    clearError,
     endingSessionId,
     endingAll,
     refresh,

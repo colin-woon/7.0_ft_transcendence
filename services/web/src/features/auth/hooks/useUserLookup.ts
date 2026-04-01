@@ -15,6 +15,7 @@ interface CachedLookup {
 export function useUserLookup(options?: UseUserLookupOptions) {
   const cacheTtlMs = options?.cacheTtlMs ?? 20_000
   const cacheRef = useRef<Map<number, CachedLookup>>(new Map())
+  const requestIdRef = useRef(0)
 
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)
@@ -42,11 +43,15 @@ export function useUserLookup(options?: UseUserLookupOptions) {
 
   const lookup = useCallback(
     async (userId: number, force = false) => {
+      const requestId = ++requestIdRef.current
       if (!force) {
         const cached = readCache(userId)
         if (cached) {
-          setUser(cached)
-          setError(null)
+          if (requestId === requestIdRef.current) {
+            setUser(cached)
+            setError(null)
+            setLoading(false)
+          }
           return cached
         }
       }
@@ -56,14 +61,20 @@ export function useUserLookup(options?: UseUserLookupOptions) {
       try {
         const data = await authService.getUserById(userId, force)
         writeCache(data)
-        setUser(data)
+        if (requestId === requestIdRef.current) {
+          setUser(data)
+        }
         return data
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to lookup user'
-        setError(message)
+        if (requestId === requestIdRef.current) {
+          setError(message)
+        }
         return null
       } finally {
-        setLoading(false)
+        if (requestId === requestIdRef.current) {
+          setLoading(false)
+        }
       }
     },
     [readCache, writeCache],
@@ -85,8 +96,10 @@ export function useUserLookup(options?: UseUserLookupOptions) {
   )
 
   const clear = useCallback(() => {
+    requestIdRef.current += 1
     setUser(null)
     setError(null)
+    setLoading(false)
   }, [])
 
   return {

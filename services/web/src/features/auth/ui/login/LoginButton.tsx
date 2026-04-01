@@ -24,6 +24,7 @@ export default function LoginButton() {
   return (
     <div className="w-full space-y-3 animate-[fade-up_0.5s_0.25s_ease-out_both]">
       <button
+        type="button"
         onClick={() => login('google')}
         className="w-full flex items-center justify-center gap-3 bg-white/70 hover:bg-white/90 active:scale-[0.98] border border-white/70 text-slate-700 py-2.5 px-4 rounded-xl transition-all duration-150 shadow-sm"
       >
@@ -32,6 +33,7 @@ export default function LoginButton() {
       </button>
 
       <button
+        type="button"
         onClick={() => login('42')}
         className="w-full flex items-center justify-center gap-3 bg-[#0f6f6b]/90 hover:bg-[#0f6f6b] active:scale-[0.98] border border-[#0f6f6b] text-white py-2.5 px-4 rounded-xl transition-all duration-150 shadow-sm"
       >

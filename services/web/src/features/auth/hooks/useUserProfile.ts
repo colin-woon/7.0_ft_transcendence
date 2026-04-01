@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AuthApiError, authService, type User, type UserUpdatePayload } from '@/features/auth/api/authService'
 import { useAuth } from '@/features/auth/models/AuthContext'
 
@@ -11,6 +11,7 @@ interface UseUserProfileOptions {
 
 export function useUserProfile(userId?: number, options?: UseUserProfileOptions) {
   const { user: authUser, accessToken, updateProfile: updateMyProfile } = useAuth()
+  const requestIdRef = useRef(0)
   const [profile, setProfile] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -21,8 +22,14 @@ export function useUserProfile(userId?: number, options?: UseUserProfileOptions)
 
   const fetchProfile = useCallback(
     async (force = false) => {
+      const requestId = ++requestIdRef.current
       if (skip || !targetUserId) {
-        setLoading(false)
+        if (requestId === requestIdRef.current) {
+          setProfile(null)
+          setError(null)
+          setErrorStatus(null)
+          setLoading(false)
+        }
         return null
       }
 
@@ -36,15 +43,21 @@ export function useUserProfile(userId?: number, options?: UseUserProfileOptions)
             ? await authService.getUserById(userId, force || options?.forceFresh)
             : await authService.getCurrentUserProfile(force || options?.forceFresh)
 
-        setProfile(data)
+        if (requestId === requestIdRef.current) {
+          setProfile(data)
+        }
         return data
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load profile'
-        setError(message)
-        setErrorStatus(err instanceof AuthApiError ? err.status : null)
+        if (requestId === requestIdRef.current) {
+          setError(message)
+          setErrorStatus(err instanceof AuthApiError ? err.status : null)
+        }
         return null
       } finally {
-        setLoading(false)
+        if (requestId === requestIdRef.current) {
+          setLoading(false)
+        }
       }
     },
     [skip, targetUserId, userId, authUser?.id, options?.forceFresh],
@@ -52,12 +65,16 @@ export function useUserProfile(userId?: number, options?: UseUserProfileOptions)
 
   useEffect(() => {
     fetchProfile(false)
+    return () => {
+      requestIdRef.current += 1
+    }
   }, [fetchProfile])
 
   const refetch = useCallback(async () => fetchProfile(true), [fetchProfile])
 
   const updateProfile = useCallback(
     async (payload: UserUpdatePayload) => {
+      const requestId = ++requestIdRef.current
       setError(null)
       setErrorStatus(null)
       setLoading(true)
@@ -67,25 +84,37 @@ export function useUserProfile(userId?: number, options?: UseUserProfileOptions)
         }
 
         const updated = await updateMyProfile(payload)
-        setProfile(updated)
+        if (requestId === requestIdRef.current) {
+          setProfile(updated)
+        }
         return updated
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to update profile'
-        setError(message)
-        setErrorStatus(err instanceof AuthApiError ? err.status : null)
+        if (requestId === requestIdRef.current) {
+          setError(message)
+          setErrorStatus(err instanceof AuthApiError ? err.status : null)
+        }
         return null
       } finally {
-        setLoading(false)
+        if (requestId === requestIdRef.current) {
+          setLoading(false)
+        }
       }
     },
     [updateMyProfile, userId, authUser?.id],
   )
+
+  const clearError = useCallback(() => {
+    setError(null)
+    setErrorStatus(null)
+  }, [])
 
   return {
     profile,
     loading,
     error,
     errorStatus,
+    clearError,
     refetch,
     updateProfile,
     isEmpty: !profile,

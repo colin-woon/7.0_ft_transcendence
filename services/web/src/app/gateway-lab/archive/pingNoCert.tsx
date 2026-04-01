@@ -1,17 +1,9 @@
 'use server';
 
 // import https from 'https';
-import fs from 'fs';
 
 export default async function pingNoCert() {
 	try {
-		if (typeof (globalThis as { File?: unknown }).File === 'undefined') {
-			const { File } = await import('node:buffer');
-			(globalThis as { File?: unknown }).File = File;
-		}
-
-		const { Agent } = await import('undici');
-
 		// const certPath = process.env.MTLS_CRT_PATH || '/certs/frontend.crt';
 		// const keyPath = process.env.MTLS_KEY_PATH || '/certs/frontend.key';
 		// const caPath = process.env.MTLS_CA_PATH || '/certs/internal-ca.crt';

@@ -127,9 +127,11 @@ export class AuthApiError extends Error {
 
 class AuthService {
   private accessToken: string | null = null
+  private currentUserId: number | null = null
   private refreshTimer: ReturnType<typeof setTimeout> | null = null
   private refreshPromise: Promise<AuthResponse> | null = null
   private cache = new Map<string, CachedValue<unknown>>()
+  private authStateVersion = 0
 
   private asAuthApiError(response: Response, fallbackMessage: string): AuthApiError {
     return new AuthApiError(response.status, `${fallbackMessage}: ${response.status}`)
@@ -170,6 +172,7 @@ class AuthService {
   }
 
   private async performRefresh(): Promise<AuthResponse> {
+    const refreshStartedAtVersion = this.authStateVersion
     const response = await fetch(getApiUrl('/api/auth/refresh'), {
       method: 'POST',
       credentials: 'include',
@@ -181,6 +184,9 @@ class AuthService {
     }
 
     const data: AuthResponse = await response.json()
+    if (refreshStartedAtVersion !== this.authStateVersion) {
+      throw new Error('Stale refresh response discarded')
+    }
     this.setAccessToken(data.accessToken, data.expiresIn)
     this.cacheUser('me', data.user)
     return data
@@ -233,6 +239,7 @@ class AuthService {
     }
 
     const data: User = await response.json()
+    this.currentUserId = data.id
     this.cacheUser(cacheKey, data)
     return data
   }
@@ -249,6 +256,7 @@ class AuthService {
     }
 
     const data: User = await response.json()
+    this.currentUserId = data.id
     this.cacheUser('me', data)
     this.cacheUser(`user:${data.id}`, data)
     return data
@@ -307,7 +315,9 @@ class AuthService {
     }
 
     const data: User = await response.json()
-    this.cacheUser('me', data)
+    if (this.currentUserId !== null && data.id === this.currentUserId) {
+      this.cacheUser('me', data)
+    }
     this.cacheUser(`user:${data.id}`, data)
     return data
   }
@@ -321,16 +331,20 @@ class AuthService {
   }
 
   async logout(): Promise<void> {
-    const response = await this.authenticatedFetch(getApiUrl('/api/auth/logout'), {
-      method: 'POST',
-      cache: 'no-store',
-    })
+    let response: Response | null = null
+    try {
+      response = await fetch(getApiUrl('/api/auth/logout'), {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store',
+      })
+    } finally {
+      this.resetLocalAuthState()
+    }
 
     if (!response.ok && response.status !== 204) {
       throw this.asAuthApiError(response, 'Failed to logout')
     }
-
-    this.resetLocalAuthState()
   }
 
   async logoutSession(sessionId: string): Promise<void> {
@@ -345,16 +359,20 @@ class AuthService {
   }
 
   async logoutAll(): Promise<void> {
-    const response = await this.authenticatedFetch(getApiUrl('/api/auth/logout/all'), {
-      method: 'POST',
-      cache: 'no-store',
-    })
+    let response: Response | null = null
+    try {
+      response = await fetch(getApiUrl('/api/auth/logout/all'), {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store',
+      })
+    } finally {
+      this.resetLocalAuthState()
+    }
 
     if (!response.ok && response.status !== 204) {
       throw this.asAuthApiError(response, 'Failed to logout all sessions')
     }
-
-    this.resetLocalAuthState()
   }
 
   async adminUpdateUser(userId: number, payload: AdminUpdatePayload): Promise<User> {
@@ -416,6 +434,13 @@ class AuthService {
       return Math.max(Math.floor(expiresIn), 10)
     }
 
+    if (typeof expiresIn === 'string') {
+      const numeric = Number(expiresIn)
+      if (Number.isFinite(numeric)) {
+        return this.parseExpiresInSeconds(numeric)
+      }
+    }
+
     const dateValue = expiresIn instanceof Date ? expiresIn.getTime() : Date.parse(expiresIn)
     if (!Number.isNaN(dateValue)) {
       return Math.max(Math.floor((dateValue - Date.now()) / 1000), 10)
@@ -459,7 +484,9 @@ class AuthService {
   }
 
   private resetLocalAuthState() {
+    this.authStateVersion += 1
     this.accessToken = null
+    this.currentUserId = null
     this.cache.clear()
 
     if (this.refreshTimer) {

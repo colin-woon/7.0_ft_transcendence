@@ -7,9 +7,13 @@ interface UserProfileRouteProps {
 
 export default async function UserProfileRoute({ params }: UserProfileRouteProps) {
   const { id } = await params
+  if (!/^\d+$/.test(id)) {
+    notFound()
+  }
+
   const userId = Number(id)
 
-  if (!Number.isFinite(userId) || userId <= 0) {
+  if (!Number.isFinite(userId) || !Number.isInteger(userId) || userId <= 0) {
     notFound()
   }
 

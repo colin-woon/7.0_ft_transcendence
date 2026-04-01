@@ -6,13 +6,9 @@ function getApiProxyTarget(): string {
     process.env.NEXT_PUBLIC_GATEWAY_URL ??
     process.env.GATEWAY_URL;
 
-  if (!candidate) {
-    // Keep builds deterministic in dev/CI when env files are not loaded.
-    return "https://gateway-service:8443/api";
-  }
-
-  // Normalize trailing slash to avoid duplicate slashes in rewrite destination.
-  return candidate.endsWith("/") ? candidate.slice(0, -1) : candidate;
+  const base = candidate ?? "https://gateway-service:8443";
+  const normalized = base.endsWith("/") ? base.slice(0, -1) : base;
+  return normalized.endsWith("/api") ? normalized : `${normalized}/api`;
 }
 
 const nextConfig: NextConfig = {

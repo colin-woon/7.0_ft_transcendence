@@ -36,7 +36,11 @@ export function useAuthActions() {
     setActionLoading('refresh')
     setActionError(null)
     try {
-      return await refresh()
+      const ok = await refresh()
+      if (!ok) {
+        setActionError('Refresh failed')
+      }
+      return ok
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Refresh failed'
       setActionError(message)
@@ -46,9 +50,14 @@ export function useAuthActions() {
     }
   }, [refresh])
 
+  const clearActionError = useCallback(() => {
+    setActionError(null)
+  }, [])
+
   return {
     actionLoading,
     actionError,
+    clearActionError,
     loginWith,
     logoutNow,
     refreshNow,
