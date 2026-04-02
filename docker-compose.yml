@@ -257,6 +257,22 @@ services:
         profiles: ['prometheus', 'all']
         networks:
             - 42_overflow
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'curl',
+                    '-fk',
+                    '--cert',
+                    '/certs/prometheus.crt',
+                    '--key',
+                    '/certs/prometheus.key',
+                    'https://localhost:9090/-/healthy',
+                ]
+            interval: 10s
+            timeout: 5s
+            start_period: 20s
+            retries: 3
         command:
             - --config.file=/etc/prometheus/prometheus.yml
             - --web.config.file=/etc/prometheus/web.yml
@@ -276,6 +292,12 @@ services:
         profiles: ['grafana', 'all']
         networks:
             - 42_overflow
+        healthcheck:
+            test: ['CMD', 'curl', '-fk', 'https://localhost:3000/api/health']
+            interval: 10s
+            timeout: 5s
+            start_period: 20s
+            retries: 3
         environment:
             - GF_SERVER_ROOT_URL=https://localhost/grafana/
             - GF_SERVER_SERVE_FROM_SUB_PATH=true
