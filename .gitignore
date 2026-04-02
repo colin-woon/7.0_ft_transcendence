@@ -34,6 +34,10 @@ ENV/
 Thumbs.db
 *.swp
 .docker/
+shared/backups/**
+!shared/backups/
+!shared/backups/postgres/
+!shared/backups/postgres/.gitkeep
 # Keep your Dockerfiles, but ignore local data volumes if you create them
 # pg_data/
 # redis_data/
