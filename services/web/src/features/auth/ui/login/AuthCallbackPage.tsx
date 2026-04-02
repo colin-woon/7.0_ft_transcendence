@@ -2,17 +2,32 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/features/auth/models/AuthContext'
 
 export default function AuthCallback() {
   const router = useRouter()
+  const { handleOAuthCallback } = useAuth()
 
   useEffect(() => {
-    router.push('/')
-  }, [])
+    const finalize = async () => {
+      try {
+        const user = await handleOAuthCallback()
+        if (user) {
+          router.push('/profile')
+          return
+        }
+        router.push('/login?error=oauth_failed')
+      } catch {
+        router.push('/login?error=oauth_failed')
+      }
+    }
+
+    finalize()
+  }, [handleOAuthCallback, router])
 
   return (
     <div className="min-h-screen flex items-center justify-center text-slate-500">
-      Redirecting...
+      Processing authentication...
     </div>
   )
 }

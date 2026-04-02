@@ -18,17 +18,20 @@ export default function WriteCommentBox({ postId }: WriteCommentBoxProps) {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!canSubmit) return;
+    if (!canSubmit)
+      return;
 
     setIsSubmitting(true);
     try {
       await createPostComment(postId, { content: content.trim() });
       setContent('');
       router.refresh();
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Failed to create comment:', error);
       alert(error instanceof Error ? error.message : 'Could not create comment');
-    } finally {
+    }
+    finally {
       setIsSubmitting(false);
     }
   };

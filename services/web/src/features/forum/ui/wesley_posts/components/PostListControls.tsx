@@ -1,6 +1,9 @@
 import type { ForumSort, ForumViewMode } from '../../../models';
+import { Search } from 'lucide-react';
 
 interface PostListControlsProps {
+  searchValue: string;
+  onSearchChange: (value: string) => void;
   activeSort: ForumSort;
   onSortChange: (value: ForumSort) => void;
   sortOptions: readonly ForumSort[];
@@ -12,6 +15,8 @@ interface PostListControlsProps {
 }
 
 export default function PostListControls({
+  searchValue,
+  onSearchChange,
   activeSort,
   onSortChange,
   sortOptions,
@@ -23,6 +28,17 @@ export default function PostListControls({
 }: PostListControlsProps) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-3 flex flex-col gap-3">
+      <div className="relative">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input
+          type="text"
+          value={searchValue}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Search posts..."
+          className="w-full rounded-md border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
+        />
+      </div>
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <span className="text-slate-500">Sort by</span>

@@ -1,19 +1,16 @@
 import { AppShellProvider } from '@/components/ui/ComponentLogic/Appshell/context/AppShellContext'
 import { AppShell } from '@/components/ui/ComponentLogic/Appshell/Appshell'
-import { AuthProvider } from '@/features/auth/models/AuthContext'
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html>
       <body>
-        <AuthProvider>
-          <AppShellProvider>
-            <AppShell>
+        <AppShellProvider>
+          <AppShell>
+            <div className='flex-col overflow-y-auto'>
               {children}
-            </AppShell>
-          </AppShellProvider>
-        </AuthProvider>
+            </div>
+          </AppShell>
+        </AppShellProvider>
       </body>
-    </html>
   )
 }

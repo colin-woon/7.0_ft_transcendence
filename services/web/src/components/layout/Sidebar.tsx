@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { Home, Newspaper, Users, BookOpen, Trophy, Settings, HelpCircle, Plus, ChevronDown, Star, X, FolderOpen, MessageCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -10,6 +10,16 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [showRecent, setShowRecent] = useState(true);
+
+  // Lock body scroll when sidebar is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isOpen]);
 
   const friends = [
     { name: "alex_km", login: "alkim", color: "from-blue-400 to-blue-600", online: true },
@@ -30,13 +40,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Overlay for mobile */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/30 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/40 z-40"
           onClick={onClose}
         />
       )}
 
-      <aside className={`fixed lg:sticky top-15 h-screen flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out ${
-          isOpen ? 'w-64' : 'w-0'
+      <aside className={`fixed top-0 mt-14 h-screen flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out z-100 ${
+          isOpen ? 'w-86': 'w-0'
         }`}>
         <div className="h-full flex flex-col bg-white border-r border-gray-200">
           {/* Close button for mobile */}
@@ -50,8 +60,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               <X size={20} className="text-slate-600" />
             </button>
           </div>
-
-          {/* Navigation Links */}
+          
           <div className="p-3 border-b border-gray-200">
             <nav className="space-y-1">
               <Link onClick={onClose} href="/projects" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group">
@@ -160,11 +169,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               </a>
             </div>
           </div>
-
-          
-        </div>
-        {/* Footer */}
-          <div className="p-1 border-t border-gray-200">
+            
+            {/* Footer */}
+        <div className="p-1 border-t border-gray-200">
             <div className="text-xs text-gray-500 space-y-1">
               <div className="flex flex-wrap gap-2">
                 <a href="#" className="hover:underline">Privacy</a>
@@ -174,6 +181,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               <p className="text-gray-400">42 overflow, Inc. © 2026</p>
             </div>
           </div>
+          
+        </div>
+        
+          
       </aside>
     </>
   );

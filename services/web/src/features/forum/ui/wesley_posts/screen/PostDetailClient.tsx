@@ -88,7 +88,9 @@ export default function PostDetailClient({ post, comments }: PostDetailClientPro
             {comments.map((comment) => (
               <div
                 key={comment.id}
-                className="bg-white border border-gray-200 rounded-lg p-4"
+                className={`bg-white border rounded-lg p-4 ${
+                  comment.isBestAnswer ? 'border-emerald-300 bg-emerald-50/40' : 'border-gray-200'
+                }`}
               >
                 <div className="flex gap-3">
                   <CommentVoteButtons postId={post.id} commentId={comment.id} initialUpvotes={comment.upvotes} />
@@ -103,6 +105,11 @@ export default function PostDetailClient({ post, comments }: PostDetailClientPro
                       <span className="font-semibold text-sm text-slate-900">
                         {comment.author}
                       </span>
+                      {comment.isBestAnswer && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                          Best answer
+                        </span>
+                      )}
                       <span className="text-xs text-gray-500">{comment.timestamp}</span>
                     </div>
 

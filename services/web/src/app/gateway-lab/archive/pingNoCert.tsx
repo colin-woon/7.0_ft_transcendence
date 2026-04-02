@@ -1,8 +1,6 @@
 'use server';
 
 // import https from 'https';
-import fs from 'fs';
-import { Agent } from 'undici';
 
 export default async function pingNoCert() {
 	try {

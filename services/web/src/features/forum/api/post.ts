@@ -33,6 +33,29 @@ export async function getAllPosts(sort: ForumSort = 'Top'): Promise<ForumPost[]>
   return postsData.map((post) => mapApiPostToForumPost(post, projectsById.get(post.project_id)));
 }
 
+export async function searchPosts(searchQuery: string): Promise<ForumPost[]> {
+  const trimmedQuery = searchQuery.trim();
+
+  if (trimmedQuery.length < 2) {
+    return getAllPosts('Top');
+  }
+
+  const [postsResponse, projectsById] = await Promise.all([
+    fetch(`${API_BASE_URL}/search/posts?search_query=${encodeURIComponent(trimmedQuery)}`, {
+      method: 'GET',
+      cache: 'no-store',
+    }),
+    getProjectsByIdMap(),
+  ]);
+
+  if (!postsResponse.ok) {
+    throw new Error('Failed to search posts.');
+  }
+
+  const postsData = (await postsResponse.json()) as ForumApiPostSummary[];
+  return postsData.map((post) => mapApiPostToForumPost(post, projectsById.get(post.project_id)));
+}
+
 export async function getPostDetail(postId: number): Promise<{ post: ForumPostDetail; projectName?: string }> {
   const postResponse = await fetch(`${API_BASE_URL}/posts/${postId}`, {
     method: 'GET',
@@ -66,7 +89,7 @@ export async function getPostDetail(postId: number): Promise<{ post: ForumPostDe
 }
 
 export async function getPostComments(postId: number): Promise<ForumComment[]> {
-  const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments`, {
+  const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments/top`, {
     method: 'GET',
     cache: 'no-store',
   });
@@ -83,6 +106,7 @@ export async function getPostComments(postId: number): Promise<ForumComment[]> {
     content: comment.content,
     timestamp: toRelativeTime(comment.created_at),
     upvotes: comment.vote_score,
+    isBestAnswer: comment.is_best_answer,
   }));
 }
 

@@ -3,6 +3,8 @@ import { getProjectDetailsBySort } from '@/features/forum/api/project';
 import type { ForumSort } from '@/features/forum/models';
 import { notFound } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
   searchParams?: Promise<{

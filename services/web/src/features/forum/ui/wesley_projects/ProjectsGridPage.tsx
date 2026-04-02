@@ -1,6 +1,7 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, Star, Users, Clock, ChevronRight, Zap, Globe, MessageSquare } from "lucide-react";
 import type { Project, Difficulty } from "../../models/projects";
 
@@ -11,23 +12,51 @@ const difficultyColor: Record<Difficulty, string> = {
   Expert: "bg-red-100 text-red-700",
 };
 
-export default function ProjectsPage({ projects }: { projects: Project[] }) {
-  const [search, setSearch] = useState("");
+export default function ProjectsPage({ projects, initialSearch = "" }: { projects: Project[]; initialSearch?: string }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(initialSearch);
   const [filter, setFilter] = useState<"All" | Difficulty>("All");
 
   const filters: ("All" | Difficulty)[] = ["All", "Beginner", "Intermediate", "Advanced", "Expert"];
 
+  useEffect(() => {
+    setSearch(initialSearch);
+  }, [initialSearch]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const nextParams = new URLSearchParams(searchParams.toString());
+      const trimmedSearch = search.trim();
+
+      if (trimmedSearch.length >= 2) {
+        nextParams.set("q", trimmedSearch);
+      } else {
+        nextParams.delete("q");
+      }
+
+      const currentParams = searchParams.toString();
+      const nextParamsString = nextParams.toString();
+
+      if (currentParams === nextParamsString) {
+        return;
+      }
+
+      const nextUrl = nextParamsString ? `${pathname}?${nextParamsString}` : pathname;
+      router.replace(nextUrl);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [search, searchParams, pathname, router]);
+
   const filtered = projects.filter((p) => {
-    const matchesSearch =
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.description.toLowerCase().includes(search.toLowerCase()) ||
-      p.tags.some((t) => t.toLowerCase().includes(search.toLowerCase()));
     const matchesFilter = filter === "All" || p.difficulty === filter;
-    return matchesSearch && matchesFilter;
+    return matchesFilter;
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
+    <div className="h-screen bg-gray-50 font-sans mt-14 overflow-y-auto">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-5">
         <h1 className="text-2xl font-bold text-slate-800 mb-1">42 Projects</h1>
@@ -79,12 +108,12 @@ export default function ProjectsPage({ projects }: { projects: Project[] }) {
                 {/* Icon + name */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{project.icon}</span>
+                    {/* <span className="text-2xl">{project.icon}</span> */}
                     <div>
                       <h3 className="font-semibold text-slate-800 text-sm group-hover:text-[#0f6f6b] transition-colors">
                         {project.name}
                       </h3>
-                      <span className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded-full mt-0.5 ${difficultyColor[project.difficulty]}`}>
+                      <span className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded-full mt-0.5`}>
                         {project.difficulty}
                       </span>
                     </div>
