@@ -31,7 +31,7 @@ services:
             - 42_overflow
         # auth to add health route or use management port
         healthcheck:
-            test: ['CMD', 'curl', '-f', 'http://localhost:9000/q/health']
+            test: ['CMD', 'curl', '-f', 'https://localhost:9000/q/health']
             interval: 10s
             timeout: 5s
             start_period: 30s
@@ -69,6 +69,22 @@ services:
             - ./certs/runtime/chat/chat.crt:/certs/chat.crt:ro
             - ./certs/runtime/chat/chat.key:/certs/chat.key:ro
             - ./certs/ca/ca.crt:/certs/internal-ca.crt:ro
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'curl',
+                    '-fk',
+                    '--cert',
+                    '/certs/chat.crt',
+                    '--key',
+                    '/certs/chat.key',
+                    'https://localhost:8443/health',
+                ]
+            interval: 10s
+            timeout: 5s
+            start_period: 20s
+            retries: 3
         # ports:
         #     - '8003:8080'
 
@@ -89,7 +105,7 @@ services:
             - ./environment/shared.env
             - ./environment/forum.env
         healthcheck:
-            test: ['CMD', 'curl', '-fk', 'https://localhost:8443/health'] # need to open public route
+            test: ['CMD', 'curl', '-fk', 'https://localhost:8443/health']
             interval: 10s
             timeout: 5s
             start_period: 20s
