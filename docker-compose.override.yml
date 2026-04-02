@@ -133,6 +133,12 @@ services:
             - '6379:6379'
 
     nginx-service:
+        healthcheck:
+            test: ['CMD', 'curl', '-fk', 'https://localhost/health']
+            interval: 10s
+            timeout: 5s
+            start_period: 10s
+            retries: 3
         volumes:
             - ./infra/nginx/nginx.dev.conf:/etc/nginx/conf.d/default.conf:ro
 
