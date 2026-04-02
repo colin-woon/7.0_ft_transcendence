@@ -91,6 +91,12 @@ services:
             - MTLS_CRT_PATH=
             - MTLS_CA_PATH=
             - NODE_EXTRA_CA_CERTS=
+        healthcheck:
+            test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
+            interval: 10s
+            timeout: 5s
+            start_period: 30s
+            retries: 3
 
     gateway-service:
         build:

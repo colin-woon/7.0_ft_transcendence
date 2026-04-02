@@ -142,6 +142,22 @@ services:
             - 42_overflow
         env_file:
             - ./environment/web.env
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'curl',
+                    '-fk',
+                    '--cert',
+                    '/certs/web.crt',
+                    '--key',
+                    '/certs/web.key',
+                    'https://localhost:3000/api/health',
+                ]
+            interval: 10s
+            timeout: 5s
+            start_period: 30s
+            retries: 3
         volumes:
             - ./certs/runtime/web/web.crt:/certs/web.crt:ro
             - ./certs/runtime/web/web.key:/certs/web.key:ro
