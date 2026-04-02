@@ -23,6 +23,7 @@ services:
             dockerfile: services/auth/src/main/docker/Dockerfile.custom
             target: production
         container_name: auth-service
+        restart: unless-stopped
         profiles: ['auth', 'all']
         depends_on:
             db-service:
@@ -48,6 +49,7 @@ services:
             context: .
             dockerfile: services/chat/Dockerfile
         container_name: chat-service
+        restart: unless-stopped
         profiles: ['chat', 'all']
         depends_on:
             db-service:
@@ -94,6 +96,7 @@ services:
             dockerfile: Dockerfile
             target: production
         container_name: forum-service
+        restart: unless-stopped
         working_dir: /app
         profiles: ['forum', 'all']
         depends_on:
@@ -137,6 +140,7 @@ services:
             context: .
             dockerfile: services/web/Dockerfile
         container_name: web_service
+        restart: unless-stopped
         profiles: ['web', 'all']
         networks:
             - 42_overflow
@@ -169,6 +173,7 @@ services:
             dockerfile: services/gateway/src/main/docker/Dockerfile.custom
             target: production
         container_name: gateway-service
+        restart: unless-stopped
         profiles: ['gateway', 'all']
         networks:
             - 42_overflow
@@ -194,8 +199,6 @@ services:
                 condition: service_healthy
             gw-redis-service:
                 condition: service_healthy
-            web-service:
-                condition: service_started
         env_file:
             - ./environment/shared.env
             - ./environment/gateway.env
@@ -211,6 +214,7 @@ services:
     nginx-service:
         image: nginx:stable-alpine
         container_name: nginx
+        restart: unless-stopped
         profiles: ['nginx', 'all']
         ports:
             - '80:80'
@@ -219,7 +223,7 @@ services:
             gateway-service:
                 condition: service_healthy
             web-service:
-                condition: service_started
+                condition: service_healthy
         networks:
             - 42_overflow
         environment:
@@ -241,6 +245,7 @@ services:
             context: ./infra/redis/gateway-redis
             dockerfile: Dockerfile
         container_name: gw-redis-service
+        restart: always
         profiles: ['gw-redis', 'gateway', 'all']
         networks:
             - 42_overflow
@@ -254,6 +259,7 @@ services:
     prometheus-service:
         image: prom/prometheus:v3.10.0
         container_name: prometheus-service
+        restart: unless-stopped
         profiles: ['prometheus', 'all']
         networks:
             - 42_overflow
@@ -289,6 +295,7 @@ services:
     grafana-service:
         image: grafana/grafana:12.4.1
         container_name: grafana-service
+        restart: unless-stopped
         profiles: ['grafana', 'all']
         networks:
             - 42_overflow

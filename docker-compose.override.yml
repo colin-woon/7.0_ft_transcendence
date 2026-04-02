@@ -119,12 +119,6 @@ services:
         volumes:
             - ./services/gateway:/app
         depends_on:
-            auth-service:
-                condition: service_healthy
-                required: false
-            web-service:
-                condition: service_started
-                required: false
             gw-redis-service:
                 condition: service_healthy
 
@@ -133,6 +127,7 @@ services:
             - '6379:6379'
 
     nginx-service:
+        depends_on: {}
         healthcheck:
             test: ['CMD', 'curl', '-fk', 'https://localhost/health']
             interval: 10s
