@@ -1,32 +1,26 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useChat } from '../models';
+import { useAllChatSessions } from '../models';
 import { getMessageStream } from '../api/chat-services';
 
 export function MessageStreamController() {
-  const { session, tempCurrentUserId, addMessage } = useChat();
+  const { currentChatSession, tempCurrentUserId, addMessage } = useAllChatSessions();
 
   useEffect(() => {
-    // Only open a stream if we have an active chat and user
-    if (!session.chatId || !tempCurrentUserId) return;
+    if (!currentChatSession.chatId || !tempCurrentUserId) return;
+    const mockRecipientId = tempCurrentUserId === 1 ? 2 : 1;
 
-    // TEMPORARY LOGIC: We assume the current chat context defines the participants. 
-    // You should properly extract the `recipientId` from your context or JWT
-    // when you have real user objects.
-    const mockRecipientId = tempCurrentUserId === 2 ? 1 : 2; 
-
-    // Open the SSE connection
     const eventSource = getMessageStream(tempCurrentUserId, (eventContent) => {
+      if (eventContent.type === 'NEW_MESSAGE' && eventContent.payload.chatId === currentChatSession.chatId) {
       addMessage({
-        id: "msg-" + tempCurrentUserId + '-' + Date.now(),
-        chatId: session.chatId!,
+        id: eventContent.payload.id,
+        chatId: currentChatSession.chatId!,
         senderId: mockRecipientId,     
-        recipientId: tempCurrentUserId, 
-        content: eventContent,
-        createdAt: new Date().toISOString() // Or grab from backend payload if available
+        content: eventContent.payload.content,
+        createdAt: eventContent.payload.createdAt
       });
-    });
+    }});
 
     // 3. Cleanup: Close connection when navigating away or changing chats
     return () => {
@@ -34,7 +28,7 @@ export function MessageStreamController() {
         eventSource.close();
       }
     };
-  }, [session.chatId, tempCurrentUserId, addMessage]);
+  }, [currentChatSession.chatId, tempCurrentUserId, addMessage]);
 
   // Headless: Handles logic, renders no UI
   return null; 

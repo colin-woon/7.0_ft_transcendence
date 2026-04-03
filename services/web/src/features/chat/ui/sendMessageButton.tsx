@@ -2,51 +2,25 @@
 
 import { useEffect, useState } from 'react';
 import { getFriendList, sendMessage } from '../api/chat-services';
-import { useCurrentChatSession, useChat } from '../models';
+import { useAllChatSessions } from '../models';
 
 export function SendMessageButton() {
-  const userSession = useCurrentChatSession();
-  const userChat = useChat();
+  const { tempCurrentUserId, currentChatSession, addMessage } = useAllChatSessions();
 
   const [messageText, setMessageText] = useState('');
-  const [recipientFriendId, setRecipientFriendId] = useState<number | null>(null);
-
-  // Fetch friends and find the recipient for the current chatId
-  useEffect(() => {
-    if (!userSession.chatId || !userChat.tempCurrentUserId) {
-      setRecipientFriendId(null);
-      return;
-    }
-
-    const fetchAndMatchFriend = async () => {
-      try {
-        const friends = await getFriendList(userChat.tempCurrentUserId!);
-        const friend = friends.find(f => f.chatId === userSession.chatId);
-        if (friend) {
-          setRecipientFriendId(friend.friendId);
-        }
-      } catch (error) {
-        console.error("Failed to fetch friends:", error);
-      }
-    };
-
-    fetchAndMatchFriend();
-  }, [userSession.chatId, userChat.tempCurrentUserId]);
 
   const handleSend = () => {
-    if (messageText.trim() && userSession.chatId && recipientFriendId !== null && userChat.tempCurrentUserId) {
+    if (messageText.trim() && currentChatSession.chatId && tempCurrentUserId) {
       sendMessage(
-        userSession.chatId,
-        userChat.tempCurrentUserId,
-        recipientFriendId,
+        currentChatSession.chatId,
+        tempCurrentUserId,
         { content: messageText }
       );
       setMessageText('');
-      userChat.addMessage({
-        id: "msg-" + userChat.tempCurrentUserId + '-' + Date.now(),
-        chatId: userSession.chatId,
-        senderId: userChat.tempCurrentUserId,
-        recipientId: recipientFriendId,
+      addMessage({
+        id: "msg-" + tempCurrentUserId + '-' + Date.now(),
+        chatId: currentChatSession.chatId,
+        senderId: tempCurrentUserId,
         content: messageText,
         createdAt: new Date().toISOString(),
       });
@@ -58,14 +32,14 @@ export function SendMessageButton() {
       <input
         type="text"
         placeholder="Type a message..."
-        className="input input-bordered w-full"
+        className="input input-bordered w-full bg-accent"
         value={messageText}
         onChange={(e) => setMessageText(e.target.value)}
       />
       <button
         className="btn btn-primary"
         onClick={handleSend}
-        disabled={!messageText.trim() || !userSession.chatId}
+        disabled={!messageText.trim() || !currentChatSession.chatId}
       >
         Send Message
       </button>

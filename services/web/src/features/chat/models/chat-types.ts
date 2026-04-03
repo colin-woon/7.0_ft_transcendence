@@ -1,10 +1,9 @@
 export type FriendId = number; 
 export type ChatId = string; 
-export type AllSessions = Record<ChatId, ChatMessage[]>;
 
 export interface Friendship {
-  chatId: ChatId;
   friendId: FriendId;
+  chatId: ChatId;
 }
 
 export type FriendList = Friendship[];
@@ -13,27 +12,52 @@ export interface ChatMessage {
     id: number | string;
     chatId: ChatId;
     senderId: FriendId;
-    recipientId: FriendId;
     content: string;
     createdAt: string;
 }
 
-export type FriendStatus = 'pending' | 'accepted' | 'blocked' | 'declined' | 'none';
-
-export interface SendMessagePayload {
-    content: string;
+export interface UserTyping {
+  userId: string;
+  isTyping: boolean;
 }
 
-export interface UserSession {
-    chatId: ChatId | null;
+export interface UserStatus {
+  userId: string;
+  status: 'online' | 'offline';
+}
+
+export type ChatRoomType = 'group' | 'direct';
+
+export interface ChatRoom {
+    chatId: string;
+    type: ChatRoomType;
+    name: string | null;
+    memberIds: FriendId[];
+}
+
+export type FriendStatus = 'pending' | 'accepted' | 'blocked' | 'declined' | 'none';
+
+export interface SendMessageRequest {
+  content: string;
+}
+
+export type StreamEvent =
+  | { type: 'NEW_MESSAGE'; payload: ChatMessage }
+  | { type: 'USER_TYPING'; payload: UserTyping }
+  | { type: 'USER_STATUS'; payload: UserStatus };
+
+export interface ChatSession {
+    chatId: ChatId;
+    friendIds: FriendId[];
     messages: ChatMessage[];
 }
 
+export type AllChatSessions = Record<ChatId, ChatSession>;
+
 export interface ChatContextType {
   tempCurrentUserId: FriendId | null;
-  session: UserSession;   // All chat messages between current user + 1 friend
-  sessions: AllSessions;  // All chats by one user, keyed by friendId
-  setSession: (chatId: ChatId) => void;
+  currentChatSession: ChatSession;
+  allChatSessions: AllChatSessions;
+  setChatSession: (chatId: ChatId, friendIds: FriendId[], messages: ChatMessage[]) => void;
   addMessage: (msg: ChatMessage) => void;
-  setMessages: (messages: ChatMessage[]) => void;
 }

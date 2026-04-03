@@ -2,19 +2,19 @@
 
 import { useEffect } from 'react';
 import { getMessageHistory } from '../api/chat-services';
-import { useChat } from '../models';
+import { useAllChatSessions, useCurrentChatSession } from '../models';
 
 export function ChatBox() {
-  const { session, tempCurrentUserId, sessions, setMessages } = useChat();
+  const { setChatSession, addMessage, currentChatSession, tempCurrentUserId } = useAllChatSessions();
 
   // 1. Fetch history whenever the chatId changes
   // Update the specific session in our Zustand store
   useEffect(() => {
     const fetchHistory = async () => {
-      if (session.chatId) {
+      if (currentChatSession.chatId) {
         try {
-          const history = await getMessageHistory(session.chatId);
-          setMessages(history);
+          const history = await getMessageHistory(currentChatSession.chatId);
+          setChatSession(currentChatSession.chatId, currentChatSession.friendIds, history);
         } catch (error) {
           console.error("Failed to load chat history:", error);
         }
@@ -22,18 +22,18 @@ export function ChatBox() {
     };
 
     fetchHistory();
-  }, [session.chatId, setMessages]);
+  }, [currentChatSession.chatId, setChatSession]);
 
   // 2. Get messages for the active session
-  const messages = session.chatId ? sessions[session.chatId] || [] : [];
+  const messages = currentChatSession.chatId ? currentChatSession.messages || [] : [];
 
-  if (!session.chatId) {
+  if (!currentChatSession.chatId) {
     return <div className="p-4 text-center">Select a friend to start chatting</div>;
   }
 
   return (
     // 3. Logic: If I sent it, move to the right. If friend sent it, stay left.
-    <div className="flex flex-col-reverse h-[500px] w-full border rounded-lg bg-base-200 p-4 overflow-y-auto">
+    <div className="flex flex-col-reverse h-[500px] w-full border rounded-lg p-4 overflow-y-auto">
       {messages.map((msg) => {
         const isMe = msg.senderId === tempCurrentUserId;
 

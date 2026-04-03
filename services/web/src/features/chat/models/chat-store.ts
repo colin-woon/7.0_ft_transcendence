@@ -1,51 +1,44 @@
 import { createStore } from 'zustand/vanilla';
 import { immer } from 'zustand/middleware/immer';
-import type { AllSessions, FriendId, ChatMessage, ChatId } from './chat-types';
+import type { AllChatSessions, FriendId, ChatMessage, ChatId, ChatSession } from './chat-types';
 
 export interface ChatState {
   tempCurrentUserId: FriendId | null;
-  currentChatId: ChatId | null;
-  sessions: AllSessions;
+  currentChatSessionId: ChatId | null;
+  allChatSessions: AllChatSessions;
 }
 
 export interface ChatActions {
-  setSession: (chatId: ChatId) => void;
+  setChatSession: (chatId: ChatId, friendIds: FriendId[], messages: ChatMessage[]) => void;
   addMessage: (msg: ChatMessage) => void;
-  setMessages: (messages: ChatMessage[]) => void;
 }
 
 export type ChatStore = ChatState & ChatActions;
 
 // Factory pattern: creates a new store instance per Provider
-export const createChatStore = (initialSessions: AllSessions = {}) => {
+export const createChatStore = (initialSessions: AllChatSessions = {}) => {
   return createStore<ChatStore>()(
     immer((set) => ({
-      sessions: initialSessions,
-      currentChatId: null,
+      allChatSessions: initialSessions,
+      currentChatSessionId: null,
       tempCurrentUserId: 1, // TEMP Hardcoded on mount as requested
 
-      setSession: (chatId: ChatId) => 
+      setChatSession: (chatId: ChatId, friendIds: FriendId[], messages: ChatMessage[]) => 
         set((state) => {
-          state.currentChatId = chatId;
+          state.currentChatSessionId = chatId;
+           if (!state.allChatSessions[chatId]) {
+            state.allChatSessions[chatId] = { chatId: chatId, friendIds: friendIds, messages: [] };
+          }
+          state.allChatSessions[chatId].messages = messages; // Directly set the array
         }),
 
       addMessage: (msg: ChatMessage) => 
         set((state) => {
-          const chatId = state.currentChatId;
+          const chatId = state.currentChatSessionId;
           if (!chatId) return;
           
-          if (!state.sessions[chatId]) {
-            state.sessions[chatId] = [];
-          }
-          state.sessions[chatId].unshift(msg);
+          state.allChatSessions[chatId].messages.unshift(msg);
         }),
-
-      setMessages: (messages: ChatMessage[]) => 
-        set((state) => {
-          const chatId = state.currentChatId;
-          if (!chatId) return;
-          state.sessions[chatId] = messages; // Directly set the array
-        })
     }))
   );
 };
