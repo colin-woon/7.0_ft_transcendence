@@ -62,7 +62,17 @@ services:
             - 42_overflow
         # auth to add health route or use management port
         healthcheck:
-            test: ['CMD', 'curl', '-f', 'https://localhost:9000/q/health']
+            test:
+                [
+                    'CMD',
+                    'curl',
+                    '-fk',
+                    '--cert-type',
+                    'P12',
+                    '--cert',
+                    '/certs/auth-keystore.p12:bumintra',
+                    'https://localhost:9000/q/health',
+                ]
             interval: 10s
             timeout: 5s
             start_period: 30s
@@ -138,7 +148,17 @@ services:
             - ./environment/shared.env
             - ./environment/forum.env
         healthcheck:
-            test: ['CMD', 'curl', '-fk', 'https://localhost:8443/health']
+            test:
+                [
+                    'CMD',
+                    'curl',
+                    '-fk',
+                    '--cert',
+                    '/certs/forum.crt',
+                    '--key',
+                    '/certs/forum.key',
+                    'https://localhost:8443/health',
+                ]
             interval: 10s
             timeout: 5s
             start_period: 20s

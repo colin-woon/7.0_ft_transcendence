@@ -4,6 +4,10 @@
 
 This runbook covers database recovery for the 42 Overflow stack when a transient restart is no longer enough and PostgreSQL data must be restored from backup.
 
+It supports two cases:
+- logical restore into a running `db-service`
+- volume-recreation followed by restore into a freshly started `db-service`
+
 Use this when:
 - `db-service` stays unhealthy after repeated restart attempts
 - PostgreSQL reports corruption or missing data files
@@ -34,9 +38,33 @@ Stop services that can write to PostgreSQL before restoring:
 docker compose stop nginx-service gateway-service auth-service forum-service chat-service web-service db-backup-service
 ```
 
-`db-service` should remain running for the restore command unless the container itself is broken. If it is broken, start only `db-service` first and confirm it is reachable.
+`db-service` should remain running for the restore command unless the container itself is broken.
 
-### 2. Pick the backup file
+### 2. Decide the recovery path
+
+Use one of these paths before restoring:
+
+- Path A: `db-service` is still running and accepts `psql`
+  - continue to the backup-selection step
+- Path B: the PostgreSQL data volume is corrupted, missing, or must be recreated
+  - remove and recreate the database container/volume first, then continue
+
+For the volume-recreation path:
+
+```bash
+docker compose stop db-service
+docker compose rm -f db-service
+docker volume rm bumintra_postgres_data
+docker compose up -d db-service
+```
+
+After `db-service` comes back, confirm it is reachable before continuing:
+
+```bash
+docker compose exec db-service sh -lc 'pg_isready -U "$POSTGRES_USER" -d postgres'
+```
+
+### 3. Pick the backup file
 
 Inspect the available dumps:
 
@@ -51,7 +79,7 @@ Choose the dump to restore. In most cases:
 shared/backups/postgres/last/postgres_db-latest.sql.gz
 ```
 
-### 3. Recreate the target database
+### 4. Recreate the target database
 
 Drop and recreate the application database inside `db-service`:
 
@@ -60,17 +88,17 @@ docker compose exec db-service sh -lc 'psql -U "$POSTGRES_USER" -d postgres -c "
 docker compose exec db-service sh -lc 'psql -U "$POSTGRES_USER" -d postgres -c "CREATE DATABASE \"$POSTGRES_DB\";"'
 ```
 
-### 4. Restore the dump
+### 5. Restore the dump
 
 Restore the chosen backup into the recreated database:
 
 ```bash
-gunzip -c shared/backups/postgres/last/postgres_db-latest.sql.gz | docker compose exec -T db-service sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+gunzip -c shared/backups/postgres/last/postgres_db-latest.sql.gz | docker compose exec -T db-service sh -lc 'psql -v ON_ERROR_STOP=on -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
 ```
 
 If you are restoring a different dump, replace the file path on the left side of the pipe.
 
-### 5. Start the stack again
+### 6. Start the stack again
 
 Bring the stopped services back:
 
