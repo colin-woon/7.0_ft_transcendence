@@ -1,7 +1,7 @@
 import logging
 import os
 from typing import List
-from fastapi import APIRouter, FastAPI, Depends, status, Query, Header, HTTPException
+from fastapi import APIRouter, FastAPI, Depends, status, Query, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from contextlib import asynccontextmanager
@@ -74,10 +74,22 @@ def health():
 # Read user id from gateway-injected identity header.
 # If missing (e.g. local dev without gateway auth), fall back to user_id=1.
 def get_current_user_id(
+    request: Request,
     x_intra_user_id: str | None = Header(default=None, alias="X-Intra-User-Id")
 ) -> int:
+    logger.info("Incoming request headers: %s", dict(request.headers))
+    logger.info("X-Intra-User-Id header value: %s", x_intra_user_id)
+
     if x_intra_user_id is None:
-        return 1
+        logger.warning(
+            "NON_GATEWAY_PATH_DETECTED: Missing X-Intra-User-Id. "
+            "Likely direct forum-service call. method=%s path=%s client=%s host=%s",
+            request.method,
+            request.url.path,
+            request.client.host if request.client else "unknown",
+            request.headers.get("host", "unknown"),
+        )
+        return 6
 
     try:
         return int(x_intra_user_id.strip())
@@ -107,6 +119,61 @@ def get_project(project_id: int, db: Session = Depends(get_db)):
 @router.post("/projects", response_model=schemas.ProjectResponse, status_code=201)
 def create_project(project: schemas.ProjectCreate, db: Session = Depends(get_db)):
     return logic.create_project(db, project)
+
+
+@router.post("/projects/{project_id}/subscribe", response_model=schemas.ProjectSubscriptionResponse, status_code=201)
+def subscribe_project(
+    project_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    subscription, _ = logic.subscribe_to_project(db, project_id, user_id)
+    return subscription
+
+
+@router.delete("/projects/{project_id}/subscribe", response_model=schemas.ActionResponse)
+def unsubscribe_project(
+    project_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    was_removed = logic.unsubscribe_from_project(db, project_id, user_id)
+    if was_removed:
+        return {"message": "Unsubscribed"}
+    return {"message": "Not subscribed"}
+
+
+@router.get("/projects/me/subscriptions", response_model=List[schemas.ProjectResponse])
+def list_my_subscriptions(
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    return logic.get_subscriptions_by_user(db, user_id)
+
+
+@router.get(
+    "/projects/{project_id}/subscription-status",
+    response_model=schemas.ProjectSubscriptionStatusResponse,
+)
+def get_subscription_status(
+    project_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id),
+):
+    subscribed = logic.is_user_subscribed_to_project(db, project_id, user_id)
+    return {"project_id": project_id, "subscribed": subscribed}
+
+
+@router.get(
+    "/projects/{project_id}/subscribers/count",
+    response_model=schemas.ProjectSubscriberCountResponse,
+)
+def get_project_subscriber_count(
+    project_id: int,
+    db: Session = Depends(get_db),
+):
+    subscriber_count = logic.get_project_subscriber_count(db, project_id)
+    return {"project_id": project_id, "subscriber_count": subscriber_count}
 
 # --- FORUM POST API ENDPOINT ---
 

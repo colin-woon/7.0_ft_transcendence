@@ -21,6 +21,10 @@ class Project(Base):
     difficulty: Mapped[Optional[str]] = mapped_column(String(10))
     post_count: Mapped[int] = mapped_column(Integer, default=0)
     posts: Mapped[List["ForumPost"]] = relationship(back_populates="project")
+    subscriptions: Mapped[List["ProjectSubscription"]] = relationship(
+        back_populates="project",
+        cascade="all, delete-orphan"
+    )
 
 # --- 2. FORUM POSTS ---
 class ForumPost(Base):
@@ -88,3 +92,17 @@ class CommentVote(Base):
     
     # will store 1 for upvote, -1 for downvote
     vote_value: Mapped[int] = mapped_column(Integer)
+
+
+class ProjectSubscription(Base):
+    __tablename__ = "project_subscriptions"
+    __table_args__ = {"schema": "forum_service"}
+
+    project_id: Mapped[int] = mapped_column(
+        ForeignKey("forum_service.projects.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id: Mapped[int] = mapped_column(primary_key=True)
+    subscribed_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+    project: Mapped["Project"] = relationship(back_populates="subscriptions")

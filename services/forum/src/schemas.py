@@ -32,6 +32,29 @@ class ProjectListPage(BaseModel):
     page_size: int
     total_pages: int
 
+
+class ProjectSubscriptionResponse(BaseModel):
+    project_id: int
+    user_id: int
+    subscribed_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ActionResponse(BaseModel):
+    message: str
+
+
+class ProjectSubscriptionStatusResponse(BaseModel):
+    project_id: int
+    subscribed: bool
+
+
+class ProjectSubscriberCountResponse(BaseModel):
+    project_id: int
+    subscriber_count: int
+
 # --- POSTS ---
 class PostCreate(BaseModel):
     title: str

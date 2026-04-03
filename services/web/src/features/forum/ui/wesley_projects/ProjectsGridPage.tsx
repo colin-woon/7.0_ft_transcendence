@@ -12,18 +12,59 @@ const difficultyColor: Record<Difficulty, string> = {
   Expert: "bg-red-100 text-red-700",
 };
 
-export default function ProjectsPage({ projects, initialSearch = "" }: { projects: Project[]; initialSearch?: string }) {
+type ProjectFilter = "subscribed" | "all" | Difficulty;
+
+export default function ProjectsPage({
+  projects,
+  subscribedProjectIds,
+  initialSearch = "",
+}: {
+  projects: Project[];
+  subscribedProjectIds: number[];
+  initialSearch?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(initialSearch);
-  const [filter, setFilter] = useState<"All" | Difficulty>("All");
+  const rawFilter = searchParams.get("filter");
+  const initialFilter: ProjectFilter =
+    rawFilter === "all" ||
+    rawFilter === "subscribed" ||
+    rawFilter === "Beginner" ||
+    rawFilter === "Intermediate" ||
+    rawFilter === "Advanced" ||
+    rawFilter === "Expert"
+      ? rawFilter
+      : "subscribed";
+  const [activeFilter, setActiveFilter] = useState<ProjectFilter>(initialFilter);
 
-  const filters: ("All" | Difficulty)[] = ["All", "Beginner", "Intermediate", "Advanced", "Expert"];
+  const filters: Array<{ key: ProjectFilter; label: string }> = [
+    { key: "subscribed", label: "Subscribed" },
+    { key: "all", label: "All Projects" },
+    { key: "Beginner", label: "Beginner" },
+    { key: "Intermediate", label: "Intermediate" },
+    { key: "Advanced", label: "Advanced" },
+    { key: "Expert", label: "Expert" },
+  ];
 
   useEffect(() => {
     setSearch(initialSearch);
   }, [initialSearch]);
+
+  useEffect(() => {
+    const nextRaw = searchParams.get("filter");
+    const nextFilter: ProjectFilter =
+      nextRaw === "all" ||
+      nextRaw === "subscribed" ||
+      nextRaw === "Beginner" ||
+      nextRaw === "Intermediate" ||
+      nextRaw === "Advanced" ||
+      nextRaw === "Expert"
+        ? nextRaw
+        : "subscribed";
+    setActiveFilter(nextFilter);
+  }, [searchParams]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -34,6 +75,12 @@ export default function ProjectsPage({ projects, initialSearch = "" }: { project
         nextParams.set("q", trimmedSearch);
       } else {
         nextParams.delete("q");
+      }
+
+      if (activeFilter === "subscribed") {
+        nextParams.delete("filter");
+      } else {
+        nextParams.set("filter", activeFilter);
       }
 
       const currentParams = searchParams.toString();
@@ -48,11 +95,17 @@ export default function ProjectsPage({ projects, initialSearch = "" }: { project
     }, 600);
 
     return () => clearTimeout(timer);
-  }, [search, searchParams, pathname, router]);
+  }, [search, activeFilter, searchParams, pathname, router]);
 
-  const filtered = projects.filter((p) => {
-    const matchesFilter = filter === "All" || p.difficulty === filter;
-    return matchesFilter;
+  const subscribedIdSet = new Set(subscribedProjectIds);
+  const filtered = projects.filter((project) => {
+    if (activeFilter === "subscribed") {
+      return subscribedIdSet.has(project.id);
+    }
+    if (activeFilter === "all") {
+      return true;
+    }
+    return project.difficulty === activeFilter;
   });
 
   return (
@@ -76,15 +129,15 @@ export default function ProjectsPage({ projects, initialSearch = "" }: { project
           <div className="flex gap-2 flex-wrap">
             {filters.map((f) => (
               <button
-                key={f}
-                onClick={() => setFilter(f)}
+                key={f.key}
+                onClick={() => setActiveFilter(f.key)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                  filter === f
+                  activeFilter === f.key
                     ? "bg-[#0f6f6b] text-white"
                     : "bg-gray-100 text-slate-600 hover:bg-[#8EE7E3]/30"
                 }`}
               >
-                {f}
+                {f.label}
               </button>
             ))}
           </div>

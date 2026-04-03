@@ -1,5 +1,9 @@
 import ProjectsGridPage from '@/features/forum/ui/wesley_projects/ProjectsGridPage'
-import { getAllProjects, searchProjects } from '@/features/forum/api/project'
+import {
+  getAllProjects,
+  getMySubscribedProjects,
+  searchProjects,
+} from '@/features/forum/api/project'
 
 interface ProjectsRouteProps {
   searchParams?: Promise<{
@@ -13,9 +17,16 @@ export default async function ProjectsPage({ searchParams }: ProjectsRouteProps)
   const q = Array.isArray(qRaw) ? qRaw[0] : qRaw;
   const searchQuery = (q ?? '').trim();
 
-  const projects = searchQuery.length >= 2
-    ? await searchProjects(searchQuery)
-    : await getAllProjects();
+  const [projects, subscribedProjects] = await Promise.all([
+    searchQuery.length >= 2 ? searchProjects(searchQuery) : getAllProjects(),
+    getMySubscribedProjects(),
+  ]);
 
-  return <ProjectsGridPage projects={projects} initialSearch={searchQuery} />
+  return (
+    <ProjectsGridPage
+      projects={projects}
+      subscribedProjectIds={subscribedProjects.map((project) => project.id)}
+      initialSearch={searchQuery}
+    />
+  )
 }

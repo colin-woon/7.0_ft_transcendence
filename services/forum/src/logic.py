@@ -168,6 +168,78 @@ def create_project(db: Session, data: schemas.ProjectCreate) -> models.Project:
     return new_project
 
 
+def subscribe_to_project(db: Session, project_id: int, user_id: int) -> tuple[models.ProjectSubscription, bool]:
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    existing = db.query(models.ProjectSubscription).filter(
+        models.ProjectSubscription.project_id == project_id,
+        models.ProjectSubscription.user_id == user_id,
+    ).first()
+    if existing:
+        return existing, False
+
+    subscription = models.ProjectSubscription(project_id=project_id, user_id=user_id)
+    db.add(subscription)
+    db.commit()
+    db.refresh(subscription)
+    return subscription, True
+
+
+def unsubscribe_from_project(db: Session, project_id: int, user_id: int) -> bool:
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    existing = db.query(models.ProjectSubscription).filter(
+        models.ProjectSubscription.project_id == project_id,
+        models.ProjectSubscription.user_id == user_id,
+    ).first()
+    if not existing:
+        return False
+
+    db.delete(existing)
+    db.commit()
+    return True
+
+
+def get_subscriptions_by_user(db: Session, user_id: int) -> List[models.Project]:
+    return (
+        db.query(models.Project)
+        .join(
+            models.ProjectSubscription,
+            models.Project.id == models.ProjectSubscription.project_id,
+        )
+        .filter(models.ProjectSubscription.user_id == user_id)
+        .order_by(models.ProjectSubscription.subscribed_at.desc())
+        .all()
+    )
+
+
+def is_user_subscribed_to_project(db: Session, project_id: int, user_id: int) -> bool:
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    existing = db.query(models.ProjectSubscription).filter(
+        models.ProjectSubscription.project_id == project_id,
+        models.ProjectSubscription.user_id == user_id,
+    ).first()
+    return existing is not None
+
+
+def get_project_subscriber_count(db: Session, project_id: int) -> int:
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    count = db.query(func.count(models.ProjectSubscription.user_id)).filter(
+        models.ProjectSubscription.project_id == project_id
+    ).scalar()
+    return int(count or 0)
+
+
 
 # --- POSTS ---
 def get_all_posts(db:Session) -> List[models.ForumPost]:

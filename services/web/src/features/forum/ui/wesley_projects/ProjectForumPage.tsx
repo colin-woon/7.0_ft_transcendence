@@ -6,6 +6,7 @@ import { ArrowLeft, Plus, Search } from "lucide-react";
 import type { Project } from "../../models/projects";
 import PostVoteButtons from '../wesley_posts/components/PostVoteButtons';
 import ProjectCard from "./ProjectCard";
+import SubscriptionButton from './SubscriptionButton';
 
 const sortOptions = ["New", "Top"];
 
@@ -55,6 +56,10 @@ export default function ProjectForumPage({ project }: { project: Project }) {
 
           {/* ── Project description card ── */}
           <ProjectCard project={project} />
+
+          <div className="flex justify-end">
+            <SubscriptionButton projectId={project.id} />
+          </div>
 
           {/* ── Forum section ── */}
           <div>
