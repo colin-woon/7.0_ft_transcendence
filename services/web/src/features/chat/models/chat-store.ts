@@ -54,9 +54,11 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
           const chatId = state.currentChatSessionId;
           if (!chatId) return;
           
-          state.allChatSessions[chatId].messages!.unshift(msg);
+          if (state.allChatSessions[chatId].messages) {
+            state.allChatSessions[chatId].messages.unshift(msg);
+          }
         }),
-
+        
       setAllFriendships: (friendList: FriendList) =>
         set((state) => {
           state.allFriendships = friendList;

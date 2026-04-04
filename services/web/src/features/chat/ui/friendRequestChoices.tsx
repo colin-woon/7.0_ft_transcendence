@@ -1,5 +1,3 @@
-'use client';
-
 import { updateFriendshipStatus } from '../api/chat-services';
 import { useAllChatSessions } from '../models';
 

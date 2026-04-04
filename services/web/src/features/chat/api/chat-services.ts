@@ -57,7 +57,10 @@ export async function getUserInbox(tempUserId: FriendId): Promise<ChatRoom[]> {
   return apiClient.get<ChatRoom[]>(`/message/inbox/${tempUserId}`);
 }
 
-export async function createGroupChat(tempUserId: FriendId): Promise<ChatRoom> {
-  return apiClient.post<ChatRoom>(`/message/group/create/${tempUserId}`);
+export async function createGroupChat(
+  tempUserId: FriendId, 
+  payload: { name: string; memberIds: FriendId[] }
+): Promise<ChatRoom> {
+  return apiClient.post<ChatRoom>(`/message/group/create/${tempUserId}`, payload);
 }
 
