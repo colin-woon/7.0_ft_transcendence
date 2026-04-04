@@ -10,14 +10,14 @@ export function MessageStreamController() {
 
   useEffect(() => {
     if (!chatId || !tempCurrentUserId) return;
-    const mockRecipientId = tempCurrentUserId === 1 ? 2 : 1;
-
+    
     const eventSource = getMessageStream(tempCurrentUserId, (eventContent) => {
       if (eventContent.type === 'NEW_MESSAGE' && eventContent.payload.chatId === chatId) {
+      const chatUserId = tempCurrentUserId === 1 ? eventContent.payload.senderId : 1;
       addMessage({
         id: eventContent.payload.id,
         chatId: chatId!,
-        senderId: mockRecipientId,     
+        senderId: chatUserId,     
         content: eventContent.payload.content,
         createdAt: eventContent.payload.createdAt
       });
