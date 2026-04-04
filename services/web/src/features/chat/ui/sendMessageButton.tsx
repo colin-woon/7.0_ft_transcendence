@@ -1,25 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { getFriendList, sendMessage } from '../api/chat-services';
-import { useAllChatSessions } from '../models';
+import { useState } from 'react';
+import { sendMessage } from '../api/chat-services';
+import { useCurrentChatSession, useChatActions } from '../models';
 
 export function SendMessageButton() {
-  const { tempCurrentUserId, currentChatSession, addMessage } = useAllChatSessions();
+  const { tempCurrentUserId, chatId } = useCurrentChatSession();
+  const { addMessage } = useChatActions();
 
   const [messageText, setMessageText] = useState('');
 
   const handleSend = () => {
-    if (messageText.trim() && currentChatSession.chatId && tempCurrentUserId) {
+    if (messageText.trim() && chatId && tempCurrentUserId) {
       sendMessage(
-        currentChatSession.chatId,
+        chatId,
         tempCurrentUserId,
         { content: messageText }
       );
       setMessageText('');
       addMessage({
         id: "msg-" + tempCurrentUserId + '-' + Date.now(),
-        chatId: currentChatSession.chatId,
+        chatId: chatId,
         senderId: tempCurrentUserId,
         content: messageText,
         createdAt: new Date().toISOString(),
@@ -39,7 +40,7 @@ export function SendMessageButton() {
       <button
         className="btn btn-primary"
         onClick={handleSend}
-        disabled={!messageText.trim() || !currentChatSession.chatId}
+        disabled={!messageText.trim() || !chatId}
       >
         Send Message
       </button>

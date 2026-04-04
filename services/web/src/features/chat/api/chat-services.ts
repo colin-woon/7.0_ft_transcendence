@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/apiClient';
-import type { StreamEvent, ChatId, ChatMessage, FriendStatus, FriendId, FriendList, SendMessageRequest } from '../models/chat-types';
+import type { StreamEvent, ChatId, ChatMessage, FriendStatus, FriendId, FriendList, SendMessageRequest, ChatRoom } from '../models/chat-types';
 
 // export async function login(credentials: LoginInput): Promise<User> {
 //   return apiClient.post<User>('/auth/login', credentials);
@@ -52,3 +52,12 @@ export function getMessageStream(
   };
   return sse;
 }
+
+export async function getUserInbox(tempUserId: FriendId): Promise<ChatRoom[]> {
+  return apiClient.get<ChatRoom[]>(`/message/inbox/${tempUserId}`);
+}
+
+export async function createGroupChat(tempUserId: FriendId): Promise<ChatRoom> {
+  return apiClient.post<ChatRoom>(`/message/group/create/${tempUserId}`);
+}
+

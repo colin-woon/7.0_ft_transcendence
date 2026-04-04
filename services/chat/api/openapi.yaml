@@ -247,7 +247,7 @@ paths:
         "401":
           description: Unauthorized
 
-  /messages/inbox/{tempUserId}:
+  /message/inbox/{tempUserId}:
     get:
       tags:
         - Message
@@ -269,7 +269,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/ChatRoom"
 
-  /messages/group/create/{tempUserId}:
+  /message/group/create/{tempUserId}:
     post:
       tags:
         - Message

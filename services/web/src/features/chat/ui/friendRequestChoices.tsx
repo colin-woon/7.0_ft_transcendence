@@ -5,7 +5,7 @@ import { useAllChatSessions } from '../models';
 
 export function FriendRequestChoices() {
   const { tempCurrentUserId } = useAllChatSessions();
-  const tempTargetFriendId = 2; // TEMP Hardcoded target friend ID for demo
+  const tempTargetFriendId = 3; // TEMP Hardcoded target friend ID for demo
 
   return (
     <div className="flex flex-row gap-2">

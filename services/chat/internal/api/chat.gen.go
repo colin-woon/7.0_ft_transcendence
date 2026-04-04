@@ -145,11 +145,6 @@ type UpdateFriendshipStatusParams struct {
 // UpdateFriendshipStatusParamsStatus defines parameters for UpdateFriendshipStatus.
 type UpdateFriendshipStatusParamsStatus string
 
-// SendMessageJSONBody defines parameters for SendMessage.
-type SendMessageJSONBody struct {
-	Content string `json:"content"`
-}
-
 // CreateGroupChatJSONBody defines parameters for CreateGroupChat.
 type CreateGroupChatJSONBody struct {
 	// MemberIds List of user IDs to add to the group
@@ -159,11 +154,16 @@ type CreateGroupChatJSONBody struct {
 	Name string `json:"name"`
 }
 
-// SendMessageJSONRequestBody defines body for SendMessage for application/json ContentType.
-type SendMessageJSONRequestBody SendMessageJSONBody
+// SendMessageJSONBody defines parameters for SendMessage.
+type SendMessageJSONBody struct {
+	Content string `json:"content"`
+}
 
 // CreateGroupChatJSONRequestBody defines body for CreateGroupChat for application/json ContentType.
 type CreateGroupChatJSONRequestBody CreateGroupChatJSONBody
+
+// SendMessageJSONRequestBody defines body for SendMessage for application/json ContentType.
+type SendMessageJSONRequestBody SendMessageJSONBody
 
 // AsChatMessage returns the union data inside the StreamEvent_Payload as a ChatMessage
 func (t StreamEvent_Payload) AsChatMessage() (ChatMessage, error) {
@@ -212,21 +212,21 @@ type ServerInterface interface {
 	// Get friend list for a user with chat ID references
 	// (GET /friendship/{tempUserId})
 	GetFriendList(w http.ResponseWriter, r *http.Request, tempUserId int)
+	// Create a new group chat
+	// (POST /message/group/create/{tempUserId})
+	CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUserId int)
 	// Get chat history for a specific chat
 	// (GET /message/history/{chatId})
 	GetMessageHistory(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID)
+	// Get all chats (direct and group) for a user's inbox
+	// (GET /message/inbox/{tempUserId})
+	GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId int)
 	// Opens an SSE connection for real-time chat message updates
 	// (GET /message/stream/{tempUserId})
 	GetMessageStream(w http.ResponseWriter, r *http.Request, tempUserId int)
 	// Send a chat message
 	// (POST /message/{chatId}/{tempSenderId})
 	SendMessage(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempSenderId int)
-	// Create a new group chat
-	// (POST /messages/group/create/{tempUserId})
-	CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUserId int)
-	// Get all chats (direct and group) for a user's inbox
-	// (GET /messages/inbox/{tempUserId})
-	GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId int)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -251,9 +251,21 @@ func (_ Unimplemented) GetFriendList(w http.ResponseWriter, r *http.Request, tem
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Create a new group chat
+// (POST /message/group/create/{tempUserId})
+func (_ Unimplemented) CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUserId int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Get chat history for a specific chat
 // (GET /message/history/{chatId})
 func (_ Unimplemented) GetMessageHistory(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get all chats (direct and group) for a user's inbox
+// (GET /message/inbox/{tempUserId})
+func (_ Unimplemented) GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -266,18 +278,6 @@ func (_ Unimplemented) GetMessageStream(w http.ResponseWriter, r *http.Request, 
 // Send a chat message
 // (POST /message/{chatId}/{tempSenderId})
 func (_ Unimplemented) SendMessage(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempSenderId int) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Create a new group chat
-// (POST /messages/group/create/{tempUserId})
-func (_ Unimplemented) CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUserId int) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Get all chats (direct and group) for a user's inbox
-// (GET /messages/inbox/{tempUserId})
-func (_ Unimplemented) GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -401,6 +401,31 @@ func (siw *ServerInterfaceWrapper) GetFriendList(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// CreateGroupChat operation middleware
+func (siw *ServerInterfaceWrapper) CreateGroupChat(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "tempUserId" -------------
+	var tempUserId int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tempUserId", chi.URLParam(r, "tempUserId"), &tempUserId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateGroupChat(w, r, tempUserId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetMessageHistory operation middleware
 func (siw *ServerInterfaceWrapper) GetMessageHistory(w http.ResponseWriter, r *http.Request) {
 
@@ -417,6 +442,31 @@ func (siw *ServerInterfaceWrapper) GetMessageHistory(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetMessageHistory(w, r, chatId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetUserInbox operation middleware
+func (siw *ServerInterfaceWrapper) GetUserInbox(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "tempUserId" -------------
+	var tempUserId int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tempUserId", chi.URLParam(r, "tempUserId"), &tempUserId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUserInbox(w, r, tempUserId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -476,56 +526,6 @@ func (siw *ServerInterfaceWrapper) SendMessage(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SendMessage(w, r, chatId, tempSenderId)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// CreateGroupChat operation middleware
-func (siw *ServerInterfaceWrapper) CreateGroupChat(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "tempUserId" -------------
-	var tempUserId int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "tempUserId", chi.URLParam(r, "tempUserId"), &tempUserId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateGroupChat(w, r, tempUserId)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GetUserInbox operation middleware
-func (siw *ServerInterfaceWrapper) GetUserInbox(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "tempUserId" -------------
-	var tempUserId int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "tempUserId", chi.URLParam(r, "tempUserId"), &tempUserId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetUserInbox(w, r, tempUserId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -658,19 +658,19 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/friendship/{tempUserId}", wrapper.GetFriendList)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/message/group/create/{tempUserId}", wrapper.CreateGroupChat)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/message/history/{chatId}", wrapper.GetMessageHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/message/inbox/{tempUserId}", wrapper.GetUserInbox)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/message/stream/{tempUserId}", wrapper.GetMessageStream)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/message/{chatId}/{tempSenderId}", wrapper.SendMessage)
-	})
-	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/messages/group/create/{tempUserId}", wrapper.CreateGroupChat)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/messages/inbox/{tempUserId}", wrapper.GetUserInbox)
 	})
 
 	return r
@@ -679,32 +679,32 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/9RYbW/bNhD+KwQ3oBugxI7rvvlb1rmZgTYtqgTFVgQFLZ4tdhKpkpRTz/B/H46kZNmW",
-	"Y2Xp3j7Zksjj3T0PHx5vRROVF0qCtIaOVtQkKeTM/X2ZMvsGjGFzwMdCqwK0FeA+JimzE47/ZkrnzNIR",
-	"LUvBaUTtsgA6osZqIed0HdFESQvS4tj9bxqYBX7uvsJXlhcZDhj0B09P+o9P+i+u+s9Hg+Fo8Ow3Gm2W",
-	"4szCiRU5tK0neGMpIS3MQeN7A5KDnrR+XUdUw5dSaOB09JG6QEKIjYmbWJqe39Q+qOlnSCyuhbl7r1T+",
-	"oMTlkE9xXTePg0m0KKxQko7oa2EsUTPCsoyUBjSZ/GyIkMSmwhBc4pS80s5Xjt+N/2AVmYFNUsIWzDJt",
-	"epLlYE5pRIWF3LSnLbxhWrMlPuOcfYc+iCwjUyCyzDIyU5pwoSGxzhdDI4rv2RTBtbqElmD9ixUFWeYI",
-	"gZ9PIzrXqiwaSa6m7EBWo+WGtWHySguQHDO3RbYNJPTJkz48H/b7JzB4MT0ZnvHhCXt29hSZ5+bioLPB",
-	"43UjX4fA3c7OtRRfSiCCg7RiJkC7FNkUXH7IFOwtgHQvHJpMcvfgl20y/xBXNg52X7u23rIb9rK3S4PY",
-	"amD5eBF29nYeCrbMFGtx5ioFwhJbsoxwZllEjNVlYksNhEMBkhuifB4ALRO3akSVhLczOvq4ot9rmNER",
-	"/a63ka1e0KxeU7DWNwdjaPMJv+B+8qtOQcg5MfiXq1vvj3Hx0qgm6OX4w6c34zg+vxjTiF7H4/efrn59",
-	"N7m8qJ7iq/Or6/g4c0OMVc72HccJQs7Uvuvn7yYOzZxJNkefcx++cQzy+JpUFLgDrbBOWzFLJAa9EAmQ",
-	"83cTGtEFaOMNnp32T/uYKlWAZIWgI/r4tH86dP7Z1IHb29jtrTAQMBZlao1PCYiFe3A0UH6vITUYuux2",
-	"WQyS+7343k92xjXLwYI2DmWBvuCCtNIb2liINvPn5cRToF3ZD5irPL2ftRscbQoljWf6oH+2D4uPjgSX",
-	"PZFMmSRgzKzMMrd/hv3+/sSJXLBM8FrS/cBhy6bGAVJZMlOl5I5SpsxzppchwYQF+CsvkAFsjukN7iF+",
-	"9AZndgO0VxZ47PrtbZN0H9hrN2BjPbbMlub/hG5l7UsJerkxZ6pADpuqVAE1DDd5RFmSQGEBPeCQZEK6",
-	"v9NMJb+7f1JJaBOHfYa1EMWnlnhI+P3I5aMhC5aVcJBgYWs2ORbRJ+1mLWjJMqcpoMlYa6V3GOmZ0RAk",
-	"Uqe0Eykt5AVSPujKHFpk5QJs44TvQrqN1YdqgEtLo85lRZGJxPnW+2wwTauGwbvOsEYITvdbhSXD6g8V",
-	"nhmjEuEo4AoJrAI1WC1gcV9WBMnprDgPYMMF2EqcXCR4gjHvwK2waRUK0TADDTKBO3kSjrxeKoxVetlb",
-	"+SLsTqKEKuEXP6UTWer68jBRjhRpD+ZNXXR2LoJ2y7Z9RrlqIKTur1In4HWQOpfKD6mWaTuzkBM7g5AU",
-	"poBEzETivjVYUEW4TQFfo3WWi2Akriq7f1MxLHy1PVd9noRKs7NkNCvxFoTjeEwSJSUk+KKBrMfrrO3G",
-	"wEqbKi3+gF2Y3hYgsbgkO1YRLQ0sc5dyD2QAJZxR5ih41b718MXhzn2kjqxM/UM7ODrIinjTI7gvL9xB",
-	"+5Piy3uJwc7FczMtF/I1yLlN6ejs6KU5TGu/c2wHsu5S+QY8HlDyErzOBCuVe63lbZNkx8hleq6L0PNN",
-	"mz2BaOfXSzf4Aie+9OrzNwvEtyBCh55RnWmrCOMcf/CC6/ss36AVdMlyd5eujdbifScXnbFm0+sBpPwm",
-	"pVjdw2sR1Ys6LhIagTts32KsZxJhRMLtTkruZq2QU/W183nmhuCM/3T127mK8bk/XsLEjcQ3Shik+SPf",
-	"DCVaqdy0VBwsy3yHkvwQ+pVYVTuEfmyUpY8MESGvLYCt67e7O2EseaGEtGa7SbPdlwlwNOpaPGY6GWpK",
-	"YMPUpge2/jMAAP//NGpLAN8XAAA=",
+	"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",
+	"+s8AAAD//3orXEbdFwAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

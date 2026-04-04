@@ -33,6 +33,7 @@ export interface ChatRoom {
     type: ChatRoomType;
     name: string | null;
     memberIds: FriendId[];
+    messages: ChatMessage[] | null;
 }
 
 export type FriendStatus = 'pending' | 'accepted' | 'blocked' | 'declined' | 'none';
@@ -46,18 +47,4 @@ export type StreamEvent =
   | { type: 'USER_TYPING'; payload: UserTyping }
   | { type: 'USER_STATUS'; payload: UserStatus };
 
-export interface ChatSession {
-    chatId: ChatId;
-    friendIds: FriendId[];
-    messages: ChatMessage[];
-}
-
-export type AllChatSessions = Record<ChatId, ChatSession>;
-
-export interface ChatContextType {
-  tempCurrentUserId: FriendId | null;
-  currentChatSession: ChatSession;
-  allChatSessions: AllChatSessions;
-  setChatSession: (chatId: ChatId, friendIds: FriendId[], messages: ChatMessage[]) => void;
-  addMessage: (msg: ChatMessage) => void;
-}
+export type AllChatSessions = Record<ChatId, ChatRoom>;
