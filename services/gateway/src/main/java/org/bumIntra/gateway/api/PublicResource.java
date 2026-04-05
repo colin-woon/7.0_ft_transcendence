@@ -20,7 +20,6 @@ public class PublicResource {
 	@GET
 	@Path("/ping")
 	public Response ping() {
-		System.out.println("called public ping");
 		return Response.ok("pong from public endpoint").build();
 	}
 
