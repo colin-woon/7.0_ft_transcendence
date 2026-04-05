@@ -51,7 +51,7 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId uuid
 	}
 
 	data := api.StreamEvent{
-		Type: "NEW_MESSAGE",
+		Type: api.NEWMESSAGE,
 	}
 	data.Payload.FromChatMessage(api.ChatMessage{
 		ChatId:    chatId,
@@ -67,26 +67,7 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId uuid
 	}
 	payload := string(jsonData)
 
-	// 4. Push to all online members
-	// Use RLock for reading
-	s.sseHub.mutex.RLock()
-	for _, memberId := range memberIDs {
-		// Don't send the message back to the sender via SSE (they already have it in UI)
-		if int(memberId) == senderId {
-			continue
-		}
-
-		// If the member is online, send it
-		if ch, ok := s.sseHub.userChannels[int(memberId)]; ok {
-			// Non-blocking send to prevent one slow client from freezing the loop
-			select {
-			case ch <- payload:
-			default:
-				fmt.Printf("Warning: channel full for user %d\n", memberId)
-			}
-		}
-	}
-	s.sseHub.mutex.RUnlock()
+	s.broadcastToRoomExcept(memberIDs, senderId, payload)
 
 	// 5. Return 201 Created to the sender
 	w.WriteHeader(http.StatusCreated)
@@ -108,12 +89,20 @@ func (s *Server) GetMessageHistory(w http.ResponseWriter, r *http.Request, chatI
 	}
 }
 
+// 1. Clear the global WriteTimeout for this specific long-lived connection
+// Log error if the underlying connection doesn't support setting deadlines
+// Create a ticker to send a heartbeat every 15 seconds
+// Ensure the ticker is stopped when the client disconnects to prevent memory leaks
+// Client disconnected
+// Format: "data: <message>\n\n"
+// Flush the data to the client immediately
+// Heartbeat trigger
+// Lines starting with a colon are SSE comments.
+// The frontend EventSource ignores this, but it keeps the network socket alive.
 func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request, tempUserId int) {
-	// 1. Clear the global WriteTimeout for this specific long-lived connection
 	rc := http.NewResponseController(w)
 	err := rc.SetWriteDeadline(time.Time{}) // time.Time{} is "zero value", meaning NO timeout
 	if err != nil {
-		// Log error if the underlying connection doesn't support setting deadlines
 		fmt.Printf("Error clearing write deadline: %v\n", err)
 	}
 
@@ -133,35 +122,31 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request, tempUs
 	s.sseHub.userChannels[tempUserId] = sseCh
 	s.sseHub.mutex.Unlock()
 
-	// Create a ticker to send a heartbeat every 15 seconds
 	ticker := time.NewTicker(15 * time.Second)
-	// Ensure the ticker is stopped when the client disconnects to prevent memory leaks
 	defer ticker.Stop()
 	for {
 		select {
-		// Client disconnected
 		case <-r.Context().Done():
 			s.sseHub.mutex.Lock()
 			delete(s.sseHub.userChannels, tempUserId)
 			s.sseHub.mutex.Unlock()
 			return
 
-		// Format: "data: <message>\n\n"
-		// Flush the data to the client immediately
 		case message := <-sseCh:
 			fmt.Fprintf(w, "data: %s\n\n", message)
 			flusher.Flush()
 
-		// Heartbeat trigger
 		case <-ticker.C:
-			// Lines starting with a colon are SSE comments.
-			// The frontend EventSource ignores this, but it keeps the network socket alive.
 			fmt.Fprintf(w, ": keepalive\n\n")
 			flusher.Flush()
 		}
 	}
 }
 
+// 2. Map DB Rows to API Models
+// Handle sql.NullString -> *string
+// Handle []int32 -> *[]int
+// 3. Encode the mapped slice
 func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId int) {
 	ctx := r.Context()
 
@@ -170,7 +155,6 @@ func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId
 		http.Error(w, "Failed to retrieve user chats", http.StatusInternalServerError)
 		return
 	}
-	// 2. Map DB Rows to API Models
 	inbox := make([]api.ChatRoom, 0, len(rows))
 	for _, row := range rows {
 		chat := api.ChatRoom{
@@ -178,13 +162,11 @@ func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId
 			Type:   api.ChatRoomType(row.Type),
 		}
 
-		// Handle sql.NullString -> *string
 		if row.Name.Valid {
 			nameVal := row.Name.String
 			chat.Name = &nameVal
 		}
 
-		// Handle []int32 -> *[]int
 		if row.MemberIds != nil {
 			ids := make([]int, len(row.MemberIds))
 			for i, v := range row.MemberIds {
@@ -196,7 +178,6 @@ func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId
 		inbox = append(inbox, chat)
 	}
 
-	// 3. Encode the mapped slice
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(inbox); err != nil {
 		http.Error(w, "Failed to encode user chats", http.StatusInternalServerError)
@@ -204,6 +185,12 @@ func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId
 	}
 }
 
+// 1. Create a slice of the correct type ([]int32) with the right capacity
+// 2. Convert and append the members from the request body
+// 3. Append the creator (tempUserId) converted to int32
+// 4. Use it in your database params
+// 5. Explicitly Commit the Transaction
+// Create the response slice with the type the API expects ([]int)
 func (s *Server) CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUserId int) {
 	ctx := r.Context()
 
@@ -232,31 +219,25 @@ func (s *Server) CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUse
 		return
 	}
 
-	// 1. Create a slice of the correct type ([]int32) with the right capacity
 	members32 := make([]int32, 0, len(body.MemberIds)+1)
 
-	// 2. Convert and append the members from the request body
 	for _, id := range body.MemberIds {
 		members32 = append(members32, int32(id))
 	}
 
-	// 3. Append the creator (tempUserId) converted to int32
 	members32 = append(members32, int32(tempUserId))
 
-	// 4. Use it in your database params
 	err = qtx.CreateRoomMembersForGroupChat(ctx, database.CreateRoomMembersForGroupChatParams{
 		Column1: chatRoom.ID,
 		Column2: int32(tempUserId),
-		Column3: members32, // No cast needed here now
+		Column3: members32,
 	})
 
-	// 5. Explicitly Commit the Transaction
 	if err := tx.Commit(); err != nil {
 		http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
 		return
 	}
 
-	// Create the response slice with the type the API expects ([]int)
 	apiMemberIDs := make([]int, len(members32))
 	for i, v := range members32 {
 		apiMemberIDs[i] = int(v)
@@ -265,8 +246,8 @@ func (s *Server) CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUse
 	response := api.ChatRoom{
 		ChatId:    chatRoom.ID,
 		Type:      api.ChatRoomType(chatRoom.Type),
-		Name:      &chatRoom.Name.String, // Handle nullable strings correctly
-		MemberIds: &apiMemberIDs,         // Just use what the user sent you!
+		Name:      &chatRoom.Name.String,
+		MemberIds: &apiMemberIDs,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -275,4 +256,70 @@ func (s *Server) CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUse
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
+}
+
+// Helper function to broadcast SSE events to room members, excluding the sender
+// Don't send the event back to the sender
+// If the member is online, send it
+// Non-blocking send to prevent one slow client from freezing the loop
+func (s *Server) broadcastToRoomExcept(memberIDs []int32, senderId int, payload string) {
+	s.sseHub.mutex.RLock()
+	defer s.sseHub.mutex.RUnlock()
+	for _, memberId := range memberIDs {
+		if int(memberId) == senderId {
+			continue
+		}
+		if ch, ok := s.sseHub.userChannels[int(memberId)]; ok {
+			select {
+			case ch <- payload:
+			default:
+				fmt.Printf("Warning: channel full for user %d\n", memberId)
+			}
+		}
+	}
+}
+
+// SendTypingEvent handles the POST /message/typing/{chatId}/{tempSenderId} endpoint
+// 1. Fetch all members of this room
+// 2. Validate that the sender is actually a member of the chat
+// Return 403 if they don't belong to the chat
+// 3. Create the Typing Indicator Event
+// 4. Push to all online members using our new helper
+// 5. Ephemeral action complete; return 204 No Content
+func (s *Server) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempSenderId int) {
+	ctx := r.Context()
+	memberIDs, err := s.db.GetQueries().GetRoomMemberIDs(ctx, chatId)
+	if err != nil {
+		http.Error(w, "Failed to fetch room members", http.StatusInternalServerError)
+		return
+	}
+	isMember := false
+	for _, id := range memberIDs {
+		if int(id) == tempSenderId {
+			isMember = true
+			break
+		}
+	}
+	if !isMember {
+		http.Error(w, "Forbidden: Sender is not a member of this chat", http.StatusForbidden)
+		return
+	}
+	data := api.StreamEvent{
+		Type: api.USERTYPING,
+	}
+	err = data.Payload.FromTypingIndicator(api.TypingIndicator{
+		ChatId:   chatId,
+		SenderId: tempSenderId,
+	})
+	if err != nil {
+		http.Error(w, "Failed to construct typing event payload", http.StatusInternalServerError)
+		return
+	}
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		http.Error(w, "Failed to serialize typing event", http.StatusInternalServerError)
+		return
+	}
+	s.broadcastToRoomExcept(memberIDs, tempSenderId, string(jsonData))
+	w.WriteHeader(http.StatusNoContent)
 }

@@ -47,6 +47,15 @@ components:
           type: string
           format: date-time
           example: "2026-03-09T08:24:27Z"
+    TypingIndicator:
+      type: object
+      required: [chatId, senderId]
+      properties:
+        chatId:
+          type: string
+          format: uuid
+        senderId:
+          type: integer
     FriendList:
       type: array
       items:
@@ -76,7 +85,8 @@ components:
           # We use oneOf to say "If it's a message, expect ChatMessage data"
           oneOf:
             - $ref: "#/components/schemas/ChatMessage"
-            # You can add other schemas here later, like TypingIndicator!
+            - $ref: "#/components/schemas/TypingIndicator"
+            # You can add other schemas here later, like USER_STATUS
 
 paths:
   /friendship/{requesterId}/{receiverId}:
@@ -304,3 +314,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ChatRoom"
+
+  /message/typing/{chatId}/{tempSenderId}:
+    post:
+      tags:
+        - Message
+      summary: Send a typing indicator event
+      operationId: sendTypingEvent
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tempSenderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Typing broadcast triggered successfully
+        "400":
+          description: Invalid user IDs or form data

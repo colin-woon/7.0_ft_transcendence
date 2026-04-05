@@ -137,6 +137,12 @@ type StreamEvent_Payload struct {
 // StreamEventType The type of event being sent down the stream
 type StreamEventType string
 
+// TypingIndicator defines model for TypingIndicator.
+type TypingIndicator struct {
+	ChatId   openapi_types.UUID `json:"chatId"`
+	SenderId int                `json:"senderId"`
+}
+
 // UpdateFriendshipStatusParams defines parameters for UpdateFriendshipStatus.
 type UpdateFriendshipStatusParams struct {
 	Status UpdateFriendshipStatusParamsStatus `form:"status" json:"status"`
@@ -191,6 +197,32 @@ func (t *StreamEvent_Payload) MergeChatMessage(v ChatMessage) error {
 	return err
 }
 
+// AsTypingIndicator returns the union data inside the StreamEvent_Payload as a TypingIndicator
+func (t StreamEvent_Payload) AsTypingIndicator() (TypingIndicator, error) {
+	var body TypingIndicator
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTypingIndicator overwrites any union data inside the StreamEvent_Payload as the provided TypingIndicator
+func (t *StreamEvent_Payload) FromTypingIndicator(v TypingIndicator) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTypingIndicator performs a merge with any union data inside the StreamEvent_Payload, using the provided TypingIndicator
+func (t *StreamEvent_Payload) MergeTypingIndicator(v TypingIndicator) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t StreamEvent_Payload) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
@@ -224,6 +256,9 @@ type ServerInterface interface {
 	// Opens an SSE connection for real-time chat message updates
 	// (GET /message/stream/{tempUserId})
 	GetMessageStream(w http.ResponseWriter, r *http.Request, tempUserId int)
+	// Send a typing indicator event
+	// (POST /message/typing/{chatId}/{tempSenderId})
+	SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempSenderId int)
 	// Send a chat message
 	// (POST /message/{chatId}/{tempSenderId})
 	SendMessage(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempSenderId int)
@@ -272,6 +307,12 @@ func (_ Unimplemented) GetUserInbox(w http.ResponseWriter, r *http.Request, temp
 // Opens an SSE connection for real-time chat message updates
 // (GET /message/stream/{tempUserId})
 func (_ Unimplemented) GetMessageStream(w http.ResponseWriter, r *http.Request, tempUserId int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Send a typing indicator event
+// (POST /message/typing/{chatId}/{tempSenderId})
+func (_ Unimplemented) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempSenderId int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -501,6 +542,40 @@ func (siw *ServerInterfaceWrapper) GetMessageStream(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// SendTypingEvent operation middleware
+func (siw *ServerInterfaceWrapper) SendTypingEvent(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "chatId" -------------
+	var chatId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "chatId", chi.URLParam(r, "chatId"), &chatId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "chatId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tempSenderId" -------------
+	var tempSenderId int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tempSenderId", chi.URLParam(r, "tempSenderId"), &tempSenderId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempSenderId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SendTypingEvent(w, r, chatId, tempSenderId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SendMessage operation middleware
 func (siw *ServerInterfaceWrapper) SendMessage(w http.ResponseWriter, r *http.Request) {
 
@@ -670,6 +745,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/message/stream/{tempUserId}", wrapper.GetMessageStream)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/message/typing/{chatId}/{tempSenderId}", wrapper.SendTypingEvent)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/message/{chatId}/{tempSenderId}", wrapper.SendMessage)
 	})
 
@@ -679,32 +757,33 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"+s8AAAD//3orXEbdFwAA",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
