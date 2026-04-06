@@ -68,6 +68,7 @@ export function mapApiPostToForumPost(post: ForumApiPostSummary, projectName?: s
     id: post.id,
     title: post.title,
     author: `user_${post.author_id}`,
+    authorId: post.author_id,
     avatar: '',
     comments: post.comment_count,
     views: post.view_count,
@@ -78,15 +79,22 @@ export function mapApiPostToForumPost(post: ForumApiPostSummary, projectName?: s
   };
 }
 
-function calculateDifficulty(difficultyXp?: number | string): "Beginner" | "Intermediate" | "Advanced" {
-  if (!difficultyXp)
+function calculateDifficulty(difficultyOrXp?: number | string): "Beginner" | "Intermediate" | "Advanced" {
+  if (typeof difficultyOrXp === 'string') {
+    const normalized = difficultyOrXp.trim().toLowerCase();
+    if (normalized === 'beginner') return 'Beginner';
+    if (normalized === 'intermediate') return 'Intermediate';
+    if (normalized === 'advanced' || normalized === 'expert') return 'Advanced';
+  }
+
+  if (!difficultyOrXp)
     return "Beginner";
 
   let numericXp: number;
-  if (typeof difficultyXp === 'string') {
-    numericXp = parseFloat(difficultyXp);
+  if (typeof difficultyOrXp === 'string') {
+    numericXp = parseFloat(difficultyOrXp);
   } else {
-    numericXp = difficultyXp;
+    numericXp = difficultyOrXp;
   }
 
   if (isNaN(numericXp))
@@ -107,14 +115,16 @@ function getTeamSize(soloStr: boolean): "Solo" | "Team"{
 }
 
 function mapApiProjectToProject(apiProj: any): Project {
+  const projectXp = typeof apiProj.xp === 'number' ? apiProj.xp : Number.parseInt(String(apiProj.xp ?? 0), 10) || 0;
+
   return {
     id: apiProj.id,
     name: apiProj.name,
     slug: apiProj.slug || apiProj.name.toLowerCase().replace(/\s+/g, '-'),
     description: apiProj.description || 'No description provided for this project.',
     // icon: apiProj.icon || "📚",
-    difficulty: calculateDifficulty(apiProj.difficulty),
-    xp: apiProj.difficulty || 0,
+    difficulty: calculateDifficulty(apiProj.difficulty || projectXp),
+    xp: projectXp,
     duration: apiProj.estimate_time || "~1 week",
     teamSize: getTeamSize(Boolean(apiProj.solo)),
     tags: apiProj.objectives || ["42"],
@@ -296,6 +306,7 @@ export async function getProjectDetailsBySort(projectId: number, sort: ForumSort
       id: post.id,
       title: post.title,
       author: post.author,
+      authorId: post.authorId,
       avatar: post.avatar,
       replies: post.comments,
       views: post.views,

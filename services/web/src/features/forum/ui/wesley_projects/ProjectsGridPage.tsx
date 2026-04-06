@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, Star, Users, Clock, ChevronRight, Zap, Globe, MessageSquare } from "lucide-react";
 import type { Project, Difficulty } from "../../models/projects";
+import { AdminProjectCreateButton } from '@/features/forum/ui/moderation';
 
 const difficultyColor: Record<Difficulty, string> = {
   Beginner: "bg-green-100 text-green-700",
@@ -140,6 +141,9 @@ export default function ProjectsPage({
                 {f.label}
               </button>
             ))}
+          </div>
+          <div className="flex items-center">
+            <AdminProjectCreateButton />
           </div>
         </div>
       </div>

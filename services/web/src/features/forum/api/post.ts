@@ -108,6 +108,7 @@ export async function getPostDetail(postId: number): Promise<{ post: ForumPostDe
       title: postData.title,
       content: postData.content,
       author: `user_${postData.author_id}`,
+      authorId: postData.author_id,
       avatar: '',
       category: projectName ?? `Project ${postData.project_id}`,
       timestamp: toRelativeTime(postData.created_at),
@@ -134,6 +135,7 @@ export async function getPostComments(postId: number): Promise<ForumComment[]> {
   return commentsData.map((comment) => ({
     id: comment.id,
     author: `user_${comment.author_id}`,
+    authorId: comment.author_id,
     avatar: '',
     content: comment.content,
     timestamp: toRelativeTime(comment.created_at),

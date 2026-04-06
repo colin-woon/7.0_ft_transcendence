@@ -19,6 +19,7 @@ class Project(Base):
     objectives: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
     estimate_time: Mapped[Optional[str]] = mapped_column(String(50))
     difficulty: Mapped[Optional[str]] = mapped_column(String(10))
+    xp: Mapped[int] = mapped_column(Integer, default=0)
     post_count: Mapped[int] = mapped_column(Integer, default=0)
     posts: Mapped[List["ForumPost"]] = relationship(back_populates="project")
     subscriptions: Mapped[List["ProjectSubscription"]] = relationship(
