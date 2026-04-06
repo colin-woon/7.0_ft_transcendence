@@ -14,7 +14,7 @@ const BUBBLE_COLORS = [
 
 export function ChatBox() {
   const { fetchChatHistory } = useChatActions();
-  const { chatId, tempCurrentUserId, messages } = useCurrentChatSession();
+  const { chatId, tempCurrentUserId, messages, typingUsers } = useCurrentChatSession();
 
   useEffect(() => {
     if (chatId)
@@ -27,8 +27,32 @@ export function ChatBox() {
     return <div className="p-4 text-center">Select a friend to start chatting</div>;
   }
 
+  // Find users currently typing (excluding ourself)
+  const activeTypingUserIds = Object.keys(typingUsers || {}).filter(
+    (userIdStr) => Number(userIdStr) !== tempCurrentUserId
+  );
+
   return (
     <div className="flex flex-col-reverse h-[500px] w-full border rounded-lg p-4 overflow-y-auto">
+      {/* 
+        Because it's flex-col-reverse, pushing items here puts them at the visual bottom!
+      */}
+      
+      {/* TYPING INDICATOR BUBBLE */}
+      {activeTypingUserIds.length > 0 && (
+        <div className="chat chat-start opacity-70 mb-2">
+          <div className="chat-header pb-1 text-xs">
+            {activeTypingUserIds.length === 1
+              ? `User #${activeTypingUserIds[0]} is typing...`
+              : `${activeTypingUserIds.length} users are typing...`}
+          </div>
+          <div className="chat-bubble flex items-center h-10 px-4">
+            <span className="loading loading-dots loading-md" />
+          </div>
+        </div>
+      )}
+
+      {/* CHAT MESSAGES */}
       {loadedMessages.map((msg) => {
         const isMe = msg.senderId === tempCurrentUserId;
 

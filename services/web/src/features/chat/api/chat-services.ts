@@ -64,3 +64,6 @@ export async function createGroupChat(
   return apiClient.post<ChatRoom>(`/message/group/create/${tempUserId}`, payload);
 }
 
+export async function sendTypingEvent(chatId: ChatId, tempSenderId: FriendId): Promise<void>{
+  return apiClient.post<void>(`/message/typing/${chatId}/${tempSenderId}`);
+}

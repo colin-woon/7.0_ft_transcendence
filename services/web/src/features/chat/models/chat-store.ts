@@ -2,6 +2,7 @@ import { createStore } from 'zustand/vanilla';
 import { immer } from 'zustand/middleware/immer';
 import type { AllChatSessions, FriendId, ChatMessage, ChatId, FriendList, ChatRoomType } from './chat-types';
 import { getFriendList, getUserInbox, getMessageHistory } from '../api';
+import debounce from 'lodash.debounce';
 
 export interface ChatState {
   tempCurrentUserId: FriendId | null;
@@ -10,9 +11,11 @@ export interface ChatState {
   allFriendships: FriendList;
   isLoadingFriends: boolean;
   friendsError: string | null;
+  typingUsers: Record<ChatId, Record<FriendId, boolean>>;
 }
 
 export interface ChatActions {
+  setTempCurrentUserId: (userId: FriendId) => void;
   setChatSession: (chatId: ChatId, type: ChatRoomType, name: string | null, friendIds: FriendId[], messages: ChatMessage[] | null) => void;
   addMessage: (msg: ChatMessage) => void;
   setAllFriendships: (friendList: FriendList) => void;
@@ -20,9 +23,23 @@ export interface ChatActions {
   fetchAllFriendships: (userId: FriendId) => Promise<void>;
   fetchAllChatSessions: (userId: FriendId) => Promise<void>;
   fetchChatHistory: (chatId: ChatId) => Promise<void>;
+  setTypingStatus: (chatId: ChatId, senderId: FriendId) => void;
 }
 
 export type ChatStore = ChatState & ChatActions;
+
+// Create a singleton debounced clearer that lives outside the store state
+// It takes `set` to modify the store directly, clearing the user after 3 seconds
+const clearTypingStatus = debounce(
+  (set: any, chatId: ChatId, senderId: FriendId) => {
+    set((state: ChatState) => {
+      if (state.typingUsers[chatId]?.[senderId]) {
+        delete state.typingUsers[chatId][senderId];
+      }
+    });
+  },
+  3000
+);
 
 // Factory pattern: creates a new store instance per Provider
 export const createChatStore = (initialSessions: AllChatSessions = {}) => {
@@ -34,7 +51,12 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
       tempCurrentUserId: 1, // TEMP Hardcoded on mount as requested
       isLoadingFriends: false,
       friendsError: null,
+      typingUsers: {},
 
+      setTempCurrentUserId: (userId: FriendId) =>
+        set((state) => {
+          state.tempCurrentUserId = userId;
+      }),
       setChatSession: (chatId: ChatId, type: ChatRoomType, name: string | null, friendIds: FriendId[], messages: ChatMessage[] | null) => 
         set((state) => {
           state.currentChatSessionId = chatId;
@@ -56,6 +78,9 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
           
           if (state.allChatSessions[chatId].messages) {
             state.allChatSessions[chatId].messages.unshift(msg);
+          }
+          if (state.typingUsers[msg.chatId]?.[msg.senderId]) {
+            delete state.typingUsers[msg.chatId][msg.senderId];
           }
         }),
         
@@ -98,7 +123,16 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
             state.allChatSessions[chatId].messages = messages;
           }
         });
-      }
+      },
+      setTypingStatus: (chatId: ChatId, senderId: FriendId) => {
+        set((state) => {
+          if (!state.typingUsers[chatId]) {
+            state.typingUsers[chatId] = {};
+          }
+          state.typingUsers[chatId][senderId] = true;
+        });
+        clearTypingStatus(set, chatId, senderId);
+      },
     }))
   );
 };

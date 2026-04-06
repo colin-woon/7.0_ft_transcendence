@@ -5,7 +5,7 @@ import { useCurrentChatSession, useChatActions } from '../models';
 import { getMessageStream } from '../api/chat-services';
 
 export function MessageStreamController() {
-  const { addMessage } = useChatActions();
+  const { addMessage, setTypingStatus } = useChatActions();
   const { tempCurrentUserId, chatId } = useCurrentChatSession();
 
   useEffect(() => {
@@ -13,15 +13,19 @@ export function MessageStreamController() {
     
     const eventSource = getMessageStream(tempCurrentUserId, (eventContent) => {
       if (eventContent.type === 'NEW_MESSAGE' && eventContent.payload.chatId === chatId) {
-      const chatUserId = tempCurrentUserId === 1 ? eventContent.payload.senderId : 1;
-      addMessage({
-        id: eventContent.payload.id,
-        chatId: chatId!,
-        senderId: chatUserId,     
-        content: eventContent.payload.content,
-        createdAt: eventContent.payload.createdAt
-      });
-    }});
+        const chatUserId = tempCurrentUserId === 1 ? eventContent.payload.senderId : 1;
+        addMessage({
+          id: eventContent.payload.id,
+          chatId: chatId!,
+          senderId: chatUserId,     
+          content: eventContent.payload.content,
+          createdAt: eventContent.payload.createdAt
+        });
+      }
+      else if (eventContent.type === 'USER_TYPING' && eventContent.payload.chatId === chatId) {
+        setTypingStatus(eventContent.payload.chatId, eventContent.payload.senderId)
+      }
+  });
 
     // 3. Cleanup: Close connection when navigating away or changing chats
     return () => {

@@ -1,22 +1,26 @@
 import { ChatStoreContext } from './chat-provider';
 import type { ChatMessage, FriendId, FriendList } from './chat-types';
 import { useStore } from 'zustand';
-import { useContext, useMemo } from 'react';
+import { useContext, useState } from 'react';
+import { createGroupChat } from '../api/chat-services';
 
 const EMPTY_MESSAGES: ChatMessage[] = [];
 const EMPTY_FRIENDIDS: FriendId[] = [];
+const EMPTY_TYPING_USERS: Record<FriendId, ReturnType<typeof setTimeout>> = {};
 
 export const useChatActions = () => {
     const store = useContext(ChatStoreContext);
     if (!store) throw new Error('useChatActions must be used within ChatStoreProvider');
 
     return {
+        setTempCurrentUserId: useStore(store, (s) => s.setTempCurrentUserId),
         setChatSession: useStore(store, (s) => s.setChatSession),
         addMessage: useStore(store, (s) => s.addMessage),
         setCurrentChatSessionId: useStore(store, (s) => s.setCurrentChatSessionId),
         fetchAllFriendships: useStore(store, (s) => s.fetchAllFriendships),
         fetchAllChatSessions: useStore(store, (s) => s.fetchAllChatSessions),
         fetchChatHistory: useStore(store, (s) => s.fetchChatHistory),
+        setTypingStatus: useStore(store, (s) => s.setTypingStatus),
     };
 }
 
@@ -39,6 +43,10 @@ export const useCurrentChatSession = () => {
         messages: useStore(store, (s) => {
         if (!s.currentChatSessionId) return EMPTY_MESSAGES;
         return s.allChatSessions[s.currentChatSessionId]?.messages || EMPTY_MESSAGES;
+        }),
+        typingUsers: useStore(store, (s) => {
+            if (!s.currentChatSessionId) return EMPTY_TYPING_USERS;
+            return s.typingUsers[s.currentChatSessionId] || EMPTY_TYPING_USERS;
         }),
     };
 };

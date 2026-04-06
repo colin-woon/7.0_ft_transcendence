@@ -17,8 +17,8 @@ export interface ChatMessage {
 }
 
 export interface UserTyping {
-  userId: string;
-  isTyping: boolean;
+  chatId: ChatId;
+  senderId: FriendId;
 }
 
 export interface UserStatus {

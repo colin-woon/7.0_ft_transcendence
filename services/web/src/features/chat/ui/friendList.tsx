@@ -2,14 +2,14 @@
 
 import { useEffect } from 'react';
 import { useFriendList, useChatActions, useCurrentChatSession } from '../models';
+import { div } from 'framer-motion/client';
 
 const FALLBACK_AVATAR_URL =
   'https://img.daisyui.com/images/profile/demo/gordon@192.webp';
 
 export function FriendList() {
   const { tempCurrentUserId, allFriendships, isLoading, error } = useFriendList();
-  const { fetchAllFriendships, setChatSession, } = useChatActions();
-  const { chatId: currentChatId } = useCurrentChatSession();
+  const { fetchAllFriendships, setTempCurrentUserId } = useChatActions();
 
   useEffect(() => {
     if (tempCurrentUserId) {
@@ -20,7 +20,6 @@ export function FriendList() {
   if (isLoading) {
     return <div className="text-sm opacity-70">Loading friends...</div>;
   }
-// --- RENDER LOGIC ---
 
   if (isLoading) {
     return <div className="text-sm opacity-70">Loading friends...</div>;
@@ -36,8 +35,8 @@ export function FriendList() {
 
   return (
     <div className="flex flex-wrap gap-4">
+      <div className='btn btn-primary' onClick={() => setTempCurrentUserId(tempCurrentUserId === 1 ? 2 : 1)}>Switch Temp User</div>
       {allFriendships.map((friend) => {
-
         return (
           <button
             key={friend.chatId}
