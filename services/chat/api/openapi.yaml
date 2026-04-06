@@ -56,6 +56,17 @@ components:
           format: uuid
         senderId:
           type: integer
+    ReadReceipt:
+      type: object
+      required: [chatId, userId, messageId]
+      properties:
+        chatId:
+          type: string
+          format: uuid
+        userId:
+          type: integer
+        messageId:
+          type: integer
     FriendList:
       type: array
       items:
@@ -77,7 +88,7 @@ components:
       properties:
         type:
           type: string
-          enum: [NEW_MESSAGE, USER_TYPING, USER_STATUS]
+          enum: [NEW_MESSAGE, USER_TYPING, USER_STATUS, USER_READ]
           description: "The type of event being sent down the stream"
         payload:
           type: object
@@ -86,6 +97,7 @@ components:
           oneOf:
             - $ref: "#/components/schemas/ChatMessage"
             - $ref: "#/components/schemas/TypingIndicator"
+            - $ref: "#/components/schemas/ReadReceipt"
             # You can add other schemas here later, like USER_STATUS
 
 paths:
@@ -338,3 +350,37 @@ paths:
           description: Typing broadcast triggered successfully
         "400":
           description: Invalid user IDs or form data
+
+  /message/read/{chatId}/{tempUserId}:
+    patch:
+      tags:
+        - Message
+      summary: Update the last read message for a user in a chat
+      operationId: updateReadReceipt
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tempUserId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [messageId]
+              properties:
+                messageId:
+                  type: integer
+      responses:
+        "204":
+          description: Read receipt updated successfully
+        "400":
+          description: Invalid input

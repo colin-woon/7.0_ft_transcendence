@@ -200,3 +200,20 @@ func (q *Queries) GetUserInbox(ctx context.Context, userID int32) ([]GetUserInbo
 	}
 	return items, nil
 }
+
+const updateLastReadMessageID = `-- name: UpdateLastReadMessageID :exec
+UPDATE chat_service.room_members
+SET last_read_message_id = GREATEST(COALESCE(last_read_message_id, 0), $1)
+WHERE chat_id = $2 AND user_id = $3
+`
+
+type UpdateLastReadMessageIDParams struct {
+	LastReadMessageID sql.NullInt64 `json:"lastReadMessageId"`
+	ChatID            uuid.UUID     `json:"chatId"`
+	UserID            int32         `json:"userId"`
+}
+
+func (q *Queries) UpdateLastReadMessageID(ctx context.Context, arg UpdateLastReadMessageIDParams) error {
+	_, err := q.db.ExecContext(ctx, updateLastReadMessageID, arg.LastReadMessageID, arg.ChatID, arg.UserID)
+	return err
+}

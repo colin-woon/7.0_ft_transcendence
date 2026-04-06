@@ -49,3 +49,8 @@ SELECT
     'member'
 FROM unnest($3::int[]) AS u_id
 WHERE u_id <> $2::int;
+
+-- name: UpdateLastReadMessageID :exec
+UPDATE chat_service.room_members
+SET last_read_message_id = GREATEST(COALESCE(last_read_message_id, 0), $1)
+WHERE chat_id = $2 AND user_id = $3;

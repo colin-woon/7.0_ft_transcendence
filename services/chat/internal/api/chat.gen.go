@@ -42,6 +42,7 @@ func (e ChatRoomType) Valid() bool {
 // Defines values for StreamEventType.
 const (
 	NEWMESSAGE StreamEventType = "NEW_MESSAGE"
+	USERREAD   StreamEventType = "USER_READ"
 	USERSTATUS StreamEventType = "USER_STATUS"
 	USERTYPING StreamEventType = "USER_TYPING"
 )
@@ -50,6 +51,8 @@ const (
 func (e StreamEventType) Valid() bool {
 	switch e {
 	case NEWMESSAGE:
+		return true
+	case USERREAD:
 		return true
 	case USERSTATUS:
 		return true
@@ -120,6 +123,13 @@ type FriendList = []struct {
 	FriendId *int `json:"friendId,omitempty"`
 }
 
+// ReadReceipt defines model for ReadReceipt.
+type ReadReceipt struct {
+	ChatId    openapi_types.UUID `json:"chatId"`
+	MessageId int                `json:"messageId"`
+	UserId    int                `json:"userId"`
+}
+
 // StreamEvent defines model for StreamEvent.
 type StreamEvent struct {
 	// Payload The actual data, structure depends on the event type
@@ -160,6 +170,11 @@ type CreateGroupChatJSONBody struct {
 	Name string `json:"name"`
 }
 
+// UpdateReadReceiptJSONBody defines parameters for UpdateReadReceipt.
+type UpdateReadReceiptJSONBody struct {
+	MessageId int `json:"messageId"`
+}
+
 // SendMessageJSONBody defines parameters for SendMessage.
 type SendMessageJSONBody struct {
 	Content string `json:"content"`
@@ -167,6 +182,9 @@ type SendMessageJSONBody struct {
 
 // CreateGroupChatJSONRequestBody defines body for CreateGroupChat for application/json ContentType.
 type CreateGroupChatJSONRequestBody CreateGroupChatJSONBody
+
+// UpdateReadReceiptJSONRequestBody defines body for UpdateReadReceipt for application/json ContentType.
+type UpdateReadReceiptJSONRequestBody UpdateReadReceiptJSONBody
 
 // SendMessageJSONRequestBody defines body for SendMessage for application/json ContentType.
 type SendMessageJSONRequestBody SendMessageJSONBody
@@ -223,6 +241,32 @@ func (t *StreamEvent_Payload) MergeTypingIndicator(v TypingIndicator) error {
 	return err
 }
 
+// AsReadReceipt returns the union data inside the StreamEvent_Payload as a ReadReceipt
+func (t StreamEvent_Payload) AsReadReceipt() (ReadReceipt, error) {
+	var body ReadReceipt
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromReadReceipt overwrites any union data inside the StreamEvent_Payload as the provided ReadReceipt
+func (t *StreamEvent_Payload) FromReadReceipt(v ReadReceipt) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeReadReceipt performs a merge with any union data inside the StreamEvent_Payload, using the provided ReadReceipt
+func (t *StreamEvent_Payload) MergeReadReceipt(v ReadReceipt) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t StreamEvent_Payload) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
@@ -253,6 +297,9 @@ type ServerInterface interface {
 	// Get all chats (direct and group) for a user's inbox
 	// (GET /message/inbox/{tempUserId})
 	GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId int)
+	// Update the last read message for a user in a chat
+	// (PATCH /message/read/{chatId}/{tempUserId})
+	UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempUserId int)
 	// Opens an SSE connection for real-time chat message updates
 	// (GET /message/stream/{tempUserId})
 	GetMessageStream(w http.ResponseWriter, r *http.Request, tempUserId int)
@@ -301,6 +348,12 @@ func (_ Unimplemented) GetMessageHistory(w http.ResponseWriter, r *http.Request,
 // Get all chats (direct and group) for a user's inbox
 // (GET /message/inbox/{tempUserId})
 func (_ Unimplemented) GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update the last read message for a user in a chat
+// (PATCH /message/read/{chatId}/{tempUserId})
+func (_ Unimplemented) UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempUserId int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -508,6 +561,40 @@ func (siw *ServerInterfaceWrapper) GetUserInbox(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetUserInbox(w, r, tempUserId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateReadReceipt operation middleware
+func (siw *ServerInterfaceWrapper) UpdateReadReceipt(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "chatId" -------------
+	var chatId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "chatId", chi.URLParam(r, "chatId"), &chatId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "chatId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tempUserId" -------------
+	var tempUserId int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tempUserId", chi.URLParam(r, "tempUserId"), &tempUserId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateReadReceipt(w, r, chatId, tempUserId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -742,6 +829,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/message/inbox/{tempUserId}", wrapper.GetUserInbox)
 	})
 	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/message/read/{chatId}/{tempUserId}", wrapper.UpdateReadReceipt)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/message/stream/{tempUserId}", wrapper.GetMessageStream)
 	})
 	r.Group(func(r chi.Router) {
@@ -757,33 +847,35 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"/q0Mhb4FppoK/HbxRwAAAP//LnGX4dwdAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
