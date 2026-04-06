@@ -17,10 +17,14 @@ export default async function ProjectsPage({ searchParams }: ProjectsRouteProps)
   const q = Array.isArray(qRaw) ? qRaw[0] : qRaw;
   const searchQuery = (q ?? '').trim();
 
-  const [projects, subscribedProjects] = await Promise.all([
+  const [projectsResult, subscribedProjectsResult] = await Promise.allSettled([
     searchQuery.length >= 2 ? searchProjects(searchQuery) : getAllProjects(),
     getMySubscribedProjects(),
   ]);
+
+  const projects = projectsResult.status === 'fulfilled' ? projectsResult.value : [];
+  const subscribedProjects =
+    subscribedProjectsResult.status === 'fulfilled' ? subscribedProjectsResult.value : [];
 
   return (
     <ProjectsGridPage
