@@ -72,3 +72,53 @@ export const useFriendList = () => {
         error: useStore(store, (s) => s.friendsError),
     };
 };
+
+export const useCreateGroupChatAction = () => {
+    const { allFriendships, tempCurrentUserId } = useFriendList();
+    
+    const [groupName, setGroupName] = useState('');
+    const [selectedFriendIds, setSelectedFriendIds] = useState<FriendId[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const toggleFriendId = (friendId: FriendId) => {
+        setSelectedFriendIds(prev => 
+            prev.includes(friendId)
+                ? prev.filter(id => id !== friendId)
+                : [...prev, friendId]
+        );
+    };
+
+    const resetForm = () => {
+        setGroupName('');
+        setSelectedFriendIds([]);
+    };
+
+    const submitGroupChat = async (onSuccess: () => void) => {
+        if (!tempCurrentUserId || !groupName.trim() || selectedFriendIds.length === 0) return;
+        
+        try {
+            setIsSubmitting(true);
+            await createGroupChat(tempCurrentUserId, {
+                name: groupName,
+                memberIds: selectedFriendIds
+            });
+            resetForm();
+            onSuccess();
+        } catch (error) {
+            console.error("Failed to create group chat", error);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return {
+        groupName,
+        setGroupName,
+        selectedFriendIds,
+        toggleFriendId,
+        isSubmitting,
+        submitGroupChat,
+        resetForm,
+        allFriendships
+    };
+};

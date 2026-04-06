@@ -1,7 +1,6 @@
 'use client';
-import { useRef, useState } from 'react';
-import { useFriendList } from '../models';
-import { createGroupChat } from '../api/chat-services';
+import { useRef } from 'react';
+import { useCreateGroupChatAction } from '../models';
 import type { FriendId } from '../models/chat-types';
 
 const FALLBACK_AVATAR_URL = 'https://img.daisyui.com/images/profile/demo/yellingcat@192.webp';
@@ -9,51 +8,27 @@ const FALLBACK_AVATAR_URL = 'https://img.daisyui.com/images/profile/demo/yelling
 export function CreateGroupChatButton() {
     const dialogRef = useRef<HTMLDialogElement>(null);
     
-    // Step 2: Fetch friends & user ID
-    const { allFriendships, tempCurrentUserId } = useFriendList();
-    
-    // Step 3: Add Form State
-    const [groupName, setGroupName] = useState('');
-    const [selectedFriendIds, setSelectedFriendIds] = useState<FriendId[]>([]);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    // Toggle checkbox selection
-    const handleCheckboxChange = (friendId: FriendId) => {
-        setSelectedFriendIds(prev => 
-            prev.includes(friendId)
-                ? prev.filter(id => id !== friendId)
-                : [...prev, friendId]
-        );
-    };
-
-    // Step 6: Handle Group Creation
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        
-        if (!tempCurrentUserId || !groupName.trim() || selectedFriendIds.length === 0) return;
-        
-        try {
-            setIsSubmitting(true);
-            await createGroupChat(tempCurrentUserId, {
-                name: groupName,
-                memberIds: selectedFriendIds
-            });
-            
-            // Reset and close on success
-            setGroupName('');
-            setSelectedFriendIds([]);
-            dialogRef.current?.close();
-        } catch (error) {
-            console.error("Failed to create group chat", error);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+    const {
+        groupName,
+        setGroupName,
+        selectedFriendIds,
+        toggleFriendId,
+        isSubmitting,
+        submitGroupChat,
+        resetForm,
+        allFriendships
+    } = useCreateGroupChatAction();
 
     const handleCloseModal = () => {
         dialogRef.current?.close();
-        setGroupName('');
-        setSelectedFriendIds([]);
+        resetForm();
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await submitGroupChat(() => {
+            dialogRef.current?.close();
+        });
     };
 
     return (
@@ -79,7 +54,7 @@ export function CreateGroupChatButton() {
                             />
                         </label>
 
-                        {/* Step 4 & 5: Render Friend List with neat flex alignment */}
+                        {/* Render Friend List with neat flex alignment */}
                         <div className="label pb-0">
                             <span className="label-text font-medium">Select Friends</span>
                         </div>
@@ -101,7 +76,7 @@ export function CreateGroupChatButton() {
                                             type="checkbox" 
                                             className="checkbox checkbox-secondary" 
                                             checked={selectedFriendIds.includes(friend.friendId)}
-                                            onChange={() => handleCheckboxChange(friend.friendId)}
+                                            onChange={() => toggleFriendId(friend.friendId)}
                                         />
                                     </div>
                                 ))
