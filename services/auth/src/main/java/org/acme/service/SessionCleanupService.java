@@ -25,14 +25,10 @@ public class SessionCleanupService {
 	@Scheduled(cron = "0 0 * * * ?")
 	@Transactional
 	public void cleanupExpiredSessions() {
-		LOG.info("Starting scheduled session cleanup");
-		
 		long deletedCount = sessionRepository.delete("expiresAt < ?1", Instant.now());
 		
 		if (deletedCount > 0) {
 			LOG.info("Cleaned up " + deletedCount + " expired sessions");
-		} else {
-			LOG.debug("No expired sessions to clean up");
 		}
 	}
 

@@ -30,6 +30,7 @@ CREATE TABLE auth_service.users (
     email VARCHAR(255) UNIQUE NOT NULL,
     intra_id VARCHAR(50) UNIQUE, -- For 42 OAuth
     google_id VARCHAR(255) UNIQUE, -- For Google OAuth
+    password_hash TEXT,
     
     -- Profile Data
     username VARCHAR(50) UNIQUE NOT NULL, -- Display name (could be 42 login)
