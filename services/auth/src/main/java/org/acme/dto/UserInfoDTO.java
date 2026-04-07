@@ -61,7 +61,7 @@ public class UserInfoDTO {
 		this.createdAt = user.createdAt;
 		this.linkedWithGoogle = user.googleId != null;
 		this.linkedWithIntra = user.intraId != null;
-		this.hasPassword = user.passwordHash != null;
+		this.hasPassword = user.passwordHash != null && !user.passwordHash.isBlank();
 		this.intraInfo = intraInfo;
 	}
 }
