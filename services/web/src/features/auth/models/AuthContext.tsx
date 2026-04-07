@@ -5,6 +5,9 @@ import {
   authService,
   type AdminUpdatePayload,
   type CreateUserPayload,
+  type PasswordChangePayload,
+  type PasswordLoginPayload,
+  type PasswordRegisterPayload,
   type SessionInfo,
   type User,
   type UserSummary,
@@ -18,6 +21,9 @@ interface AuthState {
   isAuthenticated: boolean
   error: string | null
   login: (provider: 'google' | '42') => void
+  loginWithPassword: (payload: PasswordLoginPayload) => Promise<User>
+  registerWithPassword: (payload: PasswordRegisterPayload) => Promise<User>
+  updatePassword: (payload: PasswordChangePayload) => Promise<User>
   handleOAuthCallback: () => Promise<User | null>
   logout: () => Promise<void>
   terminateSession: (sessionId: string) => Promise<boolean>
@@ -70,6 +76,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = (provider: 'google' | '42') => {
     setError(null)
     authService.loginWithProvider(provider)
+  }
+
+  const loginWithPassword = async (payload: PasswordLoginPayload): Promise<User> => {
+    const response = await authService.loginWithPassword(payload)
+    updateAuthState(response.user, response.accessToken)
+    setError(null)
+    return response.user
+  }
+
+  const registerWithPassword = async (payload: PasswordRegisterPayload): Promise<User> => {
+    const response = await authService.registerWithPassword(payload)
+    updateAuthState(response.user, response.accessToken)
+    setError(null)
+    return response.user
+  }
+
+  const updatePassword = async (payload: PasswordChangePayload): Promise<User> => {
+    const updated = await authService.updatePassword(payload)
+    if (user?.id === updated.id) {
+      setUser(updated)
+    }
+    setError(null)
+    return updated
   }
 
   const handleOAuthCallback = async (): Promise<User | null> => {
@@ -220,6 +249,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user && !!accessToken,
         error,
         login,
+        loginWithPassword,
+        registerWithPassword,
+        updatePassword,
         handleOAuthCallback,
         logout,
         terminateSession,
