@@ -9,12 +9,9 @@ import org.acme.dto.PasswordRegisterDTO;
 import org.acme.model.User;
 import org.acme.model.UserRole;
 import org.acme.repository.UserRepository;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.hibernate.Hibernate;
 import org.jboss.logging.Logger;
 
-import de.mkammerer.argon2.Argon2;
-import de.mkammerer.argon2.Argon2Factory;
 import io.quarkus.oidc.UserInfo;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -32,14 +29,8 @@ public class UserService {
 	@Inject
 	IntraService intraService;
 
-	@ConfigProperty(name = "auth.password.argon2.iterations", defaultValue = "3")
-	int argon2Iterations;
-
-	@ConfigProperty(name = "auth.password.argon2.memory-kb", defaultValue = "65536")
-	int argon2MemoryKb;
-
-	@ConfigProperty(name = "auth.password.argon2.parallelism", defaultValue = "1")
-	int argon2Parallelism;
+	@Inject
+	PasswordService passwordService;
 
 	@Transactional
 	public User syncUser(UserInfo info, String tenantId) {
@@ -269,22 +260,10 @@ public class UserService {
 	}
 
 	private String hashPassword(String password) {
-		Argon2 argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id);
-		char[] passwordChars = password.toCharArray();
-		try {
-			return argon2.hash(argon2Iterations, argon2MemoryKb, argon2Parallelism, passwordChars);
-		} finally {
-			argon2.wipeArray(passwordChars);
-		}
+		return passwordService.hash(password);
 	}
 
 	private boolean verifyPassword(String rawPassword, String storedHash) {
-		Argon2 argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id);
-		char[] passwordChars = rawPassword.toCharArray();
-		try {
-			return argon2.verify(storedHash, passwordChars);
-		} finally {
-			argon2.wipeArray(passwordChars);
-		}
+		return passwordService.verify(rawPassword, storedHash);
 	}
 }
