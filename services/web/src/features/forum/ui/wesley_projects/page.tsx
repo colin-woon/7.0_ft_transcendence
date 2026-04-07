@@ -1,5 +1,9 @@
 import ProjectsPage from "./ProjectsGridPage";
-import { getAllProjects, searchProjects } from "../../api/project";
+import {
+  getAllProjects,
+  getMySubscribedProjects,
+  searchProjects,
+} from "../../api/project";
 
 interface ProjectsRouteProps {
   searchParams?: Promise<{
@@ -13,9 +17,16 @@ export default async function ProjectsRoute({ searchParams }: ProjectsRouteProps
   const q = Array.isArray(qRaw) ? qRaw[0] : qRaw;
   const searchQuery = (q ?? '').trim();
 
-  const projects = searchQuery.length >= 2
-    ? await searchProjects(searchQuery)
-    : await getAllProjects();
+  const [projects, subscribedProjects] = await Promise.all([
+    searchQuery.length >= 2 ? searchProjects(searchQuery) : getAllProjects(),
+    getMySubscribedProjects(),
+  ]);
 
-  return <ProjectsPage projects={projects} initialSearch={searchQuery} />;
+  return (
+    <ProjectsPage
+      projects={projects}
+      subscribedProjectIds={subscribedProjects.map((project) => project.id)}
+      initialSearch={searchQuery}
+    />
+  );
 }

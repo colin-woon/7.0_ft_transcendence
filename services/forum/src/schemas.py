@@ -15,8 +15,20 @@ class ProjectCreate(BaseModel):
     solo: bool = True
     estimate_time: Optional[str] = None
     difficulty: Optional[str] = None
+    xp: int = 0
     description: Optional[str] = None
     post_count: int = 0
+
+
+class ProjectUpdate(BaseModel):
+    slug: Optional[str] = None
+    name: Optional[str] = None
+    objectives: Optional[List[str]] = None
+    solo: Optional[bool] = None
+    estimate_time: Optional[str] = None
+    difficulty: Optional[str] = None
+    xp: Optional[int] = None
+    description: Optional[str] = None
 
 
 class ProjectResponse(ProjectCreate):
@@ -32,10 +44,38 @@ class ProjectListPage(BaseModel):
     page_size: int
     total_pages: int
 
+
+class ProjectSubscriptionResponse(BaseModel):
+    project_id: int
+    user_id: int
+    subscribed_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ActionResponse(BaseModel):
+    message: str
+
+
+class ProjectSubscriptionStatusResponse(BaseModel):
+    project_id: int
+    subscribed: bool
+
+
+class ProjectSubscriberCountResponse(BaseModel):
+    project_id: int
+    subscriber_count: int
+
 # --- POSTS ---
 class PostCreate(BaseModel):
     title: str
     content: str
+
+
+class PostUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
 
 class PostSummary(BaseModel):
     id: int
@@ -55,6 +95,10 @@ class PostDetail(PostSummary):
 # --- Comments ---
 class CommentCreate(BaseModel):
     content: str
+
+
+class CommentUpdate(BaseModel):
+    content: Optional[str] = None
 
 class CommentResponse(BaseModel):
     id: int

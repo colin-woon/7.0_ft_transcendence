@@ -4,6 +4,7 @@ export interface ForumPost {
   id: number;
   title: string;
   author: string;
+  authorId?: number;
   avatar: string;
   replies: number;
   views: number;

@@ -6,6 +6,9 @@ import { ArrowLeft, Plus, Search } from "lucide-react";
 import type { Project } from "../../models/projects";
 import PostVoteButtons from '../wesley_posts/components/PostVoteButtons';
 import ProjectCard from "./ProjectCard";
+import SubscriptionButton from './SubscriptionButton';
+import { deleteForumPost } from '@/features/forum/api/moderation';
+import { PostModerationControls } from '@/features/forum/ui/moderation';
 
 const sortOptions = ["New", "Top"];
 
@@ -16,6 +19,8 @@ export default function ProjectForumPage({ project }: { project: Project }) {
   const activeSort = searchParams.get('sort') === 'New' ? 'New' : 'Top';
   const [viewMode, setViewMode] = useState<"card" | "compact">("card");
   const [postSearch, setPostSearch] = useState("");
+  const [projectPosts, setProjectPosts] = useState(project.posts);
+  const [isBusy, setIsBusy] = useState(false);
 
   const handleSortChange = (sort: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -27,16 +32,28 @@ export default function ProjectForumPage({ project }: { project: Project }) {
     const normalizedSearch = postSearch.trim().toLowerCase();
 
     if (normalizedSearch.length === 0) {
-      return project.posts;
+      return projectPosts;
     }
 
-    return project.posts.filter((post) => {
+    return projectPosts.filter((post) => {
       const titleMatch = post.title.toLowerCase().includes(normalizedSearch);
       const previewMatch = post.preview.toLowerCase().includes(normalizedSearch);
       const authorMatch = post.author.toLowerCase().includes(normalizedSearch);
       return titleMatch || previewMatch || authorMatch;
     });
-  }, [project.posts, postSearch]);
+  }, [projectPosts, postSearch]);
+
+  const handleDeletePost = async (postId: number) => {
+    setIsBusy(true);
+    try {
+      await deleteForumPost(postId);
+      setProjectPosts((prev) => prev.filter((post) => post.id !== postId));
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Failed to delete post');
+    } finally {
+      setIsBusy(false);
+    }
+  };
 
   return (
       <div className="min-h-screen bg-[#f9f9f9]">
@@ -55,6 +72,10 @@ export default function ProjectForumPage({ project }: { project: Project }) {
 
           {/* ── Project description card ── */}
           <ProjectCard project={project} />
+
+          <div className="flex justify-end">
+            <SubscriptionButton projectId={project.id} />
+          </div>
 
           {/* ── Forum section ── */}
           <div>
@@ -147,6 +168,13 @@ export default function ProjectForumPage({ project }: { project: Project }) {
                               </span>
                             )}
                             <span className="text-xs text-gray-500">{post.category}</span>
+                            <div className="ml-auto">
+                              <PostModerationControls
+                                authorId={post.authorId}
+                                isBusy={isBusy}
+                                onDelete={() => handleDeletePost(post.id)}
+                              />
+                            </div>
                           </div>
 
                           <Link href={`/posts/${post.id}`} className="block group">

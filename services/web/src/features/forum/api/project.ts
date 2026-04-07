@@ -1,11 +1,48 @@
+import { cookies } from 'next/headers';
 import type { ForumApiPostSummary, ForumApiProjectSummary, ForumPost, ForumApiPostDetail, ForumPostDetail, ForumApiComment, ForumComment } from '../models';
 import type { Project, ForumPost as ProjectForumPost } from '../models/projects';
 import type { ForumSort } from '../models';
-import { cache } from 'react'
 
-const FORUM_SERVICE_URL = 'http://forum-service:8080';
-const API_BASE_URL = FORUM_SERVICE_URL;
-//TODO: gateway-service:8080/api/forum/projects
+function getForumApiBaseUrl(): string {
+  const isDev = process.env.NODE_ENV === 'development';
+  const devGateway = process.env.DEV_GATEWAY_URL?.trim() || 'http://gateway-service:8080';
+
+  let raw =
+    process.env.GATEWAY_URL?.trim() ||
+    process.env.NEXT_PUBLIC_GATEWAY_URL?.trim() ||
+    process.env.NEXT_PUBLIC_API_URL?.trim() ||
+    'http://localhost:8001';
+
+  // In Docker dev, gateway serves HTTP on 8080 while production uses HTTPS 8443.
+  if (isDev && raw === 'https://gateway-service:8443') {
+    raw = devGateway;
+  }
+
+  const normalized = raw.endsWith('/') ? raw.slice(0, -1) : raw;
+  return `${normalized}/api/forum`;
+}
+
+async function getCookieHeader(): Promise<string> {
+  const cookieStore = await cookies();
+  return cookieStore
+    .getAll()
+    .map(({ name, value }) => `${name}=${value}`)
+    .join('; ');
+}
+
+async function forumFetch(path: string, init: RequestInit): Promise<Response> {
+  const cookieHeader = await getCookieHeader();
+  const headers = new Headers(init.headers);
+
+  if (cookieHeader && !headers.has('Cookie')) {
+    headers.set('Cookie', cookieHeader);
+  }
+
+  return fetch(`${getForumApiBaseUrl()}${path}`, {
+    ...init,
+    headers,
+  });
+}
 export interface ForumApiProjectListPage {
   items: ForumApiProjectSummary[];
   total_pages: number;
@@ -30,6 +67,7 @@ export function mapApiPostToForumPost(post: ForumApiPostSummary, projectName?: s
     id: post.id,
     title: post.title,
     author: `user_${post.author_id}`,
+    authorId: post.author_id,
     avatar: '',
     comments: post.comment_count,
     views: post.view_count,
@@ -40,15 +78,22 @@ export function mapApiPostToForumPost(post: ForumApiPostSummary, projectName?: s
   };
 }
 
-function calculateDifficulty(difficultyXp?: number | string): "Beginner" | "Intermediate" | "Advanced" {
-  if (!difficultyXp)
+function calculateDifficulty(difficultyOrXp?: number | string): "Beginner" | "Intermediate" | "Advanced" {
+  if (typeof difficultyOrXp === 'string') {
+    const normalized = difficultyOrXp.trim().toLowerCase();
+    if (normalized === 'beginner') return 'Beginner';
+    if (normalized === 'intermediate') return 'Intermediate';
+    if (normalized === 'advanced' || normalized === 'expert') return 'Advanced';
+  }
+
+  if (!difficultyOrXp)
     return "Beginner";
 
   let numericXp: number;
-  if (typeof difficultyXp === 'string') {
-    numericXp = parseFloat(difficultyXp);
+  if (typeof difficultyOrXp === 'string') {
+    numericXp = parseFloat(difficultyOrXp);
   } else {
-    numericXp = difficultyXp;
+    numericXp = difficultyOrXp;
   }
 
   if (isNaN(numericXp))
@@ -69,14 +114,16 @@ function getTeamSize(soloStr: boolean): "Solo" | "Team"{
 }
 
 function mapApiProjectToProject(apiProj: any): Project {
+  const projectXp = typeof apiProj.xp === 'number' ? apiProj.xp : Number.parseInt(String(apiProj.xp ?? 0), 10) || 0;
+
   return {
     id: apiProj.id,
     name: apiProj.name,
     slug: apiProj.slug || apiProj.name.toLowerCase().replace(/\s+/g, '-'),
     description: apiProj.description || 'No description provided for this project.',
     // icon: apiProj.icon || "📚",
-    difficulty: calculateDifficulty(apiProj.difficulty),
-    xp: apiProj.difficulty || 0,
+    difficulty: calculateDifficulty(apiProj.difficulty || projectXp),
+    xp: projectXp,
     duration: apiProj.estimate_time || "~1 week",
     teamSize: getTeamSize(Boolean(apiProj.solo)),
     tags: apiProj.objectives || ["42"],
@@ -88,20 +135,17 @@ function mapApiProjectToProject(apiProj: any): Project {
 
 
 // base function to fetch all projects from API, utilizes Next.js cache
-export const getCachedApiProjects = cache(async (): Promise<ForumApiProjectSummary[]> => {
+export async function getCachedApiProjects(): Promise<ForumApiProjectSummary[]> {
   const pageSize = 100;
   let allApiProjects: ForumApiProjectSummary[] = [];
 
-  const firstPageRes = await fetch(
-    `${API_BASE_URL}/projects?page=1&page_size=${pageSize}`,
-    {
-        cache: 'force-cache',
-        next: { 
-            revalidate: 300, //secs
-            tags: ['projects'] // TODO: utilize tag for on-demand invalidation in future
-      },
-    }
-  );
+  const firstPageRes = await forumFetch(`/projects?page=1&page_size=${pageSize}`, {
+    cache: 'force-cache',
+    next: {
+      revalidate: 300, //secs
+      tags: ['projects'] // TODO: utilize tag for on-demand invalidation in future
+    },
+  });
 
   if (!firstPageRes.ok) {
     throw new Error(`Failed to fetch projects: ${firstPageRes.statusText}`);
@@ -117,7 +161,7 @@ export const getCachedApiProjects = cache(async (): Promise<ForumApiProjectSumma
 
     const responses = await Promise.all(
       pagesToFetch.map((page) =>
-        fetch(`${API_BASE_URL}/projects?page=${page}&page_size=${pageSize}`, {
+        forumFetch(`/projects?page=${page}&page_size=${pageSize}`, {
             cache: 'force-cache',
             next:{
                 revalidate: 300,
@@ -140,7 +184,7 @@ export const getCachedApiProjects = cache(async (): Promise<ForumApiProjectSumma
   }
 
   return allApiProjects;
-});
+}
 
 export async function getAllProjects(): Promise<Project[]> {
   const apiProjects = await getCachedApiProjects();
@@ -155,8 +199,8 @@ export async function searchProjects(searchQuery: string): Promise<Project[]> {
     return getAllProjects();
   }
 
-  const response = await fetch(
-    `${API_BASE_URL}/search/projects?search_query=${encodeURIComponent(trimmedQuery)}`,
+  const response = await forumFetch(
+    `/search/projects?search_query=${encodeURIComponent(trimmedQuery)}`,
     {
       method: 'GET',
       cache: 'no-store',
@@ -171,14 +215,44 @@ export async function searchProjects(searchQuery: string): Promise<Project[]> {
   return projectsData.map(mapApiProjectToProject);
 }
 
+export async function getMySubscribedProjects(): Promise<Project[]> {
+  const response = await forumFetch('/projects/me/subscriptions', {
+    method: 'GET',
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch subscribed projects.');
+  }
+
+  const projectsData = (await response.json()) as any[];
+  return projectsData.map(mapApiProjectToProject);
+}
+
+export async function searchMySubscribedProjects(searchQuery: string): Promise<Project[]> {
+  const trimmedQuery = searchQuery.trim().toLowerCase();
+  const subscribedProjects = await getMySubscribedProjects();
+
+  if (trimmedQuery.length < 2) {
+    return subscribedProjects;
+  }
+
+  return subscribedProjects.filter((project) => {
+    const nameMatch = project.name.toLowerCase().includes(trimmedQuery);
+    const slugMatch = project.slug.toLowerCase().includes(trimmedQuery);
+    const descMatch = project.description.toLowerCase().includes(trimmedQuery);
+    return nameMatch || slugMatch || descMatch;
+  });
+}
+
 // fetches all projects and maps them id:name, utilizes nextjs cache
-export const getProjectsByIdMap = cache(async (): Promise<Map<number, string>> => {
+export async function getProjectsByIdMap(): Promise<Map<number, string>> {
   const apiProjects = await getCachedApiProjects();
   const projectsById = new Map<number, string>();
   
   apiProjects.forEach((p) => projectsById.set(p.id, p.name));
   return projectsById;
-});
+}
 
 export async function getProjectPosts(projectId: number): Promise<ForumPost[]> {
   return getProjectPostsBySort(projectId, 'Top');
@@ -190,11 +264,11 @@ export async function getProjectPostsBySort(projectId: number, sort: ForumSort):
     : `/projects/${projectId}/posts/top`;
 
   const [postsResponse, projectResponse] = await Promise.all([
-    fetch(`${API_BASE_URL}${postsPath}`, {
+    forumFetch(postsPath, {
       method: 'GET',
       cache: 'no-store',
     }),
-    fetch(`${API_BASE_URL}/projects/${projectId}`, {
+    forumFetch(`/projects/${projectId}`, {
       method: 'GET',
       cache: 'no-store',
     }),
@@ -221,16 +295,28 @@ export async function getProjectDetails(projectId: number): Promise<Project | un
 }
 
 export async function getProjectDetailsBySort(projectId: number, sort: ForumSort): Promise<Project | undefined> {
-  const allProjects = await getAllProjects();
-  const project = allProjects.find((p) => p.id === projectId);
-  
-  if (!project) return undefined;
+  const projectResponse = await forumFetch(`/projects/${projectId}`, {
+    method: 'GET',
+    cache: 'no-store',
+  });
+
+  if (projectResponse.status === 404) {
+    return undefined;
+  }
+
+  if (!projectResponse.ok) {
+    throw new Error(`Failed to fetch project details for project ${projectId}`);
+  }
+
+  const projectData = (await projectResponse.json()) as ForumApiProjectSummary;
+  const project = mapApiProjectToProject(projectData);
 
   try {
     const posts = (await getProjectPostsBySort(projectId, sort)).map((post): ProjectForumPost => ({
       id: post.id,
       title: post.title,
       author: post.author,
+      authorId: post.authorId,
       avatar: post.avatar,
       replies: post.comments,
       views: post.views,
