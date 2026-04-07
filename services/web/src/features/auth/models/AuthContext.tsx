@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
 import {
   authService,
   type AdminUpdatePayload,
@@ -49,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const restoreRequestRef = useRef(0)
 
   const updateAuthState = (nextUser: User | null, token: string | null) => {
     setUser(nextUser)
@@ -57,16 +58,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const restoreSession = async () => {
+      const restoreRequestId = ++restoreRequestRef.current
       try {
         const response = await authService.refreshAccessToken()
-        updateAuthState(response.user, response.accessToken)
-        setError(null)
+        if (restoreRequestRef.current === restoreRequestId) {
+          updateAuthState(response.user, response.accessToken)
+          setError(null)
+        }
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Failed to restore session'
-        updateAuthState(null, null)
-        setError(msg)
+        if (restoreRequestRef.current === restoreRequestId) {
+          const msg = err instanceof Error ? err.message : 'Failed to restore session'
+          updateAuthState(null, null)
+          setError(msg)
+        }
       } finally {
-        setIsLoading(false)
+        if (restoreRequestRef.current === restoreRequestId) {
+          setIsLoading(false)
+        }
       }
     }
 
@@ -80,14 +88,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithPassword = async (payload: PasswordLoginPayload): Promise<User> => {
     const response = await authService.loginWithPassword(payload)
+    restoreRequestRef.current += 1
     updateAuthState(response.user, response.accessToken)
+    setIsLoading(false)
     setError(null)
     return response.user
   }
 
   const registerWithPassword = async (payload: PasswordRegisterPayload): Promise<User> => {
     const response = await authService.registerWithPassword(payload)
+    restoreRequestRef.current += 1
     updateAuthState(response.user, response.accessToken)
+    setIsLoading(false)
     setError(null)
     return response.user
   }

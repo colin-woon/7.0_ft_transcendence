@@ -110,6 +110,7 @@ export default function LoginPage() {
                 <input
                   type="email"
                   autoComplete="email"
+                  aria-label="Email"
                   placeholder="Email"
                   value={values.email}
                   onChange={(event) => handleChange('email', event.target.value)}
@@ -122,6 +123,7 @@ export default function LoginPage() {
                 <input
                   type="password"
                   autoComplete="current-password"
+                  aria-label="Password"
                   placeholder="Password"
                   value={values.password}
                   onChange={(event) => handleChange('password', event.target.value)}

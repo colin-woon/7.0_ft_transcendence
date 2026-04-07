@@ -21,7 +21,7 @@ public class PasswordRegisterDTO {
 	@Size(min = 1, max = 100, message = "Full name must be between 1 and 100 characters")
 	public String fullName;
 
-	@Pattern(regexp = "^(https?://)?.*", message = "Avatar URL must be a valid URL")
+	@Pattern(regexp = "^(https?://\\S+)?$", message = "Avatar URL must be a valid URL")
 	@Size(max = 500, message = "Avatar URL must not exceed 500 characters")
 	public String avatarUrl;
 

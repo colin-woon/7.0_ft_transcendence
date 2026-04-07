@@ -73,7 +73,11 @@ export default function RegisterPage({ initialEmail = '' }: RegisterPageProps) {
       router.push('/profile')
     } catch (error) {
       if (error instanceof AuthApiError && error.status === 409) {
-        setFormError('Account already exists. Please login instead.')
+        if (error.message.toLowerCase().includes('username')) {
+          setFormError('That username is already taken. Please choose a different username.')
+        } else {
+          setFormError('An account with this email already exists. If it was created with Google/42, sign in with that provider first.')
+        }
       } else {
         setFormError(error instanceof Error ? error.message : 'Registration failed')
       }
@@ -99,6 +103,7 @@ export default function RegisterPage({ initialEmail = '' }: RegisterPageProps) {
                 <input
                   type="email"
                   autoComplete="email"
+                  aria-label="Email"
                   placeholder="Email"
                   value={values.email}
                   onChange={(event) => handleChange('email', event.target.value)}
@@ -111,6 +116,7 @@ export default function RegisterPage({ initialEmail = '' }: RegisterPageProps) {
                 <input
                   type="text"
                   autoComplete="username"
+                  aria-label="Username"
                   placeholder="Username"
                   value={values.username}
                   onChange={(event) => handleChange('username', event.target.value)}
@@ -123,6 +129,7 @@ export default function RegisterPage({ initialEmail = '' }: RegisterPageProps) {
                 <input
                   type="text"
                   autoComplete="name"
+                  aria-label="Full name"
                   placeholder="Full name"
                   value={values.fullName}
                   onChange={(event) => handleChange('fullName', event.target.value)}
@@ -134,6 +141,7 @@ export default function RegisterPage({ initialEmail = '' }: RegisterPageProps) {
               <div className="sm:col-span-2">
                 <input
                   type="url"
+                  aria-label="Avatar URL (optional)"
                   placeholder="Avatar URL (optional)"
                   value={values.avatarUrl ?? ''}
                   onChange={(event) => handleChange('avatarUrl', event.target.value)}
@@ -144,6 +152,7 @@ export default function RegisterPage({ initialEmail = '' }: RegisterPageProps) {
 
               <div className="sm:col-span-2">
                 <textarea
+                  aria-label="Bio (optional)"
                   placeholder="Bio (optional)"
                   value={values.bio ?? ''}
                   onChange={(event) => handleChange('bio', event.target.value)}
@@ -156,6 +165,7 @@ export default function RegisterPage({ initialEmail = '' }: RegisterPageProps) {
                 <input
                   type="password"
                   autoComplete="new-password"
+                  aria-label="Password"
                   placeholder="Password"
                   value={values.password}
                   onChange={(event) => handleChange('password', event.target.value)}
@@ -168,6 +178,7 @@ export default function RegisterPage({ initialEmail = '' }: RegisterPageProps) {
                 <input
                   type="password"
                   autoComplete="new-password"
+                  aria-label="Repeat password"
                   placeholder="Repeat password"
                   value={values.confirmPassword}
                   onChange={(event) => handleChange('confirmPassword', event.target.value)}

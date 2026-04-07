@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.acme.dto.IntraDTO;
 import org.acme.model.SeedMode;
@@ -28,6 +29,8 @@ import jakarta.inject.Inject;
 @ApplicationScoped
 public class SeedService {
 	private static final Logger LOG = Logger.getLogger(SeedService.class);
+	private static final Pattern STRONG_PASSWORD_PATTERN = Pattern.compile(
+		"^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,128}$");
 
 	@Inject
 	UserRepository userRepository;
@@ -96,8 +99,8 @@ public class SeedService {
 			return;
 		}
 
-		if (adminPassword.length() < 8) {
-			LOG.warn("seed.admin.password must be at least 8 characters; skipping admin bootstrap");
+		if (!STRONG_PASSWORD_PATTERN.matcher(adminPassword).matches()) {
+			LOG.warn("seed.admin.password does not meet password policy; skipping admin bootstrap");
 			return;
 		}
 
@@ -115,6 +118,11 @@ public class SeedService {
 			User userByLogin = resolvedLoginExplicitlyConfigured
 				? userRepository.findByUsername(resolvedAdminLogin).orElse(null)
 				: null;
+
+			if (userByEmail == null && userByLogin != null) {
+				LOG.error("Cannot bootstrap admin user because configured login belongs to another account");
+				return;
+			}
 
 			if (userByEmail != null && userByLogin != null && !userByEmail.id.equals(userByLogin.id)) {
 				LOG.error("Cannot bootstrap admin user due to email/login conflict");

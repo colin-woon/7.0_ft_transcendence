@@ -9,9 +9,14 @@ export const passwordSchema = z
   .max(128, 'Password must be at most 128 characters')
   .regex(strongPasswordPattern, 'Password must include uppercase, lowercase, number, and symbol')
 
+export const loginPasswordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .max(128, 'Password must be at most 128 characters')
+
 export const loginWithPasswordSchema = z.object({
   email: z.string().trim().email('Please enter a valid email').max(255, 'Email must be at most 255 characters'),
-  password: passwordSchema,
+  password: loginPasswordSchema,
 })
 
 export const registerWithPasswordSchema = z
@@ -42,7 +47,12 @@ export const registerWithPasswordSchema = z
 
 export const passwordChangeSchema = z
   .object({
-    currentPassword: z.string().max(128, 'Current password must be at most 128 characters').optional(),
+    currentPassword: z
+      .string()
+      .min(8, 'Current password must be at least 8 characters')
+      .max(128, 'Current password must be at most 128 characters')
+      .optional()
+      .or(z.literal('')),
     newPassword: passwordSchema,
     confirmPassword: passwordSchema,
   })

@@ -422,7 +422,8 @@ export default function ProfilePage({
     }
 
     const hasExistingPassword = Boolean(activeProfile?.hasPassword)
-    if (hasExistingPassword && !parsed.data.currentPassword?.trim()) {
+    const currentPassword = parsed.data.currentPassword
+    if (hasExistingPassword && (!currentPassword || currentPassword.length === 0)) {
       setPasswordErrors({ currentPassword: 'Current password is required to change your password' })
       return
     }
@@ -431,7 +432,7 @@ export default function ProfilePage({
     setPasswordSaving(true)
     try {
       await updatePassword({
-        currentPassword: parsed.data.currentPassword?.trim() || undefined,
+        currentPassword: currentPassword || undefined,
         newPassword: parsed.data.newPassword,
         confirmPassword: parsed.data.confirmPassword,
       })

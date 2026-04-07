@@ -78,6 +78,7 @@ public class UserService {
 		return user;
 	}
 
+	@Transactional
 	public User authenticateWithPassword(PasswordLoginDTO dto) {
 		String normalizedEmail = normalizeEmail(dto.email);
 		User user = userRepository.findByEmail(normalizedEmail).orElseThrow(() -> new WebApplicationException("User not found", 404));
@@ -93,6 +94,8 @@ public class UserService {
 		if (user.isBanned) {
 			throw new WebApplicationException("User is banned", 403);
 		}
+
+		Hibernate.initialize(user.intra);
 
 		return user;
 	}
@@ -112,12 +115,13 @@ public class UserService {
 				throw new WebApplicationException("Current password is required", 400);
 			}
 			if (!verifyPassword(dto.currentPassword, user.passwordHash)) {
-				throw new WebApplicationException("Current password is incorrect", 401);
+				throw new WebApplicationException("Current password is incorrect", 400);
 			}
 		}
 
 		user.passwordHash = hashPassword(dto.newPassword);
 		userRepository.persist(user);
+		Hibernate.initialize(user.intra);
 		return user;
 	}
 

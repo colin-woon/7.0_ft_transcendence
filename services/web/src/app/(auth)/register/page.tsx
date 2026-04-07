@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 export const dynamic = 'force-dynamic'
 
 interface RegisterRouteProps {
-  searchParams: Promise<{ email?: string }>
+  searchParams: Promise<{ email?: string | string[] }>
 }
 
 export default async function RegisterRoute({ searchParams }: RegisterRouteProps) {
@@ -15,5 +15,8 @@ export default async function RegisterRoute({ searchParams }: RegisterRouteProps
   }
 
   const params = await searchParams
-  return <RegisterPage initialEmail={params.email ?? ''} />
+  const normalizedEmail = Array.isArray(params.email)
+    ? (params.email[0] ?? '')
+    : (params.email ?? '')
+  return <RegisterPage initialEmail={normalizedEmail} />
 }
