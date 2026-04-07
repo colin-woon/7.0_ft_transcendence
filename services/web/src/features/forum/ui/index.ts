@@ -1,2 +1,2 @@
-export * from './wesley_posts';
+export * from './projects/posts';
 export { default as ForumPage } from './ForumPage';

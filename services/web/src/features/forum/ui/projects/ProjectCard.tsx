@@ -1,13 +1,6 @@
 import React from "react";
 import { Zap, Clock, Users, Star, MessageSquare } from "lucide-react";
-import { projects, type Difficulty } from "../../models/projects";
-
-const difficultyColor: Record<Difficulty, string> = {
-  Beginner: "bg-green-100 text-green-700",
-  Intermediate: "bg-yellow-100 text-yellow-700",
-  Advanced: "bg-orange-100 text-orange-700",
-  Expert: "bg-red-100 text-red-700",
-};
+import { projects } from "../../models/projects";
 
 export default function ProjectCard({ project }: { project: typeof projects[0] }) {
   return (

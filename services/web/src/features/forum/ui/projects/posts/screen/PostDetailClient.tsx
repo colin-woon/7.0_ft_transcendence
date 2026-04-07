@@ -13,7 +13,7 @@ import {
   EditCommentDialog,
   EditPostDialog,
   PostModerationControls,
-} from '@/features/forum/ui/moderation';
+} from '@/features/forum/ui/projects/moderation';
 
 interface PostDetailClientProps {
   post: ForumPostDetail;
