@@ -2,7 +2,6 @@ import { cookies } from 'next/headers';
 import type { ForumApiPostSummary, ForumApiProjectSummary, ForumPost, ForumApiPostDetail, ForumPostDetail, ForumApiComment, ForumComment } from '../models';
 import type { Project, ForumPost as ProjectForumPost } from '../models/projects';
 import type { ForumSort } from '../models';
-import { cache } from 'react'
 
 function getForumApiBaseUrl(): string {
   const isDev = process.env.NODE_ENV === 'development';
@@ -136,7 +135,7 @@ function mapApiProjectToProject(apiProj: any): Project {
 
 
 // base function to fetch all projects from API, utilizes Next.js cache
-export const getCachedApiProjects = cache(async (): Promise<ForumApiProjectSummary[]> => {
+export async function getCachedApiProjects(): Promise<ForumApiProjectSummary[]> {
   const pageSize = 100;
   let allApiProjects: ForumApiProjectSummary[] = [];
 
@@ -185,7 +184,7 @@ export const getCachedApiProjects = cache(async (): Promise<ForumApiProjectSumma
   }
 
   return allApiProjects;
-});
+}
 
 export async function getAllProjects(): Promise<Project[]> {
   const apiProjects = await getCachedApiProjects();
@@ -247,13 +246,13 @@ export async function searchMySubscribedProjects(searchQuery: string): Promise<P
 }
 
 // fetches all projects and maps them id:name, utilizes nextjs cache
-export const getProjectsByIdMap = cache(async (): Promise<Map<number, string>> => {
+export async function getProjectsByIdMap(): Promise<Map<number, string>> {
   const apiProjects = await getCachedApiProjects();
   const projectsById = new Map<number, string>();
   
   apiProjects.forEach((p) => projectsById.set(p.id, p.name));
   return projectsById;
-});
+}
 
 export async function getProjectPosts(projectId: number): Promise<ForumPost[]> {
   return getProjectPostsBySort(projectId, 'Top');
@@ -296,10 +295,21 @@ export async function getProjectDetails(projectId: number): Promise<Project | un
 }
 
 export async function getProjectDetailsBySort(projectId: number, sort: ForumSort): Promise<Project | undefined> {
-  const allProjects = await getAllProjects();
-  const project = allProjects.find((p) => p.id === projectId);
-  
-  if (!project) return undefined;
+  const projectResponse = await forumFetch(`/projects/${projectId}`, {
+    method: 'GET',
+    cache: 'no-store',
+  });
+
+  if (projectResponse.status === 404) {
+    return undefined;
+  }
+
+  if (!projectResponse.ok) {
+    throw new Error(`Failed to fetch project details for project ${projectId}`);
+  }
+
+  const projectData = (await projectResponse.json()) as ForumApiProjectSummary;
+  const project = mapApiProjectToProject(projectData);
 
   try {
     const posts = (await getProjectPostsBySort(projectId, sort)).map((post): ProjectForumPost => ({

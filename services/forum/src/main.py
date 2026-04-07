@@ -3,6 +3,7 @@ import os
 from typing import List
 from fastapi import APIRouter, FastAPI, Depends, status, Query, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from contextlib import asynccontextmanager
 
@@ -55,17 +56,29 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Forum Service API", lifespan=lifespan)
 
+
+@app.exception_handler(HTTPException)
+async def http_exception_logger(request: Request, exc: HTTPException):
+    logger.warning(
+        "HTTP_EXCEPTION method=%s path=%s status=%s detail=%s",
+        request.method,
+        request.url.path,
+        exc.status_code,
+        exc.detail,
+    )
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
 # TODO:ALLOW CORS FOR NOW, REMOVE LATER DURING GATEWAY INTEGRATION
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=[
+#         "http://localhost:3000",
+#         "http://127.0.0.1:3000",
+#     ],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 
 @app.get("/health")
 def health():
