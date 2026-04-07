@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Plus, Search } from "lucide-react";
 import type { Project } from "../../models/projects";
-import PostVoteButtons from '../wesley_posts/components/PostVoteButtons';
+import PostVoteButtons from './posts/components/PostVoteButtons';
 import ProjectCard from "./ProjectCard";
 import SubscriptionButton from './SubscriptionButton';
 import { deleteForumPost } from '@/features/forum/api/moderation';
-import { PostModerationControls } from '@/features/forum/ui/moderation';
+import { PostModerationControls } from '@/features/forum/ui/projects/moderation';
 
 const sortOptions = ["New", "Top"];
 

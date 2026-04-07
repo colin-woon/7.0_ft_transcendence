@@ -1,4 +1,4 @@
-import type { ForumSort, ForumViewMode } from '../../../models';
+import type { ForumSort, ForumViewMode } from '../../../../models';
 import { Search } from 'lucide-react';
 
 interface PostListControlsProps {

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { ForumPost, ForumViewMode } from '../../../models';
+import type { ForumPost, ForumViewMode } from '../../../../models';
 import PostVoteButtons from './PostVoteButtons';
 
 interface PostRowProps {

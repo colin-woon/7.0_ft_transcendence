@@ -1,4 +1,4 @@
-import ProjectsGridPage from '@/features/forum/ui/wesley_projects/ProjectsGridPage'
+import ProjectsGridPage from '@/features/forum/ui/projects/ProjectsGridPage'
 import {
   getAllProjects,
   getMySubscribedProjects,
