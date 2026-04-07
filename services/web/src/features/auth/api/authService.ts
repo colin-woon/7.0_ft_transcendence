@@ -23,6 +23,7 @@ export interface User {
   createdAt: string
   linkedWithGoogle: boolean
   linkedWithIntra: boolean
+  hasPassword: boolean
   updatedAt?: string
   intraInfo?: IntraInfo | null
 }
@@ -110,6 +111,27 @@ export interface CreateUserPayload {
   isBanned?: boolean
 }
 
+export interface PasswordLoginPayload {
+  email: string
+  password: string
+}
+
+export interface PasswordRegisterPayload {
+  email: string
+  username: string
+  fullName: string
+  avatarUrl?: string
+  bio?: string
+  password: string
+  confirmPassword: string
+}
+
+export interface PasswordChangePayload {
+  currentPassword?: string
+  newPassword: string
+  confirmPassword: string
+}
+
 interface CachedValue<T> {
   value: T
   expiresAt: number
@@ -146,6 +168,66 @@ class AuthService {
 
   loginWithProvider(provider: 'google' | '42') {
     window.location.href = getApiUrl(`/api/public/auth/login/${provider}`)
+  }
+
+  async loginWithPassword(payload: PasswordLoginPayload): Promise<AuthResponse> {
+    const response = await fetch(getApiUrl('/api/public/auth/password/login'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      cache: 'no-store',
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      throw this.asAuthApiError(response, 'Password login failed')
+    }
+
+    const data: AuthResponse = await response.json()
+    this.setAccessToken(data.accessToken, data.expiresIn)
+    this.currentUserId = data.user.id
+    this.cacheUser('me', data.user)
+    this.cacheUser(`user:${data.user.id}`, data.user)
+    return data
+  }
+
+  async registerWithPassword(payload: PasswordRegisterPayload): Promise<AuthResponse> {
+    const response = await fetch(getApiUrl('/api/public/auth/password/register'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      cache: 'no-store',
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      throw this.asAuthApiError(response, 'Registration failed')
+    }
+
+    const data: AuthResponse = await response.json()
+    this.setAccessToken(data.accessToken, data.expiresIn)
+    this.currentUserId = data.user.id
+    this.cacheUser('me', data.user)
+    this.cacheUser(`user:${data.user.id}`, data.user)
+    return data
+  }
+
+  async updatePassword(payload: PasswordChangePayload): Promise<User> {
+    const response = await this.authenticatedFetch(getApiUrl('/api/auth/me/password'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      throw this.asAuthApiError(response, 'Failed to update password')
+    }
+
+    const data: User = await response.json()
+    this.currentUserId = data.id
+    this.cacheUser('me', data)
+    this.cacheUser(`user:${data.id}`, data)
+    return data
   }
 
   async handleOAuthCallback(): Promise<User | null> {

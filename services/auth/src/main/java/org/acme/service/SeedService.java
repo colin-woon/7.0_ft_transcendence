@@ -6,11 +6,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.acme.dto.IntraDTO;
 import org.acme.model.SeedMode;
 import org.acme.model.User;
+import org.acme.model.UserRole;
 import org.acme.repository.UserRepository;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -26,6 +29,8 @@ import jakarta.inject.Inject;
 @ApplicationScoped
 public class SeedService {
 	private static final Logger LOG = Logger.getLogger(SeedService.class);
+	private static final Pattern STRONG_PASSWORD_PATTERN = Pattern.compile(
+		"^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,128}$");
 
 	@Inject
 	UserRepository userRepository;
@@ -42,6 +47,9 @@ public class SeedService {
 	@Inject
 	IntraClientService intraClientService;
 
+	@Inject
+	PasswordService passwordService;
+
 	@ConfigProperty(name = "seed.mode", defaultValue = "off")
 	SeedMode seedMode;
 
@@ -54,13 +62,117 @@ public class SeedService {
 	@ConfigProperty(name = "seed.campus")
 	String seedCampus;
 
+	@ConfigProperty(name = "seed.admin.enabled", defaultValue = "false")
+	boolean seedAdminEnabled;
+
+	@ConfigProperty(name = "seed.admin.email", defaultValue = "")
+	String seedAdminEmail;
+
+	@ConfigProperty(name = "seed.admin.login", defaultValue = "")
+	String seedAdminLogin;
+
+	@ConfigProperty(name = "seed.admin.password", defaultValue = "")
+	String seedAdminPassword;
+
 	public void onStart(@Observes StartupEvent ev) {
+		ensureSeedAdminUser();
 		LOG.info("Seed mode: " + seedMode);
 		switch (seedMode) {
 			case OFF -> {}
 			case FILE -> loadSeedFile();
 			default -> seedFromApi(seedMode);
 		}
+	}
+
+	private void ensureSeedAdminUser() {
+		if (!seedAdminEnabled) {
+			return;
+		}
+
+		String adminEmail = seedAdminEmail == null ? "" : seedAdminEmail.trim().toLowerCase(Locale.ROOT);
+		String adminLogin = seedAdminLogin == null ? "" : seedAdminLogin.trim();
+		boolean loginExplicitlyConfigured = !adminLogin.isBlank();
+		String adminPassword = seedAdminPassword == null ? "" : seedAdminPassword;
+
+		if (adminEmail.isBlank() || adminPassword.isBlank()) {
+			LOG.warn("seed.admin.enabled=true but seed.admin.email or seed.admin.password is blank; skipping admin bootstrap");
+			return;
+		}
+
+		if (!STRONG_PASSWORD_PATTERN.matcher(adminPassword).matches()) {
+			LOG.warn("seed.admin.password does not meet password policy; skipping admin bootstrap");
+			return;
+		}
+
+		if (adminLogin.isBlank()) {
+			adminLogin = deriveLoginFromEmail(adminEmail);
+		}
+
+		final String resolvedAdminEmail = adminEmail;
+		final String resolvedAdminLogin = adminLogin;
+		final String resolvedAdminPassword = adminPassword;
+		final boolean resolvedLoginExplicitlyConfigured = loginExplicitlyConfigured;
+
+		QuarkusTransaction.requiringNew().run(() -> {
+			User userByEmail = userRepository.findByEmail(resolvedAdminEmail).orElse(null);
+			User userByLogin = resolvedLoginExplicitlyConfigured
+				? userRepository.findByUsername(resolvedAdminLogin).orElse(null)
+				: null;
+
+			if (userByEmail == null && userByLogin != null) {
+				LOG.error("Cannot bootstrap admin user because configured login belongs to another account");
+				return;
+			}
+
+			if (userByEmail != null && userByLogin != null && !userByEmail.id.equals(userByLogin.id)) {
+				LOG.error("Cannot bootstrap admin user due to email/login conflict");
+				return;
+			}
+
+			User adminUser = userByEmail != null ? userByEmail : userByLogin;
+			if (adminUser == null) {
+				String loginToUse = resolvedAdminLogin;
+				if (userRepository.findByUsername(loginToUse).isPresent()) {
+					loginToUse = userService.generateUsername(loginToUse);
+				}
+
+				adminUser = new User();
+				adminUser.email = resolvedAdminEmail;
+				adminUser.username = loginToUse;
+				adminUser.fullName = "Seed Admin";
+				adminUser.role = UserRole.ADMIN;
+				adminUser.isBanned = false;
+				adminUser.passwordHash = passwordService.hash(resolvedAdminPassword);
+				userRepository.persist(adminUser);
+				LOG.info("Bootstrapped admin user");
+				return;
+			}
+
+			adminUser.email = resolvedAdminEmail;
+			if (resolvedLoginExplicitlyConfigured) {
+				adminUser.username = resolvedAdminLogin;
+			}
+			adminUser.role = UserRole.ADMIN;
+			adminUser.isBanned = false;
+			adminUser.passwordHash = passwordService.hash(resolvedAdminPassword);
+			userRepository.persist(adminUser);
+			LOG.info("Ensured configured admin user state");
+		});
+	}
+
+	private String deriveLoginFromEmail(String adminEmail) {
+		String localPart = adminEmail;
+		int atIndex = adminEmail.indexOf('@');
+		if (atIndex > 0) {
+			localPart = adminEmail.substring(0, atIndex);
+		}
+
+		String candidate = localPart.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_-]", "");
+		if (candidate.isBlank()) {
+			candidate = "seedadmin";
+		}
+
+		return candidate;
 	}
 
 	public void loadSeedFile() {
@@ -161,7 +273,7 @@ public class SeedService {
 			File file = new File(seedFilePath);
 			file.getParentFile().mkdirs();
 			objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, data);
-			LOG.info("Saved seed data to: " + seedFilePath);
+			LOG.debug("Saved seed data file");
 		} catch (IOException e) {
 			LOG.error("Failed to save seed file", e);
 		}

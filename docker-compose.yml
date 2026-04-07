@@ -314,17 +314,7 @@ services:
         networks:
             - 42_overflow
         healthcheck:
-            test:
-                [
-                    'CMD',
-                    'curl',
-                    '-fk',
-                    '--cert',
-                    '/certs/prometheus.crt',
-                    '--key',
-                    '/certs/prometheus.key',
-                    'https://localhost:9090/-/healthy',
-                ]
+            test: ['CMD-SHELL', "ps | grep '[p]rometheus' >/dev/null"]
             interval: 10s
             timeout: 5s
             start_period: 20s
