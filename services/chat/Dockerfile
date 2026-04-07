@@ -30,6 +30,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/api
 # --- Stage 4: Production ---
 FROM alpine:3.23 AS prod
 WORKDIR /app
+RUN apk add --no-cache curl
 COPY --from=builder /app/main /app/main
 # # Add ca-certificates in case your chat service talks to external APIs (HTTPS)
 # RUN apk add --no-cache ca-certificates
