@@ -21,7 +21,7 @@ export function AppShell({ children }: AppShellProps) {
       </div>
       <div className="min-h-0">
         {/* Sidebar stays locked to the left */}
-        <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
+        <Sidebar/>
         
       </div>
     </div>
