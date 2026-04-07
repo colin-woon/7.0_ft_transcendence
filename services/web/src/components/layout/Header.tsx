@@ -1,59 +1,31 @@
 'use client'
 
 import Link from 'next/link'
-import { Search, Download, Coins, MessageCircle, Bell, Plus, Menu } from 'lucide-react'
-import UserMenu from '@/components/layout/UserMenu'
+import { Menu } from 'lucide-react'
 import { useAppShell } from '@/components/ui/ComponentLogic/Appshell/context/AppShellContext'
 
 export default function Header() {
-  const { isSidebarOpen, toggleSidebar, searchQuery, setSearchQuery} = useAppShell()
+  const { toggleSidebar } = useAppShell()
 
   return (
-    <header className="bg-white text-slate-900 fixed top-0 z-[60] border-b border-gray-200 w-full shadow-sm px-4">
-      <div className="max-w-7xl mx-auto py-3">
-        <div className="flex items-center justify-between gap-4">
-
-          {/* Left: logo */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+    // Nav bar (site header)
+    <header className="h-16 bg-white text-slate-900 fixed top-0 z-[60] border-b border-gray-200 w-full shadow-sm px-4 pr-2">
+      <div className="max-w-7xl py-3">
+        <div className="flex items-center justify-start">
+          {/* Left: hamburger + brand */}
+          <div className="flex items-center gap-2 justify-self-start min-w-0">
             <button
               onClick={toggleSidebar}
-              className="p-2 hover:bg-black/5 rounded-full transition"
+              className="inline-flex h-10 w-10 items-center justify-center shrink-0 rounded-full p-2 text-slate-700 hover:bg-black/5 transition"
               aria-label="Toggle sidebar"
             >
-              <Menu size={20} className="text-slate-700" />
+              <Menu size={20} className="block h-5 w-5 text-slate-700" strokeWidth={2.25} />
             </button>
-            {/* <button className="p-1.5 hover:bg-black/5 rounded-full transition">
-              <svg className="w-6 h-6 text-[#8EE7E3]" viewBox="0 0 20 20" fill="currentColor">
-                <circle cx="10" cy="10" r="2" />
-                <circle cx="4" cy="10" r="1.5" />
-                <circle cx="16" cy="10" r="1.5" />
-                <path d="M10 2C5.8 2 2.5 5.4 2.5 9.6c0 2.8 1.5 5.3 3.8 6.7-.2.6-.5 1.7-.2 2.6 0 0 1.4.2 3.5-1.2.7.2 1.5.3 2.4.3 4.2 0 7.5-3.4 7.5-7.6C17.5 5.4 14.2 2 10 2z" />
-              </svg>
-            </button> */}
-            <Link href="/projects" className="text-base-content text-xl font-bold hidden sm:inline hover:text-secondary transition-colors">
+            <Link href="/projects" className="text-base-content text-xl font-bold inline hover:text-secondary transition-colors">
               42 overflow
             </Link>
           </div>
-
-          {/* Center: search */}
-          <div className="flex-1 max-w-2xl ml-[-24px]">
-            <div className="relative flex items-center justify-center">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={22} />
-              <input
-                type="text"
-                placeholder="Search 42 overflow"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-base-200 rounded-full text-base placeholder-base-content/40 border-2 border-primary shadow-inner text-center focus:outline-none focus:ring-2 focus:ring-primary"
-                style={{ boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03)' }}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <UserMenu />
-          </div>
-
+          {/* Search bar and user menu intentionally hidden for this version. */}
         </div>
       </div>
     </header>

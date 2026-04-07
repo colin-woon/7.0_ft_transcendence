@@ -1,17 +1,24 @@
 "use client";
 import Link from "next/link";
-import { Home, Newspaper, Users, BookOpen, Trophy, Settings, HelpCircle, Plus, ChevronDown, Star, X, FolderOpen, MessageCircle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Home, MessageCircle, Shield, FileText, LogOut, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/features/auth/models/AuthContext";
+import { useRouter } from "next/navigation";
+import { useAppShell } from "@/components/ui/ComponentLogic/Appshell/context/AppShellContext";
+// import PrivacyPolicy from "@/components/legal/PrivacyPolicy";
+// import TermsCondition from "@/components/legal/TermsCondition";
 
-interface SidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+export default function Sidebar() {
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const { isSidebarOpen: isOpen, closeSidebar: onClose } = useAppShell();
+  const [isPolicyOpen, setIsPolicyOpen] = useState(false);
+  const [policyTab, setPolicyTab] = useState<"privacy" | "terms">("privacy");
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const [showRecent, setShowRecent] = useState(true);
+  const initials = user
+    ? user.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+    : 'G';
 
-  // Lock body scroll when sidebar is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -21,36 +28,41 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
-  const friends = [
-    { name: "alex_km", login: "alkim", color: "from-blue-400 to-blue-600", online: true },
-    { name: "priya_n", login: "pnair", color: "from-purple-400 to-purple-600", online: true },
-    { name: "luca_r", login: "lricci", color: "from-green-400 to-green-600", online: false },
-    { name: "sara_m", login: "smuell", color: "from-orange-400 to-orange-600", online: false },
-    { name: "omar_k", login: "okhan", color: "from-pink-400 to-pink-600", online: true },
-  ];
+  useEffect(() => {
+    if (!isPolicyOpen) return;
 
-  const recentFriends = [
-    { name: "javi_p", color: "from-cyan-400 to-cyan-600", online: true },
-    { name: "mei_t", color: "from-indigo-400 to-indigo-600", online: false },
-    { name: "felix_b", color: "from-teal-400 to-teal-600", online: true },
-  ];
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsPolicyOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isPolicyOpen]);
+
+  const openPolicyModal = (tab: "privacy" | "terms") => {
+    onClose();
+    setPolicyTab(tab);
+    setIsPolicyOpen(true);
+  };
 
   return (
     <>
-      {/* Overlay for mobile */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/40 z-40"
           onClick={onClose}
         />
       )}
 
       <aside className={`fixed top-0 mt-14 h-screen flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out z-100 ${
-          isOpen ? 'w-86': 'w-0'
-        }`}>
+        isOpen ? 'w-64 md:w-72 lg:w-60' : 'w-0'
+      }`}>
         <div className="h-full flex flex-col bg-white border-r border-gray-200">
+
           {/* Close button for mobile */}
-          <div className="lg:hidden flex items-center justify-between p-3 border-b border-gray-200">
+          {/* <div className="lg:hidden flex items-center justify-between p-3 border-b border-gray-200">
             <span className="text-sm font-semibold text-slate-700">Menu</span>
             <button
               onClick={onClose}
@@ -59,8 +71,26 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             >
               <X size={20} className="text-slate-600" />
             </button>
-          </div>
-          
+          </div> */}
+
+          {/* User Profile Block */}
+          <Link
+            href="/profile"
+            onClick={onClose}
+            className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 hover:bg-gray-50 transition"
+          >
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-slate-800 truncate">{user?.fullName ?? 'Guest'}</p>
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-500">
+                {user?.role ?? 'STUDENT'}
+              </span>
+            </div>
+          </Link>
+
+          {/* Main Nav */}
           <div className="p-3 border-b border-gray-200">
             <nav className="space-y-1">
               <Link onClick={onClose} href="/projects" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group">
@@ -71,121 +101,106 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <MessageCircle size={20} className="text-slate-600 group-hover:text-[#0f6f6b]" />
                 <span className="group-hover:text-[#0f6f6b]">Chat</span>
               </Link>
-              <Link onClick={onClose} href="/friends" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group">
-                <Users size={20} className="text-slate-600 group-hover:text-[#0f6f6b]" />
-                <span className="group-hover:text-[#0f6f6b]">Friends</span>
-              </Link>
-              <Link onClick={onClose} href="projects" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group">
-                <Newspaper size={20} className="text-slate-600 group-hover:text-[#0f6f6b]" />
-                <span className="group-hover:text-[#0f6f6b]">Posts</span>
-              </Link>
             </nav>
           </div>
 
-          {/* Scrollable Content - dynamic height for online friends */}
-          <div
-            className="overflow-y-auto custom-scrollbar transition-all"
-            style={{
-              maxHeight: `${friends.filter(f => f.online).length * 80 + 80}px`, // auto-size to fit all, up to a max
-              minHeight: '120px' // always show at least header and one name
-            }}
-          >
-            <div className="pt-2 pb-6 px-4">
-              {/* Section Header - sticky */}
-              <div className="flex items-center justify-between px-2 pb-1 pt-0.5 mb-1 border-b border-slate-100">
-                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
-                  Online
-                </h3>
-                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-50 text-[10px] font-bold text-green-600 border border-green-100">
-                  <span className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
-                  {friends.filter(f => f.online).length}
-                </span>
-              </div>
-
-              <div className="space-y-1">
-                {friends.filter(f => f.online).length === 0 ? (
-                  <div className="py-10 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                    <p className="text-xs font-medium text-slate-400 italic">The cluster is quiet...</p>
-                  </div>
-                ) : (
-                  friends.filter(friend => friend.online).map((friend) => (
-                    <a
-                      key={friend.name}
-                      href={`/profile/${friend.login}`}
-                      className="group flex items-center gap-3 p-2 rounded-xl transition-all duration-200 hover:bg-slate-50 active:scale-[0.98]"
-                    >
-                      {/* Avatar with a more sophisticated online indicator */}
-                      <div className="relative">
-                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${friend.color} p-[2px]`}>
-                          <div className="w-full h-full rounded-[10px] bg-white flex items-center justify-center overflow-hidden">
-                            {/* Using a subtle pattern or initials */}
-                            <span className={`text-xs font-bold bg-gradient-to-br ${friend.color} bg-clip-text text-transparent`}>
-                              {friend.name.substring(0, 2).toUpperCase()}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center shadow-sm">
-                          <div className="w-2 h-2 bg-green-500 rounded-full" />
-                        </div>
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-semibold text-slate-700 truncate group-hover:text-[#0f6f6b]">
-                            {friend.name}
-                          </p>
-                        </div>
-                        {/* Fake 'Status' - this makes it feel human */}
-                        <p className="text-[11px] text-slate-400 truncate leading-none mt-0.5">
-                          {friend.login} • <span className="text-slate-300">Just joined</span>
-                        </p>
-                      </div>
-                    </a>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-
           {/* Resources Section */}
-          <div className="p-3 border-t border-gray-200">
+          <div className="p-3">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 mb-2">Resources</h3>
             <div className="space-y-1">
-              <a href="#" className="flex items-center gap-3 px-2 py-1.5 text-sm text-slate-700 hover:bg-gray-100 rounded-md transition">
-                <BookOpen size={18} className="text-slate-600" />
-                <span className="text-xs">About 42 overflow</span>
-              </a>
-              <a href="#" className="flex items-center gap-3 px-2 py-1.5 text-sm text-slate-700 hover:bg-gray-100 rounded-md transition">
-                <Trophy size={18} className="text-slate-600" />
-                <span className="text-xs">Achievements</span>
-              </a>
-              <a href="#" className="flex items-center gap-3 px-2 py-1.5 text-sm text-slate-700 hover:bg-gray-100 rounded-md transition">
-                <HelpCircle size={18} className="text-slate-600" />
-                <span className="text-xs">Help Center</span>
-              </a>
-              <a href="#" className="flex items-center gap-3 px-2 py-1.5 text-sm text-slate-700 hover:bg-gray-100 rounded-md transition">
-                <Settings size={18} className="text-slate-600" />
-                <span className="text-xs">Settings</span>
-              </a>
+              <button
+                type="button"
+                className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-slate-700 hover:bg-gray-100 rounded-md transition"
+                onClick={() => openPolicyModal("privacy")}
+              >
+                <Shield size={18} className="text-slate-600" />
+                <span className="text-xs">Privacy Policy</span>
+              </button>
+              <button
+                type="button"
+                className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-slate-700 hover:bg-gray-100 rounded-md transition"
+                onClick={() => openPolicyModal("terms")}
+              >
+                <FileText size={18} className="text-slate-600" />
+                <span className="text-xs">Terms & Conditions</span>
+              </button>
+              <button
+                onClick={async () => {
+                  onClose();
+                  await logout();
+                  router.push('/login');
+                }}
+                className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-red-500 hover:bg-red-50 rounded-md transition"
+              >
+                <LogOut size={18} />
+                <span className="text-xs">Logout</span>
+              </button>
             </div>
           </div>
-            
-            {/* Footer */}
-        <div className="p-1 border-t border-gray-200">
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Footer */}
+          <div className="p-3 border-t border-gray-200">
             <div className="text-xs text-gray-500 space-y-1">
               <div className="flex flex-wrap gap-2">
-                <a href="#" className="hover:underline">Privacy</a>
+                <button
+                  type="button"
+                  onClick={() => openPolicyModal("privacy")}
+                  className="hover:underline"
+                >
+                  Privacy
+                </button>
                 <span>·</span>
-                <a href="#" className="hover:underline">Terms</a>
+                <button
+                  type="button"
+                  onClick={() => openPolicyModal("terms")}
+                  className="hover:underline"
+                >
+                  Terms
+                </button>
               </div>
               <p className="text-gray-400">42 overflow, Inc. © 2026</p>
             </div>
           </div>
-          
+
         </div>
-        
-          
       </aside>
+
+      {isPolicyOpen && (
+        <div
+          className="fixed inset-0 z-[120] bg-slate-900/55 backdrop-blur-sm p-4 sm:p-6"
+          onClick={() => setIsPolicyOpen(false)}
+        >
+          <div
+            className="mx-auto flex h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(2,6,23,0.35)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 sm:px-5">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Legal</p>
+                <h2 className="text-sm font-semibold text-slate-900">
+                  {policyTab === "privacy" ? "Privacy Policy" : "Terms & Conditions"}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsPolicyOpen(false)}
+                className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                aria-label="Close policy modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
+              {/* {policyTab === "privacy" ? <PrivacyPolicy /> : <TermsCondition />} */}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
