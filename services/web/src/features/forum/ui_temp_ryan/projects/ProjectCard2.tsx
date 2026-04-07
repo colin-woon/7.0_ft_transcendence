@@ -17,8 +17,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
           : "border-rose-200 bg-rose-50 text-rose-700";
 
   return (
-    <Link
-      href={`/projects/${project.id}`}
+    <div
       className="group relative block w-full max-w-[200px] aspect-square overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transform-gpu transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:scale-[1.015] hover:border-slate-400 hover:shadow-2xl"
     >
       {/* Default state */}
@@ -66,6 +65,6 @@ export function ProjectCard({ project }: ProjectCardProps) {
             </svg>
           </Link>
       </div>
-    </Link>
+    </div>
   );
 }

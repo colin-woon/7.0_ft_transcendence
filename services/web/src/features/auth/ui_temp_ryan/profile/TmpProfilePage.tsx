@@ -2,7 +2,7 @@
 
 import { Calendar, Clock3, Laptop, MapPin, Shield, Smartphone } from 'lucide-react'
 import type { SessionInfo, User } from '@/features/auth/api/authService'
-import ProfileCard from '../../ui/profile/ProfileCard'
+import ProfileCard from './ProfileCard'
 import SessionCard from './SessionCard'
 
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -11,6 +11,7 @@ function Card({ children, className = '' }: { children: React.ReactNode; classNa
 
 const mockUser: User = {
   id: 999,
+  hasPassword: false,
   username: 'tmp_user',
   fullName: 'Temp Profile User',
   email: 'tmp_user@42.fr',
