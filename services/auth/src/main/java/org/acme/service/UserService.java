@@ -34,7 +34,7 @@ public class UserService {
 
 	@Transactional
 	public User syncUser(UserInfo info, String tenantId) {
-		LOG.debug("Syncing user from tenant: " + tenantId);
+		LOG.debug("Syncing user from OIDC tenant");
 		User user = switch (tenantId) {
 			case "google" -> syncByGoogle(info);
 
@@ -126,7 +126,7 @@ public class UserService {
 		String rawName = info.getString("name");
 		String googleId = info.getString("sub");
 
-		LOG.debug("Syncing user by Google: " + email);
+		LOG.debug("Syncing user by Google");
 
 		User user = userRepository.findByGoogleId(googleId).orElse(null);
 		
@@ -134,15 +134,15 @@ public class UserService {
 			user = userRepository.findByEmail(email).orElse(null);
 			if (user != null) {
 				if (user.googleId == null) {
-					LOG.info("Linking Google account to existing user: " + email);
+					LOG.debug("Linking Google account to existing user");
 					user.googleId = googleId;
 					userRepository.persist(user);
 				} else {
-					LOG.error("Email already linked to different Google account: " + email);
+					LOG.warn("Email already linked to different Google account");
 					throw new WebApplicationException("Email already linked to different Google account", 409);
 				}
 			} else {
-				LOG.info("Creating new user from Google: " + email);
+				LOG.debug("Creating new user from Google");
 				user = createNewUser(email, rawName, googleId, UserRole.STUDENT);
 			}
 		}
@@ -160,15 +160,15 @@ public class UserService {
 			user = userRepository.findByEmail(normalizedEmail).orElse(null);
 			if (user != null) {
 				if (user.intraId == null) {
-					LOG.info("Linking 42 account to existing user: " + normalizedEmail);
+					LOG.debug("Linking 42 account to existing user");
 					user.intraId = intraDTO.id.toString();
 					intraService.syncUserData(user, intraDTO);
 				} else {
-					LOG.error("Email already linked to different 42 account: " + normalizedEmail);
+					LOG.warn("Email already linked to different 42 account");
 					throw new WebApplicationException("Email already linked to different 42 account", 409);
 				}
 			} else {
-				LOG.info("Creating new user from 42: " + normalizedEmail);
+				LOG.debug("Creating new user from 42");
 				user = createNewUser(intraDTO);
 			}
 		}
@@ -178,7 +178,7 @@ public class UserService {
 	}
 
 	public User createNewUser(String email, String rawName, String id, UserRole role) {
-		LOG.info("Creating new user: " + email + " (provider: google)");
+		LOG.debug("Creating new user (provider: google)");
 
 		User user = new User();
 		user.email = email;
@@ -188,13 +188,13 @@ public class UserService {
 		user.googleId = id;
 
 		userRepository.persist(user);
-		LOG.info("User created successfully with username: " + user.username);
+		LOG.debug("User created successfully (provider: google)");
 		return user;
 	}
 
 	public User createNewUser(IntraDTO intraDTO) {
 		String normalizedEmail = normalizeEmail(intraDTO.email);
-		LOG.info("Creating new user: " + normalizedEmail + " (provider: 42)");
+		LOG.debug("Creating new user (provider: 42)");
 
 		User user = new User();
 		user.email = normalizedEmail;
@@ -206,7 +206,7 @@ public class UserService {
 		user.avatarUrl = intraDTO.image != null ? intraDTO.image.link : null;
 
 		userRepository.persist(user);
-		LOG.info("User created successfully with username: " + user.username);
+		LOG.debug("User created successfully (provider: 42)");
 		return user;
 	}
 

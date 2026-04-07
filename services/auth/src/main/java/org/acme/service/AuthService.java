@@ -74,11 +74,11 @@ public class AuthService {
 			throw new WebApplicationException("User not found in identity", 401);
 		}
 		if (user.isBanned) {
-			LOG.warn("Banned user attempted to login: " + user.id);
+			LOG.warn("Banned user attempted to login");
 			throw new WebApplicationException("User is banned", 403);
 		}
 
-		LOG.info("Creating access token for user: " + user.id);
+		LOG.debug("Issuing access token");
 		String accessToken = Jwt
 				.subject(String.valueOf(user.id))
 				.upn(user.email)
@@ -103,7 +103,7 @@ public class AuthService {
 			throw new WebApplicationException("User not found in identity", 401);
 		}
 		if (user.isBanned) {
-			LOG.warn("Banned user attempted to create session: " + user.id);
+			LOG.warn("Banned user attempted to create session");
 			throw new WebApplicationException("User is banned", 403);
 		}
 		Instant expiry = Instant.now().plusSeconds(refreshExpiry);
@@ -117,7 +117,7 @@ public class AuthService {
 
 		long sessionCount = sessionRepository.countByUserId(user.id);
 		if (sessionCount >= maxSessionsPerUser) {
-			LOG.debug("User " + user.id + " exceeded max sessions, cleaning up oldest");
+			LOG.debug("Max sessions reached, cleaning up oldest session");
 			Session oldestSession = sessionRepository.findOldestByUserId(user.id).orElse(null);
 			if (oldestSession != null) {
 				sessionRepository.delete(oldestSession);
@@ -125,7 +125,7 @@ public class AuthService {
 		}
 
 		sessionRepository.persist(newSession);
-		LOG.info("Created session for user: " + user.id + ", sessionId: " + sessionId);
+		LOG.debug("Created new session");
 
 		NewCookie cookie = new NewCookie.Builder("sessionId")
 			.value(sessionId)
@@ -187,33 +187,33 @@ public class AuthService {
 	@Transactional
 	public UserResponseDTO refreshToken(String sessionId) {
 		if (sessionId == null || sessionId.isEmpty()) {
-			LOG.warn("Refresh attempted without session ID");
+			LOG.debug("Refresh attempted without session ID");
 			throw new WebApplicationException("Session ID is required", 401);
 		}
 
 		Session session = sessionRepository.findBySessionId(sessionId)
 				.orElseThrow(() -> {
-					LOG.warn("Refresh attempted with invalid session ID");
+					LOG.debug("Refresh attempted with invalid session ID");
 					return new WebApplicationException("Session not found", 404);
 				});
 
 		if (session.expiresAt.isBefore(Instant.now())) {
-			LOG.info("Expired session deleted: " + sessionId);
+			LOG.debug("Expired session deleted");
 			sessionRepository.delete(session);
 			throw new WebApplicationException("Session expired", 401);
 		}
 
 		User user = userRepository.findById(session.userId);
 		if (user == null) {
-			LOG.error("User not found for session: " + sessionId);
+			LOG.warn("User not found for session");
 			throw new WebApplicationException("User not found", 404);
 		}
 		if (user.isBanned) {
-			LOG.warn("Banned user attempted refresh: " + user.id);
+			LOG.warn("Banned user attempted refresh");
 			throw new WebApplicationException("User is banned", 403);
 		}
 
-		LOG.debug("Refreshing token for user: " + user.id + ", sessionId: " + sessionId);
+		LOG.debug("Refreshing access token");
 		String accessToken = Jwt
 				.subject(String.valueOf(user.id))
 				.upn(user.email)
@@ -231,23 +231,23 @@ public class AuthService {
 			? targetSessionId : cookieSessionId;
 
 		if (sessionToDelete == null || sessionToDelete.isEmpty()) {
-			LOG.warn("Logout attempted without session ID");
+			LOG.debug("Logout attempted without session ID");
 			throw new WebApplicationException("Session ID is required", 401);
 		}
 
 		Session session = sessionRepository.findBySessionId(sessionToDelete)
 				.orElseThrow(() -> {
-					LOG.warn("Logout attempted with invalid session ID");
+					LOG.debug("Logout attempted with invalid session ID");
 					return new WebApplicationException("Session not found", 404);
 				});
 
 		if (!session.userId.equals(userId)) {
-			LOG.warn("User " + userId + " attempted to delete session " + sessionToDelete);
+			LOG.warn("Unauthorized session deletion attempt");
 			throw new WebApplicationException("Unauthorized", 403);
 		}
 
 		sessionRepository.delete(session);
-		LOG.info("Session deleted (logout): " + sessionToDelete);
+		LOG.debug("Session deleted during logout");
 
 		if (sessionToDelete.equals(cookieSessionId)) {
 			return new NewCookie.Builder("sessionId")
@@ -266,12 +266,12 @@ public class AuthService {
 	public NewCookie deleteAllSessions(Long userId) {
 		User user = userRepository.findById(userId);
 		if (user == null) {
-			LOG.error("User not found for admin logout: " + userId);
+			LOG.warn("User not found for global logout");
 			throw new WebApplicationException("User not found", 404);
 		}
 
 		sessionRepository.deleteByUserId(userId);
-		LOG.info("User sessions deleted: " + userId);
+		LOG.debug("Deleted all user sessions");
 		return new NewCookie.Builder("sessionId")
 			.value("")
 			.path("/")
@@ -286,7 +286,7 @@ public class AuthService {
 	public List<@NonNull SessionDTO> listSessions(Long userId, String currentSessionId) {
 		User user = userRepository.findById(userId);
 		if (user == null) {
-			LOG.error("User not found for listing sessions: " + userId);
+			LOG.warn("User not found while listing sessions");
 			throw new WebApplicationException("User not found", 404);
 		}
 

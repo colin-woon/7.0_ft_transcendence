@@ -117,7 +117,7 @@ public class SeedService {
 				: null;
 
 			if (userByEmail != null && userByLogin != null && !userByEmail.id.equals(userByLogin.id)) {
-				LOG.error("Cannot bootstrap admin user due to email/login conflict: email=" + resolvedAdminEmail + ", login=" + resolvedAdminLogin);
+				LOG.error("Cannot bootstrap admin user due to email/login conflict");
 				return;
 			}
 
@@ -136,7 +136,7 @@ public class SeedService {
 				adminUser.isBanned = false;
 				adminUser.passwordHash = passwordService.hash(resolvedAdminPassword);
 				userRepository.persist(adminUser);
-				LOG.info("Bootstrapped admin user: " + resolvedAdminEmail);
+				LOG.info("Bootstrapped admin user");
 				return;
 			}
 
@@ -148,7 +148,7 @@ public class SeedService {
 			adminUser.isBanned = false;
 			adminUser.passwordHash = passwordService.hash(resolvedAdminPassword);
 			userRepository.persist(adminUser);
-			LOG.info("Ensured admin role for configured admin user: " + resolvedAdminEmail);
+			LOG.info("Ensured configured admin user state");
 		});
 	}
 
@@ -265,7 +265,7 @@ public class SeedService {
 			File file = new File(seedFilePath);
 			file.getParentFile().mkdirs();
 			objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, data);
-			LOG.info("Saved seed data to: " + seedFilePath);
+			LOG.debug("Saved seed data file");
 		} catch (IOException e) {
 			LOG.error("Failed to save seed file", e);
 		}
