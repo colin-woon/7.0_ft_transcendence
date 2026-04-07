@@ -3,15 +3,21 @@ package org.acme.api;
 import java.util.List;
 
 import org.acme.dto.AdminUpdateDTO;
+import org.acme.dto.IntraInfoDTO;
+import org.acme.dto.PasswordChangeDTO;
+import org.acme.dto.PasswordLoginDTO;
+import org.acme.dto.PasswordRegisterDTO;
 import org.acme.dto.SessionDTO;
 import org.acme.dto.UserInfoDTO;
 import org.acme.dto.UserResponseDTO;
 import org.acme.dto.UserSummaryDTO;
 import org.acme.dto.UserUpdateDTO;
+import org.acme.model.User;
 import org.acme.service.AdminService;
 import org.acme.service.AuthService;
 import org.acme.service.IntraService;
 import org.acme.service.ProfileService;
+import org.acme.service.UserService;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -54,6 +60,9 @@ public class AuthResource {
 	IntraService intraService;
 
 	@Inject
+	UserService userService;
+
+	@Inject
 	SecurityIdentity identity;
 
 	// =============================================================
@@ -88,6 +97,43 @@ public class AuthResource {
 		Response.ResponseBuilder responseBuilder = Response
 			.status(200)
 			.entity(userResponse);
+		if (isCookie)
+			responseBuilder.cookie(authService.createAccessTokenCookie(userResponse.accessToken));
+
+		return responseBuilder.build();
+	}
+
+	// To authenticate with email and password, not with OIDC
+	@POST
+	@Path("/password/login")
+	@PermitAll
+	public Response passwordLogin(
+						@Valid PasswordLoginDTO loginDTO,
+						@QueryParam("isCookie") @DefaultValue("true") Boolean isCookie) {
+		User user = userService.authenticateWithPassword(loginDTO);
+		UserResponseDTO userResponse = authService.createTokenForUser(user);
+
+		Response.ResponseBuilder responseBuilder = Response.ok(userResponse)
+			.cookie(authService.createSessionCookieForUser(user));
+		if (isCookie)
+			responseBuilder.cookie(authService.createAccessTokenCookie(userResponse.accessToken));
+
+		return responseBuilder.build();
+	}
+
+	// To register with email and password, not with OIDC (account creation is kept separate)
+	@POST
+	@Path("/password/register")
+	@PermitAll
+	public Response passwordRegister(
+							@Valid PasswordRegisterDTO registerDTO,
+							@QueryParam("isCookie") @DefaultValue("true") Boolean isCookie) {
+		User user = userService.registerWithPassword(registerDTO);
+		UserResponseDTO userResponse = authService.createTokenForUser(user);
+
+		Response.ResponseBuilder responseBuilder = Response.status(201)
+			.entity(userResponse)
+			.cookie(authService.createSessionCookieForUser(user));
 		if (isCookie)
 			responseBuilder.cookie(authService.createAccessTokenCookie(userResponse.accessToken));
 
@@ -170,6 +216,18 @@ public class AuthResource {
 		JsonWebToken jwt = (JsonWebToken) identity.getPrincipal();
 
 		return profileService.updateMyInfo(Long.valueOf(jwt.getSubject()), updateDTO);
+	}
+
+	// To update the current user password
+	@POST
+	@Path("/me/password")
+	@Authenticated
+	public UserInfoDTO updateMyPassword(@Valid PasswordChangeDTO changeDTO) {
+		JsonWebToken jwt = (JsonWebToken) identity.getPrincipal();
+
+		User user = userService.updatePassword(Long.valueOf(jwt.getSubject()), changeDTO);
+		IntraInfoDTO intraInfo = user.intra != null ? new IntraInfoDTO(user.intra) : null;
+		return new UserInfoDTO(user, intraInfo);
 	}
 
 	// To delete the current logged in user

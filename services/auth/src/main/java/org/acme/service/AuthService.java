@@ -64,6 +64,11 @@ public class AuthService {
 	@Transactional
 	public UserResponseDTO createToken(SecurityIdentity identity) {
 		User user = identity.getAttribute("user");
+		return createTokenForUser(user);
+	}
+
+	@Transactional
+	public UserResponseDTO createTokenForUser(User user) {
 		if (user == null) {
 			LOG.error("User not found in identity during token creation");
 			throw new WebApplicationException("User not found in identity", 401);
@@ -88,6 +93,11 @@ public class AuthService {
 	@Transactional
 	public NewCookie createSessionCookie(SecurityIdentity identity) {
 		User user = identity.getAttribute("user");
+		return createSessionCookieForUser(user);
+	}
+
+	@Transactional
+	public NewCookie createSessionCookieForUser(User user) {
 		if (user == null) {
 			LOG.error("User not found in identity during session creation");
 			throw new WebApplicationException("User not found in identity", 401);
