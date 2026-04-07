@@ -6,6 +6,7 @@ export interface ForumPost {
   id: number;
   title: string;
   author: string;
+  authorId?: number;
   avatar: string;
   comments: number;
   views: number;
@@ -28,7 +29,16 @@ export interface ForumApiPostSummary {
 
 export interface ForumApiProjectSummary {
   id: number;
+  slug: string;
   name: string;
+  description?: string;
+  objectives?: string[];
+  estimate_time?: string;
+  difficulty?: string;
+  xp?: number;
+  solo?: boolean;
+  post_count?: number;
+  created_at?: string;
 }
 
 export interface ForumApiPostDetail {
@@ -58,6 +68,7 @@ export interface ForumPostDetail {
   title: string;
   content: string;
   author: string;
+  authorId?: number;
   avatar: string;
   category: string;
   timestamp: string;
@@ -70,6 +81,7 @@ export interface ForumPostDetail {
 export interface ForumComment {
   id: number;
   author: string;
+  authorId?: number;
   avatar: string;
   content: string;
   timestamp: string;

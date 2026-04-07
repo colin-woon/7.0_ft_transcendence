@@ -32,7 +32,6 @@ public class GatewayResource {
 	@GET
 	@Path("/ping")
 	public Response ping() {
-		System.out.println("called gateway ping");
 		return Response.ok(Map.of("message", "pong from gateway"))
 				.header("X-Internal-Debug", "true")
 				.build();
@@ -41,7 +40,6 @@ public class GatewayResource {
 	@GET
 	@Path("/{service}/{subpath: .*}")
 	public Response proxyGet(@PathParam("service") String service, @PathParam("subpath") String subpath) {
-		System.out.println("Proxying GET request to service: " + service + ", subpath: " + subpath);
 		return switch (service) {
 			case "auth" -> authService.proxyGet(buildPath(service, subpath));
 			case "forum" -> forumService.proxyGet(buildPath(service, subpath));

@@ -21,6 +21,7 @@ public class UserInfoDTO {
 
 	public boolean linkedWithGoogle;
 	public boolean linkedWithIntra;
+	public boolean hasPassword;
 
 	public IntraInfoDTO intraInfo;
 
@@ -28,7 +29,7 @@ public class UserInfoDTO {
 
 	public UserInfoDTO(Long id, String username, String fullName, String avatarUrl, String bio, String email,
 			UserRole role, boolean isBanned, Instant lastSeenAt, Instant createdAt, boolean linkedWithGoogle,
-			Instant updatedAt, boolean linkedWithIntra, IntraInfoDTO intraInfo) {
+			Instant updatedAt, boolean linkedWithIntra, boolean hasPassword, IntraInfoDTO intraInfo) {
 		this.id = id;
 		this.username = username;
 		this.fullName = fullName;
@@ -42,6 +43,7 @@ public class UserInfoDTO {
 		this.createdAt = createdAt;
 		this.linkedWithGoogle = linkedWithGoogle;
 		this.linkedWithIntra = linkedWithIntra;
+		this.hasPassword = hasPassword;
 		this.intraInfo = intraInfo;
 	}
 
@@ -59,6 +61,7 @@ public class UserInfoDTO {
 		this.createdAt = user.createdAt;
 		this.linkedWithGoogle = user.googleId != null;
 		this.linkedWithIntra = user.intraId != null;
+		this.hasPassword = user.passwordHash != null && !user.passwordHash.isBlank();
 		this.intraInfo = intraInfo;
 	}
 }

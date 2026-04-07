@@ -37,6 +37,9 @@ public class User {
     @Column(name = "google_id", unique = true)
     public String googleId;
 
+    @Column(name = "password_hash")
+    public String passwordHash;
+
     // --- Profile Data ---
     @Column(nullable = false, unique = true)
     public String username;

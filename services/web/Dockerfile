@@ -31,6 +31,9 @@ RUN npm run build
 # --- Stage 4: Runner (Production Only) ---
 FROM node:${NODE_VERSION} AS runner
 WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules

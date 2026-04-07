@@ -15,6 +15,7 @@ export interface ServerAuthUser {
   createdAt: string
   linkedWithGoogle: boolean
   linkedWithIntra: boolean
+  hasPassword: boolean
   updatedAt?: string
   intraInfo?: ServerIntraInfo | null
 }

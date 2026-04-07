@@ -3,22 +3,54 @@
 import type { ForumApiPostSummary, ForumPost, ForumApiPostDetail, ForumPostDetail, ForumApiComment, ForumComment } from '../models';
 import type { ForumSort } from '../models';
 import { getProjectsByIdMap, mapApiPostToForumPost, toRelativeTime } from './project';
-import { cache } from 'react'
+import { cookies } from 'next/headers';
 
-const FORUM_SERVICE_URL = 'http://forum-service:8080';
-const API_BASE_URL = FORUM_SERVICE_URL;
-//TODO: gateway-service:8080/api/forum/projects
+function getForumApiBaseUrl(): string {
+  const isDev = process.env.NODE_ENV === 'development';
+  const devGateway = process.env.DEV_GATEWAY_URL?.trim() || 'http://gateway-service:8080';
+
+  let raw =
+    process.env.GATEWAY_URL?.trim() ||
+    process.env.NEXT_PUBLIC_GATEWAY_URL?.trim() ||
+    process.env.NEXT_PUBLIC_API_URL?.trim() ||
+    'http://localhost:8001';
+
+  // In Docker dev, gateway serves HTTP on 8080 while production uses HTTPS 8443.
+  if (isDev && raw === 'https://gateway-service:8443') {
+    raw = devGateway;
+  }
+
+  const normalized = raw.endsWith('/') ? raw.slice(0, -1) : raw;
+  return `${normalized}/api/forum`;
+}
+
+async function getCookieHeader(): Promise<string> {
+  const cookieStore = await cookies();
+  return cookieStore
+    .getAll()
+    .map(({ name, value }) => `${name}=${value}`)
+    .join('; ');
+}
+
+async function forumFetch(path: string, init: RequestInit): Promise<Response> {
+  const cookieHeader = await getCookieHeader();
+  const headers = new Headers(init.headers);
+
+  if (cookieHeader && !headers.has('Cookie')) {
+    headers.set('Cookie', cookieHeader);
+  }
+
+  return fetch(`${getForumApiBaseUrl()}${path}`, {
+    ...init,
+    headers,
+  });
+}
 
 export async function getAllPosts(sort: ForumSort = 'Top'): Promise<ForumPost[]> {
-  var postsPath;
-
-    if (sort ==='New')
-      postsPath = '/posts/new';
-    else if (sort === 'Top')
-      postsPath = '/posts/top';
+  const postsPath = sort === 'New' ? '/posts/new' : '/posts/top';
 
   const [postsResponse, projectsById] = await Promise.all([
-    fetch(`${API_BASE_URL}${postsPath}`, {
+    forumFetch(postsPath, {
       method: 'GET',
       cache: 'no-store',
     }),
@@ -41,7 +73,7 @@ export async function searchPosts(searchQuery: string): Promise<ForumPost[]> {
   }
 
   const [postsResponse, projectsById] = await Promise.all([
-    fetch(`${API_BASE_URL}/search/posts?search_query=${encodeURIComponent(trimmedQuery)}`, {
+    forumFetch(`/search/posts?search_query=${encodeURIComponent(trimmedQuery)}`, {
       method: 'GET',
       cache: 'no-store',
     }),
@@ -57,7 +89,7 @@ export async function searchPosts(searchQuery: string): Promise<ForumPost[]> {
 }
 
 export async function getPostDetail(postId: number): Promise<{ post: ForumPostDetail; projectName?: string }> {
-  const postResponse = await fetch(`${API_BASE_URL}/posts/${postId}`, {
+  const postResponse = await forumFetch(`/posts/${postId}`, {
     method: 'GET',
     cache: 'no-store',
   });
@@ -76,6 +108,7 @@ export async function getPostDetail(postId: number): Promise<{ post: ForumPostDe
       title: postData.title,
       content: postData.content,
       author: `user_${postData.author_id}`,
+      authorId: postData.author_id,
       avatar: '',
       category: projectName ?? `Project ${postData.project_id}`,
       timestamp: toRelativeTime(postData.created_at),
@@ -89,7 +122,7 @@ export async function getPostDetail(postId: number): Promise<{ post: ForumPostDe
 }
 
 export async function getPostComments(postId: number): Promise<ForumComment[]> {
-  const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments/top`, {
+  const response = await forumFetch(`/posts/${postId}/comments/top`, {
     method: 'GET',
     cache: 'no-store',
   });
@@ -102,6 +135,7 @@ export async function getPostComments(postId: number): Promise<ForumComment[]> {
   return commentsData.map((comment) => ({
     id: comment.id,
     author: `user_${comment.author_id}`,
+    authorId: comment.author_id,
     avatar: '',
     content: comment.content,
     timestamp: toRelativeTime(comment.created_at),
@@ -131,7 +165,7 @@ export async function createProjectPost(
   projectId: number,
   payload: CreateProjectPostPayload,
 ): Promise<CreateProjectPostResponse> {
-  const response = await fetch(`${API_BASE_URL}/projects/${projectId}/posts`, {
+  const response = await forumFetch(`/projects/${projectId}/posts`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -163,7 +197,7 @@ export async function createPostComment(
   postId: number,
   payload: CreatePostCommentPayload,
 ): Promise<CreatePostCommentResponse> {
-  const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments`, {
+  const response = await forumFetch(`/posts/${postId}/comments`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -192,7 +226,7 @@ export async function createPostComment(
 }
 
 export async function voteOnPost(postId: number, value: 1 | -1): Promise<number> {
-  const response = await fetch(`${API_BASE_URL}/posts/${postId}/vote`, {
+  const response = await forumFetch(`/posts/${postId}/vote`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -211,7 +245,7 @@ export async function voteOnPost(postId: number, value: 1 | -1): Promise<number>
 }
 
 export async function voteOnComment(postId: number, commentId: number, value: 1 | -1): Promise<number> {
-  const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments/${commentId}/vote`, {
+  const response = await forumFetch(`/posts/${postId}/comments/${commentId}/vote`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -156,6 +156,18 @@ def get_project_by_id(db: Session, project_id: int) -> models.Project:
     return project
 
 
+def require_admin(is_admin: bool) -> None:
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Admin role required")
+
+
+def require_owner_or_admin(resource_owner_id: int, user_id: int, is_admin: bool) -> None:
+    if is_admin:
+        return
+    if resource_owner_id != user_id:
+        raise HTTPException(status_code=403, detail="You are not allowed to modify this resource")
+
+
 def create_project(db: Session, data: schemas.ProjectCreate) -> models.Project:
     new_project = models.Project(**data.model_dump())
     db.add(new_project)
@@ -166,6 +178,110 @@ def create_project(db: Session, data: schemas.ProjectCreate) -> models.Project:
         raise HTTPException(status_code=400, detail="Project slug already exists")
     db.refresh(new_project)
     return new_project
+
+
+def update_project(db: Session, project_id: int, data: schemas.ProjectUpdate) -> models.Project:
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    payload = data.model_dump(exclude_unset=True)
+    if not payload:
+        raise HTTPException(status_code=400, detail="No fields provided for project update")
+
+    for field, value in payload.items():
+        setattr(project, field, value)
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Project slug already exists")
+
+    db.refresh(project)
+    project.post_count = get_project_post_count(db, project_id)
+    return project
+
+
+def delete_project(db: Session, project_id: int) -> None:
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    db.delete(project)
+    db.commit()
+
+
+def subscribe_to_project(db: Session, project_id: int, user_id: int) -> tuple[models.ProjectSubscription, bool]:
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    existing = db.query(models.ProjectSubscription).filter(
+        models.ProjectSubscription.project_id == project_id,
+        models.ProjectSubscription.user_id == user_id,
+    ).first()
+    if existing:
+        return existing, False
+
+    subscription = models.ProjectSubscription(project_id=project_id, user_id=user_id)
+    db.add(subscription)
+    db.commit()
+    db.refresh(subscription)
+    return subscription, True
+
+
+def unsubscribe_from_project(db: Session, project_id: int, user_id: int) -> bool:
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    existing = db.query(models.ProjectSubscription).filter(
+        models.ProjectSubscription.project_id == project_id,
+        models.ProjectSubscription.user_id == user_id,
+    ).first()
+    if not existing:
+        return False
+
+    db.delete(existing)
+    db.commit()
+    return True
+
+
+def get_subscriptions_by_user(db: Session, user_id: int) -> List[models.Project]:
+    return (
+        db.query(models.Project)
+        .join(
+            models.ProjectSubscription,
+            models.Project.id == models.ProjectSubscription.project_id,
+        )
+        .filter(models.ProjectSubscription.user_id == user_id)
+        .order_by(models.ProjectSubscription.subscribed_at.desc())
+        .all()
+    )
+
+
+def is_user_subscribed_to_project(db: Session, project_id: int, user_id: int) -> bool:
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    existing = db.query(models.ProjectSubscription).filter(
+        models.ProjectSubscription.project_id == project_id,
+        models.ProjectSubscription.user_id == user_id,
+    ).first()
+    return existing is not None
+
+
+def get_project_subscriber_count(db: Session, project_id: int) -> int:
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    count = db.query(func.count(models.ProjectSubscription.user_id)).filter(
+        models.ProjectSubscription.project_id == project_id
+    ).scalar()
+    return int(count or 0)
 
 
 
@@ -292,6 +408,41 @@ def create_post(db: Session, project_id: int, user_id: int, data: schemas.PostCr
     return new_post
 
 
+def update_post(db: Session, post_id: int, user_id: int, is_admin: bool, data: schemas.PostUpdate) -> models.ForumPost:
+    post = db.query(models.ForumPost).filter(models.ForumPost.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    require_owner_or_admin(post.author_id, user_id, is_admin)
+
+    payload = data.model_dump(exclude_unset=True)
+    if not payload:
+        raise HTTPException(status_code=400, detail="No fields provided for post update")
+
+    for field, value in payload.items():
+        setattr(post, field, value)
+
+    db.commit()
+    db.refresh(post)
+    post.vote_score = get_post_vote_score(db, post.id)
+    return post
+
+
+def delete_post(db: Session, post_id: int, user_id: int, is_admin: bool) -> None:
+    post = db.query(models.ForumPost).filter(models.ForumPost.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    require_owner_or_admin(post.author_id, user_id, is_admin)
+
+    project = db.query(models.Project).filter(models.Project.id == post.project_id).first()
+    if project and project.post_count > 0:
+        project.post_count -= 1
+
+    db.delete(post)
+    db.commit()
+
+
 def get_post_detail(db: Session, post_id: int) -> models.ForumPost:
     post = db.query(models.ForumPost).filter(models.ForumPost.id == post_id).first()
     if not post:
@@ -396,6 +547,62 @@ def create_comment(db: Session, post_id: int, user_id: int, data: schemas.Commen
     db.commit()
     db.refresh(new_comment)
     return new_comment
+
+
+def update_comment(
+    db: Session,
+    post_id: int,
+    comment_id: int,
+    user_id: int,
+    is_admin: bool,
+    data: schemas.CommentUpdate,
+) -> models.Comment:
+    post = db.query(models.ForumPost).filter(models.ForumPost.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    comment = db.query(models.Comment).filter(models.Comment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    if comment.post_id != post_id:
+        raise HTTPException(status_code=400, detail="Comment does not belong to this post")
+
+    require_owner_or_admin(comment.author_id, user_id, is_admin)
+
+    payload = data.model_dump(exclude_unset=True)
+    if not payload:
+        raise HTTPException(status_code=400, detail="No fields provided for comment update")
+
+    for field, value in payload.items():
+        setattr(comment, field, value)
+
+    db.commit()
+    db.refresh(comment)
+    comment.vote_score = get_comment_vote_score(db, comment.id)
+    comment.is_best_answer = False
+    return comment
+
+
+def delete_comment(db: Session, post_id: int, comment_id: int, user_id: int, is_admin: bool) -> None:
+    post = db.query(models.ForumPost).filter(models.ForumPost.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    comment = db.query(models.Comment).filter(models.Comment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    if comment.post_id != post_id:
+        raise HTTPException(status_code=400, detail="Comment does not belong to this post")
+
+    require_owner_or_admin(comment.author_id, user_id, is_admin)
+
+    if post.comment_count > 0:
+        post.comment_count -= 1
+
+    db.delete(comment)
+    db.commit()
 
 
 

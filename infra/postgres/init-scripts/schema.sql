@@ -30,7 +30,8 @@ CREATE TABLE auth_service.users (
     email VARCHAR(255) UNIQUE NOT NULL,
     intra_id VARCHAR(50) UNIQUE, -- For 42 OAuth
     google_id VARCHAR(255) UNIQUE, -- For Google OAuth
-
+    password_hash TEXT,
+    
     -- Profile Data
     username VARCHAR(50) UNIQUE NOT NULL, -- Display name (could be 42 login)
     full_name VARCHAR(100),
@@ -129,6 +130,7 @@ CREATE TABLE forum_service.projects (
     objectives TEXT[],
     estimate_time VARCHAR(50),
     difficulty VARCHAR(10),
+    xp INTEGER DEFAULT 0,
     solo BOOLEAN DEFAULT TRUE,
     post_count INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -181,6 +183,14 @@ CREATE TABLE forum_service.comment_votes (
     PRIMARY KEY (comment_id, user_id)
 );
 
+-- Project subscriptions (many users <-> many projects)
+CREATE TABLE forum_service.project_subscriptions (
+    project_id INTEGER REFERENCES forum_service.projects(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL,
+    subscribed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (project_id, user_id)
+);
+
 -- Triggers for Forum
 CREATE TRIGGER update_projects_modtime BEFORE UPDATE ON forum_service.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_posts_modtime BEFORE UPDATE ON forum_service.forum_posts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -189,6 +199,7 @@ CREATE TRIGGER update_comments_modtime BEFORE UPDATE ON forum_service.comments F
 -- Indexes for Performance (Critical for forum lookups)
 CREATE INDEX idx_posts_project ON forum_service.forum_posts(project_id);
 CREATE INDEX idx_comments_post ON forum_service.comments(post_id);
+CREATE INDEX idx_project_subscriptions_user_id ON forum_service.project_subscriptions(user_id);
 
 
 -- =======================================================

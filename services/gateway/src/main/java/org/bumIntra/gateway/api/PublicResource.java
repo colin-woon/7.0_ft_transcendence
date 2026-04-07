@@ -20,7 +20,6 @@ public class PublicResource {
 	@GET
 	@Path("/ping")
 	public Response ping() {
-		System.out.println("called public ping");
 		return Response.ok("pong from public endpoint").build();
 	}
 
@@ -46,10 +45,16 @@ public class PublicResource {
 	@Path("/{service}/{subpath: .*}")
 	public Response proxyPublicPost(@PathParam("service") String service, @PathParam("subpath") String subpath,
 			byte[] body) {
-		if ("auth".equals(service) && "refresh".equals(subpath)) {
+		if ("auth".equals(service) && isAllowedAuthPublicPost(subpath)) {
 			return authService.proxyPost(buildUrl(service, subpath), body);
 		}
 		return Response.status(Response.Status.NOT_FOUND).build();
+	}
+
+	private boolean isAllowedAuthPublicPost(String subpath) {
+		return "refresh".equals(subpath)
+			|| "password/login".equals(subpath)
+			|| "password/register".equals(subpath);
 	}
 
 	private String buildUrl(String service, String subpath) {

@@ -75,7 +75,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <Users size={20} className="text-slate-600 group-hover:text-[#0f6f6b]" />
                 <span className="group-hover:text-[#0f6f6b]">Friends</span>
               </Link>
-              <Link onClick={onClose} href="/home/projects" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group">
+              <Link onClick={onClose} href="projects" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group">
                 <Newspaper size={20} className="text-slate-600 group-hover:text-[#0f6f6b]" />
                 <span className="group-hover:text-[#0f6f6b]">Posts</span>
               </Link>

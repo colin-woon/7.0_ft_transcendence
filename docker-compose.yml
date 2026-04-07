@@ -17,12 +17,43 @@ services:
             timeout: 5s
             retries: 5
 
+    db-backup-service:
+        image: prodrigestivill/postgres-backup-local:18
+        container_name: postgres-backup-service
+        restart: unless-stopped
+        profiles: ['db', 'all']
+        depends_on:
+            db-service:
+                condition: service_healthy
+        env_file:
+            - ./environment/db.env
+        environment:
+            - POSTGRES_HOST=db-service
+            - POSTGRES_PORT=5432
+            - SCHEDULE=@daily
+            - BACKUP_ON_START=TRUE
+            - BACKUP_KEEP_DAYS=7
+            - BACKUP_KEEP_WEEKS=4
+            - BACKUP_KEEP_MONTHS=6
+            - HEALTHCHECK_PORT=8080
+        healthcheck:
+            test: ['CMD', 'curl', '-f', 'http://localhost:8080/']
+            interval: 30s
+            timeout: 5s
+            start_period: 10s
+            retries: 3
+        volumes:
+            - ./shared/backups/postgres:/backups
+        networks:
+            - 42_overflow
+
     auth-service:
         build:
             context: .
             dockerfile: services/auth/src/main/docker/Dockerfile.custom
             target: production
         container_name: auth-service
+        restart: unless-stopped
         profiles: ['auth', 'all']
         depends_on:
             db-service:
@@ -31,7 +62,17 @@ services:
             - 42_overflow
         # auth to add health route or use management port
         healthcheck:
-            test: ['CMD', 'curl', '-f', 'http://localhost:9000/q/health']
+            test:
+                [
+                    'CMD',
+                    'curl',
+                    '-fk',
+                    '--cert-type',
+                    'P12',
+                    '--cert',
+                    '/certs/auth-keystore.p12:bumintra',
+                    'https://localhost:9000/q/health',
+                ]
             interval: 10s
             timeout: 5s
             start_period: 30s
@@ -48,6 +89,7 @@ services:
             context: .
             dockerfile: services/chat/Dockerfile
         container_name: chat-service
+        restart: unless-stopped
         profiles: ['chat', 'all']
         depends_on:
             db-service:
@@ -69,6 +111,22 @@ services:
             - ./certs/runtime/chat/chat.crt:/certs/chat.crt:ro
             - ./certs/runtime/chat/chat.key:/certs/chat.key:ro
             - ./certs/ca/ca.crt:/certs/internal-ca.crt:ro
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'curl',
+                    '-fk',
+                    '--cert',
+                    '/certs/chat.crt',
+                    '--key',
+                    '/certs/chat.key',
+                    'https://localhost:8443/health',
+                ]
+            interval: 10s
+            timeout: 5s
+            start_period: 20s
+            retries: 3
         # ports:
         #     - '8003:8080'
 
@@ -78,6 +136,7 @@ services:
             dockerfile: Dockerfile
             target: production
         container_name: forum-service
+        restart: unless-stopped
         working_dir: /app
         profiles: ['forum', 'all']
         depends_on:
@@ -89,7 +148,17 @@ services:
             - ./environment/shared.env
             - ./environment/forum.env
         healthcheck:
-            test: ['CMD', 'curl', '-fk', 'https://localhost:8443/health'] # need to open public route
+            test:
+                [
+                    'CMD',
+                    'curl',
+                    '-fk',
+                    '--cert',
+                    '/certs/forum.crt',
+                    '--key',
+                    '/certs/forum.key',
+                    'https://localhost:8443/health',
+                ]
             interval: 10s
             timeout: 5s
             start_period: 20s
@@ -121,11 +190,28 @@ services:
             context: .
             dockerfile: services/web/Dockerfile
         container_name: web_service
+        restart: unless-stopped
         profiles: ['web', 'all']
         networks:
             - 42_overflow
         env_file:
             - ./environment/web.env
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'curl',
+                    '-fk',
+                    '--cert',
+                    '/certs/web.crt',
+                    '--key',
+                    '/certs/web.key',
+                    'https://localhost:3000/api/health',
+                ]
+            interval: 10s
+            timeout: 5s
+            start_period: 30s
+            retries: 3
         volumes:
             - ./certs/runtime/web/web.crt:/certs/web.crt:ro
             - ./certs/runtime/web/web.key:/certs/web.key:ro
@@ -137,6 +223,7 @@ services:
             dockerfile: services/gateway/src/main/docker/Dockerfile.custom
             target: production
         container_name: gateway-service
+        restart: unless-stopped
         profiles: ['gateway', 'all']
         networks:
             - 42_overflow
@@ -162,8 +249,6 @@ services:
                 condition: service_healthy
             gw-redis-service:
                 condition: service_healthy
-            web-service:
-                condition: service_started
         env_file:
             - ./environment/shared.env
             - ./environment/gateway.env
@@ -179,6 +264,7 @@ services:
     nginx-service:
         image: nginx:stable-alpine
         container_name: nginx
+        restart: unless-stopped
         profiles: ['nginx', 'all']
         ports:
             - '80:80'
@@ -187,11 +273,17 @@ services:
             gateway-service:
                 condition: service_healthy
             web-service:
-                condition: service_started
+                condition: service_healthy
         networks:
             - 42_overflow
         environment:
             - NGINX_ENTRYPOINT_QUIET_LOGS=1
+        healthcheck:
+            test: ['CMD', 'curl', '-fk', 'https://localhost/health']
+            interval: 10s
+            timeout: 5s
+            start_period: 10s
+            retries: 3
         volumes:
             - ./infra/nginx/nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
             - ./certs/runtime/nginx/nginx.crt:/etc/nginx/certs/nginx-internal.crt:ro
@@ -203,6 +295,7 @@ services:
             context: ./infra/redis/gateway-redis
             dockerfile: Dockerfile
         container_name: gw-redis-service
+        restart: always
         profiles: ['gw-redis', 'gateway', 'all']
         networks:
             - 42_overflow
@@ -216,9 +309,16 @@ services:
     prometheus-service:
         image: prom/prometheus:v3.10.0
         container_name: prometheus-service
+        restart: unless-stopped
         profiles: ['prometheus', 'all']
         networks:
             - 42_overflow
+        healthcheck:
+            test: ['CMD-SHELL', "ps | grep '[p]rometheus' >/dev/null"]
+            interval: 10s
+            timeout: 5s
+            start_period: 20s
+            retries: 3
         command:
             - --config.file=/etc/prometheus/prometheus.yml
             - --web.config.file=/etc/prometheus/web.yml
@@ -235,9 +335,16 @@ services:
     grafana-service:
         image: grafana/grafana:12.4.1
         container_name: grafana-service
+        restart: unless-stopped
         profiles: ['grafana', 'all']
         networks:
             - 42_overflow
+        healthcheck:
+            test: ['CMD', 'curl', '-fk', 'https://localhost:3000/api/health']
+            interval: 10s
+            timeout: 5s
+            start_period: 20s
+            retries: 3
         environment:
             - GF_SERVER_ROOT_URL=https://localhost/grafana/
             - GF_SERVER_SERVE_FROM_SUB_PATH=true
