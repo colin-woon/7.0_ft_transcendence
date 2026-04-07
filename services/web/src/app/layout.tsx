@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Test Frontend - mTLS SSR',
-  description: 'Testing Next.js SSR with mTLS in Docker',
+	title: '42 Overflow',
+	description: 'A Q&A platform for 42 projects',
 };
 
 export default function RootLayout({

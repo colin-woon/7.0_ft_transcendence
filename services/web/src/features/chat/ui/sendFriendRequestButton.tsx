@@ -1,12 +1,12 @@
 'use client';
 
 import { sendFriendRequest } from '../api/chat-services';
-import { useChat } from '../models';
+import { useAllChatSessions } from '../models';
 
 export function SendFriendRequestButton() {
-  const userChat = useChat();
+  const { tempCurrentUserId } = useAllChatSessions();
 
   return (
-        <button className="btn btn-primary" onClick={() => sendFriendRequest(userChat.tempCurrentUserId!, 3)}>Send Friend Request</button>
+        <button className="btn btn-primary" onClick={() => sendFriendRequest(tempCurrentUserId!, 3)}>Send Friend Request</button>
   );
 }

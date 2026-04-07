@@ -5,28 +5,40 @@ CREATE TYPE chat_service.friend_status AS ENUM ('pending', 'accepted', 'blocked'
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE chat_service.friendships (
-    chat_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    requester_id INTEGER NOT NULL, -- auth_service.users(id)
-    addressee_id INTEGER NOT NULL, -- auth_service.users(id)
+    requester_id INTEGER NOT NULL,
+    addressee_id INTEGER NOT NULL,
     status chat_service.friend_status DEFAULT 'none',
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (requester_id, addressee_id)
+    PRIMARY KEY (requester_id, addressee_id)
 );
 
-CREATE TABLE chat_service.messages (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, -- Chat grows fast, use BIGINT
-    chat_id UUID NOT NULL,
-    sender_id INTEGER NOT NULL,
-    receiver_id INTEGER NOT NULL,
-    content TEXT NOT NULL,
-
-    is_read BOOLEAN DEFAULT FALSE,
-    read_at TIMESTAMPTZ,
-
+-- UNIFIED ROOM (room identify [direct/group])
+CREATE TABLE chat_service.rooms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    type VARCHAR(20) NOT NULL CHECK (type IN ('direct', 'group')),
+    name VARCHAR(255), -- Null for direct, optionally populated for groups
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- Indexes (sqlc ignores these, but DB loves them, its here for documentation)
-CREATE INDEX idx_friendships_user ON chat_service.friendships(requester_id);
-CREATE INDEX idx_chat_id_created_at ON chat_service.messages (chat_id, created_at);
+-- JUNCTION TABLE (who is in which room, their role/authority)
+CREATE TABLE chat_service.room_members (
+    chat_id UUID NOT NULL REFERENCES chat_service.rooms(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL,
+    role VARCHAR(20) DEFAULT 'member' CHECK (role IN ('admin', 'member')),
+    joined_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    last_read_message_id BIGINT, -- Replaces is_read on the message table
+    PRIMARY KEY (chat_id, user_id)
+);
+
+CREATE TABLE chat_service.messages (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    chat_id UUID NOT NULL REFERENCES chat_service.rooms(id) ON DELETE CASCADE,
+    sender_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_room_members_user_id ON chat_service.room_members(user_id);
+CREATE INDEX idx_friendships_requester ON chat_service.friendships(requester_id);
+CREATE INDEX idx_messages_chat_history ON chat_service.messages (chat_id, created_at DESC);

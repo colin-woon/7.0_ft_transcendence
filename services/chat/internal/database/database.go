@@ -23,7 +23,8 @@ type Service interface {
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.
 	Close() error
-	Queries() *Queries
+	GetQueries() *Queries
+	GetDB() *sql.DB
 }
 
 type service struct {
@@ -60,7 +61,18 @@ func NewConnection() Service {
 		log.Fatal("DB ping failed: ", err)
 	}
 
-	sqlcQueries := New(pool)
+	// 1. Create the standard library wrapper FIRST
+	standardDB := stdlib.OpenDBFromPool(pool)
+
+	// 2. Pass the WRAPPER to sqlc, not the pool
+	// Because sqlc is now configured for "database/sql",
+	// it needs standardDB to work.
+	sqlcQueries := New(standardDB)
+
+	dbInstance = &service{
+		db: standardDB,
+		q:  sqlcQueries,
+	}
 
 	dbInstance = &service{
 		db: stdlib.OpenDBFromPool(pool),
@@ -129,6 +141,10 @@ func (s *service) Close() error {
 	return s.db.Close()
 }
 
-func (s *service) Queries() *Queries {
+func (s *service) GetQueries() *Queries {
 	return s.q
+}
+
+func (s *service) GetDB() *sql.DB {
+	return s.db
 }

@@ -5,10 +5,11 @@
 package database
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"fmt"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
 
 type ChatServiceFriendStatus string
@@ -57,21 +58,32 @@ func (ns NullChatServiceFriendStatus) Value() (driver.Value, error) {
 }
 
 type ChatServiceFriendship struct {
-	ChatID      pgtype.UUID                 `json:"chatId"`
 	RequesterID int32                       `json:"requesterId"`
 	AddresseeID int32                       `json:"addresseeId"`
 	Status      NullChatServiceFriendStatus `json:"status"`
-	CreatedAt   pgtype.Timestamptz          `json:"createdAt"`
-	UpdatedAt   pgtype.Timestamptz          `json:"updatedAt"`
+	CreatedAt   sql.NullTime                `json:"createdAt"`
+	UpdatedAt   sql.NullTime                `json:"updatedAt"`
 }
 
 type ChatServiceMessage struct {
-	ID         int64              `json:"id"`
-	ChatID     pgtype.UUID        `json:"chatId"`
-	SenderID   int32              `json:"senderId"`
-	ReceiverID int32              `json:"receiverId"`
-	Content    string             `json:"content"`
-	IsRead     pgtype.Bool        `json:"isRead"`
-	ReadAt     pgtype.Timestamptz `json:"readAt"`
-	CreatedAt  pgtype.Timestamptz `json:"createdAt"`
+	ID        int64        `json:"id"`
+	ChatID    uuid.UUID    `json:"chatId"`
+	SenderID  int32        `json:"senderId"`
+	Content   string       `json:"content"`
+	CreatedAt sql.NullTime `json:"createdAt"`
+}
+
+type ChatServiceRoom struct {
+	ID        uuid.UUID      `json:"id"`
+	Type      string         `json:"type"`
+	Name      sql.NullString `json:"name"`
+	CreatedAt sql.NullTime   `json:"createdAt"`
+}
+
+type ChatServiceRoomMember struct {
+	ChatID            uuid.UUID      `json:"chatId"`
+	UserID            int32          `json:"userId"`
+	Role              sql.NullString `json:"role"`
+	JoinedAt          sql.NullTime   `json:"joinedAt"`
+	LastReadMessageID sql.NullInt64  `json:"lastReadMessageId"`
 }

@@ -1,38 +1,58 @@
 export type FriendId = number; 
 export type ChatId = string; 
-export type AllSessions = Record<ChatId, ChatMessage[]>;
 
 export interface Friendship {
-  chatIds: ChatId;
-  friends: FriendId;
+  friendId: FriendId;
+  chatId: ChatId;
 }
 
 export type FriendList = Friendship[];
 
 export interface ChatMessage {
-    id: ChatId;
+    id: number | string;
+    chatId: ChatId;
     senderId: FriendId;
-    recipientId: FriendId;
     content: string;
     createdAt: string;
 }
 
+export interface UserTyping {
+  chatId: ChatId;
+  senderId: FriendId;
+}
+
+export interface UserStatus {
+  userId: string;
+  status: 'online' | 'offline';
+}
+
+export interface ReadReceipt {
+  chatId: ChatId;
+  userId: FriendId;
+  messageId: number;
+}
+
+export type ChatRoomType = 'group' | 'direct';
+
+export interface ChatRoom {
+    chatId: string;
+    type: ChatRoomType;
+    name: string | null;
+    memberIds: FriendId[];
+    messages: ChatMessage[] | null;
+    readReceipts?: Record<FriendId, number>; // Maps userId to lastReadMessageId
+}
+
 export type FriendStatus = 'pending' | 'accepted' | 'blocked' | 'declined' | 'none';
 
-export interface SendMessagePayload {
-    content: string;
+export interface SendMessageRequest {
+  content: string;
 }
 
-export interface UserSession {
-    chatId: ChatId | null;
-    messages: ChatMessage[];
-}
+export type StreamEvent =
+  | { type: 'NEW_MESSAGE'; payload: ChatMessage }
+  | { type: 'USER_TYPING'; payload: UserTyping }
+  | { type: 'USER_STATUS'; payload: UserStatus }
+  | { type: 'USER_READ'; payload: ReadReceipt };
 
-export interface ChatContextType {
-  tempCurrentUserId: FriendId | null;
-  session: UserSession;   // All chat messages between current user + 1 friend
-  sessions: AllSessions;  // All chats by one user, keyed by friendId
-  setSession: (chatId: ChatId) => void;
-  addMessage: (msg: ChatMessage) => void;
-  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
-}
+export type AllChatSessions = Record<ChatId, ChatRoom>;

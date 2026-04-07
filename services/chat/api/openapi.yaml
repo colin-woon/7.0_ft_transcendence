@@ -11,15 +11,35 @@ tags:
 
 components:
   schemas:
+    ChatRoom:
+      type: object
+      required: [chatId, type]
+      properties:
+        chatId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [direct, group]
+        name:
+          type: string
+          nullable: true
+          description: "Will be null for direct chats"
+        memberIds:
+          type: array
+          items:
+            type: integer
+          description: "List of all user IDs in this chat. Frontend uses this to fetch avatars/names."
     ChatMessage:
       type: object
-      required: [id, senderId, receiverId, content, createdAt]
+      required: [id, chatId, senderId, content, createdAt]
       properties:
         id:
           type: integer
+        chatId:
+          type: string
+          format: uuid
         senderId:
-          type: integer
-        receiverId:
           type: integer
         content:
           type: string
@@ -27,6 +47,26 @@ components:
           type: string
           format: date-time
           example: "2026-03-09T08:24:27Z"
+    TypingIndicator:
+      type: object
+      required: [chatId, senderId]
+      properties:
+        chatId:
+          type: string
+          format: uuid
+        senderId:
+          type: integer
+    ReadReceipt:
+      type: object
+      required: [chatId, userId, messageId]
+      properties:
+        chatId:
+          type: string
+          format: uuid
+        userId:
+          type: integer
+        messageId:
+          type: integer
     FriendList:
       type: array
       items:
@@ -42,6 +82,23 @@ components:
       example:
         friendId: 123
         chatId: "550e8400-e29b-41d4-a716"
+    StreamEvent:
+      type: object
+      required: [type, payload]
+      properties:
+        type:
+          type: string
+          enum: [NEW_MESSAGE, USER_TYPING, USER_STATUS, USER_READ]
+          description: "The type of event being sent down the stream"
+        payload:
+          type: object
+          description: "The actual data, structure depends on the event type"
+          # We use oneOf to say "If it's a message, expect ChatMessage data"
+          oneOf:
+            - $ref: "#/components/schemas/ChatMessage"
+            - $ref: "#/components/schemas/TypingIndicator"
+            - $ref: "#/components/schemas/ReadReceipt"
+            # You can add other schemas here later, like USER_STATUS
 
 paths:
   /friendship/{requesterId}/{receiverId}:
@@ -128,7 +185,7 @@ paths:
         "500":
           description: Internal Server Error
 
-  /message/{chatId}/{tempSenderId}/{tempReceiverId}:
+  /message/{chatId}/{tempSenderId}:
     post:
       tags:
         - Message
@@ -142,11 +199,6 @@ paths:
             type: string
             format: uuid
         - name: tempSenderId
-          in: path
-          required: true
-          schema:
-            type: integer
-        - name: tempReceiverId
           in: path
           required: true
           schema:
@@ -213,6 +265,122 @@ paths:
           content:
             text/event-stream:
               schema:
-                $ref: "#/components/schemas/ChatMessage"
+                $ref: "#/components/schemas/StreamEvent"
         "401":
           description: Unauthorized
+
+  /message/inbox/{tempUserId}:
+    get:
+      tags:
+        - Message
+      summary: Get all chats (direct and group) for a user's inbox
+      operationId: getUserInbox
+      parameters:
+        - name: tempUserId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully retrieved user's chat rooms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatRoom"
+
+  /message/group/create/{tempUserId}:
+    post:
+      tags:
+        - Message
+      summary: Create a new group chat
+      operationId: createGroupChat
+      parameters:
+        - name: tempUserId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, memberIds]
+              properties:
+                name:
+                  type: string
+                  description: "Name of the group chat"
+                memberIds:
+                  type: array
+                  items:
+                    type: integer
+                  description: "List of user IDs to add to the group"
+      responses:
+        "201":
+          description: Group chat created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatRoom"
+
+  /message/typing/{chatId}/{tempSenderId}:
+    post:
+      tags:
+        - Message
+      summary: Send a typing indicator event
+      operationId: sendTypingEvent
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tempSenderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Typing broadcast triggered successfully
+        "400":
+          description: Invalid user IDs or form data
+
+  /message/read/{chatId}/{tempUserId}:
+    patch:
+      tags:
+        - Message
+      summary: Update the last read message for a user in a chat
+      operationId: updateReadReceipt
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tempUserId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [messageId]
+              properties:
+                messageId:
+                  type: integer
+      responses:
+        "204":
+          description: Read receipt updated successfully
+        "400":
+          description: Invalid input

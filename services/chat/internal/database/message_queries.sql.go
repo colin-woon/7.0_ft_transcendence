@@ -7,85 +7,213 @@ package database
 
 import (
 	"context"
+	"database/sql"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
+const createGroupChatRoom = `-- name: CreateGroupChatRoom :one
+INSERT INTO chat_service.rooms (type, name)
+VALUES ('group', $1)
+RETURNING id, type, name
+`
+
+type CreateGroupChatRoomRow struct {
+	ID   uuid.UUID      `json:"id"`
+	Type string         `json:"type"`
+	Name sql.NullString `json:"name"`
+}
+
+func (q *Queries) CreateGroupChatRoom(ctx context.Context, name sql.NullString) (CreateGroupChatRoomRow, error) {
+	row := q.db.QueryRowContext(ctx, createGroupChatRoom, name)
+	var i CreateGroupChatRoomRow
+	err := row.Scan(&i.ID, &i.Type, &i.Name)
+	return i, err
+}
+
 const createMessage = `-- name: CreateMessage :one
-INSERT INTO chat_service.messages (chat_id, sender_id, receiver_id, content)
-VALUES ($1, $2, $3, $4)
-RETURNING id, chat_id, sender_id, receiver_id, content, is_read, read_at, created_at
+INSERT INTO chat_service.messages (chat_id, sender_id, content)
+VALUES ($1, $2, $3)
+RETURNING id, chat_id, sender_id, content, created_at
 `
 
 type CreateMessageParams struct {
-	ChatID     pgtype.UUID `json:"chatId"`
-	SenderID   int32       `json:"senderId"`
-	ReceiverID int32       `json:"receiverId"`
-	Content    string      `json:"content"`
+	ChatID   uuid.UUID `json:"chatId"`
+	SenderID int32     `json:"senderId"`
+	Content  string    `json:"content"`
 }
 
 func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (ChatServiceMessage, error) {
-	row := q.db.QueryRow(ctx, createMessage,
-		arg.ChatID,
-		arg.SenderID,
-		arg.ReceiverID,
-		arg.Content,
-	)
+	row := q.db.QueryRowContext(ctx, createMessage, arg.ChatID, arg.SenderID, arg.Content)
 	var i ChatServiceMessage
 	err := row.Scan(
 		&i.ID,
 		&i.ChatID,
 		&i.SenderID,
-		&i.ReceiverID,
 		&i.Content,
-		&i.IsRead,
-		&i.ReadAt,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
-const getMessageHistoryByChatId = `-- name: GetMessageHistoryByChatId :many
-SELECT chat_id, sender_id, receiver_id, content, is_read, read_at, created_at
-FROM chat_service.messages
-WHERE chat_id = $1
-ORDER BY created_at ASC
+const createRoomMembersForGroupChat = `-- name: CreateRoomMembersForGroupChat :exec
+INSERT INTO chat_service.room_members (chat_id, user_id, role)
+SELECT
+    $1::uuid,
+    $2::int,
+    'admin'
+UNION ALL
+SELECT
+    $1::uuid,
+    u_id,
+    'member'
+FROM unnest($3::int[]) AS u_id
+WHERE u_id <> $2::int
 `
 
-type GetMessageHistoryByChatIdRow struct {
-	ChatID     pgtype.UUID        `json:"chatId"`
-	SenderID   int32              `json:"senderId"`
-	ReceiverID int32              `json:"receiverId"`
-	Content    string             `json:"content"`
-	IsRead     pgtype.Bool        `json:"isRead"`
-	ReadAt     pgtype.Timestamptz `json:"readAt"`
-	CreatedAt  pgtype.Timestamptz `json:"createdAt"`
+type CreateRoomMembersForGroupChatParams struct {
+	Column1 uuid.UUID `json:"column1"`
+	Column2 int32     `json:"column2"`
+	Column3 []int32   `json:"column3"`
 }
 
-func (q *Queries) GetMessageHistoryByChatId(ctx context.Context, chatID pgtype.UUID) ([]GetMessageHistoryByChatIdRow, error) {
-	rows, err := q.db.Query(ctx, getMessageHistoryByChatId, chatID)
+func (q *Queries) CreateRoomMembersForGroupChat(ctx context.Context, arg CreateRoomMembersForGroupChatParams) error {
+	_, err := q.db.ExecContext(ctx, createRoomMembersForGroupChat, arg.Column1, arg.Column2, pq.Array(arg.Column3))
+	return err
+}
+
+const getMessageHistoryByChatId = `-- name: GetMessageHistoryByChatId :many
+SELECT id, chat_id, sender_id, content, created_at
+FROM chat_service.messages
+WHERE chat_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) GetMessageHistoryByChatId(ctx context.Context, chatID uuid.UUID) ([]ChatServiceMessage, error) {
+	rows, err := q.db.QueryContext(ctx, getMessageHistoryByChatId, chatID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetMessageHistoryByChatIdRow
+	var items []ChatServiceMessage
 	for rows.Next() {
-		var i GetMessageHistoryByChatIdRow
+		var i ChatServiceMessage
 		if err := rows.Scan(
+			&i.ID,
 			&i.ChatID,
 			&i.SenderID,
-			&i.ReceiverID,
 			&i.Content,
-			&i.IsRead,
-			&i.ReadAt,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	return items, nil
+}
+
+const getRoomMemberIDs = `-- name: GetRoomMemberIDs :many
+SELECT user_id
+FROM chat_service.room_members
+WHERE chat_id = $1
+`
+
+func (q *Queries) GetRoomMemberIDs(ctx context.Context, chatID uuid.UUID) ([]int32, error) {
+	rows, err := q.db.QueryContext(ctx, getRoomMemberIDs, chatID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int32
+	for rows.Next() {
+		var user_id int32
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUserInbox = `-- name: GetUserInbox :many
+SELECT
+    c.id AS chat_id,
+    c.type,
+    c.name,
+    -- Aggregates all member IDs into a Postgres array
+    array_agg(rm.user_id)::integer[] AS member_ids
+FROM chat_service.rooms c
+JOIN chat_service.room_members rm ON c.id = rm.chat_id
+WHERE c.id IN (
+    -- Subquery: Find all chats the requested user is a part of
+    SELECT rm_sub.chat_id
+    FROM chat_service.room_members rm_sub
+    WHERE rm_sub.user_id = $1
+)
+GROUP BY c.id, c.type, c.name
+`
+
+type GetUserInboxRow struct {
+	ChatID    uuid.UUID      `json:"chatId"`
+	Type      string         `json:"type"`
+	Name      sql.NullString `json:"name"`
+	MemberIds []int32        `json:"memberIds"`
+}
+
+func (q *Queries) GetUserInbox(ctx context.Context, userID int32) ([]GetUserInboxRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUserInbox, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUserInboxRow
+	for rows.Next() {
+		var i GetUserInboxRow
+		if err := rows.Scan(
+			&i.ChatID,
+			&i.Type,
+			&i.Name,
+			pq.Array(&i.MemberIds),
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateLastReadMessageID = `-- name: UpdateLastReadMessageID :exec
+UPDATE chat_service.room_members
+SET last_read_message_id = GREATEST(COALESCE(last_read_message_id, 0), $1)
+WHERE chat_id = $2 AND user_id = $3
+`
+
+type UpdateLastReadMessageIDParams struct {
+	LastReadMessageID sql.NullInt64 `json:"lastReadMessageId"`
+	ChatID            uuid.UUID     `json:"chatId"`
+	UserID            int32         `json:"userId"`
+}
+
+func (q *Queries) UpdateLastReadMessageID(ctx context.Context, arg UpdateLastReadMessageIDParams) error {
+	_, err := q.db.ExecContext(ctx, updateLastReadMessageID, arg.LastReadMessageID, arg.ChatID, arg.UserID)
+	return err
 }

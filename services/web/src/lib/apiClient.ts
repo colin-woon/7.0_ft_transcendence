@@ -1,5 +1,3 @@
-// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
-
 class ApiClient {
   private basePrefix: string;
 
@@ -8,9 +6,13 @@ class ApiClient {
     this.basePrefix = basePrefix;
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${this.basePrefix}${endpoint}`;
+  public getBaseUrl(endpoint: string): string {
+    return `${this.basePrefix}${endpoint}`;
+  }
 
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const url = this.getBaseUrl(endpoint);
+    
     const res = await fetch(url, {
       ...options,
       headers: {

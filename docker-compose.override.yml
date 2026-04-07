@@ -80,6 +80,7 @@ services:
                 NEXT_PUBLIC_API_URL: https://localhost
         ports:
             - '${WEB_PORT}:3000'
+            - '9229:9229'
         volumes:
             - ./services/web:/app
         env_file:
