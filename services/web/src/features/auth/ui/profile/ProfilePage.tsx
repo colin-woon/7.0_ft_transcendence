@@ -12,6 +12,10 @@ import { useAdminUsers } from '@/features/auth/hooks/useAdminUsers'
 import { useProfileEdit } from '@/features/auth/hooks/useProfileEdit'
 import { useAuthActions } from '@/features/auth/hooks/useAuthActions'
 import {
+  passwordChangeSchema,
+  type PasswordChangeFormValues,
+} from '@/features/auth/validation/authSchemas'
+import {
   extractAchievements,
   extractIntraSummary,
   extractProjects,
@@ -32,6 +36,8 @@ import {
   TrendingUp,
   Users,
   X,
+  Link,
+  KeyRound,
 } from 'lucide-react'
 import ProfileCard from './ProfileCard'
 
@@ -120,6 +126,7 @@ export default function ProfilePage({
     reloadIntraData,
     error: authError,
     clearError,
+    updatePassword,
   } = useAuth()
 
   const { loginWith, logoutNow, refreshNow, actionLoading, actionError, clearActionError } = useAuthActions()
@@ -180,6 +187,15 @@ export default function ProfilePage({
 
   const [adminActionError, setAdminActionError] = useState<string | null>(null)
   const [adminActionSuccess, setAdminActionSuccess] = useState<string | null>(null)
+  const [passwordForm, setPasswordForm] = useState<PasswordChangeFormValues>({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  })
+  const [passwordErrors, setPasswordErrors] = useState<Partial<Record<keyof PasswordChangeFormValues, string>>>({})
+  const [passwordFormError, setPasswordFormError] = useState<string | null>(null)
+  const [passwordFormSuccess, setPasswordFormSuccess] = useState<string | null>(null)
+  const [passwordSaving, setPasswordSaving] = useState(false)
   const [editDraft, setEditDraft] = useState({
     username: '',
     fullName: '',
@@ -379,6 +395,54 @@ export default function ProfilePage({
     }
 
     setAdminActionSuccess(`Updated user @${updated.username} (${updated.id}).`)
+  }
+
+  const handlePasswordFieldChange = useCallback((next: Partial<PasswordChangeFormValues>) => {
+    setPasswordForm((prev) => ({ ...prev, ...next }))
+    setPasswordFormError(null)
+    setPasswordFormSuccess(null)
+  }, [])
+
+  const handlePasswordUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setPasswordFormError(null)
+    setPasswordFormSuccess(null)
+
+    const parsed = passwordChangeSchema.safeParse(passwordForm)
+    if (!parsed.success) {
+      const nextErrors: Partial<Record<keyof PasswordChangeFormValues, string>> = {}
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0] as keyof PasswordChangeFormValues | undefined
+        if (field && !nextErrors[field]) {
+          nextErrors[field] = issue.message
+        }
+      }
+      setPasswordErrors(nextErrors)
+      return
+    }
+
+    const hasExistingPassword = Boolean(activeProfile?.hasPassword)
+    if (hasExistingPassword && !parsed.data.currentPassword?.trim()) {
+      setPasswordErrors({ currentPassword: 'Current password is required to change your password' })
+      return
+    }
+
+    setPasswordErrors({})
+    setPasswordSaving(true)
+    try {
+      await updatePassword({
+        currentPassword: parsed.data.currentPassword?.trim() || undefined,
+        newPassword: parsed.data.newPassword,
+        confirmPassword: parsed.data.confirmPassword,
+      })
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      setPasswordFormSuccess(hasExistingPassword ? 'Password changed successfully.' : 'Password created successfully.')
+      await refetch()
+    } catch (err) {
+      setPasswordFormError(err instanceof Error ? err.message : 'Failed to update password')
+    } finally {
+      setPasswordSaving(false)
+    }
   }
 
   useEffect(() => {
@@ -713,6 +777,113 @@ export default function ProfilePage({
                 </button>
               </div>
               {profileEditError && <p className="text-xs text-red-600">{profileEditError}</p>}
+            </form>
+          </Card>
+        )}
+
+        {viewingOwnProfile && (
+          <Card className="p-6">
+            <SectionLabel>Security & Account Linking</SectionLabel>
+
+            <div className="space-y-2 text-sm text-slate-600 mb-4">
+              <p className="inline-flex items-center gap-2">
+                <Link size={14} className="text-slate-400" />
+                Google: {activeProfile?.linkedWithGoogle ? 'Linked' : 'Not linked'}
+              </p>
+              <p className="inline-flex items-center gap-2">
+                <Link size={14} className="text-slate-400" />
+                42: {activeProfile?.linkedWithIntra ? 'Linked' : 'Not linked'}
+              </p>
+              <p className="inline-flex items-center gap-2">
+                <KeyRound size={14} className="text-slate-400" />
+                Password: {activeProfile?.hasPassword ? 'Configured' : 'Not configured'}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2 mb-5">
+              <button
+                type="button"
+                onClick={() => loginWith('google')}
+                disabled={Boolean(activeProfile?.linkedWithGoogle)}
+                className="px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {activeProfile?.linkedWithGoogle ? 'Google linked' : 'Link with Google'}
+              </button>
+              <button
+                type="button"
+                onClick={() => loginWith('42')}
+                disabled={Boolean(activeProfile?.linkedWithIntra)}
+                className="px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {activeProfile?.linkedWithIntra ? '42 linked' : 'Link with 42'}
+              </button>
+            </div>
+
+            <form className="space-y-3" onSubmit={handlePasswordUpdate}>
+              {activeProfile?.hasPassword && (
+                <div>
+                  <label htmlFor="security-current-password" className="sr-only">
+                    Current password
+                  </label>
+                  <input
+                    id="security-current-password"
+                    type="password"
+                    autoComplete="current-password"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
+                    placeholder="Current password"
+                    value={passwordForm.currentPassword ?? ''}
+                    onChange={(event) => handlePasswordFieldChange({ currentPassword: event.target.value })}
+                  />
+                  {passwordErrors.currentPassword && <p className="text-xs text-red-600 mt-1">{passwordErrors.currentPassword}</p>}
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="security-new-password" className="sr-only">
+                  New password
+                </label>
+                <input
+                  id="security-new-password"
+                  type="password"
+                  autoComplete="new-password"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
+                  placeholder={activeProfile?.hasPassword ? 'New password' : 'Create password'}
+                  value={passwordForm.newPassword}
+                  onChange={(event) => handlePasswordFieldChange({ newPassword: event.target.value })}
+                />
+                {passwordErrors.newPassword && <p className="text-xs text-red-600 mt-1">{passwordErrors.newPassword}</p>}
+              </div>
+
+              <div>
+                <label htmlFor="security-confirm-password" className="sr-only">
+                  Confirm password
+                </label>
+                <input
+                  id="security-confirm-password"
+                  type="password"
+                  autoComplete="new-password"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/60"
+                  placeholder="Confirm password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(event) => handlePasswordFieldChange({ confirmPassword: event.target.value })}
+                />
+                {passwordErrors.confirmPassword && <p className="text-xs text-red-600 mt-1">{passwordErrors.confirmPassword}</p>}
+              </div>
+
+              <button
+                type="submit"
+                disabled={passwordSaving}
+                className="px-3 py-2 text-sm font-medium rounded-xl bg-slate-900 hover:bg-slate-800 text-white disabled:opacity-60"
+              >
+                {passwordSaving
+                  ? 'Saving...'
+                  : activeProfile?.hasPassword
+                    ? 'Change Password'
+                    : 'Create Password'}
+              </button>
+
+              {passwordFormError && <p className="text-xs text-red-600">{passwordFormError}</p>}
+              {passwordFormSuccess && <p className="text-xs text-emerald-600">{passwordFormSuccess}</p>}
             </form>
           </Card>
         )}
