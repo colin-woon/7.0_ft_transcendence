@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useChatActions, useCurrentChatSession } from '../models';
+import { useMessageVisibility } from '../models';
 
 // Step 1: Define a color array using DaisyUI chat bubble classes
 const BUBBLE_COLORS = [
@@ -13,13 +14,33 @@ const BUBBLE_COLORS = [
 ];
 
 export function ChatBox() {
-  const { fetchChatHistory } = useChatActions();
-  const { chatId, tempCurrentUserId, messages, typingUsers } = useCurrentChatSession();
+  const { fetchChatHistory, sendReadReceipt } = useChatActions();
+  const { chatId, tempCurrentUserId, messages, typingUsers, readReceipts } = useCurrentChatSession();
+  
+  // Refs for message elements to attach Intersection Observer
+  const messageRefs = useRef<Map<number | string, HTMLDivElement>>(new Map());
+
+  // Use visibility tracking hook
+  const { observeElement } = useMessageVisibility({
+    chatId,
+    messages: messages || [],
+    userId: tempCurrentUserId,
+    onReadReceipt: sendReadReceipt,
+  });
 
   useEffect(() => {
     if (chatId)
       fetchChatHistory(chatId);
   }, [chatId, fetchChatHistory]);
+
+  // Observe message elements when they mount or messages change
+  useEffect(() => {
+    messageRefs.current.forEach((element, messageId) => {
+      if (element) {
+        observeElement(element, messageId);
+      }
+    });
+  }, [messages, observeElement]);
 
   const loadedMessages = chatId ? messages || [] : [];
 
@@ -61,8 +82,27 @@ export function ChatBox() {
           ? 'chat-bubble-primary' 
           : BUBBLE_COLORS[Number(msg.senderId) % BUBBLE_COLORS.length];
 
+        // Get read receipt info for this message
+        const messageIdNum = typeof msg.id === 'number' ? msg.id : parseInt(String(msg.id), 10);
+        const usersWhoRead = Object.entries(readReceipts || {})
+          .filter(([uid, lastReadId]) => {
+            const userId = Number(uid);
+            return userId !== tempCurrentUserId && lastReadId >= messageIdNum;
+          })
+          .map(([uid]) => Number(uid));
+
         return (
-          <div key={msg.id} className={`chat ${isMe ? 'chat-end' : 'chat-start'}`}>
+          <div 
+            key={msg.id} 
+            className={`chat ${isMe ? 'chat-end' : 'chat-start'}`}
+            ref={(el) => {
+              if (el) {
+                messageRefs.current.set(msg.id, el);
+              } else {
+                messageRefs.current.delete(msg.id);
+              }
+            }}
+          >
             {/* Step 3: Add the chat-header for sender label if it's not the current user */}
             {!isMe && (
               <div className="chat-header pb-1 text-xs opacity-70">
@@ -72,6 +112,14 @@ export function ChatBox() {
             <div className={`chat-bubble ${colorClass}`}>
               {msg.content}
             </div>
+            {/* Read receipt indicator */}
+            {isMe && usersWhoRead.length > 0 && (
+              <div className="chat-footer opacity-50 text-xs mt-1">
+                ✓ Read by {usersWhoRead.length === 1 
+                  ? `User #${usersWhoRead[0]}` 
+                  : `${usersWhoRead.length} users`}
+              </div>
+            )}
           </div>
         );
       })}

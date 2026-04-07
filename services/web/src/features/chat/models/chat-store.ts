@@ -1,7 +1,7 @@
 import { createStore } from 'zustand/vanilla';
 import { immer } from 'zustand/middleware/immer';
 import type { AllChatSessions, FriendId, ChatMessage, ChatId, FriendList, ChatRoomType } from './chat-types';
-import { getFriendList, getUserInbox, getMessageHistory } from '../api';
+import { getFriendList, getUserInbox, getMessageHistory, updateReadReceipt as apiUpdateReadReceipt } from '../api';
 import debounce from 'lodash.debounce';
 
 export interface ChatState {
@@ -12,6 +12,7 @@ export interface ChatState {
   isLoadingFriends: boolean;
   friendsError: string | null;
   typingUsers: Record<ChatId, Record<FriendId, boolean>>;
+  readReceipts: Record<ChatId, Record<FriendId, number>>; // chatId -> userId -> lastReadMessageId
 }
 
 export interface ChatActions {
@@ -24,6 +25,8 @@ export interface ChatActions {
   fetchAllChatSessions: (userId: FriendId) => Promise<void>;
   fetchChatHistory: (chatId: ChatId) => Promise<void>;
   setTypingStatus: (chatId: ChatId, senderId: FriendId) => void;
+  updateReadReceipt: (chatId: ChatId, userId: FriendId, messageId: number) => void;
+  sendReadReceipt: (chatId: ChatId, userId: FriendId, messageId: number) => Promise<void>;
 }
 
 export type ChatStore = ChatState & ChatActions;
@@ -44,7 +47,7 @@ const clearTypingStatus = debounce(
 // Factory pattern: creates a new store instance per Provider
 export const createChatStore = (initialSessions: AllChatSessions = {}) => {
   return createStore<ChatStore>()(
-    immer((set) => ({
+    immer((set, get) => ({
       allChatSessions: initialSessions,
       allFriendships: [],
       currentChatSessionId: null,
@@ -52,6 +55,7 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
       isLoadingFriends: false,
       friendsError: null,
       typingUsers: {},
+      readReceipts: {},
 
       setTempCurrentUserId: (userId: FriendId) =>
         set((state) => {
@@ -132,6 +136,55 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
           state.typingUsers[chatId][senderId] = true;
         });
         clearTypingStatus(set, chatId, senderId);
+      },
+      updateReadReceipt: (chatId: ChatId, userId: FriendId, messageId: number) => {
+        set((state) => {
+          if (!state.readReceipts[chatId]) {
+            state.readReceipts[chatId] = {};
+          }
+          // Enforce monotonicity: only update if new messageId is greater
+          const currentMessageId = state.readReceipts[chatId][userId] || 0;
+          if (messageId > currentMessageId) {
+            state.readReceipts[chatId][userId] = messageId;
+            // Also update the chat session's readReceipts if it exists
+            if (state.allChatSessions[chatId]) {
+              if (!state.allChatSessions[chatId].readReceipts) {
+                state.allChatSessions[chatId].readReceipts = {};
+              }
+              state.allChatSessions[chatId].readReceipts![userId] = messageId;
+            }
+          }
+        });
+      },
+      sendReadReceipt: async (chatId: ChatId, userId: FriendId, messageId: number) => {
+        // Check monotonicity before sending
+        const currentState = get();
+        const currentMessageId = currentState.readReceipts[chatId]?.[userId] || 0;
+        if (messageId <= currentMessageId) {
+          return; // Don't send if not progressing forward
+        }
+
+        try {
+          // Optimistically update local state
+          set((state) => {
+            if (!state.readReceipts[chatId]) {
+              state.readReceipts[chatId] = {};
+            }
+            state.readReceipts[chatId][userId] = messageId;
+            if (state.allChatSessions[chatId]) {
+              if (!state.allChatSessions[chatId].readReceipts) {
+                state.allChatSessions[chatId].readReceipts = {};
+              }
+              state.allChatSessions[chatId].readReceipts![userId] = messageId;
+            }
+          });
+
+          // Send to backend
+          await apiUpdateReadReceipt(chatId, userId, messageId);
+        } catch (error) {
+          console.error('Failed to send read receipt:', error);
+          // In a production app, you might want to rollback the optimistic update here
+        }
       },
     }))
   );

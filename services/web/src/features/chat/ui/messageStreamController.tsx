@@ -5,7 +5,7 @@ import { useCurrentChatSession, useChatActions } from '../models';
 import { getMessageStream } from '../api/chat-services';
 
 export function MessageStreamController() {
-  const { addMessage, setTypingStatus } = useChatActions();
+  const { addMessage, setTypingStatus, updateReadReceipt } = useChatActions();
   const { tempCurrentUserId, chatId } = useCurrentChatSession();
 
   useEffect(() => {
@@ -25,6 +25,9 @@ export function MessageStreamController() {
       else if (eventContent.type === 'USER_TYPING' && eventContent.payload.chatId === chatId) {
         setTypingStatus(eventContent.payload.chatId, eventContent.payload.senderId)
       }
+      else if (eventContent.type === 'USER_READ' && eventContent.payload.chatId === chatId) {
+        updateReadReceipt(eventContent.payload.chatId, eventContent.payload.userId, eventContent.payload.messageId);
+      }
   });
 
     // 3. Cleanup: Close connection when navigating away or changing chats
@@ -33,7 +36,7 @@ export function MessageStreamController() {
         eventSource.close();
       }
     };
-  }, [chatId, tempCurrentUserId, addMessage]);
+  }, [chatId, tempCurrentUserId, addMessage, updateReadReceipt]);
 
   // Headless: Handles logic, renders no UI
   return null; 

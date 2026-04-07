@@ -67,3 +67,7 @@ export async function createGroupChat(
 export async function sendTypingEvent(chatId: ChatId, tempSenderId: FriendId): Promise<void>{
   return apiClient.post<void>(`/message/typing/${chatId}/${tempSenderId}`);
 }
+
+export async function updateReadReceipt(chatId: ChatId, tempUserId: FriendId, messageId: number): Promise<void>{
+  return apiClient.patch<void>(`/message/read/${chatId}/${tempUserId}`, { messageId });
+}

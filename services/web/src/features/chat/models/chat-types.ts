@@ -26,6 +26,12 @@ export interface UserStatus {
   status: 'online' | 'offline';
 }
 
+export interface ReadReceipt {
+  chatId: ChatId;
+  userId: FriendId;
+  messageId: number;
+}
+
 export type ChatRoomType = 'group' | 'direct';
 
 export interface ChatRoom {
@@ -34,6 +40,7 @@ export interface ChatRoom {
     name: string | null;
     memberIds: FriendId[];
     messages: ChatMessage[] | null;
+    readReceipts?: Record<FriendId, number>; // Maps userId to lastReadMessageId
 }
 
 export type FriendStatus = 'pending' | 'accepted' | 'blocked' | 'declined' | 'none';
@@ -45,6 +52,7 @@ export interface SendMessageRequest {
 export type StreamEvent =
   | { type: 'NEW_MESSAGE'; payload: ChatMessage }
   | { type: 'USER_TYPING'; payload: UserTyping }
-  | { type: 'USER_STATUS'; payload: UserStatus };
+  | { type: 'USER_STATUS'; payload: UserStatus }
+  | { type: 'USER_READ'; payload: ReadReceipt };
 
 export type AllChatSessions = Record<ChatId, ChatRoom>;
