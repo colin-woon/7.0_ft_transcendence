@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Wrench } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createForumProject } from '@/features/forum/api/moderation';
 import AdminVisibilityGate from './AdminVisibilityGate';
@@ -86,16 +86,16 @@ export default function AdminProjectCreateButton() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-full bg-[#0f6f6b] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#0c5d5a]"
+        className="inline-flex items-center gap-1.5 rounded-full bg-[#ffa200] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#e48900]"
       >
-        <Plus size={14} />
-        Create project
+        <Wrench size={14} />
+        Create Project
       </button>
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
-            <h3 className="text-base font-semibold text-slate-900">Create project</h3>
+          <div className="w-full max-w-lg rounded-xl border-2 border-[#ffa200] bg-white p-5 shadow-xl">
+            <h3 className="text-base font-semibold text-slate-900">Create Project (Admin View)</h3>
             <p className="mt-1 text-sm text-slate-600">Create a new forum project category for posts.</p>
 
             <div className="mt-4 grid gap-3">
@@ -174,7 +174,7 @@ export default function AdminProjectCreateButton() {
                 type="button"
                 onClick={handleCreate}
                 disabled={isSubmitting}
-                className="rounded-md bg-[#0f6f6b] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#0c5d5a] disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-md bg-[#ffa200] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#e48900] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSubmitting ? 'Creating...' : 'Create'}
               </button>

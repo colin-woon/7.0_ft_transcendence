@@ -56,7 +56,7 @@ def seed_projects_from_json(db: Session, json_path: str | Path) -> dict[str, int
             new_project = models.Project(
                 slug=slug,
                 name=name,
-                difficulty = difficulty,
+                xp = difficulty,
                 description=first_session.get("description"),
                 solo=first_session.get("solo"),
                 objectives=first_session.get("objectives") or [],
@@ -112,6 +112,34 @@ def get_post_comment_count(db: Session, post_id: int) -> int:
     return count or 0
 
 
+def get_project_subscriber_counts(db: Session, project_ids: list[int]) -> dict[int, int]:
+    if not project_ids:
+        return {}
+
+    rows = (
+        db.query(
+            models.ProjectSubscription.project_id,
+            func.count(models.ProjectSubscription.user_id).label("subscriber_count"),
+        )
+        .filter(models.ProjectSubscription.project_id.in_(project_ids))
+        .group_by(models.ProjectSubscription.project_id)
+        .all()
+    )
+
+    return {project_id: int(count or 0) for project_id, count in rows}
+
+
+def attach_subscriber_counts(db: Session, projects: list[models.Project]) -> None:
+    if not projects:
+        return
+
+    project_ids = [project.id for project in projects]
+    counts_by_project_id = get_project_subscriber_counts(db, project_ids)
+
+    for project in projects:
+        project.subscriber_count = counts_by_project_id.get(project.id, 0)
+
+
 # --- PROJECTS ---
 def get_all_projects(db: Session) -> List[models.Project]:
     return db.query(models.Project).all()
@@ -138,6 +166,7 @@ def get_all_projects_paginated(db: Session, page: int, page_size: int) -> dict:
     
     #unpack tuple to get project list with list comprehension
     items = [project for project, hot_score in results]
+    attach_subscriber_counts(db, items)
 
     total_pages = (total + page_size - 1) // page_size
     return {
@@ -153,6 +182,7 @@ def get_project_by_id(db: Session, project_id: int) -> models.Project:
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     project.post_count = get_project_post_count(db, project_id)
+    project.subscriber_count = get_project_subscriber_count(db, project_id)
     return project
 
 
@@ -691,7 +721,9 @@ def get_comment_vote_score(db: Session, id: int) -> int:
 
 # --- SEARCH ---
 def search_project(db: Session, query: str) -> list[models.Project]:
-    return db.query(models.Project).filter(models.Project.name.ilike(f"%{query}%")).all()
+    projects = db.query(models.Project).filter(models.Project.name.ilike(f"%{query}%")).all()
+    attach_subscriber_counts(db, projects)
+    return projects
 
 def search_posts(db: Session, query: str) -> list[models.ForumPost]:
     return db.query(models.ForumPost).filter(models.ForumPost.title.ilike(f"%{query}%")).all()

@@ -1,7 +1,10 @@
 import { cookies } from 'next/headers';
+import { unstable_cache } from 'next/cache';
 import type { ForumApiPostSummary, ForumApiProjectSummary, ForumPost, ForumApiPostDetail, ForumPostDetail, ForumApiComment, ForumComment } from '../models';
 import type { Project, ForumPost as ProjectForumPost } from '../models/projects';
 import type { ForumSort } from '../models';
+
+const debugProjectCache = process.env.WEB_LOG_NEXT_CACHE === '1';
 
 function getForumApiBaseUrl(): string {
   const isDev = process.env.NODE_ENV === 'development';
@@ -41,6 +44,13 @@ async function forumFetch(path: string, init: RequestInit): Promise<Response> {
   return fetch(`${getForumApiBaseUrl()}${path}`, {
     ...init,
     headers,
+  });
+}
+
+async function forumFetchPublic(path: string, init: RequestInit): Promise<Response> {
+  return fetch(`${getForumApiBaseUrl()}${path}`, {
+    ...init,
+    headers: init.headers,
   });
 }
 export interface ForumApiProjectListPage {
@@ -115,6 +125,16 @@ function getTeamSize(soloStr: boolean): "Solo" | "Team"{
 
 function mapApiProjectToProject(apiProj: any): Project {
   const projectXp = typeof apiProj.xp === 'number' ? apiProj.xp : Number.parseInt(String(apiProj.xp ?? 0), 10) || 0;
+  const postCount = typeof apiProj.post_count === 'number'
+    ? apiProj.post_count
+    : Array.isArray(apiProj.posts)
+      ? apiProj.posts.length
+      : 0;
+  const subscriberCount = typeof apiProj.subscriber_count === 'number'
+    ? apiProj.subscriber_count
+    : typeof apiProj.students === 'number'
+      ? apiProj.students
+      : 0;
 
   return {
     id: apiProj.id,
@@ -127,19 +147,23 @@ function mapApiProjectToProject(apiProj: any): Project {
     duration: apiProj.estimate_time || "~1 week",
     teamSize: getTeamSize(Boolean(apiProj.solo)),
     tags: apiProj.objectives || ["42"],
-    students: apiProj.students || 0,
+    students: subscriberCount,
+    postCount,
     color: apiProj.color || "from-blue-400 to-blue-600",
     posts: apiProj.posts || [],
   };
 }
 
 
-// base function to fetch all projects from API, utilizes Next.js cache
-export async function getCachedApiProjects(): Promise<ForumApiProjectSummary[]> {
+const fetchAllProjectsCached = unstable_cache(async (): Promise<ForumApiProjectSummary[]> => {
+  if (debugProjectCache) {
+    console.log('[forum-projects-cache] MISS -> fetching from forum API');
+  }
+
   const pageSize = 100;
   let allApiProjects: ForumApiProjectSummary[] = [];
 
-  const firstPageRes = await forumFetch(`/projects?page=1&page_size=${pageSize}`, {
+  const firstPageRes = await forumFetchPublic(`/projects?page=1&page_size=${pageSize}`, {
     cache: 'force-cache',
     next: {
       revalidate: 300, //secs
@@ -161,7 +185,7 @@ export async function getCachedApiProjects(): Promise<ForumApiProjectSummary[]> 
 
     const responses = await Promise.all(
       pagesToFetch.map((page) =>
-        forumFetch(`/projects?page=${page}&page_size=${pageSize}`, {
+        forumFetchPublic(`/projects?page=${page}&page_size=${pageSize}`, {
             cache: 'force-cache',
             next:{
                 revalidate: 300,
@@ -184,6 +208,18 @@ export async function getCachedApiProjects(): Promise<ForumApiProjectSummary[]> 
   }
 
   return allApiProjects;
+}, ['forum-projects-all'], {
+  revalidate: 300,
+  tags: ['projects'],
+});
+
+// base function to fetch all projects from API, utilizes Next.js cache
+export async function getCachedApiProjects(): Promise<ForumApiProjectSummary[]> {
+  if (debugProjectCache) {
+    console.log('[forum-projects-cache] LOOKUP');
+  }
+
+  return fetchAllProjectsCached();
 }
 
 export async function getAllProjects(): Promise<Project[]> {

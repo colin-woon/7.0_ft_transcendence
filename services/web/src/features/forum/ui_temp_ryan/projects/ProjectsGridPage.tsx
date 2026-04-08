@@ -5,24 +5,58 @@ import { Search } from "lucide-react";
 import type { Project, Difficulty } from "../../models/projects";
 import { ProjectCard } from "./ProjectCard2";
 import TextType from '@/components/react-bits/TextType';
+import { AdminProjectCreateButton } from '@/features/forum/ui/projects/moderation';
 
 
 
-export default function ProjectsPage({ projects, initialSearch = "" }: { projects: Project[]; initialSearch?: string }) {
+export default function ProjectsPage({ projects, subscribedProjectIds, initialSearch = "" }:{ projects: Project[]; subscribedProjectIds: number[]; initialSearch?: string }) {
   const PAGE_SIZE = 20;
 
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(initialSearch);
-  const [filter, setFilter] = useState<"All" | Difficulty>("All");
+  const [filter, setFilter] = useState<"All" | "Subscribed" | Difficulty>("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const [hydratedSubscribedIds, setHydratedSubscribedIds] = useState<number[]>(subscribedProjectIds);
 
-  const filters: ("All" | Difficulty)[] = ["All", "Beginner", "Intermediate", "Advanced", "Expert"];
+  const filters: ("All" | "Subscribed" | Difficulty)[] = ["All", "Subscribed", "Beginner", "Intermediate", "Advanced", "Expert"];
 
   useEffect(() => {
     setSearch(initialSearch);
   }, [initialSearch]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSubscribedProjects() {
+      try {
+        const response = await fetch('/api/forum/projects/me/subscriptions', {
+          method: 'GET',
+          cache: 'no-store',
+        });
+
+        if (!response.ok || cancelled) {
+          return;
+        }
+
+        const data = (await response.json()) as Array<{ id: number }>;
+        if (!cancelled) {
+          setHydratedSubscribedIds(data.map((project) => project.id));
+        }
+      } catch {
+        if (!cancelled) {
+          setHydratedSubscribedIds([]);
+        }
+      }
+    }
+
+    loadSubscribedProjects();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -49,9 +83,14 @@ export default function ProjectsPage({ projects, initialSearch = "" }: { project
     return () => clearTimeout(timer);
   }, [search, searchParams, pathname, router]);
 
+  const subscribedIdSet = new Set(hydratedSubscribedIds);
   const filtered = projects.filter((project) => {
     const matchesFilter = filter === "All" || project.difficulty === filter;
     const normalizedSearch = search.trim().toLowerCase();
+
+    if (filter === "Subscribed") {
+      return subscribedIdSet.has(project.id);
+    }
 
     if (normalizedSearch.length === 0) {
       return matchesFilter;
@@ -140,7 +179,10 @@ export default function ProjectsPage({ projects, initialSearch = "" }: { project
                   </button>
                 ))}
               </div>
-            </div>            
+            </div>
+            <div className="sm:ml-auto self-end sm:self-auto">
+              <AdminProjectCreateButton />
+            </div>
           </div>
         </div>
       </div>

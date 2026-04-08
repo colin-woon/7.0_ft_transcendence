@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus, Zap, MessageCircle, Users } from "lucide-react";
 import type { Project } from "../../models/projects";
+import SubscriptionButton from '@/features/forum/ui/projects/SubscriptionButton';
 
 export default function ProjectInfoCard({
   project,
@@ -51,7 +52,9 @@ export default function ProjectInfoCard({
             <p className="text-xs font-semibold text-gray-900">{project.students ?? 0} students</p>
           </div>
         </div>
-
+        <div className="flex items-center justify-center gap-1.5">
+              <SubscriptionButton projectId={project.id} />
+        </div>
         <Link
           href={`/projects/${project.id}/create`}
           className="flex items-center justify-center gap-1.5 w-full bg-[#0f6f6b] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#0c5d5a] transition"

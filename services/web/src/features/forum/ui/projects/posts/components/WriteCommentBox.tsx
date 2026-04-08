@@ -3,13 +3,15 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Send } from 'lucide-react';
-import { createPostComment } from '@/features/forum/api/post';
+import type { ForumComment } from '@/features/forum/models';
+import { createPostComment, getPostComments } from '@/features/forum/api/post';
 
 interface WriteCommentBoxProps {
   postId: number;
+  onCommentCreated?: (comment: ForumComment) => void;
 }
 
-export default function WriteCommentBox({ postId }: WriteCommentBoxProps) {
+export default function WriteCommentBox({ postId, onCommentCreated }: WriteCommentBoxProps) {
   const router = useRouter();
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,6 +26,20 @@ export default function WriteCommentBox({ postId }: WriteCommentBoxProps) {
     setIsSubmitting(true);
     try {
       await createPostComment(postId, { content: content.trim() });
+
+      if (onCommentCreated) {
+        try {
+          const latestComments = await getPostComments(postId);
+          const newestComment = latestComments[0];
+
+          if (newestComment) {
+            onCommentCreated(newestComment);
+          }
+        } catch (fetchError) {
+          console.error('Failed to fetch latest comment after create:', fetchError);
+        }
+      }
+
       setContent('');
       router.refresh();
     }

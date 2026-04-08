@@ -34,6 +34,7 @@ class ProjectUpdate(BaseModel):
 class ProjectResponse(ProjectCreate):
     id: int
     created_at: datetime
+    subscriber_count: int = 0
     class Config:
         from_attributes = True
 

@@ -1,4 +1,5 @@
-import ProjectForumPage from '@/features/forum/ui/projects/ProjectForumPage'
+// import ProjectForumPage from '@/features/forum/ui/projects/ProjectForumPage'
+import ProjectForumPage from '@/features/forum/ui_temp_ryan/projects/ProjectForumPage';
 import { getProjectDetailsBySort } from '@/features/forum/api/project';
 import type { ForumSort } from '@/features/forum/models';
 import { notFound } from 'next/navigation';

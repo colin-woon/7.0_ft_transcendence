@@ -3,6 +3,8 @@ import { Zap, Clock, Users, Star, MessageSquare } from "lucide-react";
 import { projects } from "../../models/projects";
 
 export default function ProjectCard({ project }: { project: typeof projects[0] }) {
+  const questionCount = project.postCount ?? project.posts.length;
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className={`h-2 w-full bg-gradient-to-r ${project.color}`} />
@@ -47,7 +49,7 @@ export default function ProjectCard({ project }: { project: typeof projects[0] }
                   </span>
                   <span className="flex items-center gap-1.5">
                     <MessageSquare size={14} className="text-[#0f6f6b]" />
-                    {project.posts.length} question{project.posts.length !== 1 ? "s" : ""}
+                    {questionCount} question{questionCount !== 1 ? "s" : ""}
                   </span>
                 </div>
               </div>

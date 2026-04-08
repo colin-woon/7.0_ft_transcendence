@@ -38,6 +38,7 @@ export interface ForumApiProjectSummary {
   xp?: number;
   solo?: boolean;
   post_count?: number;
+  subscriber_count?: number;
   created_at?: string;
 }
 

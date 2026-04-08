@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, MessageCircle, Eye, ThumbsUp } from 'lucide-react';
 import type { ForumPostDetail, ForumComment } from '@/features/forum/models';
@@ -33,6 +33,14 @@ export default function PostDetailClient({ post, comments }: PostDetailClientPro
     typeof editingCommentId === 'number'
       ? commentState.find((comment) => comment.id === editingCommentId) ?? null
       : null;
+
+  useEffect(() => {
+    setPostState(post);
+  }, [post]);
+
+  useEffect(() => {
+    setCommentState(comments);
+  }, [comments]);
 
   const handleEditPost = async (payload: { title: string; content: string }) => {
     setIsBusy(true);
@@ -78,6 +86,17 @@ export default function PostDetailClient({ post, comments }: PostDetailClientPro
     await deleteForumComment(postState.id, commentId);
     setCommentState((prev) => prev.filter((comment) => comment.id !== commentId));
     setPostState((prev) => ({ ...prev, comments: Math.max(0, prev.comments - 1) }));
+  };
+
+  const handleCommentCreated = (newComment: ForumComment) => {
+    setCommentState((prev) => {
+      if (prev.some((comment) => comment.id === newComment.id)) {
+        return prev;
+      }
+
+      return [newComment, ...prev];
+    });
+    setPostState((prev) => ({ ...prev, comments: prev.comments + 1 }));
   };
 
   return (
@@ -216,7 +235,7 @@ export default function PostDetailClient({ post, comments }: PostDetailClientPro
       </div>
 
       <div className="mb-2">
-        <WriteCommentBox postId={postState.id} />
+        <WriteCommentBox postId={postState.id} onCommentCreated={handleCommentCreated} />
       </div>
 
       <EditPostDialog

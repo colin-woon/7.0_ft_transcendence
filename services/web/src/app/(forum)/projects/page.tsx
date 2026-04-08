@@ -1,7 +1,7 @@
-import ProjectsGridPage from '@/features/forum/ui/projects/ProjectsGridPage'
+// import ProjectsGridPage from '@/features/forum/ui/projects/ProjectsGridPage'
+import ProjectsGridPage from '@/features/forum/ui_temp_ryan/projects/ProjectsGridPage'
 import {
   getAllProjects,
-  getMySubscribedProjects,
   searchProjects,
 } from '@/features/forum/api/project'
 
@@ -17,19 +17,17 @@ export default async function ProjectsPage({ searchParams }: ProjectsRouteProps)
   const q = Array.isArray(qRaw) ? qRaw[0] : qRaw;
   const searchQuery = (q ?? '').trim();
 
-  const [projectsResult, subscribedProjectsResult] = await Promise.allSettled([
+  const projectsResult = await Promise.allSettled([
     searchQuery.length >= 2 ? searchProjects(searchQuery) : getAllProjects(),
-    getMySubscribedProjects(),
   ]);
 
-  const projects = projectsResult.status === 'fulfilled' ? projectsResult.value : [];
-  const subscribedProjects =
-    subscribedProjectsResult.status === 'fulfilled' ? subscribedProjectsResult.value : [];
+  const projects =
+    projectsResult[0].status === 'fulfilled' ? projectsResult[0].value : [];
 
   return (
     <ProjectsGridPage
       projects={projects}
-      subscribedProjectIds={subscribedProjects.map((project) => project.id)}
+      subscribedProjectIds={[]}
       initialSearch={searchQuery}
     />
   )

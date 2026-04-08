@@ -6,6 +6,9 @@ import { Search } from "lucide-react";
 import type { Project } from "../../models/projects";
 import PostVoteButtons from '../../ui/projects/posts/components/PostVoteButtons';
 import ProjectInfoCard from "./ProjectInforCard";
+import { deleteForumPost } from '@/features/forum/api/moderation';
+import { PostModerationControls } from '@/features/forum/ui/projects/moderation';
+
 
 const sortOptions = ["New", "Top"];
 
@@ -16,6 +19,8 @@ export default function ProjectForumPage({ project }: { project: Project }) {
   const activeSort = searchParams.get('sort') === 'New' ? 'New' : 'Top';
   const [viewMode, setViewMode] = useState<"card" | "compact">("card");
   const [postSearch, setPostSearch] = useState("");
+  const [projectPosts, setProjectPosts] = useState(project.posts);
+  const [isBusy, setIsBusy] = useState(false);
 
   const handleSortChange = (sort: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -23,37 +28,31 @@ export default function ProjectForumPage({ project }: { project: Project }) {
     router.replace(`${pathname}?${nextParams.toString()}`);
   };
 
-  // 1. Filter
-  // 2. TEMP Sort (Modular: Easily rip this out if backend handles sorting via URL params eventually)
   const filteredPosts = useMemo(() => {
-    let result = project.posts;
     const normalizedSearch = postSearch.trim().toLowerCase();
 
-    if (normalizedSearch.length > 0) {
-      result = result.filter((post) => {
-        const titleMatch = post.title.toLowerCase().includes(normalizedSearch);
-        const previewMatch = post.preview.toLowerCase().includes(normalizedSearch);
-        const authorMatch = post.author.toLowerCase().includes(normalizedSearch);
-        return titleMatch || previewMatch || authorMatch;
-      });
+    if (normalizedSearch.length === 0) {
+      return projectPosts;
     }
 
-    return applyClientSideSort(result, activeSort);
-    
-  }, [project.posts, postSearch, activeSort]); // Added activeSort to dependencies
+    return projectPosts.filter((post) => {
+      const titleMatch = post.title.toLowerCase().includes(normalizedSearch);
+      const previewMatch = post.preview.toLowerCase().includes(normalizedSearch);
+      const authorMatch = post.author.toLowerCase().includes(normalizedSearch);
+      return titleMatch || previewMatch || authorMatch;
+    });
+  }, [projectPosts, postSearch]);
 
-  // TEMP Modular client-side sorting function.
-  // Remove this implementation if sorting is later handled by the backend API.
-  // Create a shallow copy to prevent mutating the original state
-  // Example: sort by highest upvotes
-  // Default to 'New': sort by timestamp (newest first)
-  // Note: Adjust the date parsing depending on your actual timestamp format (e.g., ISO string)
-  const applyClientSideSort = (posts: typeof project.posts, sortType: string) => {
-    const sorted = [...posts];
-    if (sortType === 'Top') {
-      return sorted.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
+  const handleDeletePost = async (postId: number) => {
+    setIsBusy(true);
+    try {
+      await deleteForumPost(postId);
+      setProjectPosts((prev) => prev.filter((post) => post.id !== postId));
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Failed to delete post');
+    } finally {
+      setIsBusy(false);
     }
-    return sorted.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   };
 
   return (
@@ -151,7 +150,7 @@ export default function ProjectForumPage({ project }: { project: Project }) {
                           </div>
 
                           {/* Title */}
-                          <Link href={`/posts/${post.id}`} className="group block">
+                          <Link href={`${project.id}/posts/${post.id}`} className="group block">
                             <h3 className="text-sm font-semibold text-gray-900 group-hover:text-[#0f6f6b] transition-colors leading-snug mb-1">
                               {post.title}
                             </h3>

@@ -1,4 +1,4 @@
-import CreatePage from '@/features/forum/ui/create/CreatePage'
+import CreatePage from '@/features/forum/ui_temp_ryan/create/CreatePage'
 import { getProjectDetails } from '@/features/forum/api/project'
 import { notFound } from 'next/navigation'
 

@@ -77,7 +77,7 @@ export default function SubscriptionButton({ projectId }: SubscriptionButtonProp
       type="button"
       onClick={handleToggleSubscription}
       disabled={isSubmitting}
-      className={`rounded-full px-4 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-70 ${
+      className={`text-sm font-medium px-4 py-2 rounded-lg w-full text-white transition-colors disabled:opacity-70 ${
         subscribed
           ? 'bg-red-600 hover:bg-red-700'
           : 'bg-emerald-600 hover:bg-emerald-700'

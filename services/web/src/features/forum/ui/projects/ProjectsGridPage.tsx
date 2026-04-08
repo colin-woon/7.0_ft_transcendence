@@ -15,15 +15,13 @@ const difficultyColor: Record<Difficulty, string> = {
 
 type ProjectFilter = "subscribed" | "all" | Difficulty;
 
-export default function ProjectsPage({
-  projects,
-  subscribedProjectIds,
-  initialSearch = "",
-}: {
+export default function ProjectsPage({projects, subscribedProjectIds, initialSearch = "", }: {
   projects: Project[];
   subscribedProjectIds: number[];
   initialSearch?: string;
 }) {
+  const getQuestionCount = (project: Project) => project.postCount ?? project.posts.length;
+
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -215,7 +213,7 @@ export default function ProjectsPage({
                     </span>
                     <span className="flex items-center gap-1 text-[10px] text-[#0f6f6b] font-medium">
                       <MessageSquare size={10} />
-                      {project.posts.length} question{project.posts.length !== 1 ? "s" : ""}
+                      {getQuestionCount(project)} question{getQuestionCount(project) !== 1 ? "s" : ""}
                     </span>
                   </div>
                   <span className="text-[#0f6f6b] opacity-0 group-hover:opacity-100 transition-opacity">

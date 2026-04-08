@@ -28,6 +28,7 @@ export interface Project {
   teamSize: string;
   tags: string[];
   students: number;
+  postCount?: number;
   color: string;
   posts: ForumPost[];
 }

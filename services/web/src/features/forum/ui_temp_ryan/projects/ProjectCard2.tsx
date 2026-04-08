@@ -7,6 +7,8 @@ type ProjectCardProps = {
 };
 
 export function ProjectCard({ project }: ProjectCardProps) {
+  const questionCount = project.postCount ?? project.posts.length;
+
   const difficultyTone =
     project.difficulty === "Beginner"
       ? "border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -47,7 +49,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </span>
           <span className="flex items-center gap-1 text-[9px] text-slate-400">
             <MessageSquare size={8} />
-            {project.posts.length} questions
+            {questionCount} question{questionCount !== 1 ? "s" : ""}
           </span>
           <span className="flex items-center gap-1 text-[9px] text-slate-400">
             <Users size={8} />
@@ -58,7 +60,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
       {/* Back state: button — fade IN on hover */}
       <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex items-center justify-center opacity-0 transition-all duration-300 delay-100 group-hover:opacity-100 group-hover:pointer-events-auto">
-         <Link href={`/projects/${project.slug}`} className="flex items-center gap-1.5 rounded-full border border-slate-300 bg-transparent px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-600 transition-colors duration-300 hover:bg-slate-900 hover:text-white active:scale-95">
+         <Link href={`/projects/${project.id}`} className="flex items-center gap-1.5 rounded-full border border-slate-300 bg-transparent px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-600 transition-colors duration-300 hover:bg-slate-900 hover:text-white active:scale-95">
             View Project
             <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
