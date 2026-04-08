@@ -53,6 +53,33 @@ export function ChatBox() {
     (userIdStr) => Number(userIdStr) !== tempCurrentUserId
   );
 
+  // Pre-calculate which message ID should display the "Read by [User]" tag for each user.
+  // We only show it on the *latest* message sent by the current user that the other user has read.
+  const latestReadByMessageId: Record<number, number[]> = {};
+  
+  if (tempCurrentUserId) {
+    Object.entries(readReceipts || {}).forEach(([uid, lastReadId]) => {
+      const userId = Number(uid);
+      if (userId === tempCurrentUserId) return;
+
+      let maxMsgId = -1;
+      for (const msg of loadedMessages) {
+        if (msg.senderId !== tempCurrentUserId) continue;
+        const msgIdNum = typeof msg.id === 'number' ? msg.id : parseInt(String(msg.id), 10);
+        if (msgIdNum <= lastReadId && msgIdNum > maxMsgId) {
+          maxMsgId = msgIdNum;
+        }
+      }
+      
+      if (maxMsgId !== -1) {
+        if (!latestReadByMessageId[maxMsgId]) {
+          latestReadByMessageId[maxMsgId] = [];
+        }
+        latestReadByMessageId[maxMsgId].push(userId);
+      }
+    });
+  }
+
   return (
     <div className="flex flex-col-reverse h-[500px] w-full border rounded-lg p-4 overflow-y-auto">
       {/* 
@@ -84,12 +111,7 @@ export function ChatBox() {
 
         // Get read receipt info for this message
         const messageIdNum = typeof msg.id === 'number' ? msg.id : parseInt(String(msg.id), 10);
-        const usersWhoRead = Object.entries(readReceipts || {})
-          .filter(([uid, lastReadId]) => {
-            const userId = Number(uid);
-            return userId !== tempCurrentUserId && lastReadId >= messageIdNum;
-          })
-          .map(([uid]) => Number(uid));
+        const usersWhoRead = latestReadByMessageId[messageIdNum] || [];
 
         return (
           <div 
