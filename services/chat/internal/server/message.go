@@ -8,17 +8,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
-
-type SseConnectionHub struct {
-	userChannels map[int]chan string
-	mutex        sync.RWMutex
-}
 
 func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId uuid.UUID, senderId int) {
 	ctx := r.Context()
@@ -122,6 +116,9 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request, tempUs
 	s.sseHub.userChannels[tempUserId] = sseCh
 	s.sseHub.mutex.Unlock()
 
+	// Broadcast "online" status to friends in a goroutine (non-blocking)
+	go s.broadcastStatusToFriends(tempUserId, true)
+
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 	for {
@@ -130,6 +127,9 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request, tempUs
 			s.sseHub.mutex.Lock()
 			delete(s.sseHub.userChannels, tempUserId)
 			s.sseHub.mutex.Unlock()
+
+			// Broadcast "offline" status to friends (synchronous during cleanup)
+			s.broadcastStatusToFriends(tempUserId, false)
 			return
 
 		case message := <-sseCh:
@@ -263,20 +263,7 @@ func (s *Server) CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUse
 // If the member is online, send it
 // Non-blocking send to prevent one slow client from freezing the loop
 func (s *Server) broadcastToRoomExcept(memberIDs []int32, senderId int, payload string) {
-	s.sseHub.mutex.RLock()
-	defer s.sseHub.mutex.RUnlock()
-	for _, memberId := range memberIDs {
-		if int(memberId) == senderId {
-			continue
-		}
-		if ch, ok := s.sseHub.userChannels[int(memberId)]; ok {
-			select {
-			case ch <- payload:
-			default:
-				fmt.Printf("Warning: channel full for user %d\n", memberId)
-			}
-		}
-	}
+	s.sseHub.BroadcastToRoomExcept(memberIDs, senderId, payload)
 }
 
 // SendTypingEvent handles the POST /message/typing/{chatId}/{tempSenderId} endpoint
