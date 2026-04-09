@@ -22,109 +22,111 @@ import org.jboss.logging.MDC;
 @Priority(Priorities.AUTHENTICATION - 100)
 public class RequestContextFilter implements ContainerRequestFilter {
 
-  @Inject GatewayRequestContext grc;
+    @Inject
+    GatewayRequestContext grc;
 
-  @Inject GatewayObserverDispatcher obs;
+    @Inject
+    GatewayObserverDispatcher obs;
 
-  @Override
-  public void filter(ContainerRequestContext request) {
+    @Override
+    public void filter(ContainerRequestContext request) {
 
-    populateGrcContext(request);
+        populateGrcContext(request);
 
-    // MDC - Mapped Diagnostic Context for logging
-    MDC.put("requestId", grc.getRequestId());
+        // MDC - Mapped Diagnostic Context for logging
+        MDC.put("requestId", grc.getRequestId());
 
-    // Obs Hook start
-    Instant st = Instant.now();
-    obs.onRequestStart(
-        new GatewayRequestStart(grc.getRequestId(), request.getMethod(), grc.getPath(), st));
+        // Obs Hook start
+        Instant st = Instant.now();
+        obs.onRequestStart(
+                new GatewayRequestStart(grc.getRequestId(), request.getMethod(), grc.getPath(), st));
 
-    request.setProperty("gw.start", st);
-    grc.setStartTime(st);
-  }
-
-  private void populateGrcContext(ContainerRequestContext request) {
-
-    grc.clearError();
-
-    String requestId = request.getHeaderString(IdentityHeaders.REQUEST_ID);
-
-    if (requestId == null || requestId.isBlank()) {
-      requestId = UUID.randomUUID().toString();
+        request.setProperty("gw.start", st);
+        grc.setStartTime(st);
     }
 
-    grc.setRequestId(requestId);
-    grc.setPath(request.getUriInfo().getPath());
-    grc.setPathType(extractPathType(grc.getPath()));
-    grc.setServiceName(extractServiceName(grc.getPath(), grc.getPathType()));
-    grc.setQueryParams(request.getUriInfo().getQueryParameters());
-    grc.setHeaders(request.getHeaders());
+    private void populateGrcContext(ContainerRequestContext request) {
 
-    grc.setRealIp(request.getHeaderString(IdentityHeaders.INTRA_REAL_IP));
-    grc.setForwardedFor(request.getHeaderString(IdentityHeaders.INTRA_FORWARDED_FOR));
-    grc.setForwardedHost(request.getHeaderString(IdentityHeaders.INTRA_FORWARDED_HOST));
-    grc.setForwardedProto(request.getHeaderString(IdentityHeaders.INTRA_FORWARDED_PROTO));
+        grc.clearError();
 
-    if (grc.getRealIp() == null || grc.getRealIp().isBlank()) {
-      if (grc.getForwardedFor() != null && !grc.getForwardedFor().isBlank()) {
-        grc.setClientIp(grc.getForwardedFor().split(",")[0].trim());
-      } else {
-        grc.setClientIp("unknown");
-        grc.setInternal(true);
-      }
-    } else {
-      grc.setClientIp(grc.getRealIp().trim());
+        String requestId = request.getHeaderString(IdentityHeaders.REQUEST_ID);
+
+        if (requestId == null || requestId.isBlank()) {
+            requestId = UUID.randomUUID().toString();
+        }
+
+        grc.setRequestId(requestId);
+        grc.setPath(request.getUriInfo().getPath());
+        grc.setPathType(extractPathType(grc.getPath()));
+        grc.setServiceName(extractServiceName(grc.getPath(), grc.getPathType()));
+        grc.setQueryParams(request.getUriInfo().getQueryParameters());
+        grc.setHeaders(request.getHeaders());
+
+        grc.setRealIp(request.getHeaderString(IdentityHeaders.INTRA_REAL_IP));
+        grc.setForwardedFor(request.getHeaderString(IdentityHeaders.INTRA_FORWARDED_FOR));
+        grc.setForwardedHost(request.getHeaderString(IdentityHeaders.INTRA_FORWARDED_HOST));
+        grc.setForwardedProto(request.getHeaderString(IdentityHeaders.INTRA_FORWARDED_PROTO));
+
+        if (grc.getRealIp() == null || grc.getRealIp().isBlank()) {
+            if (grc.getForwardedFor() != null && !grc.getForwardedFor().isBlank()) {
+                grc.setClientIp(grc.getForwardedFor().split(",")[0].trim());
+            } else {
+                grc.setClientIp("unknown");
+                grc.setInternal(true);
+            }
+        } else {
+            grc.setClientIp(grc.getRealIp().trim());
+        }
+
+        // SSE event checks, default to false for java.
+        if (grc.getPath().startsWith("/api/stream/") && "GET".equalsIgnoreCase(request.getMethod())) {
+            String accept = request.getHeaderString("Accept");
+
+            if (accept == null || !accept.toLowerCase(Locale.ROOT).contains("text/event-stream")) {
+                throw new GatewayException(
+                        Response.Status.NOT_ACCEPTABLE,
+                        GatewayErrorCode.SSE_ACCEPT_REQUIRED,
+                        "Stream requests must accept text/event-stream");
+            }
+
+            grc.setSse(true);
+        }
     }
 
-    // SSE event checks, default to false for java.
-    if (grc.getPath().startsWith("/api/stream/") && "GET".equalsIgnoreCase(request.getMethod())) {
-      String accept = request.getHeaderString("Accept");
+    private String extractPathType(String path) {
+        if (path == null || path.isBlank()) {
+            return "unknown";
+        }
 
-      if (accept == null || !accept.toLowerCase(Locale.ROOT).contains("text/event-stream")) {
-        throw new GatewayException(
-            Response.Status.NOT_ACCEPTABLE,
-            GatewayErrorCode.SSE_ACCEPT_REQUIRED,
-            "Stream requests must accept text/event-stream");
-      }
-
-      grc.setSse(true);
-    }
-  }
-
-  private String extractPathType(String path) {
-    if (path == null || path.isBlank()) {
-      return "unknown";
+        if (path.startsWith("/api/stream")) {
+            return "stream";
+        } else if (path.startsWith("/api/public")) {
+            return "public";
+        } else if (path.startsWith("/api/admin")) {
+            return "admin";
+        } else if (path.startsWith("/api")) {
+            return "api";
+        } else {
+            return "other";
+        }
     }
 
-    if (path.startsWith("/api/stream")) {
-      return "stream";
-    } else if (path.startsWith("/api/public")) {
-      return "public";
-    } else if (path.startsWith("/api/admin")) {
-      return "admin";
-    } else if (path.startsWith("/api")) {
-      return "api";
-    } else {
-      return "other";
-    }
-  }
+    private String extractServiceName(String path, String pathType) {
+        if (path == null || path.isBlank()) {
+            return "unknown";
+        }
 
-  private String extractServiceName(String path, String pathType) {
-    if (path == null || path.isBlank()) {
-      return "unknown";
+        String[] segments = path.split("/");
+        switch (pathType) {
+            case "public", "admin", "stream" -> {
+                return segments.length > 3 ? segments[3] : "unknown";
+            }
+            case "api" -> {
+                return segments.length > 2 ? segments[2] : "unknown";
+            }
+            default -> {
+                return "other";
+            }
+        }
     }
-
-    String[] segments = path.split("/");
-    switch (pathType) {
-      case "public", "admin", "stream" -> {
-        return segments.length > 3 ? segments[3] : "unknown";
-      }
-      case "api", "websocket" -> {
-        return segments.length > 2 ? segments[2] : "unknown";
-      }
-      default -> {
-        return "other";
-      }
-    }
-  }
 }
