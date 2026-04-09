@@ -8,6 +8,7 @@ interface AdminCardProps {
 
 export default function AdminCard({ isOwnProfile }: AdminCardProps) {
 
+
   if (!isOwnProfile) {
     return null;
   }
@@ -50,123 +51,125 @@ export default function AdminCard({ isOwnProfile }: AdminCardProps) {
   )
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 w-full">
-      <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-5">
-        Admin Control Panel
-      </p>
+    <div className="card bg-base-100 shadow-sm w-full">
+      <div className="card-body p-6">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-5">
+          Admin Control Panel
+        </p>
 
-      {/* Update User */}
-      <div>
-        <p className="text-sm font-medium text-slate-700 mb-2">Update User</p>
-        <form
-          className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr_auto] gap-2"
-          onSubmit={handleAdminUpdateUser}
-        >
-          <input
-            className={inputCls}
-            placeholder="User ID"
-            value={adminUpdateForm.userId}
-            onChange={(e) => setAdminUpdateForm((p) => ({ ...p, userId: e.target.value }))}
-            required
-          />
-
-          <details className="dropdown w-full">
-            <summary className={summaryCls}>
-              {adminUpdateForm.role || 'Role unchanged'}
-              <ChevronDown />
-            </summary>
-            <ul className="menu dropdown-content bg-base-100 rounded-box z-10 w-full p-2 shadow-sm mt-1">
-              {['', 'STUDENT', 'ADMIN'].map((v) => (
-                <li key={v}>
-                  <button type="button" onClick={() => { setAdminUpdateForm((p) => ({ ...p, role: v })); closeDropdown() }}>
-                    {v || 'Role unchanged'}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </details>
-
-          <details className="dropdown w-full">
-            <summary className={summaryCls}>
-              {adminUpdateForm.isBanned === 'true' ? 'Ban' : adminUpdateForm.isBanned === 'false' ? 'Unban' : 'Ban unchanged'}
-              <ChevronDown />
-            </summary>
-            <ul className="menu dropdown-content bg-base-100 rounded-box z-10 w-full p-2 shadow-sm mt-1">
-              {[['', 'Ban unchanged'], ['false', 'Unban'], ['true', 'Ban']].map(([v, label]) => (
-                <li key={v}>
-                  <button type="button" onClick={() => { setAdminUpdateForm((p) => ({ ...p, isBanned: v })); closeDropdown() }}>
-                    {label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </details>
-
-          <button
-            type="submit"
-            className="px-4 h-9 text-sm font-medium rounded-xl bg-slate-800 hover:bg-slate-700 text-white transition focus:outline-none focus:ring-2 focus:ring-slate-800 focus:ring-offset-2 whitespace-nowrap"
+        {/* Update User */}
+        <div>
+          <p className="text-sm font-medium text-slate-700 mb-2">Update User</p>
+          <form
+            className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr_auto] gap-2"
+            onSubmit={handleAdminUpdateUser}
           >
-            Update User
-          </button>
-        </form>
-      </div>
+            <input
+              className={inputCls}
+              placeholder="User ID"
+              value={adminUpdateForm.userId}
+              onChange={(e) => setAdminUpdateForm((p) => ({ ...p, userId: e.target.value }))}
+              required
+            />
 
-      <div className="border-t border-gray-100 my-5" />
+            <details className="dropdown w-full">
+              <summary className={summaryCls}>
+                {adminUpdateForm.role || 'Role unchanged'}
+                <ChevronDown />
+              </summary>
+              <ul className="menu dropdown-content bg-base-100 rounded-box z-10 w-full p-2 shadow-sm mt-1">
+                {['', 'STUDENT', 'ADMIN'].map((v) => (
+                  <li key={v}>
+                    <button type="button" onClick={() => { setAdminUpdateForm((p) => ({ ...p, role: v })); closeDropdown() }}>
+                      {v || 'Role unchanged'}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </details>
 
-      {/* Create User */}
-      <div>
-        <p className="text-sm font-medium text-slate-700 mb-2">Create User</p>
-        <form
-          className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr_1.5fr_1fr_auto] gap-2"
-          onSubmit={handleAdminCreateUser}
-        >
-          <input
-            className={inputCls}
-            placeholder="Username"
-            value={newUserForm.username}
-            onChange={(e) => setNewUserForm((p) => ({ ...p, username: e.target.value }))}
-            required
-            minLength={3}
-          />
-          <input
-            className={inputCls}
-            placeholder="Full Name"
-            value={newUserForm.fullName}
-            onChange={(e) => setNewUserForm((p) => ({ ...p, fullName: e.target.value }))}
-            required
-          />
-          <input
-            className={inputCls}
-            placeholder="Email"
-            type="email"
-            value={newUserForm.email}
-            onChange={(e) => setNewUserForm((p) => ({ ...p, email: e.target.value }))}
-            required
-          />
+            <details className="dropdown w-full">
+              <summary className={summaryCls}>
+                {adminUpdateForm.isBanned === 'true' ? 'Ban' : adminUpdateForm.isBanned === 'false' ? 'Unban' : 'Ban unchanged'}
+                <ChevronDown />
+              </summary>
+              <ul className="menu dropdown-content bg-base-100 rounded-box z-10 w-full p-2 shadow-sm mt-1">
+                {[['', 'Ban unchanged'], ['false', 'Unban'], ['true', 'Ban']].map(([v, label]) => (
+                  <li key={v}>
+                    <button type="button" onClick={() => { setAdminUpdateForm((p) => ({ ...p, isBanned: v })); closeDropdown() }}>
+                      {label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </details>
 
-          <details className="dropdown w-full">
-            <summary className={summaryCls}>
-              {newUserForm.role}
-              <ChevronDown />
-            </summary>
-            <ul className="menu dropdown-content bg-base-100 rounded-box z-10 w-full p-2 shadow-sm mt-1">
-              {['STUDENT', 'ADMIN'].map((v) => (
-                <li key={v}>
-                  <button type="button" onClick={() => { setNewUserForm((p) => ({ ...p, role: v })); closeDropdown() }}>
-                    {v}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </details>
+            <button
+              type="submit"
+              className="px-4 h-9 text-sm font-medium rounded-xl bg-slate-800 hover:bg-slate-700 text-white transition focus:outline-none focus:ring-2 focus:ring-slate-800 focus:ring-offset-2 whitespace-nowrap"
+            >
+              Update User
+            </button>
+          </form>
+        </div>
 
-          <button
-            type="submit"
-            className="px-4 h-9 text-sm font-medium rounded-xl bg-[#157169] hover:bg-[#115e59] text-white transition focus:outline-none focus:ring-2 focus:ring-[#157169] focus:ring-offset-2 whitespace-nowrap"
+        <div className="border-t border-gray-100 my-5" />
+
+        {/* Create User */}
+        <div>
+          <p className="text-sm font-medium text-slate-700 mb-2">Create User</p>
+          <form
+            className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr_1.5fr_1fr_auto] gap-2"
+            onSubmit={handleAdminCreateUser}
           >
-            Create User
-          </button>
-        </form>
+            <input
+              className={inputCls}
+              placeholder="Username"
+              value={newUserForm.username}
+              onChange={(e) => setNewUserForm((p) => ({ ...p, username: e.target.value }))}
+              required
+              minLength={3}
+            />
+            <input
+              className={inputCls}
+              placeholder="Full Name"
+              value={newUserForm.fullName}
+              onChange={(e) => setNewUserForm((p) => ({ ...p, fullName: e.target.value }))}
+              required
+            />
+            <input
+              className={inputCls}
+              placeholder="Email"
+              type="email"
+              value={newUserForm.email}
+              onChange={(e) => setNewUserForm((p) => ({ ...p, email: e.target.value }))}
+              required
+            />
+
+            <details className="dropdown w-full">
+              <summary className={summaryCls}>
+                {newUserForm.role}
+                <ChevronDown />
+              </summary>
+              <ul className="menu dropdown-content bg-base-100 rounded-box z-10 w-full p-2 shadow-sm mt-1">
+                {['STUDENT', 'ADMIN'].map((v) => (
+                  <li key={v}>
+                    <button type="button" onClick={() => { setNewUserForm((p) => ({ ...p, role: v })); closeDropdown() }}>
+                      {v}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </details>
+
+            <button
+              type="submit"
+              className="px-4 h-9 text-sm font-medium rounded-xl bg-[#157169] hover:bg-[#115e59] text-white transition focus:outline-none focus:ring-2 focus:ring-[#157169] focus:ring-offset-2 whitespace-nowrap"
+            >
+              Create User
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   )

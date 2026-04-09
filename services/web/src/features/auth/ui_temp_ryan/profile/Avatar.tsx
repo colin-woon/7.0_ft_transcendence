@@ -14,7 +14,7 @@ export default function Avatar({ avatarUrl, fullName, initials }: AvatarProps) {
       className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-md"
     />
   ) : (
-    <div className="py-4 w-20 h-20 rounded-2xl bg-gradient-to-br from-[#7ecbff] via-[#b7aaff] to-[#a18fff] flex items-center justify-center text-white text-2xl font-bold ring-4 ring-white shadow-md">
+    <div className="py-4 w-20 h-20 rounded-2xl bg-gray-200 flex items-center justify-center text-gray-600 text-2xl font-bold ring-4 ring-white shadow-md">
       {initials}
     </div>
   );
