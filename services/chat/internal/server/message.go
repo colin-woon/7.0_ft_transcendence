@@ -61,7 +61,7 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId uuid
 	}
 	payload := string(jsonData)
 
-	s.broadcastToRoomExcept(memberIDs, senderId, payload)
+	s.sseHub.BroadcastToRoomExcept(memberIDs, senderId, payload)
 
 	// 5. Return 201 Created to the sender
 	w.WriteHeader(http.StatusCreated)
@@ -258,14 +258,6 @@ func (s *Server) CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUse
 	w.WriteHeader(http.StatusCreated)
 }
 
-// Helper function to broadcast SSE events to room members, excluding the sender
-// Don't send the event back to the sender
-// If the member is online, send it
-// Non-blocking send to prevent one slow client from freezing the loop
-func (s *Server) broadcastToRoomExcept(memberIDs []int32, senderId int, payload string) {
-	s.sseHub.BroadcastToRoomExcept(memberIDs, senderId, payload)
-}
-
 // SendTypingEvent handles the POST /message/typing/{chatId}/{tempSenderId} endpoint
 // 1. Fetch all members of this room
 // 2. Validate that the sender is actually a member of the chat
@@ -307,7 +299,7 @@ func (s *Server) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId 
 		http.Error(w, "Failed to serialize typing event", http.StatusInternalServerError)
 		return
 	}
-	s.broadcastToRoomExcept(memberIDs, tempSenderId, string(jsonData))
+	s.sseHub.BroadcastToRoomExcept(memberIDs, tempSenderId, string(jsonData))
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -356,6 +348,6 @@ func (s *Server) UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatI
 		return
 	}
 
-	s.broadcastToRoomExcept(memberIDs, tempUserId, string(jsonData))
+	s.sseHub.BroadcastToRoomExcept(memberIDs, tempUserId, string(jsonData))
 	w.WriteHeader(http.StatusNoContent)
 }
