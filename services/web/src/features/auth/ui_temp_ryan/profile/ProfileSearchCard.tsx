@@ -3,9 +3,16 @@
 import { Search } from 'lucide-react'
 import React, { useState } from 'react'
 
-export default function ProfileSearchCard() {
+interface ProfileSearchCardProps {
+  isOwnProfile: boolean
+}
+
+export default function ProfileSearchCard({ isOwnProfile }: ProfileSearchCardProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
+  if (!isOwnProfile) {
+    return null;
+  }
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col h-full">
       <div className="mb-4">

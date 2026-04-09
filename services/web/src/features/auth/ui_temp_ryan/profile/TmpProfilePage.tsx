@@ -6,6 +6,7 @@ import ProfileCard from './ProfileCard2'
 import SessionCard from './SessionCard'
 import ProfileProjectCard from './ProfileProjectCard'
 import PasswordCard from './PasswordCard'
+import LinkAccountCard from './LinkAccountCard'
 import ProfileSearchCard from './ProfileSearchCard'
 import AdminCard from './AdminCard'
 
@@ -98,24 +99,26 @@ function formatDate(value: string) {
 }
 
 export default function TmpProfilePage() {
+  const isOwnProfile = true; // For demo purposes, we treat this as the user's own profile. Adjust as needed.
   return (
    <div className="h-screen bg-gray-50 font-sans mt-16 overflow-y-auto overflow-x-hidden">
         <div className="w-full max-w-6xl flex flex-col gap-5 mx-auto pb-40">
 
-        <ProfileCard user={mockUser} profile={profileCardData} initials={initials} isOwnProfile={true}/>
+        <ProfileCard user={mockUser} profile={profileCardData} initials={initials} isOwnProfile={isOwnProfile}/>
 
 
         {/* Recent Projects: full width, classic design */}
         <ProfileProjectCard projects={mockProjects} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 w-full">
-          <ProfileSearchCard />
-          <PasswordCard isOwnProfile={true} hasPassword={mockUser.hasPassword} />
-          <SessionCard sessions={mockSessions} isOwnProfile={true} />
+          <ProfileSearchCard isOwnProfile={isOwnProfile} />
+          <LinkAccountCard isOwnProfile={isOwnProfile} />
+          <PasswordCard isOwnProfile={isOwnProfile} hasPassword={mockUser.hasPassword} />
         </div>
+          <SessionCard sessions={mockSessions} isOwnProfile={isOwnProfile} />
 
         {mockUser.role === 'ADMIN' && (
-          <AdminCard />
+          <AdminCard isOwnProfile={isOwnProfile}/>
         )}
       </div>
     </div>
