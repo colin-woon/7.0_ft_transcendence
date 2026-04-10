@@ -13,10 +13,12 @@ export interface ChatState {
   friendsError: string | null;
   typingUsers: Record<ChatId, Record<FriendId, boolean>>;
   readReceipts: Record<ChatId, Record<FriendId, number>>; // chatId -> userId -> lastReadMessageId
+  userStatuses: Record<FriendId, boolean>;
 }
 
 export interface ChatActions {
   setTempCurrentUserId: (userId: FriendId) => void;
+  setUserStatus: (userId: FriendId, isOnline: boolean) => void;
   setChatSession: (chatId: ChatId, type: ChatRoomType, name: string | null, friendIds: FriendId[], messages: ChatMessage[] | null) => void;
   addMessage: (msg: ChatMessage) => void;
   setAllFriendships: (friendList: FriendList) => void;
@@ -56,11 +58,16 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
       friendsError: null,
       typingUsers: {},
       readReceipts: {},
+      userStatuses: {},
 
       setTempCurrentUserId: (userId: FriendId) =>
         set((state) => {
           state.tempCurrentUserId = userId;
       }),
+      setUserStatus: (userId: FriendId, isOnline: boolean) =>
+        set((state) => {
+          state.userStatuses[userId] = isOnline;
+        }),
       setChatSession: (chatId: ChatId, type: ChatRoomType, name: string | null, friendIds: FriendId[], messages: ChatMessage[] | null) => 
         set((state) => {
           state.currentChatSessionId = chatId;

@@ -22,8 +22,8 @@ export interface UserTyping {
 }
 
 export interface UserStatus {
-  userId: string;
-  status: 'online' | 'offline';
+  userId: number;
+  isOnline: boolean;
 }
 
 export interface ReadReceipt {

@@ -4,6 +4,8 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { AvatarWithStatus } from './AvatarWithStatus';
+
 // Mock data based on your provided screenshot
 const MOCK_CHATS = [
   { id: '1', name: 'Jane Doe', initials: 'JD', color: 'bg-emerald-500', isOnline: true, unread: 0 },
@@ -69,21 +71,13 @@ export default function ChatSidebar() {
               }`}
             >
               {/* Avatar with unread/online indicator */}
-              <div className="indicator">
-                {chat.unread > 0 && (
-                  <span className="indicator-item badge badge-error badge-sm px-1 z-10 transform translate-x-1 -translate-y-1 border-base-200 border-2">
-                    {chat.unread}
-                  </span>
-                )}
-                {chat.isOnline && chat.unread === 0 && (
-                  <span className="indicator-item indicator-bottom indicator-end status status-success status-lg z-10 transform -translate-x-1 border-base-200 border-2"></span>
-                )}
-                <div className={`avatar placeholder`}>
-                  <div className={`w-10 rounded-full ${chat.color} text-neutral-50`}>
-                    <span className="text-sm font-medium">{chat.initials}</span>
-                  </div>
-                </div>
-              </div>
+              <AvatarWithStatus 
+                userId={parseInt(chat.id)} 
+                chatId={chat.id} 
+                name={chat.name} 
+                initials={chat.initials} 
+                color={chat.color} 
+              />
 
               {/* Chat Name */}
               <div className="flex-1 truncate">

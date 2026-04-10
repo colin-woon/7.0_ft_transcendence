@@ -5,7 +5,6 @@ import { SendFriendRequestButton, SendMessageButton, FriendRequestChoices, ChatB
 
 export default function MessagesPage() {
   return (
-    <ChatStoreProvider>
       <div className="p-20 flex flex-col gap-4">
         <FriendList />
         <CreateGroupChatButton />
@@ -18,6 +17,5 @@ export default function MessagesPage() {
         <SendMessageButton />
         <MessageStreamController />
       </div>
-    </ChatStoreProvider>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useFriendList, useChatActions, useCurrentChatSession } from '../models';
 import { div } from 'framer-motion/client';
+import { AvatarWithStatus } from './AvatarWithStatus';
 
 const FALLBACK_AVATAR_URL =
   'https://img.daisyui.com/images/profile/demo/gordon@192.webp';
@@ -43,18 +44,12 @@ export function FriendList() {
             type="button"
             className="flex flex-col items-center gap-2"
           >
-            <div className="avatar">
-              <div
-                className={[
-                  'w-16 rounded-full ring ring-offset-2 ring-offset-base-100 transition',
-                ].join(' ')}
-              >
-                <img
-                  src={FALLBACK_AVATAR_URL}
-                  alt={`Friend ${friend.friendId}`}
-                />
-              </div>
-            </div>
+            <AvatarWithStatus 
+              userId={friend.friendId} 
+              chatId={friend.chatId} 
+              name={`Friend #${friend.friendId}`} 
+              avatarUrl={FALLBACK_AVATAR_URL} 
+            />
             <p
               className={[
                 'text-xs',

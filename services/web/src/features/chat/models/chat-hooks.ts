@@ -1,7 +1,9 @@
+'use client';
+
 import { ChatStoreContext } from './chat-provider';
 import type { ChatMessage, FriendId, ChatId } from './chat-types';
 import { useStore } from 'zustand';
-import { useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { useContext, useState, useEffect, useRef, useCallback, use } from 'react';
 import { createGroupChat } from '../api/chat-services';
 import debounce from 'lodash.debounce';
 
@@ -16,6 +18,7 @@ export const useChatActions = () => {
 
     return {
         setTempCurrentUserId: useStore(store, (s) => s.setTempCurrentUserId),
+        setUserStatus: useStore(store, (s) => s.setUserStatus),
         setChatSession: useStore(store, (s) => s.setChatSession),
         addMessage: useStore(store, (s) => s.addMessage),
         setCurrentChatSessionId: useStore(store, (s) => s.setCurrentChatSessionId),
@@ -271,3 +274,30 @@ export function useMessageVisibility({
     cleanup,
   };
 }
+
+export const useUserOnlineStatus = (userId: FriendId) => {
+    const store = useContext(ChatStoreContext);
+    if (!store) throw new Error('useUserOnlineStatus must be used within ChatStoreProvider');
+    return useStore(store, (s) => s.userStatuses[userId] || false);
+};
+
+export const useHasUnreadMessages = (chatId: ChatId | null) => {
+    const store = useContext(ChatStoreContext);
+    if (!store) throw new Error('useHasUnreadMessages must be used within ChatStoreProvider');
+    
+    return useStore(store, (s) => {
+        if (!chatId || !s.tempCurrentUserId) return false;
+        
+        const chat = s.allChatSessions[chatId];
+        if (!chat || !chat.messages || chat.messages.length === 0) return false;
+        
+        const latestMessage = chat.messages[0]; // messages are unshifted (newest first)
+        if (latestMessage.senderId === s.tempCurrentUserId) return false; // Sent by myself
+        
+        const myReadReceipt = s.readReceipts[chatId]?.[s.tempCurrentUserId] || 0;
+        
+        const latestIdNum = typeof latestMessage.id === 'string' ? parseInt(latestMessage.id, 10) : latestMessage.id;
+        
+        return Math.floor(latestIdNum) > myReadReceipt;
+    });
+};

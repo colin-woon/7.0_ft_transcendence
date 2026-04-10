@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { AvatarWithStatus } from '@/features/chat/ui/AvatarWithStatus';
 
 type FriendStatus = 'Online' | 'Idle' | 'Do Not Disturb' | 'Offline';
 
@@ -24,15 +25,6 @@ const MOCK_FRIENDS: Friend[] = [
 
 export default function FriendsPage() {
   const [activeTab, setActiveTab] = useState<'Online' | 'All' | 'Pending' | 'Blocked'>('All');
-
-  const getStatusBadge = (status: FriendStatus) => {
-    switch (status) {
-      case 'Online': return 'status status-success status-lg border-base-200 border-2';
-      case 'Idle': return 'status status-warning status-lg border-base-200 border-2';
-      case 'Do Not Disturb': return 'status status-error status-lg border-base-200 border-2';
-      default: return 'status status-lg border-base-200 border-2';
-    }
-  };
 
   return (
     <div className="flex flex-col h-full bg-base-100 w-full text-base-content">
@@ -103,14 +95,11 @@ export default function FriendsPage() {
             >
               {/* Left Side: Avatar & Info */}
               <div className="flex items-center gap-3 w-1/2 min-w-0">
-                <div className="indicator">
-                  <span className={`indicator-item indicator-bottom indicator-end z-10 transform -translate-x-1 group-hover:border-base-200 transition-colors ${getStatusBadge(friend.status)}`}></span>
-                  <div className="avatar placeholder">
-                    <div className={`w-10 rounded-full ${friend.avatarColor} text-neutral-50`}>
-                      <span className="text-lg">{friend.name.charAt(0).toUpperCase()}</span>
-                    </div>
-                  </div>
-                </div>
+                <AvatarWithStatus 
+                  userId={parseInt(friend.id)}
+                  name={friend.name}
+                  color={friend.avatarColor}
+                />
                 <div className="flex flex-col truncate">
                   <span className="font-semibold text-base-content truncate">{friend.name}</span>
                   <span className="text-xs text-base-content/60 truncate">{friend.status}</span>

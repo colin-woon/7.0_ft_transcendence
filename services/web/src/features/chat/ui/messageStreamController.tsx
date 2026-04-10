@@ -5,7 +5,7 @@ import { useCurrentChatSession, useChatActions } from '../models';
 import { getMessageStream } from '../api/chat-services';
 
 export function MessageStreamController() {
-  const { addMessage, setTypingStatus, updateReadReceipt } = useChatActions();
+  const { addMessage, setTypingStatus, updateReadReceipt, setUserStatus } = useChatActions();
   const { tempCurrentUserId, chatId } = useCurrentChatSession();
 
   useEffect(() => {
@@ -27,6 +27,9 @@ export function MessageStreamController() {
       }
       else if (eventContent.type === 'USER_READ' && eventContent.payload.chatId === chatId) {
         updateReadReceipt(eventContent.payload.chatId, eventContent.payload.userId, eventContent.payload.messageId);
+      }
+      else if (eventContent.type === 'USER_STATUS') {
+        setUserStatus(eventContent.payload.userId, eventContent.payload.isOnline);
       }
   });
 

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/features/auth/models/AuthContext';
+import { ChatStoreProvider } from '@/features/chat/models';
 import { AppShellProvider } from '@/components/ui/ComponentLogic/Appshell/context/AppShellContext';
 import { AppShell } from '@/components/ui/ComponentLogic/Appshell/Appshell';
 
@@ -18,11 +19,13 @@ export default function RootLayout({
     <html lang="en" data-theme="emerald">
       <body>
         <AuthProvider>
-          <AppShellProvider>
-            <AppShell>
-              {children}
-            </AppShell>
-          </AppShellProvider>
+          <ChatStoreProvider>
+            <AppShellProvider>
+              <AppShell>
+                {children}
+              </AppShell>
+            </AppShellProvider>
+          </ChatStoreProvider>
         </AuthProvider>
       </body>
     </html>
