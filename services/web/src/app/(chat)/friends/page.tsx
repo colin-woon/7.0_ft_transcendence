@@ -23,14 +23,14 @@ const MOCK_FRIENDS: Friend[] = [
 ];
 
 export default function FriendsPage() {
-  const [activeTab, setActiveTab] = useState<'Online' | 'All' | 'Pending' | 'Blocked'>('Online');
+  const [activeTab, setActiveTab] = useState<'Online' | 'All' | 'Pending' | 'Blocked'>('All');
 
   const getStatusBadge = (status: FriendStatus) => {
     switch (status) {
-      case 'Online': return 'badge-success';
-      case 'Idle': return 'badge-warning';
-      case 'Do Not Disturb': return 'badge-error';
-      default: return 'badge-ghost';
+      case 'Online': return 'status status-success status-lg border-base-200 border-2';
+      case 'Idle': return 'status status-warning status-lg border-base-200 border-2';
+      case 'Do Not Disturb': return 'status status-error status-lg border-base-200 border-2';
+      default: return 'status status-lg border-base-200 border-2';
     }
   };
 
@@ -38,7 +38,8 @@ export default function FriendsPage() {
     <div className="flex flex-col h-full bg-base-100 w-full text-base-content">
       
       {/* Top Header Navigation (Discord Style) */}
-      <header className="flex items-center px-4 h-14 border-b border-base-300 shrink-0 gap-4 shadow-sm z-10">
+      <header className="flex justify-between px-4 items-center h-14 border-b border-base-300 shrink-0 shadow-sm z-10">
+        <div className='flex items-center gap-2 font-bold text-base pr-4'>
         <div className="flex items-center gap-2 font-bold text-base border-r border-base-300 pr-4">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-base-content/70">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
@@ -49,29 +50,28 @@ export default function FriendsPage() {
         {/* Tabs */}
         <div className="flex bg-base-200 rounded-box p-1 gap-1">
           <button 
-            onClick={() => setActiveTab('Online')}
-            className={`btn btn-sm border-none shadow-none ${activeTab === 'Online' ? 'bg-base-300 text-base-content hover:bg-base-300' : 'bg-transparent text-base-content/60 hover:bg-base-300/50 hover:text-base-content'}`}
-          >
-            Online
-          </button>
-          <button 
             onClick={() => setActiveTab('All')}
-            className={`btn btn-sm border-none shadow-none ${activeTab === 'All' ? 'bg-base-300 text-base-content hover:bg-base-300' : 'bg-transparent text-base-content/60 hover:bg-base-300/50 hover:text-base-content'}`}
-          >
+            className={`btn btn-xs sm:btn-sm border-none shadow-none ${activeTab === 'All' ? 'bg-base-300 text-base-content hover:bg-base-300' : 'bg-transparent text-base-content/60 hover:bg-base-300/50 hover:text-base-content'}`}
+            >
             All
           </button>
           <button 
+            onClick={() => setActiveTab('Online')}
+            className={`btn btn-xs sm:btn-sm border-none shadow-none ${activeTab === 'Online' ? 'bg-base-300 text-base-content hover:bg-base-300' : 'bg-transparent text-base-content/60 hover:bg-base-300/50 hover:text-base-content'}`}
+            >
+            Online
+          </button>
+          <button 
             onClick={() => setActiveTab('Pending')}
-            className={`btn btn-sm border-none shadow-none ${activeTab === 'Pending' ? 'bg-base-300 text-base-content hover:bg-base-300' : 'bg-transparent text-base-content/60 hover:bg-base-300/50 hover:text-base-content'}`}
-          >
+            className={`btn btn-xs sm:btn-sm border-none shadow-none ${activeTab === 'Pending' ? 'bg-base-300 text-base-content hover:bg-base-300' : 'bg-transparent text-base-content/60 hover:bg-base-300/50 hover:text-base-content'}`}
+            >
             Pending
           </button>
         </div>
-
-        <div className="flex-1" />
+        </div>
 
         {/* Add Friend Button */}
-        <button className="btn btn-success text-success-content font-medium">
+        <button className="btn btn-xs sm:btn-sm btn-primary text-success-content font-medium">
           Add Friend
         </button>
       </header>
@@ -80,7 +80,7 @@ export default function FriendsPage() {
       <div className="flex-1 overflow-y-auto p-4 lg:p-6 custom-scrollbar">
         
         {/* Search Input */}
-        <div className="max-w-3xl mb-6">
+        <div className="mb-6">
           <label className="input input-bordered flex items-center gap-2 bg-base-200 focus-within:outline-none focus-within:border-primary">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-4 h-4 opacity-70">
               <path fillRule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clipRule="evenodd" />
@@ -90,12 +90,12 @@ export default function FriendsPage() {
         </div>
 
         {/* List Header */}
-        <div className="max-w-3xl border-b border-base-300 pb-2 mb-4 text-xs font-bold text-base-content/60 uppercase tracking-widest">
+        <div className="border-b border-base-300 pb-2 mb-4 text-xs font-bold text-base-content/60 uppercase tracking-widest">
           {activeTab} — {MOCK_FRIENDS.length}
         </div>
 
         {/* Friends List */}
-        <div className="max-w-3xl space-y-1">
+        <div className="space-y-1">
           {MOCK_FRIENDS.map((friend) => (
             <div 
               key={friend.id}
@@ -104,7 +104,7 @@ export default function FriendsPage() {
               {/* Left Side: Avatar & Info */}
               <div className="flex items-center gap-3 w-1/2 min-w-0">
                 <div className="indicator">
-                  <span className={`indicator-item indicator-bottom indicator-end badge badge-xs z-10 transform -translate-x-1 -translate-y-1 border-base-100 border-2 group-hover:border-base-200 transition-colors ${getStatusBadge(friend.status)}`}></span>
+                  <span className={`indicator-item indicator-bottom indicator-end z-10 transform -translate-x-1 group-hover:border-base-200 transition-colors ${getStatusBadge(friend.status)}`}></span>
                   <div className="avatar placeholder">
                     <div className={`w-10 rounded-full ${friend.avatarColor} text-neutral-50`}>
                       <span className="text-lg">{friend.name.charAt(0).toUpperCase()}</span>

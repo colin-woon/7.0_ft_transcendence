@@ -24,7 +24,7 @@ export default function ChatSidebar() {
           <li>
             <Link 
               href="/friends" 
-              className={`flex items-center gap-3 py-3 rounded-md ${pathname === '/friends' ? 'bg-base-300 text-primary font-semibold' : 'text-base-content/80 hover:bg-base-300/50'}`}
+              className={`flex items-center gap-3 py-3 rounded-md ${pathname === '/friends' ? 'bg-base-300 text font-semibold' : 'text-base-content/80 hover:bg-base-300/50'}`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
@@ -71,12 +71,12 @@ export default function ChatSidebar() {
               {/* Avatar with unread/online indicator */}
               <div className="indicator">
                 {chat.unread > 0 && (
-                  <span className="indicator-item badge badge-primary badge-sm px-1 z-10 transform translate-x-1 -translate-y-1 border-base-200 border-2">
+                  <span className="indicator-item badge badge-error badge-sm px-1 z-10 transform translate-x-1 -translate-y-1 border-base-200 border-2">
                     {chat.unread}
                   </span>
                 )}
                 {chat.isOnline && chat.unread === 0 && (
-                  <span className="indicator-item indicator-bottom indicator-end badge badge-success badge-xs z-10 transform -translate-x-1 -translate-y-1 border-base-200 border-2"></span>
+                  <span className="indicator-item indicator-bottom indicator-end status status-success status-lg z-10 transform -translate-x-1 border-base-200 border-2"></span>
                 )}
                 <div className={`avatar placeholder`}>
                   <div className={`w-10 rounded-full ${chat.color} text-neutral-50`}>
