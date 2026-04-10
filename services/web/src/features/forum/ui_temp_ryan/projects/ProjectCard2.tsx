@@ -23,13 +23,13 @@ export function ProjectCard({ project }: ProjectCardProps) {
       className="group relative block w-full max-w-[200px] aspect-square overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transform-gpu transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:scale-[1.015] hover:border-slate-400 hover:shadow-2xl"
     >
       {/* Default state */}
-      <div className="flex h-full flex-col items-center justify-center p-3 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:opacity-0 group-hover:scale-95 group-hover:-translate-y-1">
+      <div className="flex h-full flex-col items-center -translate-y-5 justify-center p-3 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:opacity-0 group-hover:scale-95 group-hover:-translate-y-1">
         <h3 className="text-center text-base font-bold tracking-tight text-slate-800">
           {project.name}
         </h3>
       </div>
 
-      <div className="absolute inset-0 z-10 flex h-full flex-col bg-white/95 p-3 opacity-0 transition-opacity duration-500 ease-in-out group-hover:opacity-100">
+      <div className="absolute inset-0 z-10 flex h-full flex-col -translate-y-5 bg-white/95 p-3 opacity-0 transition-opacity duration-500 ease-in-out group-hover:opacity-100">
         <div className="flex-1 flex items-center justify-center">
           <p className="line-clamp-5 text-center text-xs font-medium leading-relaxed text-slate-800">
             {project.description}

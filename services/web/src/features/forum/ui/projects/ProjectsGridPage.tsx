@@ -66,6 +66,14 @@ export default function ProjectsPage({projects, subscribedProjectIds, initialSea
   }, [searchParams]);
 
   useEffect(() => {
+    const intervalId = setInterval(() => {
+      router.refresh();
+    }, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [router]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       const nextParams = new URLSearchParams(searchParams.toString());
       const trimmedSearch = search.trim();
@@ -108,9 +116,9 @@ export default function ProjectsPage({projects, subscribedProjectIds, initialSea
   });
 
   return (
-    <div className="h-screen bg-gray-50 font-sans mt-14 overflow-y-auto">
+    <div className="h-screen bg-gray-50 font-sans mt-14">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-5">
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-5">
         <h1 className="text-2xl font-bold text-slate-800 mb-1">42 Projects</h1>
         <p className="text-sm text-slate-500">Explore the full curriculum — from C basics to full-stack web apps.</p>
 

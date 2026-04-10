@@ -3,9 +3,10 @@ import React, { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import type { Project, Difficulty } from "../../models/projects";
-import { ProjectCard } from "./ProjectCard2";
+import { AnimatedProjectsGrid } from "./AnimatedProjectsGrid";
 import TextType from '@/components/react-bits/TextType';
 import { AdminProjectCreateButton } from '@/features/forum/ui/projects/moderation';
+import { PaginationControls } from "./PaginationControls";
 
 
 
@@ -106,6 +107,7 @@ export default function ProjectsPage({ projects, subscribedProjectIds, initialSe
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const paginatedProjects = filtered.slice(startIndex, startIndex + PAGE_SIZE);
+  const pageKey = [filter, search.trim().toLowerCase(), String(currentPage)].join("|");
 
   useEffect(() => {
     setCurrentPage(1);
@@ -118,12 +120,13 @@ export default function ProjectsPage({ projects, subscribedProjectIds, initialSe
   }, [currentPage, totalPages]);
   
   return (
-    <div className="flex flex-col h-screen bg-gray-50 font-sans pt-[var(--navbar-height)] overflow-y-auto overflow-x-hidden">
+    <div className="flex min-h-full flex-col font-sans">
+      <div className="sticky top-16 z-50">
 
       {/* Header */}
-      <div className="card card-border bg-base-100 shadow-sm w-full max-w-full rounded-none sm:rounded-box">
-        <div className="card-body px-4 sm:px-6 py-5">
-          <TextType className="text-5xl text-slate-800 mb-4 font-interface tracking-wide uppercase"
+      <div className="card card-border shadow-xl w-full max-w-full rounded-none sm:rounded-box backdrop-blur-sm">
+        <div className="card-body px-4 sm:px-6 py-5 min-h-[10rem] sm:h-[13rem] overflow-hidden">
+          <TextType className="text-5xl text-slate-800 font-interface tracking-wide uppercase"
             text="Cursus Projects"
             typingSpeed={75}
             pauseDuration={1500}
@@ -133,6 +136,7 @@ export default function ProjectsPage({ projects, subscribedProjectIds, initialSe
             variableSpeed={{ min: 60, max: 120 }}
             cursorBlinkDuration={0.5}
             loop={false}
+            initialDelay={500}
             onSentenceComplete={() => {}}
           />
           <div>
@@ -187,8 +191,8 @@ export default function ProjectsPage({ projects, subscribedProjectIds, initialSe
         </div>
       </div>
 
-        {/* Tabs: show below header card only on mobile */}
-        <div className="block sm:hidden max-w-full">
+      {/* Tabs: show below header card only on mobile */}
+      <div className="block sm:hidden max-w-full">
            <div className="card card-border bg-base-100 shadow-sm w-full rounded-none">
             <div className="card-body p-0">
               <div className="overflow-x-auto">
@@ -208,55 +212,25 @@ export default function ProjectsPage({ projects, subscribedProjectIds, initialSe
               </div>
           </div>
         </div>
-        </div>
+      </div>
+      </div>
      
 
       {/* Grid */}
-      <div className="p-4 sm:p-6 max-w-full">
-        <p className="text-xs text-slate-400 mb-2 font-interface">Results: {filtered.length} project{filtered.length !== 1 ? "s" : ""}</p>
+      <div className="mt-6 sm:p-6 w-full">
+        <p className="text-xs text-slate-400 mb-2 font-interface text-right">Results: {filtered.length} project{filtered.length !== 1 ? "s" : ""}</p>
 
-        <div className="mt-6 flex flex-col gap-8 pb-24 sm:pb-28">
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {paginatedProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-          </div>
-
-          {filtered.length > 0 && totalPages > 1 && (
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs sm:text-sm text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#8EE7E3]"
-              >
-                Prev
-              </button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  type="button"
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`rounded-md px-3 py-1.5 text-xs sm:text-sm border transition ${
-                    currentPage === page
-                      ? "border-[#0f6f6b] bg-[#0f6f6b] text-white"
-                      : "border-gray-200 bg-white text-slate-700 hover:border-[#8EE7E3]"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-
-              <button
-                type="button"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs sm:text-sm text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#8EE7E3]"
-              >
-                Next
-              </button>
-            </div>
+        <div className="mt-6 flex flex-col gap-3 pb-10 sm:pb-10 w-full items-center">
+          <AnimatedProjectsGrid pageKey={pageKey} projects={paginatedProjects} />
+        </div>
+        
+        <div>
+          {filtered.length > 0 && (
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
           )}
         </div>
 
@@ -267,6 +241,9 @@ export default function ProjectsPage({ projects, subscribedProjectIds, initialSe
           </div>
         )}
       </div>
+
+      
+    
       </div>
   );
 }

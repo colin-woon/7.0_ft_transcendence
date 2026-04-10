@@ -34,7 +34,6 @@
     ".next/types/**/*.ts",
     "next-env.d.ts",
     "src/components/ui/ComponentLogic",
-    "build/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

@@ -1,58 +1,8 @@
-import { cookies } from 'next/headers';
-import { unstable_cache } from 'next/cache';
 import type { ForumApiPostSummary, ForumApiProjectSummary, ForumPost, ForumApiPostDetail, ForumPostDetail, ForumApiComment, ForumComment } from '../models';
 import type { Project, ForumPost as ProjectForumPost } from '../models/projects';
 import type { ForumSort } from '../models';
+import { forumServerFetch as forumFetch, forumServerFetchPublic as forumFetchPublic } from './forumServerClient';
 
-const debugProjectCache = process.env.WEB_LOG_NEXT_CACHE === '1';
-
-function getForumApiBaseUrl(): string {
-  const isDev = process.env.NODE_ENV === 'development';
-  const devGateway = process.env.DEV_GATEWAY_URL?.trim() || 'http://gateway-service:8080';
-
-  let raw =
-    process.env.GATEWAY_URL?.trim() ||
-    process.env.NEXT_PUBLIC_GATEWAY_URL?.trim() ||
-    process.env.NEXT_PUBLIC_API_URL?.trim() ||
-    'http://localhost:8001';
-
-  // In Docker dev, gateway serves HTTP on 8080 while production uses HTTPS 8443.
-  if (isDev && raw === 'https://gateway-service:8443') {
-    raw = devGateway;
-  }
-
-  const normalized = raw.endsWith('/') ? raw.slice(0, -1) : raw;
-  return `${normalized}/api/forum`;
-}
-
-async function getCookieHeader(): Promise<string> {
-  const cookieStore = await cookies();
-  return cookieStore
-    .getAll()
-    .map(({ name, value }) => `${name}=${value}`)
-    .join('; ');
-}
-
-async function forumFetch(path: string, init: RequestInit): Promise<Response> {
-  const cookieHeader = await getCookieHeader();
-  const headers = new Headers(init.headers);
-
-  if (cookieHeader && !headers.has('Cookie')) {
-    headers.set('Cookie', cookieHeader);
-  }
-
-  return fetch(`${getForumApiBaseUrl()}${path}`, {
-    ...init,
-    headers,
-  });
-}
-
-async function forumFetchPublic(path: string, init: RequestInit): Promise<Response> {
-  return fetch(`${getForumApiBaseUrl()}${path}`, {
-    ...init,
-    headers: init.headers,
-  });
-}
 export interface ForumApiProjectListPage {
   items: ForumApiProjectSummary[];
   total_pages: number;
@@ -154,11 +104,7 @@ function mapApiProjectToProject(apiProj: any): Project {
   };
 }
 
-
-const fetchAllProjectsCached = unstable_cache(async (): Promise<ForumApiProjectSummary[]> => {
-  if (debugProjectCache) {
-    console.log('[forum-projects-cache] MISS -> fetching from forum API');
-  }
+async function fetchAllProjectsCached(): Promise<ForumApiProjectSummary[]> {
 
   const pageSize = 100;
   let allApiProjects: ForumApiProjectSummary[] = [];
@@ -166,8 +112,7 @@ const fetchAllProjectsCached = unstable_cache(async (): Promise<ForumApiProjectS
   const firstPageRes = await forumFetchPublic(`/projects?page=1&page_size=${pageSize}`, {
     cache: 'force-cache',
     next: {
-      revalidate: 300, //secs
-      tags: ['projects'] // TODO: utilize tag for on-demand invalidation in future
+      revalidate: 30, //secs
     },
   });
 
@@ -188,8 +133,7 @@ const fetchAllProjectsCached = unstable_cache(async (): Promise<ForumApiProjectS
         forumFetchPublic(`/projects?page=${page}&page_size=${pageSize}`, {
             cache: 'force-cache',
             next:{
-                revalidate: 300,
-                tags: ['projects']
+                revalidate: 30,
             },
         })
       )
@@ -208,16 +152,10 @@ const fetchAllProjectsCached = unstable_cache(async (): Promise<ForumApiProjectS
   }
 
   return allApiProjects;
-}, ['forum-projects-all'], {
-  revalidate: 300,
-  tags: ['projects'],
-});
+}
 
 // base function to fetch all projects from API, utilizes Next.js cache
 export async function getCachedApiProjects(): Promise<ForumApiProjectSummary[]> {
-  if (debugProjectCache) {
-    console.log('[forum-projects-cache] LOOKUP');
-  }
 
   return fetchAllProjectsCached();
 }

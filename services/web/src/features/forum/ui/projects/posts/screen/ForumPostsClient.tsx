@@ -101,7 +101,7 @@ export default function ForumPostsClient({ initialPosts, fetchError, activeSort,
         ) : filteredPosts.length === 0 ? (
           <EmptyPostsState />
         ) : (
-          filteredPosts.map((post) => <PostRow key={post.id} post={post} viewMode={viewMode} />)
+          filteredPosts.map((post) => <PostRow key={post.id} post={post} />)
         )}
       </div>
     </div>

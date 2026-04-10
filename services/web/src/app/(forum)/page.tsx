@@ -5,6 +5,8 @@ import {
   searchProjects,
 } from '@/features/forum/api/project'
 
+export const revalidate = 30;
+
 interface HomeRouteProps {
   searchParams?: Promise<{
     q?: string | string[];

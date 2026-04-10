@@ -57,5 +57,16 @@ class ApiClient {
   }
 }
 
+export function getGatewayApiBase(): string {
+  const candidate =
+    process.env.NEXT_PUBLIC_API_URL ??
+    process.env.NEXT_PUBLIC_GATEWAY_URL ??
+    process.env.GATEWAY_URL;
+
+  const base = candidate ?? 'https://gateway-service:8443';
+  const normalized = base.endsWith('/') ? base.slice(0, -1) : base;
+  return normalized.endsWith('/api') ? normalized : `${normalized}/api`;
+}
+
 // Export a single instance to be used across the app
 export const apiClient = new ApiClient();

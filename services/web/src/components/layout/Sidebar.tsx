@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Home, MessageCircle, Shield, FileText, LogOut, X } from "lucide-react";
+import { Home, MessageCircle, Shield, FileText, LogOut, X, Laugh } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/features/auth/models/AuthContext";
 import { useRouter } from "next/navigation";
@@ -100,6 +100,10 @@ export default function Sidebar() {
               <Link onClick={onClose} href="/messages" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group">
                 <MessageCircle size={20} className="text-slate-600 group-hover:text-[#0f6f6b]" />
                 <span className="group-hover:text-[#0f6f6b]">Chat</span>
+              </Link>
+              <Link onClick={onClose} href="/projects" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group">
+                <Laugh size={20} className="text-slate-600 group-hover:text-[#0f6f6b]" />
+                <span className="group-hover:text-[#0f6f6b]">Projects</span>
               </Link>
             </nav>
           </div>

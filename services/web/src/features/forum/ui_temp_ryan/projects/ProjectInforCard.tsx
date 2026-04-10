@@ -53,7 +53,7 @@ export default function ProjectInfoCard({
           </div>
         </div>
         <div className="flex items-center justify-center gap-1.5">
-              <SubscriptionButton projectId={project.id} />
+            <SubscriptionButton projectId={project.id} />
         </div>
         <Link
           href={`/projects/${project.id}/create`}
