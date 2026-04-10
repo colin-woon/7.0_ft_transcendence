@@ -64,11 +64,14 @@
   }
 }
 
+@utility btn {
+  @apply rounded-field;
+}
+
 html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Only keep this if you want a fixed-viewport app */
   background: var(--background);
   color: var(--foreground);
   font-family: ui-sans-serif, system-ui, sans-serif;

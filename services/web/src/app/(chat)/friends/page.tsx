@@ -71,7 +71,7 @@ export default function FriendsPage() {
         <div className="flex-1" />
 
         {/* Add Friend Button */}
-        <button className="btn btn-sm btn-success text-success-content font-medium">
+        <button className="btn btn-success text-success-content font-medium">
           Add Friend
         </button>
       </header>
