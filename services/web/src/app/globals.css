@@ -49,7 +49,7 @@
      base-200  →  sidebar / panel background
      base-300  →  hover states, dividers, input backgrounds
   ──────────────────────────────────────────────────────── */
-  --color-base-100: oklch(99.5% 0.004 185);
+  --color-base-100: oklch(100% 0 0);
   /* #FBFEFE — chat area bg */
   --color-base-200: oklch(97% 0.008 185);
   /* #F5FAFA — sidebar bg */
