@@ -1,0 +1,22 @@
+groups:
+    - name: service-health
+      rules:
+          - alert: GatewayServiceDown
+            expr: up{job="gateway"} == 0
+            for: 5m
+            labels:
+                severity: critical
+                category: availability
+            annotations:
+                summary: 'Gateway service is down'
+                description: 'Prometheus has failed to scrape gateway for more than 5 minutes.'
+
+          - alert: AuthServiceDown
+            expr: up{job="auth"} == 0
+            for: 5m
+            labels:
+                severity: critical
+                category: availability
+            annotations:
+                summary: 'Auth service is down'
+                description: 'Prometheus has failed to scrape auth for more than 5 minutes.'

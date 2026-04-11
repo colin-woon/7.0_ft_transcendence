@@ -326,6 +326,7 @@ services:
             - --web.route-prefix=/prometheus/
         volumes:
             - ./infra/obs/prometheus/prometheus.prod.yml:/etc/prometheus/prometheus.yml:ro
+            - ./infra/obs/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
             - ./infra/obs/prometheus/web.prod.yml:/etc/prometheus/web.yml:ro
             - prometheus_data:/prometheus
             - ./certs/runtime/prometheus/prometheus.crt:/certs/prometheus.crt:ro

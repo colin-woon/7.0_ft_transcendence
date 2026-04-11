@@ -147,6 +147,7 @@ services:
             retries: 3
         volumes:
             - ./infra/obs/prometheus/prometheus.dev.yml:/etc/prometheus/prometheus.yml:ro
+            - ./infra/obs/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
             - ./infra/obs/prometheus/web.dev.yml:/etc/prometheus/web.yml:ro
         ports:
             - '9090:9090'
