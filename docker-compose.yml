@@ -47,6 +47,26 @@ services:
         networks:
             - 42_overflow
 
+    postgres-exporter-service:
+        image: prometheuscommunity/postgres-exporter:v0.19.1
+        container_name: postgres-exporter-service
+        restart: unless-stopped
+        profiles: ['db', 'all']
+        depends_on:
+            db-service:
+                condition: service_healthy
+        command:
+            - --web.config.file=/etc/postgres-exporter/web.yml
+        environment:
+            - DATA_SOURCE_NAME=postgresql://dev_user:dev_password@db-service:5432/postgres_db?sslmode=disable
+        volumes:
+            - ./infra/obs/postgres-exporter/web.prod.yml:/etc/postgres-exporter/web.yml:ro
+            - ./certs/runtime/postgres_exporter/postgres_exporter.crt:/certs/postgres-exporter.crt:ro
+            - ./certs/runtime/postgres_exporter/postgres_exporter.key:/certs/postgres-exporter.key:ro
+            - ./certs/ca/ca.crt:/certs/internal-ca.crt:ro
+        networks:
+            - 42_overflow
+
     auth-service:
         build:
             context: .

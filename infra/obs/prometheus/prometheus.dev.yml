@@ -33,3 +33,10 @@ scrape_configs:
           - targets: ['chat-service:8080']
             labels:
                 env: 'development'
+
+    - job_name: 'postgres'
+      metrics_path: '/metrics'
+      static_configs:
+          - targets: ['postgres-exporter-service:9187']
+            labels:
+                env: 'development'

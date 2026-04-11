@@ -40,3 +40,23 @@ groups:
             annotations:
                 summary: 'Chat service is down'
                 description: 'Prometheus has failed to scrape chat for more than 5 minutes.'
+
+          - alert: DatabaseDown
+            expr: pg_up == 0
+            for: 5m
+            labels:
+                severity: critical
+                category: availability
+            annotations:
+                summary: 'Database is down'
+                description: 'The Postgres exporter reports the database as unavailable for more than 5 minutes.'
+
+          - alert: PostgresExporterDown
+            expr: up{job="postgres"} == 0
+            for: 5m
+            labels:
+                severity: critical
+                category: monitoring
+            annotations:
+                summary: 'Postgres exporter is down'
+                description: 'Prometheus has failed to scrape the Postgres exporter for more than 5 minutes.'

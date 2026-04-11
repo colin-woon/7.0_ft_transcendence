@@ -152,6 +152,10 @@ services:
         ports:
             - '9090:9090'
 
+    postgres-exporter-service:
+        volumes:
+            - ./infra/obs/postgres-exporter/web.dev.yml:/etc/postgres-exporter/web.yml:ro
+
     grafana-service:
         healthcheck:
             test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']

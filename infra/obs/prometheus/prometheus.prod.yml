@@ -53,3 +53,16 @@ scrape_configs:
           - targets: ['chat-service:8443']
             labels:
                 env: 'production'
+
+    - job_name: 'postgres'
+      metrics_path: '/metrics'
+      scheme: https
+      tls_config:
+          ca_file: /certs/internal-ca.crt
+          cert_file: /certs/prometheus.crt
+          key_file: /certs/prometheus.key
+          server_name: postgres-exporter-service
+      static_configs:
+          - targets: ['postgres-exporter-service:9187']
+            labels:
+                env: 'production'
