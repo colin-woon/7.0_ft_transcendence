@@ -93,12 +93,12 @@ export default function AdminProjectCreateButton() {
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-100 mt-80 flex items-center justify-center p-4">
           <div className="w-full max-w-lg rounded-xl border-2 border-[#ffa200] bg-white p-5 shadow-xl">
             <h3 className="text-base font-semibold text-slate-900">Create Project (Admin View)</h3>
             <p className="mt-1 text-sm text-slate-600">Create a new forum project category for posts.</p>
 
-            <div className="mt-4 grid gap-3">
+            <div className="mt-4 grid min-w-0 gap-3">
               <input
                 value={name}
                 onChange={(event) => {
@@ -155,7 +155,11 @@ export default function AdminProjectCreateButton() {
                 rows={4}
                 className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
               />
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && (
+                <p className="max-w-full whitespace-pre-wrap break-all text-sm leading-5 text-red-600 [overflow-wrap:anywhere]">
+                  {error}
+                </p>
+              )}
             </div>
 
             <div className="mt-4 flex items-center justify-end gap-2">
