@@ -4,6 +4,7 @@ export type ChatId = string;
 export interface Friendship {
   friendId: FriendId;
   chatId: ChatId;
+  isOnline?: boolean;
 }
 
 export type FriendList = Friendship[];

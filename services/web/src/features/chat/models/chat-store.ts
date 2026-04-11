@@ -13,7 +13,6 @@ export interface ChatState {
   friendsError: string | null;
   typingUsers: Record<ChatId, Record<FriendId, boolean>>;
   readReceipts: Record<ChatId, Record<FriendId, number>>; // chatId -> userId -> lastReadMessageId
-  userStatuses: Record<FriendId, boolean>;
 }
 
 export interface ChatActions {
@@ -58,7 +57,6 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
       friendsError: null,
       typingUsers: {},
       readReceipts: {},
-      userStatuses: {},
 
       setTempCurrentUserId: (userId: FriendId) =>
         set((state) => {
@@ -66,7 +64,12 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
       }),
       setUserStatus: (userId: FriendId, isOnline: boolean) =>
         set((state) => {
-          state.userStatuses[userId] = isOnline;
+          // Find the actual friend object by matching the ID
+          const friend = state.allFriendships.find(f => f.friendId === userId);
+          
+          if (friend) {
+            friend.isOnline = isOnline;
+          }
         }),
       setChatSession: (chatId: ChatId, type: ChatRoomType, name: string | null, friendIds: FriendId[], messages: ChatMessage[] | null) => 
         set((state) => {

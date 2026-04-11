@@ -4,12 +4,12 @@ import { useEffect } from 'react';
 import { useCurrentChatSession, useChatActions } from '../models';
 import { getMessageStream } from '../api/chat-services';
 
-export function MessageStreamController() {
+export function SSEStreamController() {
   const { addMessage, setTypingStatus, updateReadReceipt, setUserStatus } = useChatActions();
   const { tempCurrentUserId, chatId } = useCurrentChatSession();
 
   useEffect(() => {
-    if (!chatId || !tempCurrentUserId) return;
+    if (!tempCurrentUserId) return;
     
     const eventSource = getMessageStream(tempCurrentUserId, (eventContent) => {
       if (eventContent.type === 'NEW_MESSAGE' && eventContent.payload.chatId === chatId) {

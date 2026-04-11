@@ -32,7 +32,7 @@ export async function getMessageHistory(chatId: ChatId): Promise<ChatMessage[]> 
 // 4. Handle errors (like network drops or 401 Unauthorized)
 // Note: EventSource automatically attempts to reconnect on its own.
 // If you receive a 401, you might want to explicitly call sse.close() here.
-// 5. Return the object so your MessageStreamController can call .close() on unmount
+// 5. Return the object so your SSEStreamController can call .close() on unmount
 export function getMessageStream(
   tempUserId: number, 
   onStreamChunkReceived: (event: StreamEvent) => void

@@ -1,7 +1,7 @@
 'use client';
 
 import { ChatStoreProvider } from '@/features/chat/models';
-import { SendFriendRequestButton, SendMessageButton, FriendRequestChoices, ChatBox, MessageStreamController, FriendList, ChatInbox, CreateGroupChatButton } from '@/features/chat/ui';
+import { SendFriendRequestButton, SendMessageButton, FriendRequestChoices, ChatBox, SSEStreamController, FriendList, ChatInbox, CreateGroupChatButton } from '@/features/chat/ui';
 
 export default function MessagesPage() {
   return (
@@ -15,7 +15,7 @@ export default function MessagesPage() {
           <ChatBox />
         </div>
         <SendMessageButton />
-        <MessageStreamController />
+        <SSEStreamController />
       </div>
   );
 }

@@ -3,7 +3,7 @@
 import { ChatStoreContext } from './chat-provider';
 import type { ChatMessage, FriendId, ChatId } from './chat-types';
 import { useStore } from 'zustand';
-import { useContext, useState, useEffect, useRef, useCallback, use } from 'react';
+import { useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createGroupChat } from '../api/chat-services';
 import debounce from 'lodash.debounce';
 
@@ -275,11 +275,14 @@ export function useMessageVisibility({
   };
 }
 
-export const useUserOnlineStatus = (userId: FriendId) => {
+// Find the friend in the array by matching the friendId
+export const useUserStatus = (userId: FriendId) => {
     const store = useContext(ChatStoreContext);
     if (!store) throw new Error('useUserOnlineStatus must be used within ChatStoreProvider');
-    return useStore(store, (s) => s.userStatuses[userId] || false);
-};
+    return useStore(store, (s) => {
+        const friend = s.allFriendships.find((f: any) => f.friendId === userId);
+        return friend?.isOnline || false;
+    });};
 
 export const useHasUnreadMessages = (chatId: ChatId | null) => {
     const store = useContext(ChatStoreContext);

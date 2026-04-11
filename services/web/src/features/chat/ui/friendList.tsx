@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useFriendList, useChatActions, useCurrentChatSession } from '../models';
 import { div } from 'framer-motion/client';
-import { AvatarWithStatus } from './AvatarWithStatus';
+import { AvatarWithStatus } from '@/features/chat/ui';
 
 const FALLBACK_AVATAR_URL =
   'https://img.daisyui.com/images/profile/demo/gordon@192.webp';

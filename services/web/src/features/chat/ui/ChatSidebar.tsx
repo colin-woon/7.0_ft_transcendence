@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { AvatarWithStatus } from './AvatarWithStatus';
+import { AvatarWithStatus } from '@/features/chat/ui';
 
 // Mock data based on your provided screenshot
 const MOCK_CHATS = [

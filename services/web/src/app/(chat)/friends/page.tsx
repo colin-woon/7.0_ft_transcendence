@@ -1,30 +1,40 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { AvatarWithStatus } from '@/features/chat/ui/AvatarWithStatus';
+import { AvatarWithStatus } from '@/features/chat/ui';
+import { useFriendList, useChatActions } from '@/features/chat/models';
 
-type FriendStatus = 'Online' | 'Idle' | 'Do Not Disturb' | 'Offline';
-
-interface Friend {
-  id: string;
-  name: string;
-  username: string;
-  status: FriendStatus;
-  avatarColor: string;
-}
-
-const MOCK_FRIENDS: Friend[] = [
-  { id: '1', name: 'anon_stalker420', username: 'anonstalker', status: 'Idle', avatarColor: 'bg-red-500' },
-  { id: '2', name: 'dish', username: 'dish123', status: 'Do Not Disturb', avatarColor: 'bg-blue-500' },
-  { id: '3', name: 'Neikichi', username: 'neik', status: 'Do Not Disturb', avatarColor: 'bg-zinc-700' },
-  { id: '4', name: 'Oatmeat', username: 'oatmeat', status: 'Idle', avatarColor: 'bg-amber-600' },
-  { id: '5', name: 'Ryu', username: 'ryucodes', status: 'Do Not Disturb', avatarColor: 'bg-emerald-600' },
-  { id: '6', name: 'Wezzzley', username: 'wezz', status: 'Idle', avatarColor: 'bg-green-500' },
-];
+type TabType = 'Online' | 'All' | 'Pending' | 'Blocked';
 
 export default function FriendsPage() {
-  const [activeTab, setActiveTab] = useState<'Online' | 'All' | 'Pending' | 'Blocked'>('All');
+  const [activeTab, setActiveTab] = useState<TabType>('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const { allFriendships, tempCurrentUserId, isLoading, error } = useFriendList();
+  const { fetchAllFriendships } = useChatActions();
+
+  useEffect(() => {
+    if (tempCurrentUserId) {
+      fetchAllFriendships(tempCurrentUserId);
+    }
+  }, [tempCurrentUserId, fetchAllFriendships]);
+
+  const filteredFriends = allFriendships?.filter(friend => {
+    // Filter by tab
+    if (activeTab === 'Online' && !friend.isOnline) return false;
+    // Pending and Blocked not implemented in basic data yet
+    if (activeTab === 'Pending' || activeTab === 'Blocked') return false;
+    
+    // Filter by search
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      const friendName = `Friend #${friend.friendId}`.toLowerCase();
+      if (!friendName.includes(searchLower)) return false;
+    }
+    
+    return true;
+  }) || [];
 
   return (
     <div className="flex flex-col h-full bg-base-100 w-full text-base-content">
@@ -70,39 +80,39 @@ export default function FriendsPage() {
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto p-4 lg:p-6 custom-scrollbar">
-        
-        {/* Search Input */}
-        <div className="mb-6">
-          <label className="input input-bordered flex items-center gap-2 bg-base-200 focus-within:outline-none focus-within:border-primary">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-4 h-4 opacity-70">
-              <path fillRule="evenodd" d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" clipRule="evenodd" />
-            </svg>
-            <input type="text" className="grow text-sm" placeholder="Search" />
-          </label>
-        </div>
-
         {/* List Header */}
         <div className="border-b border-base-300 pb-2 mb-4 text-xs font-bold text-base-content/60 uppercase tracking-widest">
-          {activeTab} — {MOCK_FRIENDS.length}
+          {activeTab} — {filteredFriends.length}
         </div>
 
+        {/* Feedback Messages */}
+        {isLoading && <div className="text-sm opacity-70 p-4">Loading friends...</div>}
+        {error && <div className="text-sm text-error p-4">{error}</div>}
+        {!isLoading && !error && filteredFriends.length === 0 && (
+          <div className="text-sm opacity-70 p-4">
+            {activeTab === 'Online' ? 'No friends online.' : 'No friends found.'}
+          </div>
+        )}
+
         {/* Friends List */}
+        {!isLoading && !error && (
         <div className="space-y-1">
-          {MOCK_FRIENDS.map((friend) => (
+          {filteredFriends.map((friend) => (
             <div 
-              key={friend.id}
+              key={friend.friendId}
               className="group flex items-center justify-between p-2 rounded-lg hover:bg-base-200 transition-colors border-t border-transparent hover:border-base-300/50"
             >
               {/* Left Side: Avatar & Info */}
               <div className="flex items-center gap-3 w-1/2 min-w-0">
                 <AvatarWithStatus 
-                  userId={parseInt(friend.id)}
-                  name={friend.name}
-                  color={friend.avatarColor}
+                  userId={friend.friendId}
+                  chatId={friend.chatId}
+                  name={`Friend #${friend.friendId}`}
+                  color="bg-primary" // Placeholder color
                 />
                 <div className="flex flex-col truncate">
-                  <span className="font-semibold text-base-content truncate">{friend.name}</span>
-                  <span className="text-xs text-base-content/60 truncate">{friend.status}</span>
+                  <span className="font-semibold text-base-content truncate">Friend #{friend.friendId}</span>
+                  <span className="text-xs text-base-content/60 truncate">{friend.isOnline ? 'Online' : 'Offline'}</span>
                 </div>
               </div>
 
@@ -111,7 +121,7 @@ export default function FriendsPage() {
                 
                 {/* Message Quick Action (Links to their DM) */}
                 <Link 
-                  href={`/messages/${friend.id}`} 
+                  href={`/messages/${friend.chatId}`} 
                   className="btn btn-circle btn-sm btn-ghost bg-base-200 text-base-content hover:bg-base-300 tooltip"
                   data-tip="Message"
                 >
@@ -143,6 +153,7 @@ export default function FriendsPage() {
             </div>
           ))}
         </div>
+        )}
       </div>
     </div>
   );
