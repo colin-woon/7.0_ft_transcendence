@@ -13,7 +13,6 @@ export default function ForumRouteTransition({ children }: { children: ReactNode
     setHasMounted(true)
   }, [])
 
-  // Skip first mount animation to avoid a visible double-transition in dev/app-router.
   if (!hasMounted) {
     return <>{children}</>
   }

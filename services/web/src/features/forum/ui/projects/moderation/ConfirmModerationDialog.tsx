@@ -1,5 +1,8 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+
 interface ConfirmModerationDialogProps {
   isOpen: boolean;
   title: string;
@@ -21,11 +24,21 @@ export default function ConfirmModerationDialog({
   onCancel,
   onConfirm,
 }: ConfirmModerationDialogProps) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   if (!isOpen) {
     return null;
   }
 
-  return (
+  if (!isMounted) {
+    return null;
+  }
+
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
         <h3 className="text-base font-semibold text-slate-900">{title}</h3>
@@ -50,6 +63,7 @@ export default function ConfirmModerationDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

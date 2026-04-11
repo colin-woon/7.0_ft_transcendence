@@ -19,6 +19,7 @@ import {
 interface PostDetailClientProps {
   post: ForumPostDetail;
   comments: ForumComment[];
+  projectId: number;
   projectName: string;
   projectDescription: string;
 }
@@ -42,7 +43,7 @@ function BlinkingText({ text, className }: { text: string; className?: string })
   );
 }
 
-export default function PostDetailClient({ post, comments, projectName, projectDescription }: PostDetailClientProps) {
+export default function PostDetailClient({ post, comments, projectId, projectName, projectDescription }: PostDetailClientProps) {
   const router = useRouter();
   const [postState, setPostState] = useState(post);
   const [commentState, setCommentState] = useState(comments);
@@ -95,7 +96,7 @@ export default function PostDetailClient({ post, comments, projectName, projectD
 
   const handleDeletePost = async () => {
     await deleteForumPost(postState.id);
-    router.push('/posts');
+    router.push(`/projects/${projectId}`);
     router.refresh();
   };
 

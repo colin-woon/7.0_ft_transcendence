@@ -5,6 +5,7 @@ import {
   searchProjects,
 } from '@/features/forum/api/project'
 
+
 interface ProjectsRouteProps {
   searchParams?: Promise<{
     q?: string | string[];

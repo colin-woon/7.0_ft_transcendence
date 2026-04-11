@@ -138,7 +138,7 @@ export default function ProjectsPage({projects, subscribedProjectIds, initialSea
               <button
                 key={f.key}
                 onClick={() => setActiveFilter(f.key)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                className={`z-0 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                   activeFilter === f.key
                     ? "bg-[#0f6f6b] text-white"
                     : "bg-gray-100 text-slate-600 hover:bg-[#8EE7E3]/30"

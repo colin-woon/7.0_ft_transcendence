@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Wrench } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Wrench } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { createPortal } from 'react-dom';
 import { createForumProject } from '@/features/forum/api/moderation';
 import AdminVisibilityGate from './AdminVisibilityGate';
 
@@ -17,6 +18,7 @@ function toSlug(input: string): string {
 
 export default function AdminProjectCreateButton() {
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState('');
@@ -27,6 +29,10 @@ export default function AdminProjectCreateButton() {
   const [xp, setXp] = useState('0');
   const [description, setDescription] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const reset = () => {
     setName('');
@@ -92,100 +98,103 @@ export default function AdminProjectCreateButton() {
         Create Project
       </button>
 
-      {isOpen && (
-        <div className="fixed inset-0 z-100 mt-80 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-xl border-2 border-[#ffa200] bg-white p-5 shadow-xl">
-            <h3 className="text-base font-semibold text-slate-900">Create Project (Admin View)</h3>
-            <p className="mt-1 text-sm text-slate-600">Create a new forum project category for posts.</p>
+      {isOpen &&
+        isMounted &&
+        createPortal(
+          <div className="fixed inset-0 z-[1200] flex items-center justify-center overflow-y-auto bg-black/30 p-4 sm:p-6">
+            <div className="w-full max-w-lg rounded-xl border-2 border-[#ffa200] bg-white p-5 shadow-xl">
+              <h3 className="text-base font-semibold text-slate-900">Create Project (Admin View)</h3>
+              <p className="mt-1 text-sm text-slate-600">Create a new forum project category for posts.</p>
 
-            <div className="mt-4 grid min-w-0 gap-3">
-              <input
-                value={name}
-                onChange={(event) => {
-                  const nextName = event.target.value;
-                  setName(nextName);
-                  if (!slug.trim()) {
-                    setSlug(toSlug(nextName));
-                  }
-                }}
-                placeholder="Project name"
-                className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
-              />
-              <input
-                value={slug}
-                onChange={(event) => setSlug(toSlug(event.target.value))}
-                placeholder="project-slug"
-                className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
-              />
-              <textarea
-                value={objectivesInput}
-                onChange={(event) => setObjectivesInput(event.target.value)}
-                placeholder="Objectives (comma or newline separated)"
-                rows={3}
-                className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
-              />
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <select
-                  value={solo ? 'solo' : 'group'}
-                  onChange={(event) => setSolo(event.target.value === 'solo')}
-                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
-                >
-                  <option value="solo">Solo</option>
-                  <option value="group">Group</option>
-                </select>
+              <div className="mt-4 grid min-w-0 gap-3">
+                <input
+                  value={name}
+                  onChange={(event) => {
+                    const nextName = event.target.value;
+                    setName(nextName);
+                    if (!slug.trim()) {
+                      setSlug(toSlug(nextName));
+                    }
+                  }}
+                  placeholder="Project name"
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
+                />
+                <input
+                  value={slug}
+                  onChange={(event) => setSlug(toSlug(event.target.value))}
+                  placeholder="project-slug"
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
+                />
+                <textarea
+                  value={objectivesInput}
+                  onChange={(event) => setObjectivesInput(event.target.value)}
+                  placeholder="Objectives (comma or newline separated)"
+                  rows={3}
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
+                />
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <select
+                    value={solo ? 'solo' : 'group'}
+                    onChange={(event) => setSolo(event.target.value === 'solo')}
+                    className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
+                  >
+                    <option value="solo">Solo</option>
+                    <option value="group">Group</option>
+                  </select>
+                </div>
+                <input
+                  value={estimateTime}
+                  onChange={(event) => setEstimateTime(event.target.value)}
+                  placeholder="Estimate time (e.g. 2 weeks)"
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  value={xp}
+                  onChange={(event) => setXp(event.target.value)}
+                  placeholder="XP (e.g. 462)"
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
+                />
+                <textarea
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  placeholder="Description (optional)"
+                  rows={4}
+                  className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
+                />
+                {error && (
+                  <p className="max-w-full whitespace-pre-wrap break-all text-sm leading-5 text-red-600 [overflow-wrap:anywhere]">
+                    {error}
+                  </p>
+                )}
               </div>
-              <input
-                value={estimateTime}
-                onChange={(event) => setEstimateTime(event.target.value)}
-                placeholder="Estimate time (e.g. 2 weeks)"
-                className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
-              />
-              <input
-                type="number"
-                min={0}
-                value={xp}
-                onChange={(event) => setXp(event.target.value)}
-                placeholder="XP (e.g. 462)"
-                className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
-              />
-              <textarea
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder="Description (optional)"
-                rows={4}
-                className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
-              />
-              {error && (
-                <p className="max-w-full whitespace-pre-wrap break-all text-sm leading-5 text-red-600 [overflow-wrap:anywhere]">
-                  {error}
-                </p>
-              )}
-            </div>
 
-            <div className="mt-4 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsOpen(false);
-                  reset();
-                }}
-                disabled={isSubmitting}
-                className="rounded-md border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleCreate}
-                disabled={isSubmitting}
-                className="rounded-md bg-[#ffa200] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#e48900] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isSubmitting ? 'Creating...' : 'Create'}
-              </button>
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    reset();
+                  }}
+                  disabled={isSubmitting}
+                  className="rounded-md border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreate}
+                  disabled={isSubmitting}
+                  className="rounded-md bg-[#ffa200] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#e48900] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Creating...' : 'Create'}
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </AdminVisibilityGate>
   );
 }

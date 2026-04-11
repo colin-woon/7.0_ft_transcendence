@@ -30,6 +30,7 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
       <PostDetailClient
         post={post}
         comments={comments}
+        projectId={projectIdNum}
         projectName={project?.name ?? projectName ?? post.category}
         projectDescription={project?.description ?? ''}
       />

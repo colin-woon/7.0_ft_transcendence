@@ -14,7 +14,7 @@ interface PostRowProps {
 }
 
 export default function PostRow({ project, post, isBusy = false, onEditPost, onDeletePost }: PostRowProps) {
-  const href = project ? `${project.id}/posts/${post.id}` : `/posts/${post.id}`;
+  const href = project ? `/projects/${project.id}/posts/${post.id}` : `/posts/${post.id}`;
 
   const handleEdit = onEditPost ? () => onEditPost(post.id) : undefined;
   const handleDelete = onDeletePost ? () => onDeletePost(post.id) : undefined;
@@ -35,7 +35,7 @@ export default function PostRow({ project, post, isBusy = false, onEditPost, onD
                 {post.title}
               </h3>
 
-              <div className="flex items-center gap-4 text-xs text-gray-500">
+              <div className="flex items-center gap-2 text-xs text-gray-500">
                 <span className="flex min-w-0 items-center gap-1">
                   {post.avatar} {post.author}
                 </span>
@@ -52,7 +52,7 @@ export default function PostRow({ project, post, isBusy = false, onEditPost, onD
             </div>
           </Link>
 
-          <div className="ml-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+          <div className="ml-auto" onClick={(e) => e.stopPropagation()}>
             <PostModerationControls
               authorId={post.authorId}
               isBusy={isBusy}
