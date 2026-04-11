@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { AvatarWithStatus } from '@/features/chat/ui';
+import { AvatarWithStatus, CreateGroupChatButton } from '@/features/chat/ui';
 
 // Mock data based on your provided screenshot
 const MOCK_CHATS = [
@@ -35,12 +35,13 @@ export default function ChatSidebar() {
             </Link>
           </li>
           <li>
-            <button className="flex items-center gap-3 py-3 rounded-md text-base-content/80 hover:bg-base-300/50">
+              <CreateGroupChatButton />
+            {/* <button className="btn btn-ghost w-full justify-start gap-3 font-normal text-base-content/80 hover:bg-base-300/50 h-auto py-3 rounded-md">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
               Create Group
-            </button>
+            </button> */}
           </li>
         </ul>
       </div>
@@ -84,21 +85,7 @@ export default function ChatSidebar() {
                 <span className={`text-sm truncate block ${isActive || chat.unread > 0 ? 'font-bold' : 'font-medium'}`}>
                   {chat.name}
                 </span>
-                {/* Optional subtitles like "Typing..." or small preview could go here */}
               </div>
-
-              {/* Close/Hide Button on Hover (Discord style) */}
-              <button 
-                className="opacity-0 group-hover:opacity-100 btn btn-xs btn-ghost btn-circle text-base-content/50 hover:text-base-content"
-                onClick={(e) => {
-                  e.preventDefault(); 
-                  // Close chat action here
-                }}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
             </Link>
           );
         })}
