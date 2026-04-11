@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
@@ -35,6 +36,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.Get("/", s.HelloWorldHandler)
 
 	r.Get("/health", s.healthHandler)
+	r.Handle("/metrics", promhttp.Handler())
 
 	// r.Get("/websocket", s.websocketHandler)
 

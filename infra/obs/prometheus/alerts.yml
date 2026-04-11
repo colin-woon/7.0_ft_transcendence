@@ -30,3 +30,13 @@ groups:
             annotations:
                 summary: 'Forum service is down'
                 description: 'Prometheus has failed to scrape forum for more than 5 minutes.'
+
+          - alert: ChatServiceDown
+            expr: up{job="chat"} == 0
+            for: 5m
+            labels:
+                severity: critical
+                category: availability
+            annotations:
+                summary: 'Chat service is down'
+                description: 'Prometheus has failed to scrape chat for more than 5 minutes.'

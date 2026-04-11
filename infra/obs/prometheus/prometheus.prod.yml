@@ -41,3 +41,15 @@ scrape_configs:
           - targets: ['forum-service:8443']
             labels:
                 env: 'production'
+
+    - job_name: 'chat'
+      metrics_path: '/metrics'
+      scheme: https
+      tls_config:
+          ca_file: /certs/internal-ca.crt
+          cert_file: /certs/prometheus.crt
+          key_file: /certs/prometheus.key
+      static_configs:
+          - targets: ['chat-service:8443']
+            labels:
+                env: 'production'

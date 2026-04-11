@@ -26,3 +26,10 @@ scrape_configs:
           - targets: ['forum-service:8080']
             labels:
                 env: 'development'
+
+    - job_name: 'chat'
+      metrics_path: '/metrics'
+      static_configs:
+          - targets: ['chat-service:8080']
+            labels:
+                env: 'development'
