@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 
 from src import models, schemas
 from pathlib import Path
-from typing import List, Any
+from typing import List, Any, Optional
 import json
 
 
@@ -316,27 +316,36 @@ def get_project_subscriber_count(db: Session, project_id: int) -> int:
 
 
 # --- POSTS ---
-def get_all_posts(db:Session) -> List[models.ForumPost]:
+def get_all_posts(db:Session, user_id: int) -> List[models.ForumPost]:
     results = (
         db.query(
             models.ForumPost,
-            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score")
+            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score"),
+            func.coalesce(
+                func.max(models.PostVote.vote_value).filter(models.PostVote.user_id == user_id),
+                0,
+            ).label("user_vote"),
         )
         .outerjoin(models.PostVote, models.ForumPost.id == models.PostVote.post_id)
         .group_by(models.ForumPost.id)
         .all()
     )
     posts = []
-    for post_obj, score in results:
+    for post_obj, score, user_vote in results:
         post_obj.vote_score = score
+        post_obj.user_vote = int(user_vote or 0)
         posts.append(post_obj)
     return posts
 
-def get_all_posts_sort_by_top(db:Session) -> List[models.ForumPost]:
+def get_all_posts_sort_by_top(db:Session, user_id: int) -> List[models.ForumPost]:
     results = (
         db.query(
             models.ForumPost,
-            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score")
+            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score"),
+            func.coalesce(
+                func.max(models.PostVote.vote_value).filter(models.PostVote.user_id == user_id),
+                0,
+            ).label("user_vote"),
         )
         .outerjoin(models.PostVote, models.ForumPost.id == models.PostVote.post_id)
         .group_by(models.ForumPost.id)
@@ -344,16 +353,21 @@ def get_all_posts_sort_by_top(db:Session) -> List[models.ForumPost]:
         .all()
     )
     posts = []
-    for post_obj, score in results:
+    for post_obj, score, user_vote in results:
         post_obj.vote_score = score
+        post_obj.user_vote = int(user_vote or 0)
         posts.append(post_obj)
     return posts
 
-def get_all_posts_sort_by_new(db:Session) -> List[models.ForumPost]:
+def get_all_posts_sort_by_new(db:Session, user_id: int) -> List[models.ForumPost]:
     results = (
         db.query(
             models.ForumPost,
-            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score")
+            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score"),
+            func.coalesce(
+                func.max(models.PostVote.vote_value).filter(models.PostVote.user_id == user_id),
+                0,
+            ).label("user_vote"),
         )
         .outerjoin(models.PostVote, models.ForumPost.id == models.PostVote.post_id)
         .group_by(models.ForumPost.id)
@@ -361,16 +375,21 @@ def get_all_posts_sort_by_new(db:Session) -> List[models.ForumPost]:
         .all()
     )
     posts = []
-    for post_obj, score in results:
+    for post_obj, score, user_vote in results:
         post_obj.vote_score = score
+        post_obj.user_vote = int(user_vote or 0)
         posts.append(post_obj)
     return posts
 
-def get_posts_by_project(db: Session, project_id: int) -> List[models.ForumPost]:
+def get_posts_by_project(db: Session, project_id: int, user_id: int) -> List[models.ForumPost]:
     results = (
         db.query(
             models.ForumPost,
-            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score")
+            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score"),
+            func.coalesce(
+                func.max(models.PostVote.vote_value).filter(models.PostVote.user_id == user_id),
+                0,
+            ).label("user_vote"),
         )
         .outerjoin(models.PostVote, models.ForumPost.id == models.PostVote.post_id)
         .filter(models.ForumPost.project_id == project_id)
@@ -378,16 +397,21 @@ def get_posts_by_project(db: Session, project_id: int) -> List[models.ForumPost]
         .all()
     )
     posts = []
-    for post_obj, score in results:
+    for post_obj, score, user_vote in results:
         post_obj.vote_score = score
+        post_obj.user_vote = int(user_vote or 0)
         posts.append(post_obj)
     return posts
 
-def get_posts_by_project_sort_by_top(db: Session, project_id: int) -> List[models.ForumPost]:
+def get_posts_by_project_sort_by_top(db: Session, project_id: int, user_id: int) -> List[models.ForumPost]:
     results = (
         db.query(
             models.ForumPost,
-            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score")
+            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score"),
+            func.coalesce(
+                func.max(models.PostVote.vote_value).filter(models.PostVote.user_id == user_id),
+                0,
+            ).label("user_vote"),
         )
         .outerjoin(models.PostVote, models.ForumPost.id == models.PostVote.post_id)
         .filter(models.ForumPost.project_id == project_id)
@@ -396,16 +420,21 @@ def get_posts_by_project_sort_by_top(db: Session, project_id: int) -> List[model
         .all()
     )
     posts = []
-    for post_obj, score in results:
+    for post_obj, score, user_vote in results:
         post_obj.vote_score = score
+        post_obj.user_vote = int(user_vote or 0)
         posts.append(post_obj)
     return posts
 
-def get_posts_by_project_sort_by_new(db: Session, project_id: int) -> List[models.ForumPost]:
+def get_posts_by_project_sort_by_new(db: Session, project_id: int, user_id: int) -> List[models.ForumPost]:
     results = (
         db.query(
             models.ForumPost,
-            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score")
+            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score"),
+            func.coalesce(
+                func.max(models.PostVote.vote_value).filter(models.PostVote.user_id == user_id),
+                0,
+            ).label("user_vote"),
         )
         .outerjoin(models.PostVote, models.ForumPost.id == models.PostVote.post_id)
         .filter(models.ForumPost.project_id == project_id)
@@ -414,8 +443,9 @@ def get_posts_by_project_sort_by_new(db: Session, project_id: int) -> List[model
         .all()
     )
     posts = []
-    for post_obj, score in results:
+    for post_obj, score, user_vote in results:
         post_obj.vote_score = score
+        post_obj.user_vote = int(user_vote or 0)
         posts.append(post_obj)
     return posts
 
@@ -473,11 +503,12 @@ def delete_post(db: Session, post_id: int, user_id: int, is_admin: bool) -> None
     db.commit()
 
 
-def get_post_detail(db: Session, post_id: int) -> models.ForumPost:
+def get_post_detail(db: Session, post_id: int, user_id: int) -> models.ForumPost:
     post = db.query(models.ForumPost).filter(models.ForumPost.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     score = get_post_vote_score(db, post_id)
+    post.user_vote = get_post_user_vote(db, post_id, user_id)
     post.vote_score = score
     post.view_count += 1
     db.commit()
@@ -488,11 +519,17 @@ def get_post_detail(db: Session, post_id: int) -> models.ForumPost:
 
 
 # --- COMMENTS ---
-def get_comments_by_post(db: Session, post_id: int) -> List[models.Comment]:
+def get_comments_by_post(db: Session, post_id: int, user_id: int) -> List[models.Comment]:
     results = (
             db.query(
                 models.Comment,
-                func.coalesce(func.sum(models.CommentVote.vote_value), 0).label("vote_score")
+                func.coalesce(func.sum(models.CommentVote.vote_value), 0).label("vote_score"),
+                func.coalesce(
+                    func.max(
+                        models.CommentVote.vote_value
+                    ).filter(models.CommentVote.user_id == user_id),
+                    0,
+                ).label("user_vote"),
             )
             .outerjoin(models.CommentVote, models.Comment.id == models.CommentVote.comment_id)
             .filter(models.Comment.post_id == post_id)
@@ -501,8 +538,9 @@ def get_comments_by_post(db: Session, post_id: int) -> List[models.Comment]:
             .all()
         )
     comments = []
-    for comment_obj, score in results:
+    for comment_obj, score, user_vote in results:
         comment_obj.vote_score = score
+        comment_obj.user_vote = int(user_vote or 0)
         comment_obj.is_best_answer = False
         comments.append(comment_obj)
 
@@ -512,11 +550,17 @@ def get_comments_by_post(db: Session, post_id: int) -> List[models.Comment]:
 
     return comments
 
-def get_comments_by_post_sort_by_top(db: Session, post_id: int) -> List[models.Comment]:
+def get_comments_by_post_sort_by_top(db: Session, post_id: int, user_id: int) -> List[models.Comment]:
     results = (
             db.query(
                 models.Comment,
-                func.coalesce(func.sum(models.CommentVote.vote_value), 0).label("vote_score")
+                func.coalesce(func.sum(models.CommentVote.vote_value), 0).label("vote_score"),
+                func.coalesce(
+                    func.max(
+                        models.CommentVote.vote_value
+                    ).filter(models.CommentVote.user_id == user_id),
+                    0,
+                ).label("user_vote"),
             )
             .outerjoin(models.CommentVote, models.Comment.id == models.CommentVote.comment_id)
             .filter(models.Comment.post_id == post_id)
@@ -525,8 +569,9 @@ def get_comments_by_post_sort_by_top(db: Session, post_id: int) -> List[models.C
             .all()
         )
     comments = []
-    for comment_obj, score in results:
+    for comment_obj, score, user_vote in results:
         comment_obj.vote_score = score
+        comment_obj.user_vote = int(user_vote or 0)
         comment_obj.is_best_answer = False
         comments.append(comment_obj)
 
@@ -536,11 +581,17 @@ def get_comments_by_post_sort_by_top(db: Session, post_id: int) -> List[models.C
 
     return comments
 
-def get_comments_by_post_sort_by_new(db: Session, post_id: int) -> List[models.Comment]:
+def get_comments_by_post_sort_by_new(db: Session, post_id: int, user_id: int) -> List[models.Comment]:
     results = (
             db.query(
                 models.Comment,
-                func.coalesce(func.sum(models.CommentVote.vote_value), 0).label("vote_score")
+                func.coalesce(func.sum(models.CommentVote.vote_value), 0).label("vote_score"),
+                func.coalesce(
+                    func.max(
+                        models.CommentVote.vote_value
+                    ).filter(models.CommentVote.user_id == user_id),
+                    0,
+                ).label("user_vote"),
             )
             .outerjoin(models.CommentVote, models.Comment.id == models.CommentVote.comment_id)
             .filter(models.Comment.post_id == post_id)
@@ -549,8 +600,9 @@ def get_comments_by_post_sort_by_new(db: Session, post_id: int) -> List[models.C
             .all()
         )
     comments = []
-    for comment_obj, score in results:
+    for comment_obj, score, user_vote in results:
         comment_obj.vote_score = score
+        comment_obj.user_vote = int(user_vote or 0)
         comment_obj.is_best_answer = False
         comments.append(comment_obj)
 
@@ -655,12 +707,12 @@ def cast_post_vote(db: Session, post_id: int, user_id: int, vote_value: int) -> 
             db.delete(existing_vote)
             db.commit()
             score = get_post_vote_score(db, post_id)
-            return {"message": "Vote removed", "vote_score": score}
+            return {"message": "Vote removed", "vote_score": score, "user_vote": 0}
 
         existing_vote.vote_value = vote_value
         db.commit()
         score = get_post_vote_score(db, post_id)
-        return {"message": "Vote updated", "vote_score": score}
+        return {"message": "Vote updated", "vote_score": score, "user_vote": vote_value}
 
     new_vote = models.PostVote(
         post_id=post_id,
@@ -670,7 +722,7 @@ def cast_post_vote(db: Session, post_id: int, user_id: int, vote_value: int) -> 
     db.add(new_vote)
     db.commit()
     score = get_post_vote_score(db, post_id)
-    return {"message": "Vote registered", "vote_score": score}
+    return {"message": "Vote registered", "vote_score": score, "user_vote": vote_value}
 
 def cast_comment_vote(db: Session, comment_id: int, user_id: int, vote_value: int) -> dict:
     if vote_value not in [1, -1]:
@@ -690,12 +742,12 @@ def cast_comment_vote(db: Session, comment_id: int, user_id: int, vote_value: in
             db.delete(existing_vote)
             db.commit()
             score = get_comment_vote_score(db, comment_id)
-            return {"message": "Vote registered", "vote_score": score}
+            return {"message": "Vote removed", "vote_score": score, "user_vote": 0}
 
         existing_vote.vote_value = vote_value
         db.commit()
         score = get_comment_vote_score(db, comment_id)
-        return {"message": "Vote registered", "vote_score": score}
+        return {"message": "Vote updated", "vote_score": score, "user_vote": vote_value}
 
     new_vote = models.CommentVote(
         comment_id=comment_id,
@@ -705,12 +757,17 @@ def cast_comment_vote(db: Session, comment_id: int, user_id: int, vote_value: in
     db.add(new_vote)
     db.commit()
     score = get_comment_vote_score(db, comment_id)
-    return {"message": "Vote registered", "vote_score": score}
+    return {"message": "Vote registered", "vote_score": score, "user_vote": vote_value}
 
 def get_post_vote_score(db: Session, post_id: int) -> int:
     score = db.query(func.sum(models.PostVote.vote_value))\
         .filter(models.PostVote.post_id == post_id).scalar()
     return int(score or 0)
+
+def get_post_user_vote(db: Session, post_id: int, user_id: int) -> int:
+    user_vote = db.query(models.PostVote.vote_value)\
+        .filter(models.PostVote.post_id == post_id, models.PostVote.user_id == user_id).scalar()
+    return int(user_vote or 0)
 
 def get_comment_vote_score(db: Session, id: int) -> int:
     score = db.query(func.sum(models.CommentVote.vote_value))\
@@ -725,5 +782,25 @@ def search_project(db: Session, query: str) -> list[models.Project]:
     attach_subscriber_counts(db, projects)
     return projects
 
-def search_posts(db: Session, query: str) -> list[models.ForumPost]:
-    return db.query(models.ForumPost).filter(models.ForumPost.title.ilike(f"%{query}%")).all()
+def search_posts(db: Session, query: str, user_id: int) -> list[models.ForumPost]:
+    results = (
+        db.query(
+            models.ForumPost,
+            func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score"),
+            func.coalesce(
+                func.max(models.PostVote.vote_value).filter(models.PostVote.user_id == user_id),
+                0,
+            ).label("user_vote"),
+        )
+        .outerjoin(models.PostVote, models.ForumPost.id == models.PostVote.post_id)
+        .filter(models.ForumPost.title.ilike(f"%{query}%"))
+        .group_by(models.ForumPost.id)
+        .all()
+    )
+
+    posts = []
+    for post_obj, score, user_vote in results:
+        post_obj.vote_score = score
+        post_obj.user_vote = int(user_vote or 0)
+        posts.append(post_obj)
+    return posts

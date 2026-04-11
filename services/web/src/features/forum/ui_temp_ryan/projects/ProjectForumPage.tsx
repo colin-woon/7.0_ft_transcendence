@@ -65,6 +65,7 @@ export default function ProjectForumPage({ project }: { project: Project }) {
         comments: post.replies,
         views: post.views,
         upvotes: post.upvotes,
+        userVote: post.userVote,
         category: post.category,
         timestamp: post.timestamp,
         isPinned: post.isPinned,

@@ -19,5 +19,11 @@ export default async function ProjectCreatePage({ params }: ProjectCreatePagePro
     return notFound()
   }
 
-  return <CreatePage projectId={project.id} projectName={project.name} />
+  return (
+    <CreatePage
+      projectId={project.id}
+      projectName={project.name}
+      projectDescription={project.description}
+    />
+  )
 }

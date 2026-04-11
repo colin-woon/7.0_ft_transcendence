@@ -23,7 +23,7 @@ export default function PostRow({ project, post, isBusy = false, onEditPost, onD
     <div className="w-full min-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transform-gpu transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:scale-[1.015] hover:border-slate-400 hover:shadow-2xl">
       <div className="w-full h-[7.5rem] p-4">
         <div className="flex h-full items-center gap-3">
-          <PostVoteButtons postId={post.id} initialUpvotes={post.upvotes} />
+          <PostVoteButtons postId={post.id} initialUpvotes={post.upvotes} initialUserVote={post.userVote} />
 
           <Link href={href} className="flex-1 min-w-0">
             <div className="min-w-0 flex flex-col justify-center">

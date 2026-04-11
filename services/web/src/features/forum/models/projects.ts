@@ -9,6 +9,7 @@ export interface ForumPost {
   replies: number;
   views: number;
   upvotes: number;
+  userVote?: 1 | -1 | 0;
   category: string;
   timestamp: string;
   preview: string;

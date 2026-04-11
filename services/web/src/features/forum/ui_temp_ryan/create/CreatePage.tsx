@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  ImageIcon,
-  AlertCircle, Eye, EyeOff, Send,
+  AlertCircle, Send,
 } from 'lucide-react'
 
 import { createProjectPost } from '@/features/forum/api/post'
@@ -26,15 +25,33 @@ const RULES = [
 interface CreatePageProps {
   projectId: number
   projectName: string
+  projectDescription: string
 }
 
-export default function CreatePage({ projectId, projectName }: CreatePageProps) {
+function BlinkingText({ text, className }: { text: string; className?: string }) {
+  const [showCursor, setShowCursor] = useState(true)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setShowCursor((prev) => !prev)
+    }, 500)
+
+    return () => clearInterval(timer)
+  }, [])
+
+  return (
+    <div className={`inline-block whitespace-pre-wrap tracking-tight ${className ?? ''}`}>
+      <span className="inline">{text}</span>
+      <span className={`ml-1 inline-block ${showCursor ? 'opacity-100' : 'opacity-0'}`}>_</span>
+    </div>
+  )
+}
+
+export default function CreatePage({ projectId, projectName, projectDescription }: CreatePageProps) {
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
-  const [preview, setPreview] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
 
   const TITLE_MAX = 300
 
@@ -63,20 +80,44 @@ export default function CreatePage({ projectId, projectName }: CreatePageProps) 
   }
 
   return (
-    <div className="mt-10 h-[calc(100vh-var(--navbar-height))] overflow-y-auto">
-      <div className="max-w-6xl mx-auto h-full flex">
+    <div className="flex min-h-full flex-col">
+      <div className="sticky top-16 z-50">
+        <div className="card card-border shadow-xl w-full max-w-full rounded-none sm:rounded-box backdrop-blur-sm">
+          <div className="card-body px-4 sm:px-6 min-h-[13rem] sm:h-[9rem] overflow-hidden">
+            <div className="grid h-full grid-cols-1 gap-4">
+              <div className="min-w-0">
+                <BlinkingText
+                  className="text-5xl text-slate-800 font-interface uppercase"
+                  text={projectName}
+                />
+
+                <div className="mt-3">
+                  <BlinkingText
+                    className="text-md font-interface"
+                    text={projectDescription || 'Share a question, project, or idea with the 42 community.'}
+                  />
+                </div>
+                <div className="mt-10 flex items-start gap-2">
+                  <AlertCircle size={14} className="text-amber-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-s text-amber-700 leading-relaxed">
+                    Posts that violate community rules may be removed without notice. Be kind and stay on topic.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="w-full max-w-6xl mt-16 mx-auto h-full flex">
         {/* Main content */}
         <form onSubmit={handleSubmit} className="flex-1 min-w-0 flex flex-col">
           <div className="flex flex-col flex-1 pb-8">
-            <div className="mb-5 px-4 pt-6">
-              <h1 className="text-2xl font-bold text-slate-900">Create a post in {projectName}</h1>
-              <p className="text-sm text-slate-500 mt-0.5">Share a question, project, or idea with the 42 community.</p>
-            </div>
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mx-4 p-6 space-y-5 mb-10">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mx-4 mt-6 p-6 space-y-5 mb-10">
                 {/* Project row */}
                 <div className="flex flex-wrap gap-3">
                   <div className="inline-flex items-center rounded-full border border-[#8EE7E3] bg-[#8EE7E3]/15 px-4 py-2 text-sm font-semibold text-[#0f6f6b]">
-                    Project: {projectName}
+                    Post Creation
                   </div>
                 </div>
                 {/* Title */}
@@ -98,38 +139,16 @@ export default function CreatePage({ projectId, projectName }: CreatePageProps) 
                 </div>
                 {/* Body */}
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-sm font-semibold text-slate-700">Body <span className="text-red-400">*</span></label>
-                    <button
-                      type="button"
-                      onClick={() => setPreview((v) => !v)}
-                      className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition"
-                    >
-                      {preview ? <EyeOff size={13} /> : <Eye size={13} />}
-                      {preview ? 'Edit' : 'Preview'}
-                    </button>
-                  </div>
-                  {preview ? (
-                    <div className="min-h-[180px] rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-slate-700 whitespace-pre-wrap">
-                      {body || <span className="text-slate-400 italic">Nothing to preview yet.</span>}
-                    </div>
-                  ) : (
                     <textarea
                       rows={8}
                       value={body}
                       onChange={(e) => setBody(e.target.value)}
-                      placeholder="Explain your idea, include details and context. Markdown coming soon."
+                      placeholder="Explain your idea, include details and context."
                       className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70 focus:border-transparent focus:bg-white transition resize-none"
                     />
-                  )}
                 </div>
-                {/* Image attach bar */}
+                {/* Actions */}
                 <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
-                  <label className="flex items-center gap-1.5 sm:gap-2 cursor-pointer px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg hover:bg-gray-50 transition">
-                    <ImageIcon className="text-[#0f6f6b] h-4 w-4 sm:h-[18px] sm:w-[18px]" />
-                    <span className="text-xs sm:text-sm text-slate-700">Attach image</span>
-                    <input ref={fileRef} type="file" accept="image/*" className="hidden" />
-                  </label>
                   <div className="flex-1" />
                   <button
                     type="button"
@@ -173,13 +192,6 @@ export default function CreatePage({ projectId, projectName }: CreatePageProps) 
                 </li>
               ))}
             </ul>
-          </div>
-          {/* Warning */}
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3">
-            <AlertCircle size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-700 leading-relaxed">
-              Posts that violate community rules may be removed without notice. Be kind and stay on topic.
-            </p>
           </div>
         </div>
       </div>

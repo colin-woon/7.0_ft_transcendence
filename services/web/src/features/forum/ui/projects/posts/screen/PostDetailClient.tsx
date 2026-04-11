@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, MessageCircle, Eye, ThumbsUp } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Eye, ThumbsUp, AlertCircle } from 'lucide-react';
 import type { ForumPostDetail, ForumComment } from '@/features/forum/models';
 import PostVoteButtons from '../components/PostVoteButtons';
 import CommentVoteButtons from '../components/CommentVoteButtons';
 import WriteCommentBox from '../components/WriteCommentBox';
+import { PaginationControls } from '@/features/forum/ui_temp_ryan/projects/PaginationControls';
 import { deleteForumComment, deleteForumPost, updateForumComment, updateForumPost } from '@/features/forum/api/moderation';
 import {
   CommentModerationControls,
@@ -18,16 +19,45 @@ import {
 interface PostDetailClientProps {
   post: ForumPostDetail;
   comments: ForumComment[];
+  projectName: string;
+  projectDescription: string;
 }
 
-export default function PostDetailClient({ post, comments }: PostDetailClientProps) {
+function BlinkingText({ text, className }: { text: string; className?: string }) {
+  const [showCursor, setShowCursor] = useState(true);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setShowCursor((prev) => !prev);
+    }, 500);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className={`inline-block whitespace-pre-wrap tracking-tight ${className ?? ''}`}>
+      <span className="inline">{text}</span>
+      <span className={`ml-1 inline-block ${showCursor ? 'opacity-100' : 'opacity-0'}`}>_</span>
+    </div>
+  );
+}
+
+export default function PostDetailClient({ post, comments, projectName, projectDescription }: PostDetailClientProps) {
   const router = useRouter();
   const [postState, setPostState] = useState(post);
   const [commentState, setCommentState] = useState(comments);
+  const [currentCommentPage, setCurrentCommentPage] = useState(1);
   const [isBusy, setIsBusy] = useState(false);
   const [isEditPostOpen, setIsEditPostOpen] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
+  const COMMENTS_PER_PAGE = 6;
+
+  const totalCommentPages = Math.max(1, Math.ceil(commentState.length / COMMENTS_PER_PAGE));
+  const paginatedComments = commentState.slice(
+    (currentCommentPage - 1) * COMMENTS_PER_PAGE,
+    currentCommentPage * COMMENTS_PER_PAGE,
+  );
 
   const editingComment =
     typeof editingCommentId === 'number'
@@ -40,7 +70,14 @@ export default function PostDetailClient({ post, comments }: PostDetailClientPro
 
   useEffect(() => {
     setCommentState(comments);
+    setCurrentCommentPage(1);
   }, [comments]);
+
+  useEffect(() => {
+    if (currentCommentPage > totalCommentPages) {
+      setCurrentCommentPage(totalCommentPages);
+    }
+  }, [currentCommentPage, totalCommentPages]);
 
   const handleEditPost = async (payload: { title: string; content: string }) => {
     setIsBusy(true);
@@ -100,142 +137,163 @@ export default function PostDetailClient({ post, comments }: PostDetailClientPro
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Back button */}
-      <button
-        onClick={() => router.back()}
-        className="flex items-center gap-2 text-[#0f6f6b] hover:text-[#0c5d5a] font-medium mb-6 transition"
-      >
-        <ArrowLeft size={18} />
-        Back to forum
-      </button>
-    
-      {/* Post header */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-        <div className="flex gap-4">
-          <PostVoteButtons postId={post.id} initialUpvotes={post.upvotes} />
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-3">
-              {post.isPinned && (
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-                  Pinned
-                </span>
-              )}
-              <span className="text-xs text-gray-500 font-medium">{postState.category}</span>
-              <div className="ml-auto">
-                <PostModerationControls
-                  authorId={postState.authorId}
-                  isBusy={isBusy}
-                  onEdit={() => {
-                    setEditError(null);
-                    setIsEditPostOpen(true);
-                  }}
-                  onDelete={handleDeletePost}
+    <div className="flex min-h-full flex-col font-sans">
+      <div className="sticky top-16 z-40 mb-6">
+        <div className="card card-border shadow-xl w-full max-w-full rounded-none sm:rounded-box backdrop-blur-sm">
+          <div className="card-body px-4 sm:px-6 min-h-[13rem] overflow-hidden">
+            <div className="grid h-full grid-cols-1 gap-4">
+              <div className="min-w-0">
+                <BlinkingText
+                  className="text-3xl sm:text-5xl text-slate-800 font-interface uppercase"
+                  text={projectName}
                 />
-              </div>
-            </div>
 
-            <h1 className="text-2xl font-bold text-slate-900 mb-3">{postState.title}</h1>
-
-            <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
-              <span className="font-medium">{postState.author}</span>
-              <span>{postState.timestamp}</span>
-            </div>
-
-            <div className="flex gap-6 text-sm text-gray-500">
-              <div className="flex items-center gap-1">
-                <Eye size={16} />
-                <span>{postState.views} views</span>
+                <div className="mt-3">
+                  <BlinkingText
+                    className="text-sm sm:text-md font-interface"
+                    text={projectDescription || 'Share a question, project, or idea with the 42 community.'}
+                  />
+                </div>
+                <div className="mt-5 flex items-start gap-2">
+                  <AlertCircle size={14} className="text-amber-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-s text-amber-700 leading-relaxed">
+                    Be Civil: Always be respectful, even when disagreeing. Attack the code, not the person.
+                  </p>
+                </div>
+                <div className="mt-1 flex items-start gap-2">
+                  <AlertCircle size={14} className="text-amber-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-s text-amber-700 leading-relaxed">
+                    Stay On Topic: Ensure your posts and comments relate directly to the thread's subject matter.
+                  </p>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <MessageCircle size={16} />
-                <span>{postState.comments} comments</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <ThumbsUp size={16} />
-                <span>{postState.upvotes} upvotes</span>
-              </div>
-            </div>
-            <div className="prose prose-sm max-w-none whitespace-pre-wrap break-words text-slate-900">
-              {postState.content}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Post content
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-        <div className="prose prose-sm max-w-none text-slate-900">
-          {post.content}
-        </div>
-      </div> */}
+      <div className="w-full max-w-5xl mx-auto mt-10 px-4">
+        {/* Post header */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 mt-10 mb-6">
+          <div className="flex gap-4 items-center">
+            <PostVoteButtons postId={post.id} initialUpvotes={post.upvotes} initialUserVote={post.userVote} />
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-medium">{postState.author}</span>
+                <div className="ml-auto">
+                  <PostModerationControls
+                    authorId={postState.authorId}
+                    isBusy={isBusy}
+                    onEdit={() => {
+                      setEditError(null);
+                      setIsEditPostOpen(true);
+                    }}
+                    onDelete={handleDeletePost}
+                  />
+                </div>
+              </div>
 
-      {/* Comments section */}
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-slate-900 mb-4">{commentState.length} Comments</h2>
+              <h1 className="text-2xl font-bold text-slate-900 mb-1">{postState.title}</h1>
 
-        {commentState.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-lg p-6 text-center text-gray-500">
-            No comments yet. Be the first to comment!
+              <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
+                <span>{postState.timestamp}</span>
+                <div className="flex items-center gap-1">
+                  <Eye size={16} />
+                  <span>{postState.views} views</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <MessageCircle size={16} />
+                  <span>{postState.comments} comments</span>
+                </div>
+              </div>
+
+              <div className="flex gap-6 text-sm text-gray-500">
+              </div>
+              <div className="prose prose-sm max-w-none whitespace-pre-wrap break-words text-slate-900">
+                {postState.content}
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {commentState.map((comment) => (
-              <div
-                key={comment.id}
-                className={`bg-white border rounded-lg p-4 ${
-                  comment.isBestAnswer ? 'border-emerald-300 bg-emerald-50/40' : 'border-gray-200'
-                }`}
-              >
-                <div className="flex gap-3">
-                  <CommentVoteButtons postId={post.id} commentId={comment.id} initialUpvotes={comment.upvotes} />
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
-                      {comment.author[0]?.toUpperCase() ?? 'U'}
-                    </div>
-                  </div>
+        </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-sm text-slate-900">
-                        {comment.author}
-                      </span>
-                      <CommentModerationControls
-                        authorId={comment.authorId}
-                        isBusy={isBusy}
-                        onEdit={() => {
-                          setEditError(null);
-                          setEditingCommentId(comment.id);
-                        }}
-                        onDelete={() => handleDeleteComment(comment.id)}
-                      />
-                      {comment.isBestAnswer && (
-                        <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                          Best answer
+        {/* Post content
+        <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+          <div className="prose prose-sm max-w-none text-slate-900">
+            {post.content}
+          </div>
+        </div> */}
+
+        {/* Comments section */}
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-slate-900 mb-4">{commentState.length} Comments</h2>
+
+          {commentState.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-lg p-6 text-center text-gray-500">
+              No comments yet. Be the first to comment!
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {paginatedComments.map((comment) => (
+                <div
+                  key={comment.id}
+                  className={`bg-white border rounded-lg p-6 ${
+                    comment.isBestAnswer ? 'border-emerald-300 bg-emerald-50/40' : 'border-gray-200'
+                  }`}
+                >
+                  <div className="flex gap-3">
+                    <CommentVoteButtons
+                      postId={post.id}
+                      commentId={comment.id}
+                      initialUpvotes={comment.upvotes}
+                      initialUserVote={comment.userVote}
+                    />
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-sm text-slate-900">
+                          {comment.author}
                         </span>
-                      )}
-                      <span className="text-xs text-gray-500">{comment.timestamp}</span>
-                    </div>
+                        {comment.isBestAnswer && (
+                          <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                            Best answer
+                          </span>
+                        )}
+                        <span className="text-xs text-gray-500">{comment.timestamp}</span>
+                        <div className="ml-auto">
+                        <CommentModerationControls
+                          authorId={comment.authorId}
+                          isBusy={isBusy}
+                          onEdit={() => {
+                            setEditError(null);
+                            setEditingCommentId(comment.id);
+                          }}
+                          onDelete={() => handleDeleteComment(comment.id)}
+                        />
+                        </div>
+                      </div>
 
-                    <p className="text-sm text-slate-700 mb-2">{comment.content}</p>
-
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <button className="flex items-center gap-1 hover:text-[#0f6f6b] transition">
-                        <ThumbsUp size={14} />
-                        <span>{comment.upvotes}</span>
-                      </button>
-                      <button className="hover:text-[#0f6f6b] transition">Reply</button>
+                      <p className="text-sm text-slate-700 mb-2">{comment.content}</p>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
 
-      <div className="mb-2">
-        <WriteCommentBox postId={postState.id} onCommentCreated={handleCommentCreated} />
+              {totalCommentPages > 1 && (
+                <div className="pt-2">
+                  <PaginationControls
+                    currentPage={currentCommentPage}
+                    totalPages={totalCommentPages}
+                    onPageChange={setCurrentCommentPage}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="mb-2">
+          <WriteCommentBox postId={postState.id} onCommentCreated={handleCommentCreated} />
+        </div>
       </div>
 
       <EditPostDialog

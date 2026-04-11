@@ -152,7 +152,7 @@ export default function ProjectForumPage({ project }: { project: Project }) {
                       <div className="flex gap-3">
 
                         {/* Vote */}
-                        <PostVoteButtons postId={post.id} initialUpvotes={post.upvotes} />
+                        <PostVoteButtons postId={post.id} initialUpvotes={post.upvotes} initialUserVote={post.userVote} />
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">

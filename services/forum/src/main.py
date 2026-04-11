@@ -237,28 +237,55 @@ def get_project_subscriber_count(
 # --- FORUM POST API ENDPOINT ---
 
 @router.get("/posts", response_model=List[schemas.PostSummary])
-def list_all_posts(db: Session = Depends(get_db)):
-    return logic.get_all_posts(db)
+def list_all_posts(
+    db: Session = Depends(get_db),
+    identity: tuple[int, bool] = Depends(get_request_identity),
+):
+    user_id, _ = identity
+    return logic.get_all_posts(db, user_id)
 
 @router.get("/posts/top", response_model=List[schemas.PostSummary])
-def list_all_posts_by_top(db: Session = Depends(get_db)):
-    return logic.get_all_posts_sort_by_top(db)
+def list_all_posts_by_top(
+    db: Session = Depends(get_db),
+    identity: tuple[int, bool] = Depends(get_request_identity),
+):
+    user_id, _ = identity
+    return logic.get_all_posts_sort_by_top(db, user_id)
 
 @router.get("/posts/new", response_model=List[schemas.PostSummary])
-def list_all_posts_by_new(db: Session = Depends(get_db)):
-    return logic.get_all_posts_sort_by_new(db)
+def list_all_posts_by_new(
+    db: Session = Depends(get_db),
+    identity: tuple[int, bool] = Depends(get_request_identity),
+):
+    user_id, _ = identity
+    return logic.get_all_posts_sort_by_new(db, user_id)
 
 @router.get("/projects/{project_id}/posts", response_model=List[schemas.PostSummary])
-def list_project_posts(project_id: int, db: Session = Depends(get_db)):
-    return logic.get_posts_by_project(db, project_id)
+def list_project_posts(
+    project_id: int,
+    db: Session = Depends(get_db),
+    identity: tuple[int, bool] = Depends(get_request_identity),
+):
+    user_id, _ = identity
+    return logic.get_posts_by_project(db, project_id, user_id)
 
 @router.get("/projects/{project_id}/posts/top", response_model=List[schemas.PostSummary])
-def list_project_posts_by_top(project_id: int, db: Session = Depends(get_db)):
-    return logic.get_posts_by_project_sort_by_top(db, project_id)
+def list_project_posts_by_top(
+    project_id: int,
+    db: Session = Depends(get_db),
+    identity: tuple[int, bool] = Depends(get_request_identity),
+):
+    user_id, _ = identity
+    return logic.get_posts_by_project_sort_by_top(db, project_id, user_id)
 
 @router.get("/projects/{project_id}/posts/new", response_model=List[schemas.PostSummary])
-def list_project_posts_by_new(project_id: int, db: Session = Depends(get_db)):
-    return logic.get_posts_by_project_sort_by_new(db, project_id)
+def list_project_posts_by_new(
+    project_id: int,
+    db: Session = Depends(get_db),
+    identity: tuple[int, bool] = Depends(get_request_identity),
+):
+    user_id, _ = identity
+    return logic.get_posts_by_project_sort_by_new(db, project_id, user_id)
 
 @router.post("/projects/{project_id}/posts", response_model=schemas.PostDetail, status_code=201)
 def create_post(
@@ -293,22 +320,42 @@ def delete_post(
     return {"message": "Post deleted"}
 
 @router.get("/posts/{post_id}", response_model=schemas.PostDetail)
-def get_post(post_id: int, db: Session = Depends(get_db)):
-    return logic.get_post_detail(db, post_id)
+def get_post(
+    post_id: int,
+    db: Session = Depends(get_db),
+    identity: tuple[int, bool] = Depends(get_request_identity),
+):
+    user_id, _ = identity
+    return logic.get_post_detail(db, post_id, user_id)
 
 # --- COMMENTS API ENDPOINT ---
 
 @router.get("/posts/{post_id}/comments", response_model=List[schemas.CommentResponse])
-def list_comments(post_id: int, db: Session = Depends(get_db)):
-    return logic.get_comments_by_post(db, post_id)
+def list_comments(
+    post_id: int,
+    db: Session = Depends(get_db),
+    identity: tuple[int, bool] = Depends(get_request_identity),
+):
+    user_id, _ = identity
+    return logic.get_comments_by_post(db, post_id, user_id)
 
 @router.get("/posts/{post_id}/comments/top", response_model=List[schemas.CommentResponse])
-def list_comments_sort_by_top(post_id: int, db: Session = Depends(get_db)):
-    return logic.get_comments_by_post_sort_by_top(db, post_id)
+def list_comments_sort_by_top(
+    post_id: int,
+    db: Session = Depends(get_db),
+    identity: tuple[int, bool] = Depends(get_request_identity),
+):
+    user_id, _ = identity
+    return logic.get_comments_by_post_sort_by_top(db, post_id, user_id)
 
 @router.get("/posts/{post_id}/comments/new", response_model=List[schemas.CommentResponse])
-def list_comments_sort_by_new(post_id: int, db: Session = Depends(get_db)):
-    return logic.get_comments_by_post_sort_by_new(db, post_id)
+def list_comments_sort_by_new(
+    post_id: int,
+    db: Session = Depends(get_db),
+    identity: tuple[int, bool] = Depends(get_request_identity),
+):
+    user_id, _ = identity
+    return logic.get_comments_by_post_sort_by_new(db, post_id, user_id)
 
 @router.post("/posts/{post_id}/comments", response_model=schemas.CommentResponse, status_code=201)
 def create_comment(
@@ -373,7 +420,12 @@ def search_project(search_query: str = Query(... , min_length=2, max_length=20),
     return logic.search_project(db, search_query)
 
 @router.get("/search/posts", response_model=List[schemas.PostSummary])
-def search_posts(search_query: str = Query(... , min_length=2, max_length=20), db: Session = Depends(get_db)):
-    return logic.search_posts(db, search_query)
+def search_posts(
+    search_query: str = Query(..., min_length=2, max_length=20),
+    db: Session = Depends(get_db),
+    identity: tuple[int, bool] = Depends(get_request_identity),
+):
+    user_id, _ = identity
+    return logic.search_posts(db, search_query, user_id)
 
 app.include_router(router)

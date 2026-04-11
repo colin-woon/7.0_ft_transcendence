@@ -182,31 +182,6 @@ export default function CreatePage({ projectId, projectName }: CreatePageProps) 
               </div>
             )}
 
-            {/* Image drop zone */}
-            {postType === 'image' && (
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Image</label>
-                <div
-                  onClick={() => fileRef.current?.click()}
-                  onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={(e) => { e.preventDefault(); setDragOver(false) }}
-                  className={`cursor-pointer flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-14 transition ${
-                    dragOver ? 'border-[#0f6f6b] bg-[#8EE7E3]/10' : 'border-gray-200 hover:border-[#8EE7E3]'
-                  }`}
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-[#8EE7E3]/20 flex items-center justify-center">
-                    <ImageIcon size={22} className="text-[#0f6f6b]" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-slate-700">Drop an image here</p>
-                    <p className="text-xs text-slate-400 mt-0.5">or click to browse · PNG, JPG, GIF up to 20 MB</p>
-                  </div>
-                  <input ref={fileRef} type="file" accept="image/*" className="hidden" />
-                </div>
-              </div>
-            )}
-
             {/* Actions */}
             <div className="flex items-center justify-between pt-2 border-t border-gray-100">
               <button

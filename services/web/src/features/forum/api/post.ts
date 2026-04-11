@@ -73,6 +73,7 @@ export async function getPostDetail(postId: number): Promise<{ post: ForumPostDe
       timestamp: toRelativeTime(postData.created_at),
       views: postData.view_count,
       upvotes: postData.vote_score,
+      userVote: postData.user_vote,
       comments: postData.comment_count,
       isPinned: false,
     },
@@ -99,8 +100,19 @@ export async function getPostComments(postId: number): Promise<ForumComment[]> {
     content: comment.content,
     timestamp: toRelativeTime(comment.created_at),
     upvotes: comment.vote_score,
+    userVote: comment.user_vote,
     isBestAnswer: comment.is_best_answer,
   }));
+}
+
+interface VoteCommentResponse {
+  vote_score: number;
+  user_vote: 1 | -1 | 0;
+}
+
+interface VotePostResponse {
+  vote_score: number;
+  user_vote: 1 | -1 | 0;
 }
 
 interface CreateProjectPostPayload {
@@ -184,7 +196,7 @@ export async function createPostComment(
   return (await response.json()) as CreatePostCommentResponse;
 }
 
-export async function voteOnPost(postId: number, value: 1 | -1): Promise<number> {
+export async function voteOnPost(postId: number, value: 1 | -1): Promise<VotePostResponse> {
   const response = await forumFetch(`/posts/${postId}/vote`, {
     method: 'POST',
     headers: {
@@ -199,11 +211,14 @@ export async function voteOnPost(postId: number, value: 1 | -1): Promise<number>
     throw new Error(errorData.detail || 'Failed to register vote');
   }
 
-  const data = await response.json();
-  return data.vote_score ?? data.upvotes ?? 0;
+  const data = (await response.json()) as Partial<VotePostResponse> & { upvotes?: number };
+  return {
+    vote_score: data.vote_score ?? data.upvotes ?? 0,
+    user_vote: (data.user_vote ?? value) as 1 | -1 | 0,
+  };
 }
 
-export async function voteOnComment(postId: number, commentId: number, value: 1 | -1): Promise<number> {
+export async function voteOnComment(postId: number, commentId: number, value: 1 | -1): Promise<VoteCommentResponse> {
   const response = await forumFetch(`/posts/${postId}/comments/${commentId}/vote`, {
     method: 'POST',
     headers: {
@@ -218,6 +233,9 @@ export async function voteOnComment(postId: number, commentId: number, value: 1 
     throw new Error(errorData.detail || 'Failed to register vote');
   }
 
-  const data = await response.json();
-  return data.vote_score ?? data.upvotes ?? 0;
+  const data = (await response.json()) as Partial<VoteCommentResponse> & { upvotes?: number };
+  return {
+    vote_score: data.vote_score ?? data.upvotes ?? 0,
+    user_vote: (data.user_vote ?? value) as 1 | -1 | 0,
+  };
 }
