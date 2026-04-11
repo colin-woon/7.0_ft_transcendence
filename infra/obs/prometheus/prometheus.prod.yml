@@ -29,3 +29,15 @@ scrape_configs:
           - targets: ['auth-service:9000']
             labels:
                 env: 'production'
+
+    - job_name: 'forum'
+      metrics_path: '/metrics'
+      scheme: https
+      tls_config:
+          ca_file: /certs/internal-ca.crt
+          cert_file: /certs/prometheus.crt
+          key_file: /certs/prometheus.key
+      static_configs:
+          - targets: ['forum-service:8443']
+            labels:
+                env: 'production'

@@ -1,7 +1,16 @@
 import logging
 import os
 from typing import List
-from fastapi import APIRouter, FastAPI, Depends, status, Query, Header, HTTPException, Request
+from fastapi import (
+    APIRouter,
+    FastAPI,
+    Depends,
+    status,
+    Query,
+    Header,
+    HTTPException,
+    Request,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -9,6 +18,8 @@ from contextlib import asynccontextmanager
 
 from src.database import engine, Base, get_db, SessionLocal
 from src import schemas, logic
+
+from prometheus_fastapi_instrumentator import Instrumentator
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("forum_service")
@@ -42,9 +53,11 @@ def maybe_seed_projects() -> None:
     finally:
         db.close()
 
-def backfill_post_comment_count() ->None:
-        db = SessionLocal()
-        logic.backfill_forum_counters(db)
+
+def backfill_post_comment_count() -> None:
+    db = SessionLocal()
+    logic.backfill_forum_counters(db)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -54,7 +67,9 @@ async def lifespan(app: FastAPI):
     logger.info("Forum Service is live.")
     yield
 
+
 app = FastAPI(title="Forum Service API", lifespan=lifespan)
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 
 @app.exception_handler(HTTPException)
@@ -68,6 +83,7 @@ async def http_exception_logger(request: Request, exc: HTTPException):
     )
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
+
 # TODO:ALLOW CORS FOR NOW, REMOVE LATER DURING GATEWAY INTEGRATION
 # app.add_middleware(
 #     CORSMiddleware,
@@ -80,9 +96,11 @@ async def http_exception_logger(request: Request, exc: HTTPException):
 #     allow_headers=["*"],
 # )
 
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
 
 # Read user id from gateway-injected identity header.
 # If missing (e.g. local dev without gateway auth), fall back to user_id=1.
@@ -119,7 +137,10 @@ def get_request_identity(
         roles = _parse_roles(x_intra_user_roles)
         return parsed_user_id, "ADMIN" in roles
     except ValueError as exc:
-        raise HTTPException(status_code=401, detail="Invalid X-Intra-User-Id header") from exc
+        raise HTTPException(
+            status_code=401, detail="Invalid X-Intra-User-Id header"
+        ) from exc
+
 
 # --- ROUTES ---
 
@@ -127,12 +148,13 @@ router = APIRouter(prefix="")
 
 # --- PROJECTS API ENDPOINT ---
 
+
 @router.get("/projects", response_model=schemas.ProjectListPage)
 def list_projects(
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1, le=100),
-    db: Session = Depends(get_db)
-    ):
+    db: Session = Depends(get_db),
+):
     return logic.get_all_projects_paginated(db, page=page, page_size=page_size)
 
 
@@ -176,7 +198,11 @@ def delete_project(
     return {"message": "Project deleted"}
 
 
-@router.post("/projects/{project_id}/subscribe", response_model=schemas.ProjectSubscriptionResponse, status_code=201)
+@router.post(
+    "/projects/{project_id}/subscribe",
+    response_model=schemas.ProjectSubscriptionResponse,
+    status_code=201,
+)
 def subscribe_project(
     project_id: int,
     db: Session = Depends(get_db),
@@ -187,7 +213,9 @@ def subscribe_project(
     return subscription
 
 
-@router.delete("/projects/{project_id}/subscribe", response_model=schemas.ActionResponse)
+@router.delete(
+    "/projects/{project_id}/subscribe", response_model=schemas.ActionResponse
+)
 def unsubscribe_project(
     project_id: int,
     db: Session = Depends(get_db),
@@ -234,38 +262,52 @@ def get_project_subscriber_count(
     subscriber_count = logic.get_project_subscriber_count(db, project_id)
     return {"project_id": project_id, "subscriber_count": subscriber_count}
 
+
 # --- FORUM POST API ENDPOINT ---
+
 
 @router.get("/posts", response_model=List[schemas.PostSummary])
 def list_all_posts(db: Session = Depends(get_db)):
     return logic.get_all_posts(db)
 
+
 @router.get("/posts/top", response_model=List[schemas.PostSummary])
 def list_all_posts_by_top(db: Session = Depends(get_db)):
     return logic.get_all_posts_sort_by_top(db)
+
 
 @router.get("/posts/new", response_model=List[schemas.PostSummary])
 def list_all_posts_by_new(db: Session = Depends(get_db)):
     return logic.get_all_posts_sort_by_new(db)
 
+
 @router.get("/projects/{project_id}/posts", response_model=List[schemas.PostSummary])
 def list_project_posts(project_id: int, db: Session = Depends(get_db)):
     return logic.get_posts_by_project(db, project_id)
 
-@router.get("/projects/{project_id}/posts/top", response_model=List[schemas.PostSummary])
+
+@router.get(
+    "/projects/{project_id}/posts/top", response_model=List[schemas.PostSummary]
+)
 def list_project_posts_by_top(project_id: int, db: Session = Depends(get_db)):
     return logic.get_posts_by_project_sort_by_top(db, project_id)
 
-@router.get("/projects/{project_id}/posts/new", response_model=List[schemas.PostSummary])
+
+@router.get(
+    "/projects/{project_id}/posts/new", response_model=List[schemas.PostSummary]
+)
 def list_project_posts_by_new(project_id: int, db: Session = Depends(get_db)):
     return logic.get_posts_by_project_sort_by_new(db, project_id)
 
-@router.post("/projects/{project_id}/posts", response_model=schemas.PostDetail, status_code=201)
+
+@router.post(
+    "/projects/{project_id}/posts", response_model=schemas.PostDetail, status_code=201
+)
 def create_post(
-    project_id: int, 
-    post: schemas.PostCreate, 
+    project_id: int,
+    post: schemas.PostCreate,
     db: Session = Depends(get_db),
-    identity: tuple[int, bool] = Depends(get_request_identity)
+    identity: tuple[int, bool] = Depends(get_request_identity),
 ):
     user_id, _ = identity
     return logic.create_post(db, project_id, user_id, post)
@@ -292,36 +334,50 @@ def delete_post(
     logic.delete_post(db, post_id, user_id, is_admin)
     return {"message": "Post deleted"}
 
+
 @router.get("/posts/{post_id}", response_model=schemas.PostDetail)
 def get_post(post_id: int, db: Session = Depends(get_db)):
     return logic.get_post_detail(db, post_id)
 
+
 # --- COMMENTS API ENDPOINT ---
+
 
 @router.get("/posts/{post_id}/comments", response_model=List[schemas.CommentResponse])
 def list_comments(post_id: int, db: Session = Depends(get_db)):
     return logic.get_comments_by_post(db, post_id)
 
-@router.get("/posts/{post_id}/comments/top", response_model=List[schemas.CommentResponse])
+
+@router.get(
+    "/posts/{post_id}/comments/top", response_model=List[schemas.CommentResponse]
+)
 def list_comments_sort_by_top(post_id: int, db: Session = Depends(get_db)):
     return logic.get_comments_by_post_sort_by_top(db, post_id)
 
-@router.get("/posts/{post_id}/comments/new", response_model=List[schemas.CommentResponse])
+
+@router.get(
+    "/posts/{post_id}/comments/new", response_model=List[schemas.CommentResponse]
+)
 def list_comments_sort_by_new(post_id: int, db: Session = Depends(get_db)):
     return logic.get_comments_by_post_sort_by_new(db, post_id)
 
-@router.post("/posts/{post_id}/comments", response_model=schemas.CommentResponse, status_code=201)
+
+@router.post(
+    "/posts/{post_id}/comments", response_model=schemas.CommentResponse, status_code=201
+)
 def create_comment(
-    post_id: int, 
-    comment: schemas.CommentCreate, 
+    post_id: int,
+    comment: schemas.CommentCreate,
     db: Session = Depends(get_db),
-    identity: tuple[int, bool] = Depends(get_request_identity)
+    identity: tuple[int, bool] = Depends(get_request_identity),
 ):
     user_id, _ = identity
     return logic.create_comment(db, post_id, user_id, comment)
 
 
-@router.patch("/posts/{post_id}/comments/{comment_id}", response_model=schemas.CommentResponse)
+@router.patch(
+    "/posts/{post_id}/comments/{comment_id}", response_model=schemas.CommentResponse
+)
 def update_comment(
     post_id: int,
     comment_id: int,
@@ -333,7 +389,9 @@ def update_comment(
     return logic.update_comment(db, post_id, comment_id, user_id, is_admin, comment)
 
 
-@router.delete("/posts/{post_id}/comments/{comment_id}", response_model=schemas.ActionResponse)
+@router.delete(
+    "/posts/{post_id}/comments/{comment_id}", response_model=schemas.ActionResponse
+)
 def delete_comment(
     post_id: int,
     comment_id: int,
@@ -344,36 +402,51 @@ def delete_comment(
     logic.delete_comment(db, post_id, comment_id, user_id, is_admin)
     return {"message": "Comment deleted"}
 
+
 # --- VOTES API ENDPOINT ---
+
 
 @router.post("/posts/{post_id}/vote", status_code=status.HTTP_200_OK)
 def vote_on_post(
     post_id: int,
     action: schemas.VoteAction,
     db: Session = Depends(get_db),
-    identity: tuple[int, bool] = Depends(get_request_identity)
+    identity: tuple[int, bool] = Depends(get_request_identity),
 ):
     user_id, _ = identity
     return logic.cast_post_vote(db, post_id, user_id, action.vote_value)
 
-@router.post("/posts/{post_id}/comments/{comment_id}/vote", status_code=status.HTTP_200_OK)
+
+@router.post(
+    "/posts/{post_id}/comments/{comment_id}/vote", status_code=status.HTTP_200_OK
+)
 def vote_on_comment(
     comment_id: int,
     action: schemas.VoteAction,
     db: Session = Depends(get_db),
-    identity: tuple[int, bool] = Depends(get_request_identity)
+    identity: tuple[int, bool] = Depends(get_request_identity),
 ):
     user_id, _ = identity
     return logic.cast_comment_vote(db, comment_id, user_id, action.vote_value)
 
+
 # --- SEARCH FEATURE ENDPOINT ---
 
+
 @router.get("/search/projects", response_model=List[schemas.ProjectResponse])
-def search_project(search_query: str = Query(... , min_length=2, max_length=20), db: Session = Depends(get_db)):
+def search_project(
+    search_query: str = Query(..., min_length=2, max_length=20),
+    db: Session = Depends(get_db),
+):
     return logic.search_project(db, search_query)
 
+
 @router.get("/search/posts", response_model=List[schemas.PostSummary])
-def search_posts(search_query: str = Query(... , min_length=2, max_length=20), db: Session = Depends(get_db)):
+def search_posts(
+    search_query: str = Query(..., min_length=2, max_length=20),
+    db: Session = Depends(get_db),
+):
     return logic.search_posts(db, search_query)
+
 
 app.include_router(router)
