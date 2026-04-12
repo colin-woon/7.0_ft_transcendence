@@ -54,6 +54,19 @@ scrape_configs:
             labels:
                 env: 'production'
 
+    - job_name: 'web'
+      metrics_path: '/metrics'
+      scheme: https
+      tls_config:
+          ca_file: /certs/internal-ca.crt
+          cert_file: /certs/prometheus.crt
+          key_file: /certs/prometheus.key
+          server_name: web-service
+      static_configs:
+          - targets: ['web-service:3000']
+            labels:
+                env: 'production'
+
     - job_name: 'postgres'
       metrics_path: '/metrics'
       scheme: https

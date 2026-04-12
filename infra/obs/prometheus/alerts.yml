@@ -41,6 +41,16 @@ groups:
                 summary: 'Chat service is down'
                 description: 'Prometheus has failed to scrape chat for more than 5 minutes.'
 
+          - alert: WebServiceDown
+            expr: up{job="web"} == 0
+            for: 5m
+            labels:
+                severity: critical
+                category: availability
+            annotations:
+                summary: 'Web service is down'
+                description: 'Prometheus has failed to scrape web for more than 5 minutes.'
+
           - alert: DatabaseDown
             expr: pg_up == 0
             for: 5m
