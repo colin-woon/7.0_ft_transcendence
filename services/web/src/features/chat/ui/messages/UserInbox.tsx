@@ -5,9 +5,9 @@ import {
   useAllChatSessions,
   useChatActions,
   useCurrentChatSession,
-} from "../models";
+} from "../../models";
 
-export function ChatInbox() {
+export function UserInbox() {
   const { fetchAllChatSessions, setCurrentChatSessionId } = useChatActions();
   const { allChatSessions, tempCurrentUserId } = useAllChatSessions();
   const { chatId: activeChatId } = useCurrentChatSession();

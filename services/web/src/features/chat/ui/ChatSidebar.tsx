@@ -1,22 +1,30 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAllChatSessions, useChatActions } from '../models';
 
 import { AvatarWithStatus, CreateGroupChatButton } from '@/features/chat/ui';
 
-// Mock data based on your provided screenshot
-const MOCK_CHATS = [
-  { id: '1', name: 'Jane Doe', initials: 'JD', color: 'bg-emerald-500', isOnline: true, unread: 0 },
-  { id: '2', name: 'Design Team', initials: 'DT', color: 'bg-teal-500', isOnline: false, unread: 3 },
-  { id: '3', name: 'Alex Smith', initials: 'AS', color: 'bg-cyan-600', isOnline: false, unread: 0 },
-  { id: '4', name: 'Marketing Sync', initials: 'MS', color: 'bg-sky-500', isOnline: false, unread: 0 },
-  { id: '5', name: 'Dev Squad', initials: 'DS', color: 'bg-indigo-500', isOnline: true, unread: 1 },
-];
-
-export default function ChatSidebar() {
+export function ChatSidebar() {
   const pathname = usePathname();
+  const { fetchAllChatSessions } = useChatActions();
+  const { allChatSessions, tempCurrentUserId } = useAllChatSessions();
+
+  useEffect(() => {
+    if (tempCurrentUserId) {
+      fetchAllChatSessions(tempCurrentUserId);
+    }
+  }, [fetchAllChatSessions, tempCurrentUserId]);
+
+  const BUBBLE_COLORS = [
+    'bg-emerald-500',
+    'bg-teal-500',
+    'bg-cyan-600',
+    'bg-sky-500',
+    'bg-indigo-500'
+  ];
 
   return (
     <div className="flex flex-col h-full bg-base-200 text-base-content w-full">
@@ -36,12 +44,6 @@ export default function ChatSidebar() {
           </li>
           <li>
               <CreateGroupChatButton />
-            {/* <button className="btn btn-ghost w-full justify-start gap-3 font-normal text-base-content/80 hover:bg-base-300/50 h-auto py-3 rounded-md">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              Create Group
-            </button> */}
           </li>
         </ul>
       </div>
@@ -60,30 +62,50 @@ export default function ChatSidebar() {
 
       {/* Scrollable Chat List */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-4 space-y-1 custom-scrollbar">
-        {MOCK_CHATS.map((chat) => {
-          const isActive = pathname === `/messages/${chat.id}`;
+        {Object.values(allChatSessions || {}).map((chat) => {
+          const isActive = pathname === `/messages/${chat.chatId}`;
+
+          let displayName = chat.name || "Group Chat";
+          let initials = "GC";
+          let displayUserId = 0; // Default logic fallback
+
+          if (chat.type === "direct") {
+            const otherUserIds = chat.memberIds.filter(
+              (id) => id !== tempCurrentUserId
+            );
+            const otherUserId = otherUserIds.length > 0 ? otherUserIds[0] : tempCurrentUserId;
+            displayUserId = typeof otherUserId === 'number' ? otherUserId : 0;
+            
+            displayName = otherUserIds.length > 0 ? `User ${otherUserId}` : "You";
+            initials = displayName.substring(0, 2).toUpperCase();
+          } else if (chat.name) {
+            initials = chat.name.substring(0, 2).toUpperCase();
+          }
+          
+          const color = BUBBLE_COLORS[displayUserId % BUBBLE_COLORS.length];
+          const unreadCount = 0;
           
           return (
             <Link 
-              key={chat.id} 
-              href={`/messages/${chat.id}`}
+              key={chat.chatId} 
+              href={`/messages/${chat.chatId}`}
               className={`flex items-center gap-3 px-2 py-2 w-full rounded-md group transition-colors ${
                 isActive ? 'bg-base-300 text-base-content' : 'hover:bg-base-300/50 text-base-content/70'
               }`}
             >
               {/* Avatar with unread/online indicator */}
               <AvatarWithStatus 
-                userId={parseInt(chat.id)} 
-                chatId={chat.id} 
-                name={chat.name} 
-                initials={chat.initials} 
-                color={chat.color} 
+                userId={displayUserId} 
+                chatId={chat.chatId} 
+                name={displayName} 
+                initials={initials} 
+                color={color} 
               />
 
               {/* Chat Name */}
               <div className="flex-1 truncate">
-                <span className={`text-sm truncate block ${isActive || chat.unread > 0 ? 'font-bold' : 'font-medium'}`}>
-                  {chat.name}
+                <span className={`text-sm truncate block ${isActive || unreadCount > 0 ? 'font-bold' : 'font-medium'}`}>
+                  {displayName}
                 </span>
               </div>
             </Link>

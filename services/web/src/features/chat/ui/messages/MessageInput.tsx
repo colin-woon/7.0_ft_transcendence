@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { sendMessage, sendTypingEvent } from '../api/chat-services';
-import { useCurrentChatSession, useChatActions } from '../models';
+import { sendMessage, sendTypingEvent } from '../../api/chat-services';
+import { useCurrentChatSession, useChatActions } from '../../models';
 
-export function SendMessageButton() {
+export function MessageInput() {
   const { tempCurrentUserId, chatId } = useCurrentChatSession();
   const { addMessage } = useChatActions();
 
@@ -48,11 +48,11 @@ export function SendMessageButton() {
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex items-center gap-3 p-4 bg-base-200/50 border-t border-base-300 w-full shrink-0">
       <input
         type="text"
         placeholder="Type a message..."
-        className="input input-bordered w-full bg-accent"
+        className="input input-bordered flex-1 rounded-full bg-base-100 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
         value={messageText}
         onChange={handleChange}
         onKeyDown={(e) => {
@@ -62,11 +62,14 @@ export function SendMessageButton() {
         }}
       />
       <button
-        className="btn btn-primary"
+        className="btn btn-primary btn-circle shrink-0 transition-transform active:scale-95"
         onClick={handleSend}
         disabled={!messageText.trim() || !chatId}
+        aria-label="Send message"
       >
-        Send Message
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 ml-1">
+          <path d="M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404z" />
+        </svg>
       </button>
     </div>
   );

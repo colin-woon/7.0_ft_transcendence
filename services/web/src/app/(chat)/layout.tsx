@@ -1,5 +1,5 @@
 import React from 'react';
-import ChatSidebar from '@/features/chat/ui/ChatSidebar';
+import { ChatSidebar } from '@/features/chat/ui';
 import { SSEStreamController } from '@/features/chat/ui';
 
 export default function ChatLayout({

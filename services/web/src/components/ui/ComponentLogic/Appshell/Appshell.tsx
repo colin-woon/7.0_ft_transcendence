@@ -16,7 +16,7 @@ export function AppShell({ children }: AppShellProps) {
     // h-screen + overflow-hidden locks the browser window size
     <div className="h-screen bg-[#f9f9f9] text-slate-900 flex flex-col">
       <Header />
-      <div className="w-full flex-1">
+      <div className="w-full flex-1 min-h-0 overflow-hidden">
             {children}
       </div>
       <div className="min-h-0">

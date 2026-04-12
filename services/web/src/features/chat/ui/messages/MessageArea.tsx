@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useChatActions, useCurrentChatSession } from '../models';
-import { useMessageVisibility } from '../models';
+import { useChatActions, useCurrentChatSession } from '../../models';
+import { useMessageVisibility } from '../../models';
 
 // Step 1: Define a color array using DaisyUI chat bubble classes
 const BUBBLE_COLORS = [
@@ -13,7 +13,7 @@ const BUBBLE_COLORS = [
   'chat-bubble-warning'
 ];
 
-export function ChatBox() {
+export function MessageArea() {
   const { fetchChatHistory, sendReadReceipt } = useChatActions();
   const { chatId, tempCurrentUserId, messages, typingUsers, readReceipts } = useCurrentChatSession();
   
@@ -80,11 +80,9 @@ export function ChatBox() {
     });
   }
 
+  {/* Because it's flex-col-reverse, pushing items here puts them at the visual bottom! */}
   return (
-    <div className="flex flex-col-reverse h-[500px] w-full border rounded-lg p-4 overflow-y-auto">
-      {/* 
-        Because it's flex-col-reverse, pushing items here puts them at the visual bottom!
-      */}
+    <div className="flex flex-col-reverse flex-1 min-h-0 w-full bg-base-100 p-4 overflow-y-auto">
       
       {/* TYPING INDICATOR BUBBLE */}
       {activeTypingUserIds.length > 0 && (
@@ -131,7 +129,7 @@ export function ChatBox() {
                 User #{msg.senderId}
               </div>
             )}
-            <div className={`chat-bubble ${colorClass}`}>
+            <div className={`chat-bubble break-words max-w-[85%] md:max-w-[70%] ${colorClass}`}>
               {msg.content}
             </div>
             {/* Read receipt indicator */}
