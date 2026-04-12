@@ -43,13 +43,13 @@ func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, 
 
 	var dbStatus database.ChatServiceFriendStatus
 	switch params.Status {
-	case api.Accepted:
+	case api.UpdateFriendshipStatusParamsStatusAccepted:
 		dbStatus = database.ChatServiceFriendStatusAccepted
-	case api.Declined:
+	case api.UpdateFriendshipStatusParamsStatusDeclined:
 		dbStatus = database.ChatServiceFriendStatusDeclined
-	case api.Blocked:
+	case api.UpdateFriendshipStatusParamsStatusBlocked:
 		dbStatus = database.ChatServiceFriendStatusBlocked
-	case api.None:
+	case api.UpdateFriendshipStatusParamsStatusNone:
 		dbStatus = database.ChatServiceFriendStatusNone
 	default:
 		http.Error(w, "Invalid status value", http.StatusBadRequest)
@@ -116,7 +116,7 @@ func (s *Server) getOnlineFriends(ctx context.Context, userId int32) ([]int, err
 	// Get friend IDs as slice
 	friendIds := make([]int, 0, len(friends))
 	for _, friend := range friends {
-			friendIds = append(friendIds, int(friend.FriendID))
+		friendIds = append(friendIds, int(friend.FriendID))
 	}
 
 	// Filter to friends who are currently online using hub helper
@@ -160,50 +160,80 @@ func (s *Server) broadcastStatusToFriends(userId int, isOnline bool) {
 }
 
 func (s *Server) GetFriendList(w http.ResponseWriter, r *http.Request, tempUserId int) {
-    ctx := r.Context()
+	ctx := r.Context()
 
-    friends, err := s.db.GetQueries().GetFriendListWithChatIds(ctx, int32(tempUserId))
-    if err != nil {
-        http.Error(w, "Failed to retrieve friend list", http.StatusInternalServerError)
-        return
-    }
+	friends, err := s.db.GetQueries().GetFriendListWithChatIds(ctx, int32(tempUserId))
+	if err != nil {
+		http.Error(w, "Failed to retrieve friend list", http.StatusInternalServerError)
+		return
+	}
 
-    s.sseHub.mutex.RLock()
-    // Capture the hub state and unlock early to avoid holding it during JSON encoding
-    onlineMap := make(map[int]bool)
-    for id := range s.sseHub.userChannels {
-        onlineMap[id] = true
-    }
-    s.sseHub.mutex.RUnlock()
+	s.sseHub.mutex.RLock()
+	// Capture the hub state and unlock early to avoid holding it during JSON encoding
+	onlineMap := make(map[int]bool)
+	for id := range s.sseHub.userChannels {
+		onlineMap[id] = true
+	}
+	s.sseHub.mutex.RUnlock()
 
-    response := make(api.FriendList, 0, len(friends))
-    for _, friend := range friends {
-        // 1. Create local copies for pointer safety
-        fId := int(friend.FriendID)
+	response := make(api.FriendList, 0, len(friends))
+	for _, friend := range friends {
+		// 1. Create local copies for pointer safety
+		fId := int(friend.FriendID)
 
-        // 2. Determine online status
-        _, online := onlineMap[fId]
-        isOnline := online // Local boolean
+		// 2. Determine online status
+		_, online := onlineMap[fId]
+		isOnline := online // Local boolean
 
-        // 3. Handle UUID (sqlc usually returns [16]byte or uuid.UUID)
-        var chatId *openapi_types.UUID
-        if friend.ChatID != uuid.Nil {
-            // Create a copy of the UUID to take its address
-            cId := friend.ChatID
-            chatId = &cId
-        }
+		// 3. Handle UUID (sqlc usually returns [16]byte or uuid.UUID)
+		var chatId *openapi_types.UUID
+		if friend.ChatID != uuid.Nil {
+			// Create a copy of the UUID to take its address
+			cId := friend.ChatID
+			chatId = &cId
+		}
 
-        response = append(response, struct {
-            ChatId   *openapi_types.UUID `json:"chatId,omitempty"`
-            FriendId *int                `json:"friendId,omitempty"`
-            IsOnline *bool               `json:"isOnline,omitempty"`
-        }{
-            ChatId:   chatId,
-            FriendId: &fId,      // Point to the unique local copy
-            IsOnline: &isOnline, // Point to the unique local copy
-        })
-    }
+		response = append(response, struct {
+			ChatId   *openapi_types.UUID `json:"chatId,omitempty"`
+			FriendId *int                `json:"friendId,omitempty"`
+			IsOnline *bool               `json:"isOnline,omitempty"`
+		}{
+			ChatId:   chatId,
+			FriendId: &fId,      // Point to the unique local copy
+			IsOnline: &isOnline, // Point to the unique local copy
+		})
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(response)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (s *Server) GetPendingFriendRequests(w http.ResponseWriter, r *http.Request, tempUserId int) {
+	ctx := r.Context()
+
+	rows, err := s.db.GetQueries().GetPendingFriendRequests(ctx, int32(tempUserId))
+	if err != nil {
+		http.Error(w, "Failed to retrieve pending friend requests", http.StatusInternalServerError)
+		return
+	}
+
+	response := make(api.PendingFriendRequestList, 0, len(rows))
+	for _, row := range rows {
+		status := api.PendingFriendRequestStatusPending
+		if row.Status.Valid {
+			status = api.PendingFriendRequestStatus(row.Status.ChatServiceFriendStatus)
+		}
+
+		response = append(response, api.PendingFriendRequest{
+			RequesterId: int(row.RequesterID),
+			AddresseeId: int(row.AddresseeID),
+			Status:      status,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode pending friend requests", http.StatusInternalServerError)
+		return
+	}
 }

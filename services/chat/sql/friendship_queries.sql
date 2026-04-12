@@ -61,3 +61,10 @@ SELECT
         LIMIT 1
     ) AS chat_id
 FROM friends f;
+
+-- name: GetPendingFriendRequests :many
+SELECT requester_id, addressee_id, status
+FROM chat_service.friendships
+WHERE addressee_id = $1
+    AND status = 'pending'
+ORDER BY requester_id ASC;

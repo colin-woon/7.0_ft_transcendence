@@ -39,6 +39,21 @@ func (e ChatRoomType) Valid() bool {
 	}
 }
 
+// Defines values for PendingFriendRequestStatus.
+const (
+	PendingFriendRequestStatusPending PendingFriendRequestStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the PendingFriendRequestStatus enum.
+func (e PendingFriendRequestStatus) Valid() bool {
+	switch e {
+	case PendingFriendRequestStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for StreamEventType.
 const (
 	NEWMESSAGE StreamEventType = "NEW_MESSAGE"
@@ -65,25 +80,25 @@ func (e StreamEventType) Valid() bool {
 
 // Defines values for UpdateFriendshipStatusParamsStatus.
 const (
-	Accepted UpdateFriendshipStatusParamsStatus = "accepted"
-	Blocked  UpdateFriendshipStatusParamsStatus = "blocked"
-	Declined UpdateFriendshipStatusParamsStatus = "declined"
-	None     UpdateFriendshipStatusParamsStatus = "none"
-	Pending  UpdateFriendshipStatusParamsStatus = "pending"
+	UpdateFriendshipStatusParamsStatusAccepted UpdateFriendshipStatusParamsStatus = "accepted"
+	UpdateFriendshipStatusParamsStatusBlocked  UpdateFriendshipStatusParamsStatus = "blocked"
+	UpdateFriendshipStatusParamsStatusDeclined UpdateFriendshipStatusParamsStatus = "declined"
+	UpdateFriendshipStatusParamsStatusNone     UpdateFriendshipStatusParamsStatus = "none"
+	UpdateFriendshipStatusParamsStatusPending  UpdateFriendshipStatusParamsStatus = "pending"
 )
 
 // Valid indicates whether the value is a known member of the UpdateFriendshipStatusParamsStatus enum.
 func (e UpdateFriendshipStatusParamsStatus) Valid() bool {
 	switch e {
-	case Accepted:
+	case UpdateFriendshipStatusParamsStatusAccepted:
 		return true
-	case Blocked:
+	case UpdateFriendshipStatusParamsStatusBlocked:
 		return true
-	case Declined:
+	case UpdateFriendshipStatusParamsStatusDeclined:
 		return true
-	case None:
+	case UpdateFriendshipStatusParamsStatusNone:
 		return true
-	case Pending:
+	case UpdateFriendshipStatusParamsStatusPending:
 		return true
 	default:
 		return false
@@ -125,6 +140,22 @@ type FriendList = []struct {
 	// IsOnline Whether the friend is currently online
 	IsOnline *bool `json:"isOnline,omitempty"`
 }
+
+// PendingFriendRequest defines model for PendingFriendRequest.
+type PendingFriendRequest struct {
+	// AddresseeId User who received the friend request
+	AddresseeId int `json:"addresseeId"`
+
+	// RequesterId User who sent the friend request
+	RequesterId int                        `json:"requesterId"`
+	Status      PendingFriendRequestStatus `json:"status"`
+}
+
+// PendingFriendRequestStatus defines model for PendingFriendRequest.Status.
+type PendingFriendRequestStatus string
+
+// PendingFriendRequestList defines model for PendingFriendRequestList.
+type PendingFriendRequestList = []PendingFriendRequest
 
 // ReadReceipt defines model for ReadReceipt.
 type ReadReceipt struct {
@@ -326,6 +357,9 @@ type ServerInterface interface {
 	// Get friend list for a user with chat ID references
 	// (GET /friendship/{tempUserId})
 	GetFriendList(w http.ResponseWriter, r *http.Request, tempUserId int)
+	// Get incoming pending friend requests for a user
+	// (GET /friendship/{tempUserId}/pending)
+	GetPendingFriendRequests(w http.ResponseWriter, r *http.Request, tempUserId int)
 	// Create a new group chat
 	// (POST /message/group/create/{tempUserId})
 	CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUserId int)
@@ -338,7 +372,7 @@ type ServerInterface interface {
 	// Update the last read message for a user in a chat
 	// (PATCH /message/read/{chatId}/{tempUserId})
 	UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempUserId int)
-	// Opens an SSE connection for real-time chat message updates
+	// Opens an SSE connection for real-time functionalities
 	// (GET /message/stream/{tempUserId})
 	GetMessageStream(w http.ResponseWriter, r *http.Request, tempUserId int)
 	// Send a typing indicator event
@@ -371,6 +405,12 @@ func (_ Unimplemented) GetFriendList(w http.ResponseWriter, r *http.Request, tem
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Get incoming pending friend requests for a user
+// (GET /friendship/{tempUserId}/pending)
+func (_ Unimplemented) GetPendingFriendRequests(w http.ResponseWriter, r *http.Request, tempUserId int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Create a new group chat
 // (POST /message/group/create/{tempUserId})
 func (_ Unimplemented) CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUserId int) {
@@ -395,7 +435,7 @@ func (_ Unimplemented) UpdateReadReceipt(w http.ResponseWriter, r *http.Request,
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Opens an SSE connection for real-time chat message updates
+// Opens an SSE connection for real-time functionalities
 // (GET /message/stream/{tempUserId})
 func (_ Unimplemented) GetMessageStream(w http.ResponseWriter, r *http.Request, tempUserId int) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -524,6 +564,31 @@ func (siw *ServerInterfaceWrapper) GetFriendList(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetFriendList(w, r, tempUserId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPendingFriendRequests operation middleware
+func (siw *ServerInterfaceWrapper) GetPendingFriendRequests(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "tempUserId" -------------
+	var tempUserId int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tempUserId", chi.URLParam(r, "tempUserId"), &tempUserId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPendingFriendRequests(w, r, tempUserId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -858,6 +923,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/friendship/{tempUserId}", wrapper.GetFriendList)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/friendship/{tempUserId}/pending", wrapper.GetPendingFriendRequests)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/message/group/create/{tempUserId}", wrapper.CreateGroupChat)
 	})
 	r.Group(func(r chi.Router) {
@@ -885,37 +953,38 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"RaVdHwAA",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

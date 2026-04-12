@@ -96,6 +96,23 @@ components:
         friendId: 123
         chatId: "550e8400-e29b-41d4-a716"
         isOnline: true
+    PendingFriendRequest:
+      type: object
+      required: [requesterId, addresseeId, status]
+      properties:
+        requesterId:
+          type: integer
+          description: User who sent the friend request
+        addresseeId:
+          type: integer
+          description: User who received the friend request
+        status:
+          type: string
+          enum: [pending]
+    PendingFriendRequestList:
+      type: array
+      items:
+        $ref: "#/components/schemas/PendingFriendRequest"
     StreamEvent:
       type: object
       required: [type, payload]
@@ -196,6 +213,30 @@ paths:
           description: Invalid user ID
         "404":
           description: User not found
+        "500":
+          description: Internal Server Error
+
+  /friendship/{tempUserId}/pending:
+    get:
+      tags:
+        - Friendship
+      summary: Get incoming pending friend requests for a user
+      operationId: getPendingFriendRequests
+      parameters:
+        - name: tempUserId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Pending friend requests retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PendingFriendRequestList"
+        "400":
+          description: Invalid user ID
         "500":
           description: Internal Server Error
 
