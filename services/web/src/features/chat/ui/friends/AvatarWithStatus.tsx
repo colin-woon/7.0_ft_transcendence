@@ -12,6 +12,7 @@ interface AvatarWithStatusProps {
   color?: string;
   avatarUrl?: string;
 }
+
 // Updated Helper for dynamic status colors
 const getStatusColorClass = (status?: string, isOnline?: boolean) => {
   if (!isOnline) return 'bg-slate-500'; // Default/Offline (gray)
@@ -30,16 +31,16 @@ export function AvatarWithStatus({
   initials,
   color = 'bg-base-200',
   avatarUrl,
-  status // Optional: pass the specific string status from your data
+  status
 }: AvatarWithStatusProps & { status?: string }) {
-  const isOnline = useUserStatus(userId ?? -1); // Fallback to -1 if userId is undefined
+  const isOnline = useUserStatus(userId ?? -1); 
   const hasUnread = useHasUnreadMessages(chatId ?? null);
   
   const fallbackInitials = initials || name.charAt(0).toUpperCase();
 
   return (
     <div className="indicator">
-      {/* Unread Badge (Top Right) */}
+      {/* Unread Badge (Top Right)*/}
       {hasUnread && (
         <span className="indicator-item badge badge-error badge-sm px-1 z-10 transform translate-x-1 -translate-y-1 border-base-100 border-2" />
       )}
@@ -48,11 +49,11 @@ export function AvatarWithStatus({
       
       {/* Avatar Container */}
       <div className="avatar placeholder">
-        <div className={`w-10 rounded-full ${color} text-neutral-50`}>
+        <div className={`w-10 rounded-full ${color} text-neutral-content flex items-center justify-center font-bold`}>
           {avatarUrl ? (
-            <img src={avatarUrl} alt={name} />
+            <img src={avatarUrl} alt={name} className="w-full h-full object-cover rounded-full" />
           ) : (
-            <span className="text-sm align-center font-medium">{fallbackInitials}</span>
+            <span className="text-md">{fallbackInitials}</span>
           )}
         </div>
       </div>
