@@ -226,7 +226,7 @@ services:
                     '/certs/web.crt',
                     '--key',
                     '/certs/web.key',
-                    'https://localhost:3000/api/health',
+                    'https://localhost:3000/health',
                 ]
             interval: 10s
             timeout: 5s

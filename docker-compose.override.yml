@@ -93,7 +93,7 @@ services:
             - MTLS_CA_PATH=
             - NODE_EXTRA_CA_CERTS=
         healthcheck:
-            test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
+            test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
             interval: 10s
             timeout: 5s
             start_period: 60s
