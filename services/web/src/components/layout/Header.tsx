@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Menu } from 'lucide-react'
 import { useAppShell } from '@/components/ui/ComponentLogic/Appshell/context/AppShellContext'
 
@@ -21,8 +22,15 @@ export default function Header() {
             >
               <Menu size={20} className="block h-5 w-5 text-slate-700" strokeWidth={2.25} />
             </button>
-            <Link href="/projects" className="text-base-content text-xl font-bold inline hover:text-secondary transition-colors">
-              42 overflow
+            <Link href="/projects" className="pl-10 text-base-content text-xl font-bold inline hover:text-secondary transition-colors">
+                  <Image
+                    src="/assets/42overflow.png" 
+                    alt="42 Overflow Logo"
+                    width={204}
+                     height={40}
+                    className="object-contain"
+                    priority
+                  />
             </Link>
           </div>
           {/* Search bar and user menu intentionally hidden for this version. */}

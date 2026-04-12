@@ -23,6 +23,7 @@ export default async function ProjectCreatePage({ params }: ProjectCreatePagePro
     <CreatePage
       projectId={project.id}
       projectName={project.name}
+      projectSlug={project.slug}
       projectDescription={project.description}
     />
   )

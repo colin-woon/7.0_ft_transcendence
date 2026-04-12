@@ -32,6 +32,7 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
         comments={comments}
         projectId={projectIdNum}
         projectName={project?.name ?? projectName ?? post.category}
+        projectSlug={project?.slug ?? (projectName ?? post.category).toLowerCase().replace(/\s+/g, '-')}
         projectDescription={project?.description ?? ''}
       />
     );

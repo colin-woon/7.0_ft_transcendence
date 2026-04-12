@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, MessageCircle, Eye, ThumbsUp, AlertCircle } from 'lucide-react';
+import { MessageCircle, Eye, AlertCircle } from 'lucide-react';
 import type { ForumPostDetail, ForumComment } from '@/features/forum/models';
 import PostVoteButtons from '../components/PostVoteButtons';
 import CommentVoteButtons from '../components/CommentVoteButtons';
 import WriteCommentBox from '../components/WriteCommentBox';
 import { PaginationControls } from '@/features/forum/ui_temp_ryan/projects/PaginationControls';
+import ForumTrailButtons from '@/features/forum/ui/shared/ForumTrailButtons';
 import { deleteForumComment, deleteForumPost, updateForumComment, updateForumPost } from '@/features/forum/api/moderation';
 import {
   CommentModerationControls,
@@ -21,6 +22,7 @@ interface PostDetailClientProps {
   comments: ForumComment[];
   projectId: number;
   projectName: string;
+  projectSlug: string;
   projectDescription: string;
 }
 
@@ -43,7 +45,7 @@ function BlinkingText({ text, className }: { text: string; className?: string })
   );
 }
 
-export default function PostDetailClient({ post, comments, projectId, projectName, projectDescription }: PostDetailClientProps) {
+export default function PostDetailClient({ post, comments, projectId, projectName, projectSlug, projectDescription }: PostDetailClientProps) {
   const router = useRouter();
   const [postState, setPostState] = useState(post);
   const [commentState, setCommentState] = useState(comments);
@@ -139,19 +141,19 @@ export default function PostDetailClient({ post, comments, projectId, projectNam
 
   return (
     <div className="flex min-h-full flex-col font-sans">
-      <div className="sticky top-16 z-40 mb-6">
+      <div className="sticky top-16 z-50">
         <div className="card card-border shadow-xl w-full max-w-full rounded-none sm:rounded-box backdrop-blur-sm">
-          <div className="card-body px-4 sm:px-6 min-h-[13rem] overflow-hidden">
+          <div className="card-body px-4 sm:px-6 py-4 sm:py-5 min-h-0 sm:min-h-[13rem] overflow-hidden">
             <div className="grid h-full grid-cols-1 gap-4">
               <div className="min-w-0">
                 <BlinkingText
-                  className="text-3xl sm:text-5xl text-slate-800 font-interface uppercase"
+                  className="text-2xl sm:text-5xl leading-tight text-slate-800 font-interface tracking-wide uppercase break-words line-clamp-2 sm:line-clamp-none"
                   text={projectName}
                 />
 
-                <div className="mt-3">
+                <div className="mt-2 sm:mt-3">
                   <BlinkingText
-                    className="text-sm sm:text-md font-interface"
+                    className="text-xs sm:text-base leading-snug font-interface break-words line-clamp-2 sm:line-clamp-none"
                     text={projectDescription || 'Share a question, project, or idea with the 42 community.'}
                   />
                 </div>
@@ -173,14 +175,25 @@ export default function PostDetailClient({ post, comments, projectId, projectNam
         </div>
       </div>
 
-      <div className="w-full max-w-5xl mx-auto mt-10 px-4">
+      <div className="w-full max-w-6xl mx-auto px-4 pt-15">
+        <ForumTrailButtons
+          className="mb-0"
+          items={[
+            { label: 'Projects', href: '/projects' },
+            { label: projectSlug, href: `/projects/${projectId}` },
+            { label: 'Post' },
+          ]}
+        />
+      </div>
+
+      <div className="w-full max-w-5xl mx-auto mt-0 px-4">
         {/* Post header */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 mt-10 mb-6">
-          <div className="flex gap-4 items-center">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 mt-3 mb-3">
+          <div className="flex gap-6 items-center">
             <PostVoteButtons postId={post.id} initialUpvotes={post.upvotes} initialUserVote={post.userVote} />
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-medium">{postState.author}</span>
+                <span className="font-small text-sm">{postState.author}</span>
                 <div className="ml-auto">
                   <PostModerationControls
                     authorId={postState.authorId}
@@ -194,9 +207,9 @@ export default function PostDetailClient({ post, comments, projectId, projectNam
                 </div>
               </div>
 
-              <h1 className="text-2xl font-bold text-slate-900 mb-1">{postState.title}</h1>
+              <h1 className="text-xl font-semibold text-slate-900 mb-1">{postState.title}</h1>
 
-              <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
+              <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
                 <span>{postState.timestamp}</span>
                 <div className="flex items-center gap-1">
                   <Eye size={16} />

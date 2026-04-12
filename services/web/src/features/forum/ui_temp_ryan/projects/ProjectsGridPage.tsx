@@ -7,6 +7,7 @@ import { AnimatedProjectsGrid } from "./AnimatedProjectsGrid";
 import TextType from '@/components/react-bits/TextType';
 import { AdminProjectCreateButton } from '@/features/forum/ui/projects/moderation';
 import { PaginationControls } from "./PaginationControls";
+import ForumTrailButtons from '@/features/forum/ui/shared/ForumTrailButtons';
 
 
 
@@ -125,8 +126,8 @@ export default function ProjectsPage({ projects, subscribedProjectIds, initialSe
 
       {/* Header */}
       <div className="card card-border shadow-xl w-full max-w-full rounded-none sm:rounded-box backdrop-blur-sm">
-        <div className="card-body px-4 sm:px-6 py-5 min-h-[10rem] sm:h-[13rem] overflow-hidden">
-          <TextType className="text-5xl text-slate-800 font-interface tracking-wide uppercase"
+        <div className="card-body px-4 sm:px-6 py-4 sm:py-5 min-h-0 sm:min-h-[13rem] overflow-hidden">
+          <TextType className="text-2xl sm:text-5xl leading-tight text-slate-800 font-interface tracking-wide uppercase break-words line-clamp-2 sm:line-clamp-none"
             text="Cursus Projects"
             typingSpeed={75}
             pauseDuration={1500}
@@ -139,8 +140,8 @@ export default function ProjectsPage({ projects, subscribedProjectIds, initialSe
             initialDelay={500}
             onSentenceComplete={() => {}}
           />
-          <div>
-            <TextType className="text-md font-interface"
+          <div className="mt-2 sm:mt-0">
+            <TextType className="text-xs sm:text-base leading-snug font-interface break-words line-clamp-2 sm:line-clamp-none"
             text={"Welcome to 42 Overflow! Where you can explore and discuss all the projects in the 42 curriculum :>"}
             typingSpeed={75}
             pauseDuration={1500}
@@ -215,12 +216,17 @@ export default function ProjectsPage({ projects, subscribedProjectIds, initialSe
       </div>
       </div>
      
+      <div className="w-full max-w-6xl mx-auto px-4 pt-15 flex items-center justify-between gap-3">
+        <ForumTrailButtons
+          className="mb-0"
+          items={[{ label: 'Projects' }]}
+        />
+        <p className="text-xs text-slate-400 mb-0 text-right font-interface">Results: {filtered.length} project{filtered.length !== 1 ? "s" : ""}</p>
+      </div>
 
       {/* Grid */}
-      <div className="mt-6 sm:p-6 w-full">
-        <p className="text-xs text-slate-400 mb-2 font-interface text-right">Results: {filtered.length} project{filtered.length !== 1 ? "s" : ""}</p>
-
-        <div className="mt-6 flex flex-col gap-3 pb-10 sm:pb-10 w-full items-center">
+      <div className="sm:p-6 w-full">
+        <div className="mt-0 flex flex-col gap-3 pb-10 sm:pb-10 w-full items-center">
           <AnimatedProjectsGrid pageKey={pageKey} projects={paginatedProjects} />
         </div>
         

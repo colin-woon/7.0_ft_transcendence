@@ -13,6 +13,7 @@ import SubscriptionButton from '@/features/forum/ui/projects/SubscriptionButton'
 import CreatePostButton from './CreatePostButton';
 import { AnimatedPostsGrid } from './AnimatedPostsGrid';
 import { PaginationControls } from './PaginationControls';
+import ForumTrailButtons from '@/features/forum/ui/shared/ForumTrailButtons';
 
 
 const sortOptions = ["New", "Top"];
@@ -114,10 +115,10 @@ export default function ProjectForumPage({ project }: { project: Project }) {
 
       {/* Header */}
       <div className="card card-border shadow-xl w-full max-w-full rounded-none sm:rounded-box backdrop-blur-sm">
-        <div className="card-body px-4 sm:px-6 py-5 min-h-[10rem] sm:h-[13rem] overflow-hidden">
+        <div className="card-body px-4 sm:px-6 py-4 sm:py-5 min-h-0 sm:min-h-[13rem] overflow-hidden">
           <div className="grid h-full grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_11rem] lg:gap-6">
             <div className="min-w-0">
-              <TextType className="text-5xl text-slate-800 font-interface tracking-wide uppercase"
+              <TextType className="text-2xl sm:text-5xl leading-tight text-slate-800 font-interface tracking-wide uppercase break-words line-clamp-2 sm:line-clamp-none"
                 text={project.name}
                 typingSpeed={75}
                 pauseDuration={300}
@@ -131,8 +132,8 @@ export default function ProjectForumPage({ project }: { project: Project }) {
                 onSentenceComplete={() => {}}
               />
 
-              <div className="mt-3">
-                <TextType className="text-md font-interface"
+              <div className="mt-2 sm:mt-3">
+                <TextType className="text-xs sm:text-base leading-snug font-interface break-words line-clamp-2 sm:line-clamp-none"
                   text={project.description}
                   typingSpeed={300}
                   pauseDuration={1500}
@@ -178,8 +179,8 @@ export default function ProjectForumPage({ project }: { project: Project }) {
               </div>
             </div>
 
-            <div className="w-50 shrink-0 lg:justify-self-center">
-              <div className="grid grid-cols-3 gap-2 lg:grid-cols-3 lg:gap-2 lg:justify-self-end">
+            <div className="w-50 shrink-0 justify-self-center lg:justify-self-center">
+              <div className="grid grid-cols-3 gap-2 lg:grid-cols-3 lg:gap-2 justify-self-center lg:justify-self-end">
                 <div className="text-center py-1">
                   <Zap className="mx-auto mb-1 h-3 w-3 text-slate-500" />
                   <p className="text-xs font-semibold text-gray-900">{project.xp ?? 0} xp</p>
@@ -194,14 +195,14 @@ export default function ProjectForumPage({ project }: { project: Project }) {
                 </div>
               </div>
               
-              <div className="mt-5 flex flex-wrap gap-1.5 lg:justify-end">
+              <div className="mt-5 flex flex-wrap gap-1.5 justify-self-center lg:justify-self-end">
                 {displayTags.map((tag) => (
                   <span key={tag} className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
                     {tag}
                   </span>
                 ))}
               </div>
-              <div className="flex mt-5 items-center justify-end gap-1.5">
+              <div className="flex mt-5 items-center justify-self-center lg:justify-self-end gap-1.5">
                 <SubscriptionButton projectId={project.id} compact className="h-10 w-10" />
                 <CreatePostButton projectId={project.id} />
               </div>
@@ -211,9 +212,18 @@ export default function ProjectForumPage({ project }: { project: Project }) {
       </div>
       </div>
 
-      <div className="mt-6 sm:p-6 w-full">
-        <p className="w-full text-right text-xs text-slate-400 mb-1 font-interface">Results: {filteredPosts.length} post{filteredPosts.length !== 1 ? "s" : ""}</p>
+      <div className="w-full max-w-6xl mx-auto px-4 pt-15 flex items-center justify-between gap-3">
+        <ForumTrailButtons
+          className="mb-0"
+          items={[
+            { label: 'Projects', href: '/projects' },
+            { label: project.slug },
+          ]}
+        />
+        <p className="text-xs text-slate-400 mb-0 text-right font-interface">Results: {filteredPosts.length} post{filteredPosts.length !== 1 ? "s" : ""}</p>
       </div>
+
+      <div className="sm:p-6 w-full">
         <div className="w-full max-w-6xl mx-auto px-4 py-0">
           <div className="flex flex-col items-center gap-5 lg:flex-row lg:items-start lg:gap-8">
             <div className="w-full min-w-0 space-y-3 lg:flex-[1.8]">
@@ -252,6 +262,7 @@ export default function ProjectForumPage({ project }: { project: Project }) {
             </div>
           </div>
           </div>
+        </div>
       </div>
     </div>
   );

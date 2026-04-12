@@ -1,8 +1,8 @@
 "use client"
 
 import { useAppShell } from './context/AppShellContext'
-import Header from '@/components/layout/Header'
-import Sidebar from '@/components/layout/Sidebar'
+import Header from '../../../layout/Header'
+import Sidebar from '../../../layout/Sidebar'
 import { ReactNode } from 'react'
 
 interface AppShellProps {

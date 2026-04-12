@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 
 import { createProjectPost } from '@/features/forum/api/post'
+import ForumTrailButtons from '@/features/forum/ui/shared/ForumTrailButtons'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,7 @@ const RULES = [
 interface CreatePageProps {
   projectId: number
   projectName: string
+  projectSlug: string
   projectDescription: string
 }
 
@@ -47,7 +49,7 @@ function BlinkingText({ text, className }: { text: string; className?: string })
   )
 }
 
-export default function CreatePage({ projectId, projectName, projectDescription }: CreatePageProps) {
+export default function CreatePage({ projectId, projectName, projectSlug, projectDescription }: CreatePageProps) {
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -80,20 +82,20 @@ export default function CreatePage({ projectId, projectName, projectDescription 
   }
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex min-h-full flex-col font-sans">
       <div className="sticky top-16 z-50">
         <div className="card card-border shadow-xl w-full max-w-full rounded-none sm:rounded-box backdrop-blur-sm">
-          <div className="card-body px-4 sm:px-6 min-h-[13rem] sm:h-[9rem] overflow-hidden">
+          <div className="card-body px-4 sm:px-6 py-4 sm:py-5 min-h-0 sm:min-h-[13rem] overflow-hidden">
             <div className="grid h-full grid-cols-1 gap-4">
               <div className="min-w-0">
                 <BlinkingText
-                  className="text-5xl text-slate-800 font-interface uppercase"
+                  className="text-2xl sm:text-5xl leading-tight text-slate-800 font-interface tracking-wide uppercase break-words line-clamp-2 sm:line-clamp-none"
                   text={projectName}
                 />
 
-                <div className="mt-3">
+                <div className="mt-2 sm:mt-3">
                   <BlinkingText
-                    className="text-md font-interface"
+                    className="text-xs sm:text-base leading-snug font-interface break-words line-clamp-2 sm:line-clamp-none"
                     text={projectDescription || 'Share a question, project, or idea with the 42 community.'}
                   />
                 </div>
@@ -109,7 +111,18 @@ export default function CreatePage({ projectId, projectName, projectDescription 
         </div>
       </div>
 
-      <div className="w-full max-w-6xl mt-16 mx-auto h-full flex">
+      <div className="w-full max-w-6xl mx-auto px-4 pt-15">
+        <ForumTrailButtons
+          className="mb-0"
+          items={[
+            { label: 'Projects', href: '/projects' },
+            { label: projectSlug, href: `/projects/${projectId}` },
+            { label: 'Create post' },
+          ]}
+        />
+      </div>
+
+      <div className="w-full max-w-6xl mt-1 mx-auto h-full flex">
         {/* Main content */}
         <form onSubmit={handleSubmit} className="flex-1 min-w-0 flex flex-col">
           <div className="flex flex-col flex-1 pb-8">
@@ -180,7 +193,7 @@ export default function CreatePage({ projectId, projectName, projectDescription 
         {/* Sidebar card */}
         <div className="hidden lg:flex flex-col gap-4 w-72 flex-shrink-0 py-6 pr-4">
           {/* Tips */}
-          <div className="bg-gradient-to-br from-[#0f6f6b] to-[#1a9e99] rounded-2xl p-5 text-white">
+          <div className="bg-[#d56610] rounded-2xl p-5 text-white">
             <p className="text-xs font-bold uppercase tracking-widest opacity-70 mb-2">Posting tips</p>
             <ul className="space-y-2">
               {RULES.map((r, i) => (
