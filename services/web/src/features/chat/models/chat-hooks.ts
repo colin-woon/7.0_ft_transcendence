@@ -23,6 +23,7 @@ export const useChatActions = () => {
         addMessage: useStore(store, (s) => s.addMessage),
         setCurrentChatSessionId: useStore(store, (s) => s.setCurrentChatSessionId),
         fetchAllFriendships: useStore(store, (s) => s.fetchAllFriendships),
+        fetchPendingFriendships: useStore(store, (s) => s.fetchPendingFriendships),
         fetchAllChatSessions: useStore(store, (s) => s.fetchAllChatSessions),
         fetchChatHistory: useStore(store, (s) => s.fetchChatHistory),
         setTypingStatus: useStore(store, (s) => s.setTypingStatus),
@@ -79,6 +80,7 @@ export const useFriendList = () => {
     return {
         tempCurrentUserId: useStore(store, (s) => s.tempCurrentUserId),
         allFriendships: useStore(store, (s) => s.allFriendships),
+        pendingRequests: useStore(store, (s) => s.pendingRequests),
         isLoading: useStore(store, (s) => s.isLoadingFriends), 
         error: useStore(store, (s) => s.friendsError),
     };

@@ -1,7 +1,7 @@
 import { createStore } from 'zustand/vanilla';
 import { immer } from 'zustand/middleware/immer';
-import type { AllChatSessions, FriendId, ChatMessage, ChatId, FriendList, ChatRoomType } from './chat-types';
-import { getFriendList, getUserInbox, getMessageHistory, updateReadReceipt as apiUpdateReadReceipt } from '../api';
+import type { AllChatSessions, FriendId, ChatMessage, ChatId, FriendList, ChatRoomType, PendingFriendRequest } from './chat-types';
+import { getFriendList, getUserInbox, getMessageHistory, updateReadReceipt as apiUpdateReadReceipt, getPendingFriendRequests } from '../api';
 import debounce from 'lodash.debounce';
 
 export interface ChatState {
@@ -9,6 +9,7 @@ export interface ChatState {
   currentChatSessionId: ChatId | null;
   allChatSessions: AllChatSessions;
   allFriendships: FriendList;
+  pendingRequests: PendingFriendRequest[];
   isLoadingFriends: boolean;
   friendsError: string | null;
   typingUsers: Record<ChatId, Record<FriendId, boolean>>;
@@ -23,6 +24,7 @@ export interface ChatActions {
   setAllFriendships: (friendList: FriendList) => void;
   setCurrentChatSessionId: (chatId: ChatId | null) => void;
   fetchAllFriendships: (userId: FriendId) => Promise<void>;
+  fetchPendingFriendships: (userId: FriendId) => Promise<void>;
   fetchAllChatSessions: (userId: FriendId) => Promise<void>;
   fetchChatHistory: (chatId: ChatId) => Promise<void>;
   setTypingStatus: (chatId: ChatId, senderId: FriendId) => void;
@@ -51,6 +53,7 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
     immer((set, get) => ({
       allChatSessions: initialSessions,
       allFriendships: [],
+      pendingRequests: [],
       currentChatSessionId: null,
       tempCurrentUserId: 1, // TEMP Hardcoded on mount as requested
       isLoadingFriends: false,
@@ -107,6 +110,13 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
         const friendList = await getFriendList(userId);
         set((state) => {
           state.allFriendships = friendList;
+        });
+      },
+
+      fetchPendingFriendships: async (userId: FriendId) => {
+        const pending = await getPendingFriendRequests(userId);
+        set((state) => {
+          state.pendingRequests = pending;
         });
       },
 

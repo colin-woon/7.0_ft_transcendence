@@ -1,3 +1,11 @@
+export const BUBBLE_COLORS = [
+    'bg-emerald-500',
+    'bg-teal-500',
+    'bg-cyan-600',
+    'bg-sky-500',
+    'bg-indigo-500'
+  ];
+
 export type FriendId = number; 
 export type ChatId = string; 
 
@@ -8,6 +16,12 @@ export interface Friendship {
 }
 
 export type FriendList = Friendship[];
+
+export interface PendingFriendRequest {
+  requesterId: FriendId;
+  addresseeId: FriendId;
+  status: 'pending';
+}
 
 export interface ChatMessage {
     id: number | string;

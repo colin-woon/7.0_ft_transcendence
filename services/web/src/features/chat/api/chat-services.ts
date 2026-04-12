@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/apiClient';
-import type { StreamEvent, ChatId, ChatMessage, FriendStatus, FriendId, FriendList, SendMessageRequest, ChatRoom } from '../models/chat-types';
+import type { StreamEvent, ChatId, ChatMessage, FriendStatus, FriendId, FriendList, PendingFriendRequest, SendMessageRequest, ChatRoom } from '../models/chat-types';
 
 // export async function login(credentials: LoginInput): Promise<User> {
 //   return apiClient.post<User>('/auth/login', credentials);
@@ -7,6 +7,10 @@ import type { StreamEvent, ChatId, ChatMessage, FriendStatus, FriendId, FriendLi
 
 export async function getFriendList(tempUserId: FriendId): Promise<FriendList> {
   return apiClient.get<FriendList>(`/friendship/${tempUserId}`);
+}
+
+export async function getPendingFriendRequests(tempUserId: FriendId): Promise<PendingFriendRequest[]> {
+  return apiClient.get<PendingFriendRequest[]>(`/friendship/${tempUserId}/pending`);
 }
 
 export async function sendFriendRequest(tempRequesterId: FriendId, tempReceiverId: FriendId): Promise<void>{

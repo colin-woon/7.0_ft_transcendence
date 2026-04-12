@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAllChatSessions, useChatActions } from '../models';
+import { useAllChatSessions, useChatActions, BUBBLE_COLORS } from '@/features/chat/models';
 
 import { AvatarWithStatus, CreateGroupChatButton } from '@/features/chat/ui';
 
@@ -17,14 +17,6 @@ export function ChatSidebar() {
       fetchAllChatSessions(tempCurrentUserId);
     }
   }, [fetchAllChatSessions, tempCurrentUserId]);
-
-  const BUBBLE_COLORS = [
-    'bg-emerald-500',
-    'bg-teal-500',
-    'bg-cyan-600',
-    'bg-sky-500',
-    'bg-indigo-500'
-  ];
 
   return (
     <div className="flex flex-col h-full bg-base-200 text-base-content w-full">

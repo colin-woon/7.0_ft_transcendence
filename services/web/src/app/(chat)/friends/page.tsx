@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { FriendCard } from '@/features/chat/ui';
 import { useFriendList, useChatActions } from '@/features/chat/models';
+import { updateFriendshipStatus } from '@/features/chat/api';
 
 type TabType = 'Online' | 'All' | 'Pending' | 'Blocked';
 
@@ -10,30 +11,58 @@ export default function FriendsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('All');
   const [searchQuery, setSearchQuery] = useState('');
   
-  const { allFriendships, tempCurrentUserId, isLoading, error } = useFriendList();
-  const { fetchAllFriendships } = useChatActions();
+  const { allFriendships, pendingRequests, tempCurrentUserId, isLoading, error } = useFriendList();
+  const { fetchAllFriendships, fetchPendingFriendships } = useChatActions();
 
   useEffect(() => {
     if (tempCurrentUserId) {
       fetchAllFriendships(tempCurrentUserId);
+      fetchPendingFriendships(tempCurrentUserId);
     }
-  }, [tempCurrentUserId, fetchAllFriendships]);
+  }, [tempCurrentUserId, fetchAllFriendships, fetchPendingFriendships]);
 
-  const filteredFriends = allFriendships?.filter(friend => {
-    // Filter by tab
-    if (activeTab === 'Online' && !friend.isOnline) return false;
-    // Pending and Blocked not implemented in basic data yet
-    if (activeTab === 'Pending' || activeTab === 'Blocked') return false;
-    
-    // Filter by search
-    if (searchQuery) {
-      const searchLower = searchQuery.toLowerCase();
-      const friendName = `Friend #${friend.friendId}`.toLowerCase();
-      if (!friendName.includes(searchLower)) return false;
+  const handleUpdateStatus = async (friendId: number, status: 'accepted' | 'declined') => {
+    if (tempCurrentUserId) {
+      await updateFriendshipStatus(friendId, tempCurrentUserId, status); // assuming requester -> receiver
+      fetchPendingFriendships(tempCurrentUserId);
+      fetchAllFriendships(tempCurrentUserId);
     }
-    
-    return true;
-  }) || [];
+  };
+
+  const getFilteredList = () => {
+    if (activeTab === 'Pending') {
+      return (pendingRequests || []).filter(req => {
+        if (searchQuery) {
+          const searchLower = searchQuery.toLowerCase();
+          const friendName = `Friend #${req.requesterId}`.toLowerCase();
+          if (!friendName.includes(searchLower)) return false;
+        }
+        return true;
+      }).map(req => ({
+        friendId: req.requesterId,
+        chatId: '', // No chat ID yet for pending
+        isOnline: false
+      }));
+    }
+
+    return allFriendships?.filter(friend => {
+      // Filter by tab
+      if (activeTab === 'Online' && !friend.isOnline) return false;
+      // Pending and Blocked not implemented in basic data yet
+      if (activeTab === 'Blocked') return false;
+      
+      // Filter by search
+      if (searchQuery) {
+        const searchLower = searchQuery.toLowerCase();
+        const friendName = `Friend #${friend.friendId}`.toLowerCase();
+        if (!friendName.includes(searchLower)) return false;
+      }
+      
+      return true;
+    }) || [];
+  };
+
+  const filteredFriends = getFilteredList();
 
   return (
     <div className="flex flex-col h-full bg-base-100 w-full text-base-content">
@@ -97,7 +126,13 @@ export default function FriendsPage() {
         {!isLoading && !error && (
         <div className="space-y-1">
           {filteredFriends.map((friend) => (
-            <FriendCard key={friend.friendId} friend={friend} />
+            <FriendCard 
+              key={friend.friendId} 
+              friend={friend} 
+              isPending={activeTab === 'Pending'}
+              onAccept={() => handleUpdateStatus(friend.friendId, 'accepted')}
+              onDecline={() => handleUpdateStatus(friend.friendId, 'declined')}
+            />
           ))}
         </div>
         )}

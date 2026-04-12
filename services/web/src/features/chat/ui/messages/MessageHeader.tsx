@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { useCurrentChatSession, useUserStatus } from '@/features/chat/models'; // Adjust path if needed
-import { AvatarWithStatus } from '@/features/chat/ui'; // Adjust path if needed
+import { useCurrentChatSession, useUserStatus, BUBBLE_COLORS } from '@/features/chat/models';
+import { AvatarWithStatus } from '@/features/chat/ui';
 
 export function MessageHeader() {
   const { chatSessionName, friendIds, tempCurrentUserId, chatId } = useCurrentChatSession();
@@ -33,6 +33,8 @@ export function MessageHeader() {
     avatarChar = `${otherUserId}`.charAt(0);
   }
 
+  const color = BUBBLE_COLORS[otherUserId! % BUBBLE_COLORS.length];
+
   return (
     <div className="h-[73px] border-b border-base-300 flex items-center px-4 md:px-6 bg-base-100/95 backdrop-blur-md z-10 shadow-sm shrink-0">
       
@@ -54,7 +56,7 @@ export function MessageHeader() {
           userId={otherUserId}
           chatId={chatId!}
           name={`Friend #${otherUserId}`}
-          color="bg-neutral"
+          color={color}
           initials={title}
           />
       </div>
