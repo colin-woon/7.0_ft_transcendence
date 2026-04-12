@@ -11,6 +11,7 @@ interface AvatarWithStatusProps {
   initials?: string;
   color?: string;
   avatarUrl?: string;
+  isGroup?: boolean;
 }
 
 // Updated Helper for dynamic status colors
@@ -31,7 +32,8 @@ export function AvatarWithStatus({
   initials,
   color = 'bg-base-200',
   avatarUrl,
-  status
+  status,
+  isGroup = false
 }: AvatarWithStatusProps & { status?: string }) {
   const isOnline = useUserStatus(userId ?? -1); 
   const hasUnread = useHasUnreadMessages(chatId ?? null);
@@ -45,8 +47,11 @@ export function AvatarWithStatus({
         <span className="indicator-item badge badge-error badge-sm px-1 z-10 transform translate-x-1 -translate-y-1 border-base-100 border-2" />
       )}
       
-      <span className={`indicator-item indicator-bottom indicator-end status status-lg z-10 transform -translate-x-1 border-base-100 border-2 ${getStatusColorClass(status, isOnline)}`} />
-      
+      {/* Status Dot (Bottom Right) */}
+      {!isGroup && (
+        <span className={`indicator-item indicator-bottom indicator-end status status-lg z-10 transform -translate-x-1 border-base-100 border-2 ${getStatusColorClass(status, isOnline)}`} />
+      )}
+
       {/* Avatar Container */}
       <div className="avatar placeholder">
         <div className={`w-10 rounded-full ${color} text-neutral-content flex items-center justify-center font-bold`}>

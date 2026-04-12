@@ -58,6 +58,7 @@ export function MessageHeader() {
           name={`Friend #${otherUserId}`}
           color={color}
           initials={title}
+          isGroup={isGroup}
           />
       </div>
 

@@ -92,6 +92,7 @@ export function ChatSidebar() {
                 name={displayName} 
                 initials={initials} 
                 color={color} 
+                isGroup={chat.type === 'group'}
               />
 
               {/* Chat Name */}
