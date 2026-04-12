@@ -1,11 +1,24 @@
-'use server'
+'use server';
 
-import type { ForumApiPostSummary, ForumPost, ForumApiPostDetail, ForumPostDetail, ForumApiComment, ForumComment } from '../models';
+import type {
+  ForumApiPostSummary,
+  ForumPost,
+  ForumApiPostDetail,
+  ForumPostDetail,
+  ForumApiComment,
+  ForumComment,
+} from '../models';
 import type { ForumSort } from '../models';
-import { getProjectsByIdMap, mapApiPostToForumPost, toRelativeTime } from './project';
+import {
+  getProjectsByIdMap,
+  mapApiPostToForumPost,
+  toRelativeTime,
+} from './project';
 import { forumServerFetch as forumFetch } from './forumServerClient';
 
-export async function getAllPosts(sort: ForumSort = 'Top'): Promise<ForumPost[]> {
+export async function getAllPosts(
+  sort: ForumSort = 'Top'
+): Promise<ForumPost[]> {
   const postsPath = sort === 'New' ? '/posts/new' : '/posts/top';
 
   const [postsResponse, projectsById] = await Promise.all([
@@ -21,7 +34,9 @@ export async function getAllPosts(sort: ForumSort = 'Top'): Promise<ForumPost[]>
   }
 
   const postsData = (await postsResponse.json()) as ForumApiPostSummary[];
-  return postsData.map((post) => mapApiPostToForumPost(post, projectsById.get(post.project_id)));
+  return postsData.map((post) =>
+    mapApiPostToForumPost(post, projectsById.get(post.project_id))
+  );
 }
 
 export async function searchPosts(searchQuery: string): Promise<ForumPost[]> {
@@ -32,10 +47,13 @@ export async function searchPosts(searchQuery: string): Promise<ForumPost[]> {
   }
 
   const [postsResponse, projectsById] = await Promise.all([
-    forumFetch(`/search/posts?search_query=${encodeURIComponent(trimmedQuery)}`, {
-      method: 'GET',
-      cache: 'no-store',
-    }),
+    forumFetch(
+      `/search/posts?search_query=${encodeURIComponent(trimmedQuery)}`,
+      {
+        method: 'GET',
+        cache: 'no-store',
+      }
+    ),
     getProjectsByIdMap(),
   ]);
 
@@ -44,10 +62,14 @@ export async function searchPosts(searchQuery: string): Promise<ForumPost[]> {
   }
 
   const postsData = (await postsResponse.json()) as ForumApiPostSummary[];
-  return postsData.map((post) => mapApiPostToForumPost(post, projectsById.get(post.project_id)));
+  return postsData.map((post) =>
+    mapApiPostToForumPost(post, projectsById.get(post.project_id))
+  );
 }
 
-export async function getPostDetail(postId: number): Promise<{ post: ForumPostDetail; projectName?: string }> {
+export async function getPostDetail(
+  postId: number
+): Promise<{ post: ForumPostDetail; projectName?: string }> {
   const postResponse = await forumFetch(`/posts/${postId}`, {
     method: 'GET',
     cache: 'no-store',
@@ -134,7 +156,7 @@ interface CreatePostCommentResponse {
 
 export async function createProjectPost(
   projectId: number,
-  payload: CreateProjectPostPayload,
+  payload: CreateProjectPostPayload
 ): Promise<CreateProjectPostResponse> {
   const response = await forumFetch(`/projects/${projectId}/posts`, {
     method: 'POST',
@@ -150,7 +172,10 @@ export async function createProjectPost(
     let errorMessage = 'Failed to create post';
 
     try {
-      const errorData = JSON.parse(errorText) as { detail?: string; message?: string };
+      const errorData = JSON.parse(errorText) as {
+        detail?: string;
+        message?: string;
+      };
       errorMessage = errorData.detail || errorData.message || errorMessage;
     } catch {
       if (errorText.trim().length > 0) {
@@ -166,7 +191,7 @@ export async function createProjectPost(
 
 export async function createPostComment(
   postId: number,
-  payload: CreatePostCommentPayload,
+  payload: CreatePostCommentPayload
 ): Promise<CreatePostCommentResponse> {
   const response = await forumFetch(`/posts/${postId}/comments`, {
     method: 'POST',
@@ -182,7 +207,10 @@ export async function createPostComment(
     let errorMessage = 'Failed to create comment';
 
     try {
-      const errorData = JSON.parse(errorText) as { detail?: string; message?: string };
+      const errorData = JSON.parse(errorText) as {
+        detail?: string;
+        message?: string;
+      };
       errorMessage = errorData.detail || errorData.message || errorMessage;
     } catch {
       if (errorText.trim().length > 0) {
@@ -196,7 +224,10 @@ export async function createPostComment(
   return (await response.json()) as CreatePostCommentResponse;
 }
 
-export async function voteOnPost(postId: number, value: 1 | -1): Promise<VotePostResponse> {
+export async function voteOnPost(
+  postId: number,
+  value: 1 | -1
+): Promise<VotePostResponse> {
   const response = await forumFetch(`/posts/${postId}/vote`, {
     method: 'POST',
     headers: {
@@ -211,29 +242,40 @@ export async function voteOnPost(postId: number, value: 1 | -1): Promise<VotePos
     throw new Error(errorData.detail || 'Failed to register vote');
   }
 
-  const data = (await response.json()) as Partial<VotePostResponse> & { upvotes?: number };
+  const data = (await response.json()) as Partial<VotePostResponse> & {
+    upvotes?: number;
+  };
   return {
     vote_score: data.vote_score ?? data.upvotes ?? 0,
     user_vote: (data.user_vote ?? value) as 1 | -1 | 0,
   };
 }
 
-export async function voteOnComment(postId: number, commentId: number, value: 1 | -1): Promise<VoteCommentResponse> {
-  const response = await forumFetch(`/posts/${postId}/comments/${commentId}/vote`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      // Include auth headers here if required (e.g., Bearer tokens)
-    },
-    body: JSON.stringify({ vote_value: value }),
-  });
+export async function voteOnComment(
+  postId: number,
+  commentId: number,
+  value: 1 | -1
+): Promise<VoteCommentResponse> {
+  const response = await forumFetch(
+    `/posts/${postId}/comments/${commentId}/vote`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Include auth headers here if required (e.g., Bearer tokens)
+      },
+      body: JSON.stringify({ vote_value: value }),
+    }
+  );
 
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.detail || 'Failed to register vote');
   }
 
-  const data = (await response.json()) as Partial<VoteCommentResponse> & { upvotes?: number };
+  const data = (await response.json()) as Partial<VoteCommentResponse> & {
+    upvotes?: number;
+  };
   return {
     vote_score: data.vote_score ?? data.upvotes ?? 0,
     user_vote: (data.user_vote ?? value) as 1 | -1 | 0,

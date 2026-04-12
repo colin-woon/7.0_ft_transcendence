@@ -29,7 +29,10 @@ export default function PostListControls({
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-3 flex flex-col gap-3">
       <div className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <Search
+          size={16}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+        />
         <input
           type="text"
           value={searchValue}

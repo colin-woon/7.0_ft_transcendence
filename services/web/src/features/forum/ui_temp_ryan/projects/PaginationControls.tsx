@@ -1,12 +1,15 @@
-import React from "react";
+import React from 'react';
 
-export function PaginationControls({currentPage, totalPages, onPageChange,}: {
+export function PaginationControls({
+  currentPage,
+  totalPages,
+  onPageChange,
+}: {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
 }) {
-  if (totalPages <= 1)
-    return null;
+  if (totalPages <= 1) return null;
 
   let startPage = Math.max(1, currentPage - 2);
   let endPage = Math.min(totalPages, startPage + 4);
@@ -14,7 +17,10 @@ export function PaginationControls({currentPage, totalPages, onPageChange,}: {
   if (endPage - startPage < 4) {
     startPage = Math.max(1, endPage - 4);
   }
-  const visiblePages = Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
+  const visiblePages = Array.from(
+    { length: endPage - startPage + 1 },
+    (_, i) => startPage + i
+  );
 
   return (
     <div className="flex w-full flex-wrap items-center justify-center gap-2">
@@ -34,8 +40,8 @@ export function PaginationControls({currentPage, totalPages, onPageChange,}: {
           onClick={() => onPageChange(page)}
           className={`rounded-md px-3 py-1.5 text-xs sm:text-sm border transition ${
             currentPage === page
-              ? "border-[#0f6f6b] bg-[#0f6f6b] text-white"
-              : "border-gray-200 bg-white text-slate-700 hover:border-[#8EE7E3]"
+              ? 'border-[#0f6f6b] bg-[#0f6f6b] text-white'
+              : 'border-gray-200 bg-white text-slate-700 hover:border-[#8EE7E3]'
           }`}
         >
           {page}

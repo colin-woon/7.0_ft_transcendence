@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { voteOnPost } from '@/features/forum/api/post';
-import { Smile, Frown } from 'lucide-react'
+import { Smile, Frown } from 'lucide-react';
 
 interface PostVoteButtonsProps {
   postId: number;
@@ -10,7 +10,11 @@ interface PostVoteButtonsProps {
   initialUserVote?: 1 | -1 | 0;
 }
 
-export default function PostVoteButtons({ postId, initialUpvotes, initialUserVote = 0 }: PostVoteButtonsProps) {
+export default function PostVoteButtons({
+  postId,
+  initialUpvotes,
+  initialUserVote = 0,
+}: PostVoteButtonsProps) {
   const [upvotes, setUpvotes] = useState(initialUpvotes);
   const [userVote, setUserVote] = useState<1 | -1 | 0>(initialUserVote);
   const [isVoting, setIsVoting] = useState(false);
@@ -29,14 +33,12 @@ export default function PostVoteButtons({ postId, initialUpvotes, initialUserVot
       const result = await voteOnPost(postId, value);
       setUpvotes(result.vote_score);
       setUserVote(result.user_vote);
-    }
-    catch (error) {
+    } catch (error) {
       setUpvotes(previousUpvotes);
       setUserVote(previousUserVote);
       console.error('Voting failed:', error);
       alert('Could not register your vote. Please try again.');
-    }
-    finally {
+    } finally {
       setIsVoting(false);
     }
   };
@@ -54,7 +56,7 @@ export default function PostVoteButtons({ postId, initialUpvotes, initialUserVot
       >
         <Smile size={16} />
       </button>
- 
+
       <span className="font-medium text-black">{upvotes}</span>
 
       <button

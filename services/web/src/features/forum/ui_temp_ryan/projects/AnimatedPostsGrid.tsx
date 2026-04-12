@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import React from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import React from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import type { ForumPost } from '../../models';
 import type { Project } from '../../models/projects';
-import { PostRow } from "../../ui/projects/posts";
+import { PostRow } from '../../ui/projects/posts';
 
 interface AnimatedPostsGridProps {
   pageKey: string;
@@ -15,7 +15,14 @@ interface AnimatedPostsGridProps {
   onEditPost?: (postId: number) => void;
 }
 
-export function AnimatedPostsGrid({ pageKey, posts, project, isBusy = false, onDeletePost, onEditPost }: AnimatedPostsGridProps) {
+export function AnimatedPostsGrid({
+  pageKey,
+  posts,
+  project,
+  isBusy = false,
+  onDeletePost,
+  onEditPost,
+}: AnimatedPostsGridProps) {
   const reduceMotion = useReducedMotion();
 
   return (
@@ -25,7 +32,7 @@ export function AnimatedPostsGrid({ pageKey, posts, project, isBusy = false, onD
         initial={reduceMotion ? { opacity: 1 } : { opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={reduceMotion ? { opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
         className="w-full grid grid-cols-1 gap-3"
       >
         {posts.map((post) => (

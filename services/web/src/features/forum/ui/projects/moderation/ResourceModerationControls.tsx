@@ -28,7 +28,10 @@ export default function ResourceModerationControls({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const canRender = useMemo(() => {
-    return (canEdit && typeof onEdit === 'function') || (canDelete && typeof onDelete === 'function');
+    return (
+      (canEdit && typeof onEdit === 'function') ||
+      (canDelete && typeof onDelete === 'function')
+    );
   }, [canDelete, canEdit, onDelete, onEdit]);
 
   if (!canRender) {
@@ -84,7 +87,8 @@ export default function ResourceModerationControls({
         isOpen={isConfirmOpen}
         title={`Delete ${resourceLabel}?`}
         description={
-          confirmDescription ?? `This action is permanent. The ${resourceLabel.toLowerCase()} will be removed immediately.`
+          confirmDescription ??
+          `This action is permanent. The ${resourceLabel.toLowerCase()} will be removed immediately.`
         }
         confirmLabel="Delete"
         isSubmitting={isDeleting}

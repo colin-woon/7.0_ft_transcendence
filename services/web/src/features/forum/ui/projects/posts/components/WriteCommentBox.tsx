@@ -11,7 +11,10 @@ interface WriteCommentBoxProps {
   onCommentCreated?: (comment: ForumComment) => void;
 }
 
-export default function WriteCommentBox({ postId, onCommentCreated }: WriteCommentBoxProps) {
+export default function WriteCommentBox({
+  postId,
+  onCommentCreated,
+}: WriteCommentBoxProps) {
   const router = useRouter();
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,8 +23,7 @@ export default function WriteCommentBox({ postId, onCommentCreated }: WriteComme
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!canSubmit)
-      return;
+    if (!canSubmit) return;
 
     setIsSubmitting(true);
     try {
@@ -36,26 +38,34 @@ export default function WriteCommentBox({ postId, onCommentCreated }: WriteComme
             onCommentCreated(newestComment);
           }
         } catch (fetchError) {
-          console.error('Failed to fetch latest comment after create:', fetchError);
+          console.error(
+            'Failed to fetch latest comment after create:',
+            fetchError
+          );
         }
       }
 
       setContent('');
       router.refresh();
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Failed to create comment:', error);
-      alert(error instanceof Error ? error.message : 'Could not create comment');
-    }
-    finally {
+      alert(
+        error instanceof Error ? error.message : 'Could not create comment'
+      );
+    } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-lg p-4">
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white border border-gray-200 rounded-lg p-4"
+    >
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-slate-900">Write a comment</h3>
+        <h3 className="text-sm font-semibold text-slate-900">
+          Write a comment
+        </h3>
       </div>
 
       <textarea

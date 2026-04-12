@@ -15,7 +15,11 @@ interface SubscriptionButtonProps {
   className?: string;
 }
 
-export default function SubscriptionButton({ projectId, compact = false, className = '' }: SubscriptionButtonProps) {
+export default function SubscriptionButton({
+  projectId,
+  compact = false,
+  className = '',
+}: SubscriptionButtonProps) {
   const router = useRouter();
   const [subscribed, setSubscribed] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -92,7 +96,11 @@ export default function SubscriptionButton({ projectId, compact = false, classNa
     ? 'bg-red-600 hover:bg-red-700'
     : 'bg-emerald-600 hover:bg-emerald-700';
 
-  const buttonLabel = isSubmitting ? 'Saving...' : subscribed ? 'Unsubscribe' : 'Subscribe';
+  const buttonLabel = isSubmitting
+    ? 'Saving...'
+    : subscribed
+      ? 'Unsubscribe'
+      : 'Subscribe';
 
   return (
     <button
@@ -104,7 +112,11 @@ export default function SubscriptionButton({ projectId, compact = false, classNa
       className={`${defaultClasses} ${stateClasses} ${className}`.trim()}
     >
       {compact ? (
-        subscribed ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />
+        subscribed ? (
+          <BellOff className="h-4 w-4" />
+        ) : (
+          <Bell className="h-4 w-4" />
+        )
       ) : (
         buttonLabel
       )}

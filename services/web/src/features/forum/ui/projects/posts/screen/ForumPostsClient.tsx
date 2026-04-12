@@ -21,7 +21,12 @@ interface ForumPostsClientProps {
   initialSearch?: string;
 }
 
-export default function ForumPostsClient({ initialPosts, fetchError, activeSort, initialSearch = '' }: ForumPostsClientProps) {
+export default function ForumPostsClient({
+  initialPosts,
+  fetchError,
+  activeSort,
+  initialSearch = '',
+}: ForumPostsClientProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -56,7 +61,9 @@ export default function ForumPostsClient({ initialPosts, fetchError, activeSort,
       }
 
       const nextParamsString = nextParams.toString();
-      const nextUrl = nextParamsString ? `${pathname}?${nextParamsString}` : pathname;
+      const nextUrl = nextParamsString
+        ? `${pathname}?${nextParamsString}`
+        : pathname;
 
       // Transition keeps typing responsive while route/server data updates.
       lastSubmittedQueryRef.current = trimmedSearch;
@@ -67,7 +74,7 @@ export default function ForumPostsClient({ initialPosts, fetchError, activeSort,
 
     return () => clearTimeout(timer);
   }, [searchQuery, searchParams, pathname, router, startTransition, urlQuery]);
- 
+
   const handleSortChange = (sort: ForumSort) => {
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.set('sort', sort);
@@ -75,7 +82,9 @@ export default function ForumPostsClient({ initialPosts, fetchError, activeSort,
   };
 
   const filteredPosts = useMemo(() => {
-    return initialPosts.filter((post) => activeCategory === 'All' || post.category === activeCategory);
+    return initialPosts.filter(
+      (post) => activeCategory === 'All' || post.category === activeCategory
+    );
   }, [initialPosts, activeCategory]);
 
   return (

@@ -103,8 +103,12 @@ export default function AdminProjectCreateButton() {
         createPortal(
           <div className="fixed inset-0 z-[1200] flex items-center justify-center overflow-y-auto bg-black/30 p-4 sm:p-6">
             <div className="w-full max-w-lg rounded-xl border-2 border-[#ffa200] bg-white p-5 shadow-xl">
-              <h3 className="text-base font-semibold text-slate-900">Create Project (Admin View)</h3>
-              <p className="mt-1 text-sm text-slate-600">Create a new forum project category for posts.</p>
+              <h3 className="text-base font-semibold text-slate-900">
+                Create Project (Admin View)
+              </h3>
+              <p className="mt-1 text-sm text-slate-600">
+                Create a new forum project category for posts.
+              </p>
 
               <div className="mt-4 grid min-w-0 gap-3">
                 <input

@@ -9,7 +9,10 @@ interface EditPostDialogProps {
   isSubmitting?: boolean;
   error?: string | null;
   onCancel: () => void;
-  onSubmit: (payload: { title: string; content: string }) => Promise<void> | void;
+  onSubmit: (payload: {
+    title: string;
+    content: string;
+  }) => Promise<void> | void;
 }
 
 export default function EditPostDialog({
@@ -53,7 +56,9 @@ export default function EditPostDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
         <h3 className="text-base font-semibold text-slate-900">Edit post</h3>
-        <p className="mt-1 text-sm text-slate-600">Update post title and content.</p>
+        <p className="mt-1 text-sm text-slate-600">
+          Update post title and content.
+        </p>
 
         <div className="mt-4 grid gap-3">
           <input
@@ -69,7 +74,9 @@ export default function EditPostDialog({
             placeholder="Post content"
             className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
           />
-          {(localError || error) && <p className="text-sm text-red-600">{localError ?? error}</p>}
+          {(localError || error) && (
+            <p className="text-sm text-red-600">{localError ?? error}</p>
+          )}
         </div>
 
         <div className="mt-4 flex items-center justify-end gap-2">

@@ -9,7 +9,12 @@ import CommentVoteButtons from '../components/CommentVoteButtons';
 import WriteCommentBox from '../components/WriteCommentBox';
 import { PaginationControls } from '@/features/forum/ui_temp_ryan/projects/PaginationControls';
 import ForumTrailButtons from '@/features/forum/ui/shared/ForumTrailButtons';
-import { deleteForumComment, deleteForumPost, updateForumComment, updateForumPost } from '@/features/forum/api/moderation';
+import {
+  deleteForumComment,
+  deleteForumPost,
+  updateForumComment,
+  updateForumPost,
+} from '@/features/forum/api/moderation';
 import {
   CommentModerationControls,
   EditCommentDialog,
@@ -26,7 +31,13 @@ interface PostDetailClientProps {
   projectDescription: string;
 }
 
-function BlinkingText({ text, className }: { text: string; className?: string }) {
+function BlinkingText({
+  text,
+  className,
+}: {
+  text: string;
+  className?: string;
+}) {
   const [showCursor, setShowCursor] = useState(true);
 
   useEffect(() => {
@@ -38,14 +49,27 @@ function BlinkingText({ text, className }: { text: string; className?: string })
   }, []);
 
   return (
-    <div className={`inline-block whitespace-pre-wrap tracking-tight ${className ?? ''}`}>
+    <div
+      className={`inline-block whitespace-pre-wrap tracking-tight ${className ?? ''}`}
+    >
       <span className="inline">{text}</span>
-      <span className={`ml-1 inline-block ${showCursor ? 'opacity-100' : 'opacity-0'}`}>_</span>
+      <span
+        className={`ml-1 inline-block ${showCursor ? 'opacity-100' : 'opacity-0'}`}
+      >
+        _
+      </span>
     </div>
   );
 }
 
-export default function PostDetailClient({ post, comments, projectId, projectName, projectSlug, projectDescription }: PostDetailClientProps) {
+export default function PostDetailClient({
+  post,
+  comments,
+  projectId,
+  projectName,
+  projectSlug,
+  projectDescription,
+}: PostDetailClientProps) {
   const router = useRouter();
   const [postState, setPostState] = useState(post);
   const [commentState, setCommentState] = useState(comments);
@@ -56,15 +80,19 @@ export default function PostDetailClient({ post, comments, projectId, projectNam
   const [editError, setEditError] = useState<string | null>(null);
   const COMMENTS_PER_PAGE = 6;
 
-  const totalCommentPages = Math.max(1, Math.ceil(commentState.length / COMMENTS_PER_PAGE));
+  const totalCommentPages = Math.max(
+    1,
+    Math.ceil(commentState.length / COMMENTS_PER_PAGE)
+  );
   const paginatedComments = commentState.slice(
     (currentCommentPage - 1) * COMMENTS_PER_PAGE,
-    currentCommentPage * COMMENTS_PER_PAGE,
+    currentCommentPage * COMMENTS_PER_PAGE
   );
 
   const editingComment =
     typeof editingCommentId === 'number'
-      ? commentState.find((comment) => comment.id === editingCommentId) ?? null
+      ? (commentState.find((comment) => comment.id === editingCommentId) ??
+        null)
       : null;
 
   useEffect(() => {
@@ -82,15 +110,24 @@ export default function PostDetailClient({ post, comments, projectId, projectNam
     }
   }, [currentCommentPage, totalCommentPages]);
 
-  const handleEditPost = async (payload: { title: string; content: string }) => {
+  const handleEditPost = async (payload: {
+    title: string;
+    content: string;
+  }) => {
     setIsBusy(true);
     setEditError(null);
     try {
       await updateForumPost(postState.id, payload);
-      setPostState((prev) => ({ ...prev, title: payload.title, content: payload.content }));
+      setPostState((prev) => ({
+        ...prev,
+        title: payload.title,
+        content: payload.content,
+      }));
       setIsEditPostOpen(false);
     } catch (error) {
-      setEditError(error instanceof Error ? error.message : 'Failed to update post');
+      setEditError(
+        error instanceof Error ? error.message : 'Failed to update post'
+      );
     } finally {
       setIsBusy(false);
     }
@@ -112,11 +149,17 @@ export default function PostDetailClient({ post, comments, projectId, projectNam
     try {
       await updateForumComment(postState.id, editingCommentId, payload);
       setCommentState((prev) =>
-        prev.map((comment) => (comment.id === editingCommentId ? { ...comment, content: payload.content } : comment)),
+        prev.map((comment) =>
+          comment.id === editingCommentId
+            ? { ...comment, content: payload.content }
+            : comment
+        )
       );
       setEditingCommentId(null);
     } catch (error) {
-      setEditError(error instanceof Error ? error.message : 'Failed to update comment');
+      setEditError(
+        error instanceof Error ? error.message : 'Failed to update comment'
+      );
     } finally {
       setIsBusy(false);
     }
@@ -124,8 +167,13 @@ export default function PostDetailClient({ post, comments, projectId, projectNam
 
   const handleDeleteComment = async (commentId: number) => {
     await deleteForumComment(postState.id, commentId);
-    setCommentState((prev) => prev.filter((comment) => comment.id !== commentId));
-    setPostState((prev) => ({ ...prev, comments: Math.max(0, prev.comments - 1) }));
+    setCommentState((prev) =>
+      prev.filter((comment) => comment.id !== commentId)
+    );
+    setPostState((prev) => ({
+      ...prev,
+      comments: Math.max(0, prev.comments - 1),
+    }));
   };
 
   const handleCommentCreated = (newComment: ForumComment) => {
@@ -154,19 +202,30 @@ export default function PostDetailClient({ post, comments, projectId, projectNam
                 <div className="mt-2 sm:mt-3">
                   <BlinkingText
                     className="text-xs sm:text-base leading-snug font-interface break-words line-clamp-2 sm:line-clamp-none"
-                    text={projectDescription || 'Share a question, project, or idea with the 42 community.'}
+                    text={
+                      projectDescription ||
+                      'Share a question, project, or idea with the 42 community.'
+                    }
                   />
                 </div>
                 <div className="mt-5 flex items-start gap-2">
-                  <AlertCircle size={14} className="text-amber-500 mt-0.5 flex-shrink-0" />
+                  <AlertCircle
+                    size={14}
+                    className="text-amber-500 mt-0.5 flex-shrink-0"
+                  />
                   <p className="text-s text-amber-700 leading-relaxed">
-                    Be Civil: Always be respectful, even when disagreeing. Attack the code, not the person.
+                    Be Civil: Always be respectful, even when disagreeing.
+                    Attack the code, not the person.
                   </p>
                 </div>
                 <div className="mt-1 flex items-start gap-2">
-                  <AlertCircle size={14} className="text-amber-500 mt-0.5 flex-shrink-0" />
+                  <AlertCircle
+                    size={14}
+                    className="text-amber-500 mt-0.5 flex-shrink-0"
+                  />
                   <p className="text-s text-amber-700 leading-relaxed">
-                    Stay On Topic: Ensure your posts and comments relate directly to the thread's subject matter.
+                    Stay On Topic: Ensure your posts and comments relate
+                    directly to the thread's subject matter.
                   </p>
                 </div>
               </div>
@@ -190,7 +249,11 @@ export default function PostDetailClient({ post, comments, projectId, projectNam
         {/* Post header */}
         <div className="bg-white border border-gray-200 rounded-lg p-6 mt-3 mb-3">
           <div className="flex gap-6 items-center">
-            <PostVoteButtons postId={post.id} initialUpvotes={post.upvotes} initialUserVote={post.userVote} />
+            <PostVoteButtons
+              postId={post.id}
+              initialUpvotes={post.upvotes}
+              initialUserVote={post.userVote}
+            />
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <span className="font-small text-sm">{postState.author}</span>
@@ -207,7 +270,9 @@ export default function PostDetailClient({ post, comments, projectId, projectNam
                 </div>
               </div>
 
-              <h1 className="text-xl font-semibold text-slate-900 mb-1">{postState.title}</h1>
+              <h1 className="text-xl font-semibold text-slate-900 mb-1">
+                {postState.title}
+              </h1>
 
               <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
                 <span>{postState.timestamp}</span>
@@ -221,8 +286,7 @@ export default function PostDetailClient({ post, comments, projectId, projectNam
                 </div>
               </div>
 
-              <div className="flex gap-6 text-sm text-gray-500">
-              </div>
+              <div className="flex gap-6 text-sm text-gray-500"></div>
               <div className="prose prose-sm max-w-none whitespace-pre-wrap break-words text-slate-900">
                 {postState.content}
               </div>
@@ -239,7 +303,9 @@ export default function PostDetailClient({ post, comments, projectId, projectNam
 
         {/* Comments section */}
         <div className="mb-6">
-          <h2 className="text-xl font-bold text-slate-900 mb-4">{commentState.length} Comments</h2>
+          <h2 className="text-xl font-bold text-slate-900 mb-4">
+            {commentState.length} Comments
+          </h2>
 
           {commentState.length === 0 ? (
             <div className="bg-white border border-gray-200 rounded-lg p-6 text-center text-gray-500">
@@ -251,7 +317,9 @@ export default function PostDetailClient({ post, comments, projectId, projectNam
                 <div
                   key={comment.id}
                   className={`bg-white border rounded-lg p-6 ${
-                    comment.isBestAnswer ? 'border-emerald-300 bg-emerald-50/40' : 'border-gray-200'
+                    comment.isBestAnswer
+                      ? 'border-emerald-300 bg-emerald-50/40'
+                      : 'border-gray-200'
                   }`}
                 >
                   <div className="flex gap-3">
@@ -272,21 +340,25 @@ export default function PostDetailClient({ post, comments, projectId, projectNam
                             Best answer
                           </span>
                         )}
-                        <span className="text-xs text-gray-500">{comment.timestamp}</span>
+                        <span className="text-xs text-gray-500">
+                          {comment.timestamp}
+                        </span>
                         <div className="ml-auto">
-                        <CommentModerationControls
-                          authorId={comment.authorId}
-                          isBusy={isBusy}
-                          onEdit={() => {
-                            setEditError(null);
-                            setEditingCommentId(comment.id);
-                          }}
-                          onDelete={() => handleDeleteComment(comment.id)}
-                        />
+                          <CommentModerationControls
+                            authorId={comment.authorId}
+                            isBusy={isBusy}
+                            onEdit={() => {
+                              setEditError(null);
+                              setEditingCommentId(comment.id);
+                            }}
+                            onDelete={() => handleDeleteComment(comment.id)}
+                          />
                         </div>
                       </div>
 
-                      <p className="text-sm text-slate-700 mb-2">{comment.content}</p>
+                      <p className="text-sm text-slate-700 mb-2">
+                        {comment.content}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -306,7 +378,10 @@ export default function PostDetailClient({ post, comments, projectId, projectNam
         </div>
 
         <div className="mb-2">
-          <WriteCommentBox postId={postState.id} onCommentCreated={handleCommentCreated} />
+          <WriteCommentBox
+            postId={postState.id}
+            onCommentCreated={handleCommentCreated}
+          />
         </div>
       </div>
 

@@ -8,7 +8,10 @@ interface AdminVisibilityGateProps {
   fallback?: ReactNode;
 }
 
-export default function AdminVisibilityGate({ children, fallback = null }: AdminVisibilityGateProps) {
+export default function AdminVisibilityGate({
+  children,
+  fallback = null,
+}: AdminVisibilityGateProps) {
   const { hasRole } = useAuth();
 
   if (!hasRole('ADMIN')) {

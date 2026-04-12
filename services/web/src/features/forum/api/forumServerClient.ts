@@ -6,7 +6,8 @@ type ForumFetchInit = RequestInit;
 
 function getForumApiBaseUrl(): string {
   const isDev = process.env.NODE_ENV === 'development';
-  const devGateway = process.env.DEV_GATEWAY_URL?.trim() || 'http://gateway-service:8080';
+  const devGateway =
+    process.env.DEV_GATEWAY_URL?.trim() || 'http://gateway-service:8080';
 
   let raw =
     process.env.GATEWAY_URL?.trim() ||
@@ -31,7 +32,10 @@ async function getCookieHeader(): Promise<string> {
     .join('; ');
 }
 
-export async function forumServerFetch(path: string, init: ForumFetchInit): Promise<Response> {
+export async function forumServerFetch(
+  path: string,
+  init: ForumFetchInit
+): Promise<Response> {
   const cookieHeader = await getCookieHeader();
   const headers = new Headers(init.headers);
 
@@ -45,7 +49,10 @@ export async function forumServerFetch(path: string, init: ForumFetchInit): Prom
   });
 }
 
-export async function forumServerFetchPublic(path: string, init: ForumFetchInit): Promise<Response> {
+export async function forumServerFetchPublic(
+  path: string,
+  init: ForumFetchInit
+): Promise<Response> {
   return fetch(`${getForumApiBaseUrl()}${path}`, {
     ...init,
   });

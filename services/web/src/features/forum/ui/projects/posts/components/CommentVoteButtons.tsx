@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { voteOnComment } from '@/features/forum/api/post';
-import { Smile, Frown } from 'lucide-react'
+import { Smile, Frown } from 'lucide-react';
 
 interface CommentVoteButtonsProps {
   postId: number;
@@ -11,7 +11,12 @@ interface CommentVoteButtonsProps {
   initialUserVote: 1 | -1 | 0;
 }
 
-export default function CommentVoteButtons({ postId, commentId, initialUpvotes, initialUserVote }: CommentVoteButtonsProps) {
+export default function CommentVoteButtons({
+  postId,
+  commentId,
+  initialUpvotes,
+  initialUserVote,
+}: CommentVoteButtonsProps) {
   // Use local state to allow for 'Optimistic UI' updates
   const [upvotes, setUpvotes] = useState(initialUpvotes);
   const [userVote, setUserVote] = useState<1 | -1 | 0>(initialUserVote);
@@ -22,8 +27,7 @@ export default function CommentVoteButtons({ postId, commentId, initialUpvotes, 
     e.preventDefault();
     e.stopPropagation();
 
-    if (isVoting)
-      return;
+    if (isVoting) return;
 
     const previousUpvotes = upvotes;
     const previousUserVote = userVote;
@@ -33,14 +37,12 @@ export default function CommentVoteButtons({ postId, commentId, initialUpvotes, 
       const result = await voteOnComment(postId, commentId, value);
       setUpvotes(result.vote_score);
       setUserVote(result.user_vote);
-    }
-    catch (error) {
+    } catch (error) {
       setUpvotes(previousUpvotes);
       setUserVote(previousUserVote);
       console.error('Voting failed:', error);
       alert('Could not register your vote. Please try again.');
-    }
-    finally {
+    } finally {
       setIsVoting(false);
     }
   };
@@ -56,9 +58,9 @@ export default function CommentVoteButtons({ postId, commentId, initialUpvotes, 
         }`}
         aria-label="Upvote comment"
       >
-        <Smile size={16}/>
+        <Smile size={16} />
       </button>
- 
+
       <span className="font-medium text-black">{upvotes}</span>
 
       <button
@@ -70,7 +72,7 @@ export default function CommentVoteButtons({ postId, commentId, initialUpvotes, 
         }`}
         aria-label="Downvote comment"
       >
-        <Frown size={16}/>
+        <Frown size={16} />
       </button>
     </div>
   );

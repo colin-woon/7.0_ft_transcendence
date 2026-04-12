@@ -96,6 +96,13 @@ export interface ForumComment {
   isBestAnswer: boolean;
 }
 
-export const forumCategories = ['All', 'minishell', 'inception', 'philo', 'Tutorial', 'Career'] as const;
+export const forumCategories = [
+  'All',
+  'minishell',
+  'inception',
+  'philo',
+  'Tutorial',
+  'Career',
+] as const;
 
 export const forumSortOptions: readonly ForumSort[] = ['New', 'Top'];

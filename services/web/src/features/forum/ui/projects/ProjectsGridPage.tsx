@@ -1,50 +1,65 @@
-"use client";
-import React, { useEffect, useState } from "react";
-import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Search, Star, Users, Clock, ChevronRight, Zap, Globe, MessageSquare } from "lucide-react";
-import type { Project, Difficulty } from "../../models/projects";
+'use client';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import {
+  Search,
+  Star,
+  Users,
+  Clock,
+  ChevronRight,
+  Zap,
+  Globe,
+  MessageSquare,
+} from 'lucide-react';
+import type { Project, Difficulty } from '../../models/projects';
 import { AdminProjectCreateButton } from '@/features/forum/ui/projects/moderation';
 
 const difficultyColor: Record<Difficulty, string> = {
-  Beginner: "bg-green-100 text-green-700",
-  Intermediate: "bg-yellow-100 text-yellow-700",
-  Advanced: "bg-orange-100 text-orange-700",
-  Expert: "bg-red-100 text-red-700",
+  Beginner: 'bg-green-100 text-green-700',
+  Intermediate: 'bg-yellow-100 text-yellow-700',
+  Advanced: 'bg-orange-100 text-orange-700',
+  Expert: 'bg-red-100 text-red-700',
 };
 
-type ProjectFilter = "subscribed" | "all" | Difficulty;
+type ProjectFilter = 'subscribed' | 'all' | Difficulty;
 
-export default function ProjectsPage({projects, subscribedProjectIds, initialSearch = "", }: {
+export default function ProjectsPage({
+  projects,
+  subscribedProjectIds,
+  initialSearch = '',
+}: {
   projects: Project[];
   subscribedProjectIds: number[];
   initialSearch?: string;
 }) {
-  const getQuestionCount = (project: Project) => project.postCount ?? project.posts.length;
+  const getQuestionCount = (project: Project) =>
+    project.postCount ?? project.posts.length;
 
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(initialSearch);
-  const rawFilter = searchParams.get("filter");
+  const rawFilter = searchParams.get('filter');
   const initialFilter: ProjectFilter =
-    rawFilter === "all" ||
-    rawFilter === "subscribed" ||
-    rawFilter === "Beginner" ||
-    rawFilter === "Intermediate" ||
-    rawFilter === "Advanced" ||
-    rawFilter === "Expert"
+    rawFilter === 'all' ||
+    rawFilter === 'subscribed' ||
+    rawFilter === 'Beginner' ||
+    rawFilter === 'Intermediate' ||
+    rawFilter === 'Advanced' ||
+    rawFilter === 'Expert'
       ? rawFilter
-      : "subscribed";
-  const [activeFilter, setActiveFilter] = useState<ProjectFilter>(initialFilter);
+      : 'subscribed';
+  const [activeFilter, setActiveFilter] =
+    useState<ProjectFilter>(initialFilter);
 
   const filters: Array<{ key: ProjectFilter; label: string }> = [
-    { key: "subscribed", label: "Subscribed" },
-    { key: "all", label: "All Projects" },
-    { key: "Beginner", label: "Beginner" },
-    { key: "Intermediate", label: "Intermediate" },
-    { key: "Advanced", label: "Advanced" },
-    { key: "Expert", label: "Expert" },
+    { key: 'subscribed', label: 'Subscribed' },
+    { key: 'all', label: 'All Projects' },
+    { key: 'Beginner', label: 'Beginner' },
+    { key: 'Intermediate', label: 'Intermediate' },
+    { key: 'Advanced', label: 'Advanced' },
+    { key: 'Expert', label: 'Expert' },
   ];
 
   useEffect(() => {
@@ -52,16 +67,16 @@ export default function ProjectsPage({projects, subscribedProjectIds, initialSea
   }, [initialSearch]);
 
   useEffect(() => {
-    const nextRaw = searchParams.get("filter");
+    const nextRaw = searchParams.get('filter');
     const nextFilter: ProjectFilter =
-      nextRaw === "all" ||
-      nextRaw === "subscribed" ||
-      nextRaw === "Beginner" ||
-      nextRaw === "Intermediate" ||
-      nextRaw === "Advanced" ||
-      nextRaw === "Expert"
+      nextRaw === 'all' ||
+      nextRaw === 'subscribed' ||
+      nextRaw === 'Beginner' ||
+      nextRaw === 'Intermediate' ||
+      nextRaw === 'Advanced' ||
+      nextRaw === 'Expert'
         ? nextRaw
-        : "subscribed";
+        : 'subscribed';
     setActiveFilter(nextFilter);
   }, [searchParams]);
 
@@ -79,15 +94,15 @@ export default function ProjectsPage({projects, subscribedProjectIds, initialSea
       const trimmedSearch = search.trim();
 
       if (trimmedSearch.length >= 2) {
-        nextParams.set("q", trimmedSearch);
+        nextParams.set('q', trimmedSearch);
       } else {
-        nextParams.delete("q");
+        nextParams.delete('q');
       }
 
-      if (activeFilter === "subscribed") {
-        nextParams.delete("filter");
+      if (activeFilter === 'subscribed') {
+        nextParams.delete('filter');
       } else {
-        nextParams.set("filter", activeFilter);
+        nextParams.set('filter', activeFilter);
       }
 
       const currentParams = searchParams.toString();
@@ -97,7 +112,9 @@ export default function ProjectsPage({projects, subscribedProjectIds, initialSea
         return;
       }
 
-      const nextUrl = nextParamsString ? `${pathname}?${nextParamsString}` : pathname;
+      const nextUrl = nextParamsString
+        ? `${pathname}?${nextParamsString}`
+        : pathname;
       router.replace(nextUrl);
     }, 600);
 
@@ -106,10 +123,10 @@ export default function ProjectsPage({projects, subscribedProjectIds, initialSea
 
   const subscribedIdSet = new Set(subscribedProjectIds);
   const filtered = projects.filter((project) => {
-    if (activeFilter === "subscribed") {
+    if (activeFilter === 'subscribed') {
       return subscribedIdSet.has(project.id);
     }
-    if (activeFilter === "all") {
+    if (activeFilter === 'all') {
       return true;
     }
     return project.difficulty === activeFilter;
@@ -120,11 +137,16 @@ export default function ProjectsPage({projects, subscribedProjectIds, initialSea
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-5">
         <h1 className="text-2xl font-bold text-slate-800 mb-1">42 Projects</h1>
-        <p className="text-sm text-slate-500">Explore the full curriculum — from C basics to full-stack web apps.</p>
+        <p className="text-sm text-slate-500">
+          Explore the full curriculum — from C basics to full-stack web apps.
+        </p>
 
         <div className="mt-4 flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1 max-w-md">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            />
             <input
               type="text"
               placeholder="Search projects..."
@@ -140,8 +162,8 @@ export default function ProjectsPage({projects, subscribedProjectIds, initialSea
                 onClick={() => setActiveFilter(f.key)}
                 className={`z-0 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                   activeFilter === f.key
-                    ? "bg-[#0f6f6b] text-white"
-                    : "bg-gray-100 text-slate-600 hover:bg-[#8EE7E3]/30"
+                    ? 'bg-[#0f6f6b] text-white'
+                    : 'bg-gray-100 text-slate-600 hover:bg-[#8EE7E3]/30'
                 }`}
               >
                 {f.label}
@@ -156,7 +178,9 @@ export default function ProjectsPage({projects, subscribedProjectIds, initialSea
 
       {/* Grid */}
       <div className="p-6">
-        <p className="text-xs text-slate-400 mb-4">{filtered.length} project{filtered.length !== 1 ? "s" : ""}</p>
+        <p className="text-xs text-slate-400 mb-4">
+          {filtered.length} project{filtered.length !== 1 ? 's' : ''}
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map((project) => (
             <Link
@@ -165,7 +189,9 @@ export default function ProjectsPage({projects, subscribedProjectIds, initialSea
               className="bg-white rounded-xl border border-gray-200 hover:border-[#8EE7E3] hover:shadow-md transition-all duration-200 overflow-hidden group cursor-pointer flex flex-col"
             >
               {/* Gradient strip */}
-              <div className={`h-1.5 w-full bg-gradient-to-r ${project.color}`} />
+              <div
+                className={`h-1.5 w-full bg-gradient-to-r ${project.color}`}
+              />
 
               <div className="p-4 flex flex-col flex-1">
                 {/* Icon + name */}
@@ -176,7 +202,9 @@ export default function ProjectsPage({projects, subscribedProjectIds, initialSea
                       <h3 className="font-semibold text-slate-800 text-sm group-hover:text-[#0f6f6b] transition-colors">
                         {project.name}
                       </h3>
-                      <span className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded-full mt-0.5`}>
+                      <span
+                        className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded-full mt-0.5`}
+                      >
                         {project.difficulty}
                       </span>
                     </div>
@@ -185,12 +213,17 @@ export default function ProjectsPage({projects, subscribedProjectIds, initialSea
                 </div>
 
                 {/* Description */}
-                <p className="text-xs text-slate-500 leading-relaxed mb-3 flex-1 line-clamp-3">{project.description}</p>
+                <p className="text-xs text-slate-500 leading-relaxed mb-3 flex-1 line-clamp-3">
+                  {project.description}
+                </p>
 
                 {/* Tags */}
                 <div className="flex flex-wrap gap-1 mb-3">
                   {project.tags.map((tag) => (
-                    <span key={tag} className="text-[10px] px-2 py-0.5 bg-gray-100 text-slate-500 rounded-full">
+                    <span
+                      key={tag}
+                      className="text-[10px] px-2 py-0.5 bg-gray-100 text-slate-500 rounded-full"
+                    >
                       {tag}
                     </span>
                   ))}
@@ -200,7 +233,9 @@ export default function ProjectsPage({projects, subscribedProjectIds, initialSea
                 <div className="flex items-center justify-between text-[11px] text-slate-400 pt-3 border-t border-gray-100">
                   <span className="flex items-center gap-1">
                     <Zap size={11} className="text-amber-400" />
-                    <span className="font-medium text-slate-600">{project.xp} XP</span>
+                    <span className="font-medium text-slate-600">
+                      {project.xp} XP
+                    </span>
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock size={11} />
@@ -221,7 +256,8 @@ export default function ProjectsPage({projects, subscribedProjectIds, initialSea
                     </span>
                     <span className="flex items-center gap-1 text-[10px] text-[#0f6f6b] font-medium">
                       <MessageSquare size={10} />
-                      {getQuestionCount(project)} question{getQuestionCount(project) !== 1 ? "s" : ""}
+                      {getQuestionCount(project)} question
+                      {getQuestionCount(project) !== 1 ? 's' : ''}
                     </span>
                   </div>
                   <span className="text-[#0f6f6b] opacity-0 group-hover:opacity-100 transition-opacity">
