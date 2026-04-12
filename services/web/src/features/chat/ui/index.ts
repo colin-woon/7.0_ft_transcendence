@@ -1,4 +1,5 @@
 export { AvatarWithStatus } from "./friends/AvatarWithStatus";
+export { FriendCard } from "./friends/FriendCard";
 
 export { MessageInput } from "./messages/MessageInput";
 export { MessageArea } from "./messages/MessageArea";
