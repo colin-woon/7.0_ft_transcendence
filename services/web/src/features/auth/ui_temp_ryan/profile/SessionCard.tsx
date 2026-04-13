@@ -3,6 +3,7 @@
 
 import { Laptop, LogOut, Smartphone } from 'lucide-react'
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { motion } from 'motion/react'
 import type { SessionInfo } from '@/features/auth/api/authService'
 
 interface SessionCardProps {
@@ -41,22 +42,25 @@ function SessionRow({
   }, [open])
 
   return (
-    <div ref={rowRef} className="relative overflow-hidden rounded-xl border border-slate-100">
+    <div ref={rowRef} className="relative overflow-hidden rounded-xl border border-slate-100 bg-white transform-gpu">
       {/* Logout button revealed behind */}
-      <button
+      <motion.button
+        animate={{ opacity: open ? 1 : 0 }}
+        transition={{ duration: 0.2 }}
         onClick={() => onLogout(session.sessionId)}
         className="absolute inset-y-0 right-0 flex flex-col items-center justify-center gap-1 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-[11px] font-medium rounded-r-xl transition-colors"
-        style={{ width: '88px' }}
+        style={{ width: '88px', pointerEvents: open ? 'auto' : 'none' }}
       >
         <LogOut size={20} />
         Log out
-      </button>
+      </motion.button>
 
       {/* Sliding content */}
-      <div
+      <motion.div
+        animate={{ x: open ? -88 : 0 }}
+        transition={{ type: "spring", bounce: 0, duration: 0.3 }}
         onClick={() => setOpen((prev) => !prev)}
-        className="relative z-10 flex flex-col gap-2 bg-white px-3 py-3 cursor-pointer sm:flex-row sm:items-center sm:justify-between transition-transform duration-[280ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
-        style={{ transform: open ? 'translateX(-88px)' : 'translateX(0)' }}
+        className="relative z-10 flex flex-col gap-2 bg-white px-3 py-3 cursor-pointer sm:flex-row sm:items-center sm:justify-between shadow-sm"
       >
         <div className="min-w-0">
           <p className="text-sm font-medium text-slate-800">
@@ -80,7 +84,7 @@ function SessionRow({
           )}
           <span>{session.deviceType ?? 'Unknown device'}</span>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }

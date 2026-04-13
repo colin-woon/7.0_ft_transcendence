@@ -1,5 +1,6 @@
 'use client'
 
+import { motion } from 'motion/react'
 import { Calendar, Clock3, Laptop, MapPin, Shield, Smartphone } from 'lucide-react'
 import type { SessionInfo, User } from '@/features/auth/api/authService'
 import ProfileCard from './ProfileCard2'
@@ -101,26 +102,38 @@ function formatDate(value: string) {
 export default function TmpProfilePage() {
   const isOwnProfile = true; // For demo purposes, we treat this as the user's own profile. Adjust as needed.
   return (
-   <div className="h-screen bg-gray-50 font-sans mt-16 overflow-y-auto overflow-x-hidden">
+   <motion.div 
+     initial={{ filter: 'blur(10px)', opacity: 0 }}
+     animate={{ filter: 'blur(0px)', opacity: 1 }}
+     transition={{ duration: 0.6, ease: 'easeOut' }}
+     className="h-screen bg-gray-50 font-sans mt-16 overflow-y-auto overflow-x-hidden"
+   >
         <div className="w-full max-w-6xl flex flex-col gap-5 mx-auto pb-40">
 
-        <ProfileCard user={mockUser} profile={profileCardData} initials={initials} isOwnProfile={isOwnProfile}/>
-
+        <motion.div whileHover={{ y: -2, scale: 1.002 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
+          <ProfileCard user={mockUser} profile={profileCardData} initials={initials} isOwnProfile={isOwnProfile}/>
+        </motion.div>
 
         {/* Recent Projects: full width, classic design */}
-        <ProfileProjectCard projects={mockProjects} />
+        <motion.div whileHover={{ y: -2, scale: 1.002 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
+          <ProfileProjectCard projects={mockProjects} />
+        </motion.div>
 
         {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 w-full">
           <ProfileSearchCard isOwnProfile={isOwnProfile} />
           <LinkAccountCard isOwnProfile={isOwnProfile} />
           <PasswordCard isOwnProfile={isOwnProfile} hasPassword={mockUser.hasPassword} />
         </div> */}
+        <motion.div whileHover={{ y: -2, scale: 1.002 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
           <SessionCard sessions={mockSessions} isOwnProfile={isOwnProfile} />
+        </motion.div>
 
         {mockUser.role === 'ADMIN' && (
-          <AdminCard isOwnProfile={isOwnProfile}/>
+          <motion.div whileHover={{ y: -2, scale: 1.002 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
+            <AdminCard isOwnProfile={isOwnProfile}/>
+          </motion.div>
         )}
       </div>
-    </div>
+    </motion.div>
   )
 }

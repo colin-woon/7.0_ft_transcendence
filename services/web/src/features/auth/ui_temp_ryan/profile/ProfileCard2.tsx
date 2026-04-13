@@ -47,7 +47,7 @@ export default function ProfileCard2({ user, profile, initials, isOwnProfile }: 
   };
 
 	return (
-		<div className="card card-border bg-base-100 w-full rounded-2xl border border-gray-100 shadow-sm overflow-visible pb-5">
+		<div className="card card-border bg-white/40 backdrop-blur-md w-full rounded-2xl border border-white/50 shadow-lg overflow-visible pb-5">
 			{/* Avatar */}
 			<figure className="h-20 bg-gradient-to-r from-[#157169] via-[#15736b] to-[#115e59] relative rounded-t-2xl w-full overflow-visible">
           <div className="absolute -bottom-10 left-6">
