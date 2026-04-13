@@ -14,8 +14,14 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-func (s *Server) SendFriendRequest(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int) {
+func (s *Server) SendFriendRequest(w http.ResponseWriter, r *http.Request, receiverId int) {
 	ctx := r.Context()
+
+	requesterId, ok := r.Context().Value(userIDKey).(int)
+	if !ok {
+		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
+		return
+	}
 
 	_, err := s.db.GetQueries().CreateFriendship(ctx, database.CreateFriendshipParams{
 		RequesterID: int32(requesterId),
@@ -33,8 +39,14 @@ func (s *Server) SendFriendRequest(w http.ResponseWriter, r *http.Request, reque
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int, params api.UpdateFriendshipStatusParams) {
+func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, receiverId int, params api.UpdateFriendshipStatusParams) {
 	ctx := r.Context()
+
+	requesterId, ok := r.Context().Value(userIDKey).(int)
+	if !ok {
+		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
+		return
+	}
 
 	if !params.Status.Valid() {
 		http.Error(w, "Invalid status value", http.StatusBadRequest)
@@ -159,7 +171,7 @@ func (s *Server) broadcastStatusToFriends(userId int, isOnline bool) {
 	s.sseHub.BroadcastToUsers(onlineFriends, string(jsonData))
 }
 
-func (s *Server) GetFriendList(w http.ResponseWriter, r *http.Request, tempUserId int) {
+func (s *Server) GetFriendList(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	userId, ok := r.Context().Value(userIDKey).(int)
@@ -213,10 +225,16 @@ func (s *Server) GetFriendList(w http.ResponseWriter, r *http.Request, tempUserI
 	json.NewEncoder(w).Encode(response)
 }
 
-func (s *Server) GetPendingFriendRequests(w http.ResponseWriter, r *http.Request, tempUserId int) {
+func (s *Server) GetPendingFriendRequests(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	rows, err := s.db.GetQueries().GetPendingFriendRequests(ctx, int32(tempUserId))
+	userId, ok := r.Context().Value(userIDKey).(int)
+	if !ok {
+		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
+		return
+	}
+
+	rows, err := s.db.GetQueries().GetPendingFriendRequests(ctx, int32(userId))
 	if err != nil {
 		http.Error(w, "Failed to retrieve pending friend requests", http.StatusInternalServerError)
 		return

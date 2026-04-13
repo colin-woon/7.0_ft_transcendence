@@ -353,72 +353,72 @@ func (t *StreamEvent_Payload) UnmarshalJSON(b []byte) error {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Send a friend request
-	// (POST /friendship/{requesterId}/{receiverId})
-	SendFriendRequest(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int)
-	// Update friendship status
-	// (PATCH /friendship/{requesterId}/{receiverId}/update)
-	UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int, params UpdateFriendshipStatusParams)
 	// Get friend list for a user with chat ID references
-	// (GET /friendship/{tempUserId})
-	GetFriendList(w http.ResponseWriter, r *http.Request, tempUserId int)
+	// (GET /friendship)
+	GetFriendList(w http.ResponseWriter, r *http.Request)
 	// Get incoming pending friend requests for a user
-	// (GET /friendship/{tempUserId}/pending)
-	GetPendingFriendRequests(w http.ResponseWriter, r *http.Request, tempUserId int)
+	// (GET /friendship/pending)
+	GetPendingFriendRequests(w http.ResponseWriter, r *http.Request)
+	// Send a friend request
+	// (POST /friendship/{receiverId})
+	SendFriendRequest(w http.ResponseWriter, r *http.Request, receiverId int)
+	// Update friendship status
+	// (PATCH /friendship/{receiverId}/update)
+	UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, receiverId int, params UpdateFriendshipStatusParams)
 	// Create a new group chat
-	// (POST /message/group/create/{tempUserId})
-	CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUserId int)
+	// (POST /message/group/create)
+	CreateGroupChat(w http.ResponseWriter, r *http.Request)
 	// Get chat history for a specific chat
 	// (GET /message/history/{chatId})
 	GetMessageHistory(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID)
 	// Get all chats (direct and group) for a user's inbox
-	// (GET /message/inbox/{tempUserId})
-	GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId int)
+	// (GET /message/inbox)
+	GetUserInbox(w http.ResponseWriter, r *http.Request)
 	// Update the last read message for a user in a chat
-	// (PATCH /message/read/{chatId}/{tempUserId})
-	UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempUserId int)
+	// (PATCH /message/read/{chatId})
+	UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID)
 	// Opens an SSE connection for real-time functionalities
-	// (GET /message/stream/{tempUserId})
-	GetMessageStream(w http.ResponseWriter, r *http.Request, tempUserId int)
+	// (GET /message/stream)
+	GetMessageStream(w http.ResponseWriter, r *http.Request)
 	// Send a typing indicator event
-	// (POST /message/typing/{chatId}/{tempSenderId})
-	SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempSenderId int)
+	// (POST /message/typing/{chatId})
+	SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID)
 	// Send a chat message
-	// (POST /message/{chatId}/{tempSenderId})
-	SendMessage(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempSenderId int)
+	// (POST /message/{chatId})
+	SendMessage(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
 
-// Send a friend request
-// (POST /friendship/{requesterId}/{receiverId})
-func (_ Unimplemented) SendFriendRequest(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Update friendship status
-// (PATCH /friendship/{requesterId}/{receiverId}/update)
-func (_ Unimplemented) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, requesterId int, receiverId int, params UpdateFriendshipStatusParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
 // Get friend list for a user with chat ID references
-// (GET /friendship/{tempUserId})
-func (_ Unimplemented) GetFriendList(w http.ResponseWriter, r *http.Request, tempUserId int) {
+// (GET /friendship)
+func (_ Unimplemented) GetFriendList(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get incoming pending friend requests for a user
-// (GET /friendship/{tempUserId}/pending)
-func (_ Unimplemented) GetPendingFriendRequests(w http.ResponseWriter, r *http.Request, tempUserId int) {
+// (GET /friendship/pending)
+func (_ Unimplemented) GetPendingFriendRequests(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Send a friend request
+// (POST /friendship/{receiverId})
+func (_ Unimplemented) SendFriendRequest(w http.ResponseWriter, r *http.Request, receiverId int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update friendship status
+// (PATCH /friendship/{receiverId}/update)
+func (_ Unimplemented) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, receiverId int, params UpdateFriendshipStatusParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Create a new group chat
-// (POST /message/group/create/{tempUserId})
-func (_ Unimplemented) CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUserId int) {
+// (POST /message/group/create)
+func (_ Unimplemented) CreateGroupChat(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -429,32 +429,32 @@ func (_ Unimplemented) GetMessageHistory(w http.ResponseWriter, r *http.Request,
 }
 
 // Get all chats (direct and group) for a user's inbox
-// (GET /message/inbox/{tempUserId})
-func (_ Unimplemented) GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId int) {
+// (GET /message/inbox)
+func (_ Unimplemented) GetUserInbox(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Update the last read message for a user in a chat
-// (PATCH /message/read/{chatId}/{tempUserId})
-func (_ Unimplemented) UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempUserId int) {
+// (PATCH /message/read/{chatId})
+func (_ Unimplemented) UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Opens an SSE connection for real-time functionalities
-// (GET /message/stream/{tempUserId})
-func (_ Unimplemented) GetMessageStream(w http.ResponseWriter, r *http.Request, tempUserId int) {
+// (GET /message/stream)
+func (_ Unimplemented) GetMessageStream(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Send a typing indicator event
-// (POST /message/typing/{chatId}/{tempSenderId})
-func (_ Unimplemented) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempSenderId int) {
+// (POST /message/typing/{chatId})
+func (_ Unimplemented) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Send a chat message
-// (POST /message/{chatId}/{tempSenderId})
-func (_ Unimplemented) SendMessage(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempSenderId int) {
+// (POST /message/{chatId})
+func (_ Unimplemented) SendMessage(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -467,19 +467,50 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
+// GetFriendList operation middleware
+func (siw *ServerInterfaceWrapper) GetFriendList(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetFriendList(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPendingFriendRequests operation middleware
+func (siw *ServerInterfaceWrapper) GetPendingFriendRequests(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPendingFriendRequests(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SendFriendRequest operation middleware
 func (siw *ServerInterfaceWrapper) SendFriendRequest(w http.ResponseWriter, r *http.Request) {
 
 	var err error
-
-	// ------------- Path parameter "requesterId" -------------
-	var requesterId int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "requesterId", chi.URLParam(r, "requesterId"), &requesterId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requesterId", Err: err})
-		return
-	}
 
 	// ------------- Path parameter "receiverId" -------------
 	var receiverId int
@@ -497,7 +528,7 @@ func (siw *ServerInterfaceWrapper) SendFriendRequest(w http.ResponseWriter, r *h
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.SendFriendRequest(w, r, requesterId, receiverId)
+		siw.Handler.SendFriendRequest(w, r, receiverId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -511,15 +542,6 @@ func (siw *ServerInterfaceWrapper) SendFriendRequest(w http.ResponseWriter, r *h
 func (siw *ServerInterfaceWrapper) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request) {
 
 	var err error
-
-	// ------------- Path parameter "requesterId" -------------
-	var requesterId int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "requesterId", chi.URLParam(r, "requesterId"), &requesterId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requesterId", Err: err})
-		return
-	}
 
 	// ------------- Path parameter "receiverId" -------------
 	var receiverId int
@@ -555,69 +577,7 @@ func (siw *ServerInterfaceWrapper) UpdateFriendshipStatus(w http.ResponseWriter,
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateFriendshipStatus(w, r, requesterId, receiverId, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GetFriendList operation middleware
-func (siw *ServerInterfaceWrapper) GetFriendList(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "tempUserId" -------------
-	var tempUserId int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "tempUserId", chi.URLParam(r, "tempUserId"), &tempUserId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetFriendList(w, r, tempUserId)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GetPendingFriendRequests operation middleware
-func (siw *ServerInterfaceWrapper) GetPendingFriendRequests(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "tempUserId" -------------
-	var tempUserId int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "tempUserId", chi.URLParam(r, "tempUserId"), &tempUserId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetPendingFriendRequests(w, r, tempUserId)
+		siw.Handler.UpdateFriendshipStatus(w, r, receiverId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -630,17 +590,6 @@ func (siw *ServerInterfaceWrapper) GetPendingFriendRequests(w http.ResponseWrite
 // CreateGroupChat operation middleware
 func (siw *ServerInterfaceWrapper) CreateGroupChat(w http.ResponseWriter, r *http.Request) {
 
-	var err error
-
-	// ------------- Path parameter "tempUserId" -------------
-	var tempUserId int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "tempUserId", chi.URLParam(r, "tempUserId"), &tempUserId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
-		return
-	}
-
 	ctx := r.Context()
 
 	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
@@ -648,7 +597,7 @@ func (siw *ServerInterfaceWrapper) CreateGroupChat(w http.ResponseWriter, r *htt
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateGroupChat(w, r, tempUserId)
+		siw.Handler.CreateGroupChat(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -692,17 +641,6 @@ func (siw *ServerInterfaceWrapper) GetMessageHistory(w http.ResponseWriter, r *h
 // GetUserInbox operation middleware
 func (siw *ServerInterfaceWrapper) GetUserInbox(w http.ResponseWriter, r *http.Request) {
 
-	var err error
-
-	// ------------- Path parameter "tempUserId" -------------
-	var tempUserId int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "tempUserId", chi.URLParam(r, "tempUserId"), &tempUserId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
-		return
-	}
-
 	ctx := r.Context()
 
 	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
@@ -710,7 +648,7 @@ func (siw *ServerInterfaceWrapper) GetUserInbox(w http.ResponseWriter, r *http.R
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetUserInbox(w, r, tempUserId)
+		siw.Handler.GetUserInbox(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -734,15 +672,6 @@ func (siw *ServerInterfaceWrapper) UpdateReadReceipt(w http.ResponseWriter, r *h
 		return
 	}
 
-	// ------------- Path parameter "tempUserId" -------------
-	var tempUserId int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "tempUserId", chi.URLParam(r, "tempUserId"), &tempUserId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
-		return
-	}
-
 	ctx := r.Context()
 
 	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
@@ -750,7 +679,7 @@ func (siw *ServerInterfaceWrapper) UpdateReadReceipt(w http.ResponseWriter, r *h
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateReadReceipt(w, r, chatId, tempUserId)
+		siw.Handler.UpdateReadReceipt(w, r, chatId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -763,17 +692,6 @@ func (siw *ServerInterfaceWrapper) UpdateReadReceipt(w http.ResponseWriter, r *h
 // GetMessageStream operation middleware
 func (siw *ServerInterfaceWrapper) GetMessageStream(w http.ResponseWriter, r *http.Request) {
 
-	var err error
-
-	// ------------- Path parameter "tempUserId" -------------
-	var tempUserId int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "tempUserId", chi.URLParam(r, "tempUserId"), &tempUserId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
-		return
-	}
-
 	ctx := r.Context()
 
 	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
@@ -781,7 +699,7 @@ func (siw *ServerInterfaceWrapper) GetMessageStream(w http.ResponseWriter, r *ht
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetMessageStream(w, r, tempUserId)
+		siw.Handler.GetMessageStream(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -805,15 +723,6 @@ func (siw *ServerInterfaceWrapper) SendTypingEvent(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// ------------- Path parameter "tempSenderId" -------------
-	var tempSenderId int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "tempSenderId", chi.URLParam(r, "tempSenderId"), &tempSenderId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempSenderId", Err: err})
-		return
-	}
-
 	ctx := r.Context()
 
 	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
@@ -821,7 +730,7 @@ func (siw *ServerInterfaceWrapper) SendTypingEvent(w http.ResponseWriter, r *htt
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.SendTypingEvent(w, r, chatId, tempSenderId)
+		siw.Handler.SendTypingEvent(w, r, chatId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -845,15 +754,6 @@ func (siw *ServerInterfaceWrapper) SendMessage(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// ------------- Path parameter "tempSenderId" -------------
-	var tempSenderId int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "tempSenderId", chi.URLParam(r, "tempSenderId"), &tempSenderId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempSenderId", Err: err})
-		return
-	}
-
 	ctx := r.Context()
 
 	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
@@ -861,7 +761,7 @@ func (siw *ServerInterfaceWrapper) SendMessage(w http.ResponseWriter, r *http.Re
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.SendMessage(w, r, chatId, tempSenderId)
+		siw.Handler.SendMessage(w, r, chatId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -985,37 +885,37 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/friendship/{requesterId}/{receiverId}", wrapper.SendFriendRequest)
+		r.Get(options.BaseURL+"/friendship", wrapper.GetFriendList)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/friendship/{requesterId}/{receiverId}/update", wrapper.UpdateFriendshipStatus)
+		r.Get(options.BaseURL+"/friendship/pending", wrapper.GetPendingFriendRequests)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/friendship/{tempUserId}", wrapper.GetFriendList)
+		r.Post(options.BaseURL+"/friendship/{receiverId}", wrapper.SendFriendRequest)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/friendship/{tempUserId}/pending", wrapper.GetPendingFriendRequests)
+		r.Patch(options.BaseURL+"/friendship/{receiverId}/update", wrapper.UpdateFriendshipStatus)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/message/group/create/{tempUserId}", wrapper.CreateGroupChat)
+		r.Post(options.BaseURL+"/message/group/create", wrapper.CreateGroupChat)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/message/history/{chatId}", wrapper.GetMessageHistory)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/message/inbox/{tempUserId}", wrapper.GetUserInbox)
+		r.Get(options.BaseURL+"/message/inbox", wrapper.GetUserInbox)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/message/read/{chatId}/{tempUserId}", wrapper.UpdateReadReceipt)
+		r.Patch(options.BaseURL+"/message/read/{chatId}", wrapper.UpdateReadReceipt)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/message/stream/{tempUserId}", wrapper.GetMessageStream)
+		r.Get(options.BaseURL+"/message/stream", wrapper.GetMessageStream)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/message/typing/{chatId}/{tempSenderId}", wrapper.SendTypingEvent)
+		r.Post(options.BaseURL+"/message/typing/{chatId}", wrapper.SendTypingEvent)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/message/{chatId}/{tempSenderId}", wrapper.SendMessage)
+		r.Post(options.BaseURL+"/message/{chatId}", wrapper.SendMessage)
 	})
 
 	return r
@@ -1024,40 +924,39 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

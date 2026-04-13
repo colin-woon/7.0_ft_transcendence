@@ -141,18 +141,13 @@ components:
             - $ref: "#/components/schemas/UserStatus"
 
 paths:
-  /friendship/{requesterId}/{receiverId}:
+  /friendship/{receiverId}:
     post:
       tags:
         - Friendship
       summary: Send a friend request
       operationId: sendFriendRequest
       parameters:
-        - name: requesterId
-          in: path
-          required: true
-          schema:
-            type: integer
         - name: receiverId
           in: path
           required: true
@@ -166,18 +161,13 @@ paths:
         "404":
           description: User not found
 
-  /friendship/{requesterId}/{receiverId}/update:
+  /friendship/{receiverId}/update:
     patch:
       tags:
         - Friendship
       summary: Update friendship status
       operationId: updateFriendshipStatus
       parameters:
-        - name: requesterId
-          in: path
-          required: true
-          schema:
-            type: integer
         - name: receiverId
           in: path
           required: true
@@ -199,18 +189,12 @@ paths:
         "500":
           description: Internal Server Error
 
-  /friendship/{tempUserId}:
+  /friendship:
     get:
       tags:
         - Friendship
       summary: Get friend list for a user with chat ID references
       operationId: getFriendList
-      parameters:
-        - name: tempUserId
-          in: path
-          required: true
-          schema:
-            type: integer
       responses:
         "200":
           description: Friend list and associated chat IDs retrieved successfully
@@ -225,18 +209,12 @@ paths:
         "500":
           description: Internal Server Error
 
-  /friendship/{tempUserId}/pending:
+  /friendship/pending:
     get:
       tags:
         - Friendship
       summary: Get incoming pending friend requests for a user
       operationId: getPendingFriendRequests
-      parameters:
-        - name: tempUserId
-          in: path
-          required: true
-          schema:
-            type: integer
       responses:
         "200":
           description: Pending friend requests retrieved successfully
@@ -249,7 +227,7 @@ paths:
         "500":
           description: Internal Server Error
 
-  /message/{chatId}/{tempSenderId}:
+  /message/{chatId}:
     post:
       tags:
         - Message
@@ -262,11 +240,6 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: tempSenderId
-          in: path
-          required: true
-          schema:
-            type: integer
       requestBody:
         required: true
         content:
@@ -311,18 +284,12 @@ paths:
         "404":
           description: No chat history found
 
-  /message/stream/{tempUserId}:
+  /message/stream:
     get:
       tags:
         - Message
       summary: Opens an SSE connection for real-time functionalities
       operationId: getMessageStream
-      parameters:
-        - name: tempUserId
-          in: path
-          required: true
-          schema:
-            type: integer
       responses:
         "200":
           description: SSE connection successful
@@ -333,18 +300,12 @@ paths:
         "401":
           description: Unauthorized
 
-  /message/inbox/{tempUserId}:
+  /message/inbox:
     get:
       tags:
         - Message
       summary: Get all chats (direct and group) for a user's inbox
       operationId: getUserInbox
-      parameters:
-        - name: tempUserId
-          in: path
-          required: true
-          schema:
-            type: integer
       responses:
         "200":
           description: Successfully retrieved user's chat rooms
@@ -355,18 +316,12 @@ paths:
                 items:
                   $ref: "#/components/schemas/ChatRoom"
 
-  /message/group/create/{tempUserId}:
+  /message/group/create:
     post:
       tags:
         - Message
       summary: Create a new group chat
       operationId: createGroupChat
-      parameters:
-        - name: tempUserId
-          in: path
-          required: true
-          schema:
-            type: integer
       requestBody:
         required: true
         content:
@@ -391,7 +346,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ChatRoom"
 
-  /message/typing/{chatId}/{tempSenderId}:
+  /message/typing/{chatId}:
     post:
       tags:
         - Message
@@ -404,18 +359,13 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: tempSenderId
-          in: path
-          required: true
-          schema:
-            type: integer
       responses:
         "204":
           description: Typing broadcast triggered successfully
         "400":
           description: Invalid user IDs or form data
 
-  /message/read/{chatId}/{tempUserId}:
+  /message/read/{chatId}:
     patch:
       tags:
         - Message
@@ -428,11 +378,6 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: tempUserId
-          in: path
-          required: true
-          schema:
-            type: integer
       requestBody:
         required: true
         content:
