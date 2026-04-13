@@ -34,13 +34,14 @@ export default function SettingsPage() {
   const filteredTabs = user?.role === 'ADMIN'
     ? TABS
     : TABS.filter(tab => tab.label !== 'Admin');
-  const filteredPanels: Record<string, JSX.Element> = {
+  const filteredPanels: Record<string, React.ReactNode> = {
     '/ryan_settings/profile': <ProfileTab />,
     '/ryan_settings/security': <SecurityTab />,
     '/ryan_settings/sessions': <SessionsTab />,
     ...(user?.role === 'ADMIN' ? { '/ryan_settings/admin': <AdminTab /> } : {}),
     '/ryan_settings': <ProfileTab />,
   };
+
   const activePanel = filteredPanels[pathname] ?? <ProfileTab />
 
   return (
