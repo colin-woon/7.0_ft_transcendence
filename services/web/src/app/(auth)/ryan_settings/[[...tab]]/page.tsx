@@ -10,6 +10,7 @@ import {
   SessionsTab,
   AdminTab,
 } from '@/features/auth/ui_temp_ryan/settings'
+import { JSX } from 'react';
 
 const TABS = [
   { label: 'Profile', href: '/ryan_settings/profile' },
