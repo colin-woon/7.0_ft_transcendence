@@ -39,7 +39,7 @@ export default function Header() {
       <div className="max-w-7xl mx-auto h-full flex items-center py-3">
         <div className="flex items-center justify-between w-full">
           {/* Left: Sidebar + Brand */}
-          <div className="flex items-center gap-2 min-w-0 w-48 lg:w-64 justify-start shrink-0">
+          <div className="flex items-center gap-2 min-w-0 w-auto lg:w-64 justify-start shrink-0">
             <button
               onClick={toggleSidebar}
               className="inline-flex h-10 w-10 items-center justify-center shrink-0 rounded-full p-2 text-slate-700 hover:bg-black/5 transition"
@@ -47,13 +47,13 @@ export default function Header() {
             >
               <Menu size={20} className="block h-5 w-5 text-slate-700" strokeWidth={2.25} />
             </button>
-            <Link href="/projects" className="text-base-content text-xl font-bold inline hover:text-secondary transition-colors">
+            <Link href="/projects" className="text-base-content text-xl font-bold hidden md:inline hover:text-secondary transition-colors">
               42 overflow
             </Link>
           </div>
 
           {/* Center: Search bar */}
-          <div className="flex-1 flex justify-center px-4 lg:px-8 shrink">
+          <div className="flex-1 flex justify-center px-2 sm:px-4 lg:px-8 shrink">
             <div className="relative w-full max-w-4xl" ref={dropdownRef}>
               <div className="relative flex items-center justify-center">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
@@ -107,7 +107,7 @@ export default function Header() {
           </div>
 
           {/* Right: User menu */}
-          <div className="flex items-center gap-1 w-48 lg:w-64 justify-end shrink-0">
+          <div className="flex items-center gap-1 w-auto lg:w-64 justify-end shrink-0">
             <UserMenu />
           </div>
         </div>

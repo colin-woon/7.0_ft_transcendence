@@ -61,18 +61,6 @@ export default function Sidebar() {
       }`}>
         <div className="h-full flex flex-col bg-white border-r border-gray-200">
 
-          {/* Close button for mobile */}
-          {/* <div className="lg:hidden flex items-center justify-between p-3 border-b border-gray-200">
-            <span className="text-sm font-semibold text-slate-700">Menu</span>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition"
-              aria-label="Close sidebar"
-            >
-              <X size={20} className="text-slate-600" />
-            </button>
-          </div> */}
-
           {/* User Profile Block */}
           <Link
             href="/profile"
@@ -124,18 +112,7 @@ export default function Sidebar() {
                 <FileText size={18} className="text-slate-600" />
                 <span className="text-xs">Terms & Conditions</span>
               </button>
-              <button
-                onClick={async () => {
-                  onClose();
-                  await logout();
-                  router.push('/login');
-                }}
-                className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-red-500 hover:bg-red-50 rounded-md transition"
-              >
-                <LogOut size={18} />
-                <span className="text-xs">Logout</span>
-              </button>
-            </div>
+              </div>
           </div>
 
           {/* Spacer */}

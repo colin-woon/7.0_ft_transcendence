@@ -5,6 +5,7 @@ import { SectionLabel, SettingRow, Toggle } from './Primitives'
 
 export function SecurityTab({ hasPassword = false }: { hasPassword?: boolean }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -42,6 +43,20 @@ export function SecurityTab({ hasPassword = false }: { hasPassword?: boolean }) 
         title="Hide from search" 
         subtitle="Prevent other users from finding your profile"
         right={<Toggle />} 
+      />
+
+      <SectionLabel>Deleting Account</SectionLabel>
+      <SettingRow
+        title="Delete account"
+        subtitle="Permanently remove your profile and all account data"
+        right={
+          <button
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="btn btn-sm btn-error text-white rounded-full font-semibold px-4"
+          >
+            Delete
+          </button>
+        }
       />
 
       {/* Password Modal */}
@@ -103,6 +118,43 @@ export function SecurityTab({ hasPassword = false }: { hasPassword?: boolean }) 
           </form>
         </div>
         <form method="dialog" className="modal-backdrop bg-slate-900/20 backdrop-blur-[1px]" onClick={closeModal}>
+          <button>close</button>
+        </form>
+      </dialog>
+
+      {/* Delete Account Modal */}
+      <dialog className={`modal ${isDeleteModalOpen ? 'modal-open' : ''}`}>
+        <div className="modal-box bg-white border border-red-200">
+          <h3 className="font-bold text-lg text-red-700">Delete Account</h3>
+          <p className="text-sm text-red-600 mt-2">
+            This action is irreversible. Your account and all associated data will be permanently deleted.
+          </p>
+
+          <div className="modal-action mt-6">
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost rounded-xl"
+              onClick={() => setIsDeleteModalOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-error text-white rounded-xl"
+              onClick={() => {
+                alert('Profile deleted!')
+                setIsDeleteModalOpen(false)
+              }}
+            >
+              Confirm Delete
+            </button>
+          </div>
+        </div>
+        <form
+          method="dialog"
+          className="modal-backdrop bg-slate-900/20 backdrop-blur-[1px]"
+          onClick={() => setIsDeleteModalOpen(false)}
+        >
           <button>close</button>
         </form>
       </dialog>

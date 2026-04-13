@@ -110,11 +110,11 @@ export default function TmpProfilePage() {
         {/* Recent Projects: full width, classic design */}
         <ProfileProjectCard projects={mockProjects} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 w-full">
+        {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 w-full">
           <ProfileSearchCard isOwnProfile={isOwnProfile} />
           <LinkAccountCard isOwnProfile={isOwnProfile} />
           <PasswordCard isOwnProfile={isOwnProfile} hasPassword={mockUser.hasPassword} />
-        </div>
+        </div> */}
           <SessionCard sessions={mockSessions} isOwnProfile={isOwnProfile} />
 
         {mockUser.role === 'ADMIN' && (

@@ -75,7 +75,7 @@ export default function ProfileCard2({ user, profile, initials, isOwnProfile }: 
                   {isOwnProfile && (
                     <div className="flex flex-row items-center gap-2 order-2 sm:order-1 sm:-mt-10">
                       <EditProfileButton onClick={() => setShowEdit(true)} />
-                      <GearboxButton onClick={() => setShowSettings(true)} />
+                      {/* <GearboxButton onClick={() => setShowSettings(true)} /> */}
                     </div>
                   )}
                   
