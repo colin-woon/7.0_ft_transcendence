@@ -103,7 +103,7 @@ export default function SessionCard({ sessions, isOwnProfile, onLogout }: Sessio
   if (!isOwnProfile) return null
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+    <div className="card card-border bg-white/40 backdrop-blur-md w-full rounded-2xl border border-white/50 shadow-lg p-5">
       <div className="mb-4 flex items-center justify-between">
         <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Sessions</p>
         <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-500">

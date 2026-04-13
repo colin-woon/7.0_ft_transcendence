@@ -12,7 +12,7 @@ import ProfileSearchCard from './ProfileSearchCard'
 import AdminCard from './AdminCard'
 
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm ${className}`}>{children}</div>
+  return <div className={`card card-border bg-white/40 backdrop-blur-md w-full rounded-2xl border border-white/50 shadow-lg ${className}`}>{children}</div>
 }
 
 const mockUser: User = {
@@ -106,9 +106,9 @@ export default function TmpProfilePage() {
      initial={{ filter: 'blur(10px)', opacity: 0 }}
      animate={{ filter: 'blur(0px)', opacity: 1 }}
      transition={{ duration: 0.6, ease: 'easeOut' }}
-     className="h-screen bg-gray-50 font-sans mt-16 overflow-y-auto overflow-x-hidden"
+     className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 font-sans w-full"
    >
-        <div className="w-full max-w-6xl flex flex-col gap-5 mx-auto pb-40">
+        <div className="w-full max-w-6xl flex flex-col gap-5 mx-auto pb-40 p-4 pt-6">
 
         <motion.div whileHover={{ y: -2, scale: 1.002 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
           <ProfileCard user={mockUser} profile={profileCardData} initials={initials} isOwnProfile={isOwnProfile}/>

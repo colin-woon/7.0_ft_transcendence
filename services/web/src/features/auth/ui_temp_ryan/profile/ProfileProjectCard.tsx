@@ -9,7 +9,7 @@ type Project = {
 export default function ProfileProjectCard({ projects }: { projects: Project[] }) {
   return (
     <div className="w-full">
-      <div className="card bg-base-100 shadow-sm w-full">
+      <div className="card card-border bg-white/40 backdrop-blur-md w-full rounded-2xl border border-white/50 shadow-lg">
         <div className="card-body p-5">
           <p className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
             Recent Projects
