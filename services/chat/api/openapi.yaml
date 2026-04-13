@@ -9,7 +9,16 @@ tags:
   - name: Message
     description: Endpoints for managing chat messages
 
+security:
+  - GatewayUserHeader: []
+
 components:
+  securitySchemes:
+    GatewayUserHeader:
+      type: apiKey
+      in: header
+      name: X-Intra-User-Id
+      description: "Dev Mode: Manually inject the user ID that the Gateway normally provides."
   schemas:
     ChatRoom:
       type: object

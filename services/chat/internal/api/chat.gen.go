@@ -6,6 +6,7 @@ package api
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -19,6 +20,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/oapi-codegen/runtime"
 	openapi_types "github.com/oapi-codegen/runtime/types"
+)
+
+const (
+	GatewayUserHeaderScopes = "GatewayUserHeader.Scopes"
 )
 
 // Defines values for ChatRoomType.
@@ -485,6 +490,12 @@ func (siw *ServerInterfaceWrapper) SendFriendRequest(w http.ResponseWriter, r *h
 		return
 	}
 
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
+
+	r = r.WithContext(ctx)
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SendFriendRequest(w, r, requesterId, receiverId)
 	}))
@@ -518,6 +529,12 @@ func (siw *ServerInterfaceWrapper) UpdateFriendshipStatus(w http.ResponseWriter,
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "receiverId", Err: err})
 		return
 	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
+
+	r = r.WithContext(ctx)
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params UpdateFriendshipStatusParams
@@ -562,6 +579,12 @@ func (siw *ServerInterfaceWrapper) GetFriendList(w http.ResponseWriter, r *http.
 		return
 	}
 
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
+
+	r = r.WithContext(ctx)
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetFriendList(w, r, tempUserId)
 	}))
@@ -586,6 +609,12 @@ func (siw *ServerInterfaceWrapper) GetPendingFriendRequests(w http.ResponseWrite
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
 		return
 	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
+
+	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetPendingFriendRequests(w, r, tempUserId)
@@ -612,6 +641,12 @@ func (siw *ServerInterfaceWrapper) CreateGroupChat(w http.ResponseWriter, r *htt
 		return
 	}
 
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
+
+	r = r.WithContext(ctx)
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateGroupChat(w, r, tempUserId)
 	}))
@@ -637,6 +672,12 @@ func (siw *ServerInterfaceWrapper) GetMessageHistory(w http.ResponseWriter, r *h
 		return
 	}
 
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
+
+	r = r.WithContext(ctx)
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetMessageHistory(w, r, chatId)
 	}))
@@ -661,6 +702,12 @@ func (siw *ServerInterfaceWrapper) GetUserInbox(w http.ResponseWriter, r *http.R
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
 		return
 	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
+
+	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetUserInbox(w, r, tempUserId)
@@ -696,6 +743,12 @@ func (siw *ServerInterfaceWrapper) UpdateReadReceipt(w http.ResponseWriter, r *h
 		return
 	}
 
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
+
+	r = r.WithContext(ctx)
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateReadReceipt(w, r, chatId, tempUserId)
 	}))
@@ -720,6 +773,12 @@ func (siw *ServerInterfaceWrapper) GetMessageStream(w http.ResponseWriter, r *ht
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempUserId", Err: err})
 		return
 	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
+
+	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetMessageStream(w, r, tempUserId)
@@ -755,6 +814,12 @@ func (siw *ServerInterfaceWrapper) SendTypingEvent(w http.ResponseWriter, r *htt
 		return
 	}
 
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
+
+	r = r.WithContext(ctx)
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SendTypingEvent(w, r, chatId, tempSenderId)
 	}))
@@ -788,6 +853,12 @@ func (siw *ServerInterfaceWrapper) SendMessage(w http.ResponseWriter, r *http.Re
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tempSenderId", Err: err})
 		return
 	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
+
+	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SendMessage(w, r, chatId, tempSenderId)
@@ -953,38 +1024,40 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

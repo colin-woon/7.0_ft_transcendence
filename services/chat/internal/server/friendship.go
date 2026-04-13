@@ -162,7 +162,12 @@ func (s *Server) broadcastStatusToFriends(userId int, isOnline bool) {
 func (s *Server) GetFriendList(w http.ResponseWriter, r *http.Request, tempUserId int) {
 	ctx := r.Context()
 
-	friends, err := s.db.GetQueries().GetFriendListWithChatIds(ctx, int32(tempUserId))
+	userId, ok := r.Context().Value(userIDKey).(int)
+	if !ok {
+		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
+		return
+	}
+	friends, err := s.db.GetQueries().GetFriendListWithChatIds(ctx, int32(userId))
 	if err != nil {
 		http.Error(w, "Failed to retrieve friend list", http.StatusInternalServerError)
 		return
