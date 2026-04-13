@@ -8,6 +8,7 @@ import EditProfileButton from "./EditProfileButton";
 import GearboxButton from "./GearboxButton";
 import Avatar from "./Avatar";
 import React, { useState, ChangeEvent } from "react";
+import { createPortal } from "react-dom";
 
 interface ProfileCardProps {
 	user: User | null;
@@ -84,8 +85,8 @@ export default function ProfileCard2({ user, profile, initials, isOwnProfile }: 
         </div>
       </div>
       {/* Edit Profile card */}
-      {showEdit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+      {showEdit && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-md">
           <div className="card w-full max-w-sm bg-base-100 shadow-xl relative">
             <button
               className="absolute top-3 right-3 text-slate-400 hover:text-slate-600"
@@ -148,12 +149,12 @@ export default function ProfileCard2({ user, profile, initials, isOwnProfile }: 
               </form>
             </div>
           </div>
-        </div>
+        </div>, document.body
       )}
 
       {/* Settings btn (only has delete profile option) */}
-      {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+      {showSettings && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-md">
           <div className="card w-full max-w-sm bg-base-100 shadow-xl relative">
             <button
               className="absolute top-3 right-3 text-slate-400 hover:text-slate-600"
@@ -197,7 +198,7 @@ export default function ProfileCard2({ user, profile, initials, isOwnProfile }: 
               </div>
             </div>
           </div>
-        </div>
+        </div>, document.body
       )}
     </div>
   );
