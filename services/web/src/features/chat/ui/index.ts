@@ -10,7 +10,3 @@ export { CreateGroupChatButton } from "./CreateGroupChatButton";
 
 export { SSEStreamController } from "./SSEStreamController";
 export { ChatSidebar } from "./ChatSidebar";
-
-export { SendFriendRequestButton } from "./sendFriendRequestButton";
-export { FriendRequestChoices } from "./friendRequestChoices";
-export { FriendList } from "./friendList";

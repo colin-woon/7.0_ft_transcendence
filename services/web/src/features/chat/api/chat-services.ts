@@ -1,32 +1,30 @@
 import { apiClient } from '@/lib/apiClient';
 import type { StreamEvent, ChatId, ChatMessage, FriendStatus, FriendId, FriendList, PendingFriendRequest, SendMessageRequest, ChatRoom } from '../models/chat-types';
 
-// export async function login(credentials: LoginInput): Promise<User> {
-//   return apiClient.post<User>('/auth/login', credentials);
-// }
+const CHAT_API_BASE_PREFIX = '/api/chat';
 
-export async function getFriendList(tempUserId: FriendId): Promise<FriendList> {
-  return apiClient.get<FriendList>(`/friendship/${tempUserId}`);
+export async function getFriendList(): Promise<FriendList> {
+  return apiClient.get<FriendList>(`${CHAT_API_BASE_PREFIX}/friendship`);
 }
 
-export async function getPendingFriendRequests(tempUserId: FriendId): Promise<PendingFriendRequest[]> {
-  return apiClient.get<PendingFriendRequest[]>(`/friendship/${tempUserId}/pending`);
+export async function getPendingFriendRequests(): Promise<PendingFriendRequest[]> {
+  return apiClient.get<PendingFriendRequest[]>(`${CHAT_API_BASE_PREFIX}/friendship/pending`);
 }
 
-export async function sendFriendRequest(tempRequesterId: FriendId, tempReceiverId: FriendId): Promise<void>{
-  return apiClient.post<void>(`/friendship/${tempRequesterId}/${tempReceiverId}`);
+export async function sendFriendRequest(receiverId: FriendId): Promise<void> {
+  return apiClient.post<void>(`${CHAT_API_BASE_PREFIX}/friendship/${receiverId}`);
 }
 
-export async function updateFriendshipStatus(tempRequesterId: FriendId, tempReceiverId: FriendId, status: FriendStatus): Promise<void> {
-  return apiClient.patch<void>(`/friendship/${tempRequesterId}/${tempReceiverId}/update?status=${status}`);
+export async function updateFriendshipStatus(receiverId: FriendId, status: FriendStatus): Promise<void> {
+  return apiClient.patch<void>(`${CHAT_API_BASE_PREFIX}/friendship/${receiverId}/update?status=${status}`);
 }
 
-export async function sendMessage(chatId: ChatId, tempSenderId: FriendId, message: SendMessageRequest): Promise<void>{
-  return apiClient.post<void>(`/message/${chatId}/${tempSenderId}`, message);
+export async function sendMessage(chatId: ChatId, message: SendMessageRequest): Promise<void> {
+  return apiClient.post<void>(`${CHAT_API_BASE_PREFIX}/message/${chatId}`, message);
 }
 
 export async function getMessageHistory(chatId: ChatId): Promise<ChatMessage[]> {
-  return apiClient.get<ChatMessage[]>(`/message/history/${chatId}`);
+  return apiClient.get<ChatMessage[]>(`${CHAT_API_BASE_PREFIX}/message/history/${chatId}`);
 }
 
 // 2. Initialize the connection
@@ -38,10 +36,9 @@ export async function getMessageHistory(chatId: ChatId): Promise<ChatMessage[]> 
 // If you receive a 401, you might want to explicitly call sse.close() here.
 // 5. Return the object so your SSEStreamController can call .close() on unmount
 export function getMessageStream(
-  tempUserId: number, 
   onStreamChunkReceived: (event: StreamEvent) => void
 ): EventSource {
-  const sse = new EventSource(`http://localhost:8003/message/stream/${tempUserId}`);
+  const sse = new EventSource(`${CHAT_API_BASE_PREFIX}/message/stream`, { withCredentials: true });
 
   sse.onmessage = (streamResponse) => {
     try {
@@ -57,21 +54,20 @@ export function getMessageStream(
   return sse;
 }
 
-export async function getUserInbox(tempUserId: FriendId): Promise<ChatRoom[]> {
-  return apiClient.get<ChatRoom[]>(`/message/inbox/${tempUserId}`);
+export async function getUserInbox(): Promise<ChatRoom[]> {
+  return apiClient.get<ChatRoom[]>(`${CHAT_API_BASE_PREFIX}/message/inbox`);
 }
 
 export async function createGroupChat(
-  tempUserId: FriendId, 
   payload: { name: string; memberIds: FriendId[] }
 ): Promise<ChatRoom> {
-  return apiClient.post<ChatRoom>(`/message/group/create/${tempUserId}`, payload);
+  return apiClient.post<ChatRoom>(`${CHAT_API_BASE_PREFIX}/message/group/create`, payload);
 }
 
-export async function sendTypingEvent(chatId: ChatId, tempSenderId: FriendId): Promise<void>{
-  return apiClient.post<void>(`/message/typing/${chatId}/${tempSenderId}`);
+export async function sendTypingEvent(chatId: ChatId): Promise<void> {
+  return apiClient.post<void>(`${CHAT_API_BASE_PREFIX}/message/typing/${chatId}`);
 }
 
-export async function updateReadReceipt(chatId: ChatId, tempUserId: FriendId, messageId: number): Promise<void>{
-  return apiClient.patch<void>(`/message/read/${chatId}/${tempUserId}`, { messageId });
+export async function updateReadReceipt(chatId: ChatId, messageId: number): Promise<void> {
+  return apiClient.patch<void>(`${CHAT_API_BASE_PREFIX}/message/read/${chatId}`, { messageId });
 }

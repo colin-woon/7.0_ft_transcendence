@@ -24,6 +24,7 @@ CMD ["npm", "run", "dev"]
 ## --- Stage 3: Builder (Production Only) ---
 FROM node:${NODE_VERSION} AS builder
 WORKDIR /app
+RUN chown node:node /app
 COPY --from=dependencies --chown=node:node /app/node_modules ./node_modules
 COPY --chown=node:node services/web/ . 
 ENV NODE_ENV=production

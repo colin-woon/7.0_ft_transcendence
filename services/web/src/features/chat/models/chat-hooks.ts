@@ -17,7 +17,7 @@ export const useChatActions = () => {
     if (!store) throw new Error('useChatActions must be used within ChatStoreProvider');
 
     return {
-        setTempCurrentUserId: useStore(store, (s) => s.setTempCurrentUserId),
+        setCurrentUserId: useStore(store, (s) => s.setCurrentUserId),
         setUserStatus: useStore(store, (s) => s.setUserStatus),
         setChatSession: useStore(store, (s) => s.setChatSession),
         addMessage: useStore(store, (s) => s.addMessage),
@@ -40,7 +40,7 @@ export const useCurrentChatSession = () => {
     if (!store) throw new Error('useCurrentSession must be used within ChatStoreProvider');
 
     return {
-        tempCurrentUserId: useStore(store, (s) => s.tempCurrentUserId),
+        currentUserId: useStore(store, (s) => s.currentUserId),
         chatId: useStore(store, (s) => s.currentChatSessionId),
         friendIds: useStore(store, (s) => 
         s.currentChatSessionId ? s.allChatSessions[s.currentChatSessionId]?.memberIds : EMPTY_FRIENDIDS
@@ -69,7 +69,7 @@ export const useAllChatSessions = () => {
     if (!store) throw new Error('useChat must be used within a ChatStoreProvider');
 
     return {
-        tempCurrentUserId: useStore(store, (s) => s.tempCurrentUserId),
+        currentUserId: useStore(store, (s) => s.currentUserId),
         allChatSessions: useStore(store, (s) => s.allChatSessions),
     };
 };
@@ -78,7 +78,7 @@ export const useFriendList = () => {
     const store = useContext(ChatStoreContext);
     if (!store) throw new Error('ChatStoreContext not found');
     return {
-        tempCurrentUserId: useStore(store, (s) => s.tempCurrentUserId),
+        currentUserId: useStore(store, (s) => s.currentUserId),
         allFriendships: useStore(store, (s) => s.allFriendships),
         pendingRequests: useStore(store, (s) => s.pendingRequests),
         isLoading: useStore(store, (s) => s.isLoadingFriends), 
@@ -87,7 +87,7 @@ export const useFriendList = () => {
 };
 
 export const useCreateGroupChatAction = () => {
-    const { allFriendships, tempCurrentUserId } = useFriendList();
+    const { allFriendships, currentUserId } = useFriendList();
     
     const [groupName, setGroupName] = useState('');
     const [selectedFriendIds, setSelectedFriendIds] = useState<FriendId[]>([]);
@@ -107,11 +107,11 @@ export const useCreateGroupChatAction = () => {
     };
 
     const submitGroupChat = async (onSuccess: () => void) => {
-        if (!tempCurrentUserId || !groupName.trim() || selectedFriendIds.length === 0) return;
+        if (!currentUserId || !groupName.trim() || selectedFriendIds.length === 0) return;
         
         try {
             setIsSubmitting(true);
-            await createGroupChat(tempCurrentUserId, {
+            await createGroupChat({
                 name: groupName,
                 memberIds: selectedFriendIds
             });
@@ -291,15 +291,15 @@ export const useHasUnreadMessages = (chatId: ChatId | null) => {
     if (!store) throw new Error('useHasUnreadMessages must be used within ChatStoreProvider');
     
     return useStore(store, (s) => {
-        if (!chatId || !s.tempCurrentUserId) return false;
+        if (!chatId || !s.currentUserId) return false;
         
         const chat = s.allChatSessions[chatId];
         if (!chat || !chat.messages || chat.messages.length === 0) return false;
         
         const latestMessage = chat.messages[0]; // messages are unshifted (newest first)
-        if (latestMessage.senderId === s.tempCurrentUserId) return false; // Sent by myself
+        if (latestMessage.senderId === s.currentUserId) return false; // Sent by myself
         
-        const myReadReceipt = s.readReceipts[chatId]?.[s.tempCurrentUserId] || 0;
+        const myReadReceipt = s.readReceipts[chatId]?.[s.currentUserId] || 0;
         
         const latestIdNum = typeof latestMessage.id === 'string' ? parseInt(latestMessage.id, 10) : latestMessage.id;
         

@@ -6,14 +6,14 @@ import { getMessageStream } from '../api/chat-services';
 
 export function SSEStreamController() {
   const { addMessage, setTypingStatus, updateReadReceipt, setUserStatus } = useChatActions();
-  const { tempCurrentUserId, chatId } = useCurrentChatSession();
+  const { currentUserId, chatId } = useCurrentChatSession();
 
   useEffect(() => {
-    if (!tempCurrentUserId) return;
+    if (!currentUserId) return;
     
-    const eventSource = getMessageStream(tempCurrentUserId, (eventContent) => {
+    const eventSource = getMessageStream((eventContent) => {
       if (eventContent.type === 'NEW_MESSAGE' && eventContent.payload.chatId === chatId) {
-        const chatUserId = tempCurrentUserId === 1 ? eventContent.payload.senderId : 1;
+        const chatUserId = currentUserId === 1 ? eventContent.payload.senderId : 1;
         addMessage({
           id: eventContent.payload.id,
           chatId: chatId!,
@@ -39,7 +39,7 @@ export function SSEStreamController() {
         eventSource.close();
       }
     };
-  }, [chatId, tempCurrentUserId, addMessage, updateReadReceipt]);
+  }, [chatId, currentUserId, addMessage, updateReadReceipt]);
 
   // Headless: Handles logic, renders no UI
   return null; 

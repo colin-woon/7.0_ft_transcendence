@@ -5,10 +5,10 @@ import { useCurrentChatSession, useUserStatus, BUBBLE_COLORS } from '@/features/
 import { AvatarWithStatus } from '@/features/chat/ui';
 
 export function MessageHeader() {
-  const { chatSessionName, friendIds, tempCurrentUserId, chatId } = useCurrentChatSession();
+  const { chatSessionName, friendIds, currentUserId, chatId } = useCurrentChatSession();
 
   // Find the ID of the person we are chatting with (if it's a 1-on-1)
-  const otherUserId = friendIds?.find((id) => id !== tempCurrentUserId);
+  const otherUserId = friendIds?.find((id) => id !== currentUserId);
 
   // Safely grab the online status. If otherUserId is undefined (like in a group), we just pass -1
   const isOnline = useUserStatus(otherUserId || -1);

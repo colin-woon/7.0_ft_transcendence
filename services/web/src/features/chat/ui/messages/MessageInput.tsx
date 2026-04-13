@@ -5,7 +5,7 @@ import { sendMessage, sendTypingEvent } from '../../api/chat-services';
 import { useCurrentChatSession, useChatActions } from '../../models';
 
 export function MessageInput() {
-  const { tempCurrentUserId, chatId } = useCurrentChatSession();
+  const { currentUserId, chatId } = useCurrentChatSession();
   const { addMessage } = useChatActions();
 
   const [messageText, setMessageText] = useState('');
@@ -14,17 +14,16 @@ export function MessageInput() {
   const lastTypingTime = useRef<number>(0);
 
   const handleSend = () => {
-    if (messageText.trim() && chatId && tempCurrentUserId) {
+    if (messageText.trim() && chatId && currentUserId) {
       sendMessage(
         chatId,
-        tempCurrentUserId,
         { content: messageText }
       );
       setMessageText('');
       addMessage({
-        id: "msg-" + tempCurrentUserId + '-' + Date.now(),
+        id: "msg-" + currentUserId + '-' + Date.now(),
         chatId: chatId,
-        senderId: tempCurrentUserId,
+        senderId: currentUserId,
         content: messageText,
         createdAt: new Date().toISOString(),
       });
@@ -35,11 +34,11 @@ export function MessageInput() {
     setMessageText(e.target.value);
 
     // Only broadcast typing if we have a chat session, current user, and the user hasn't cleared the input
-    if (chatId && tempCurrentUserId && e.target.value.trim().length > 0) {
+    if (chatId && currentUserId && e.target.value.trim().length > 0) {
       const now = Date.now();
       // Throttle: Max 1 outbound request every 3 seconds (3000ms)
       if (now - lastTypingTime.current > 3000) {
-        sendTypingEvent(chatId, tempCurrentUserId).catch((err) => {
+        sendTypingEvent(chatId).catch((err) => {
           console.error('Failed to send typing event', err);
         });
         lastTypingTime.current = now; // Update the timestamp

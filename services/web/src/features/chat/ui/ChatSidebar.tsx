@@ -10,13 +10,13 @@ import { AvatarWithStatus, CreateGroupChatButton } from '@/features/chat/ui';
 export function ChatSidebar() {
   const pathname = usePathname();
   const { fetchAllChatSessions } = useChatActions();
-  const { allChatSessions, tempCurrentUserId } = useAllChatSessions();
+  const { allChatSessions, currentUserId } = useAllChatSessions();
 
   useEffect(() => {
-    if (tempCurrentUserId) {
-      fetchAllChatSessions(tempCurrentUserId);
+    if (currentUserId) {
+      fetchAllChatSessions();
     }
-  }, [fetchAllChatSessions, tempCurrentUserId]);
+  }, [fetchAllChatSessions, currentUserId]);
 
   return (
     <div className="flex flex-col h-full bg-base-200 text-base-content w-full">
@@ -42,14 +42,9 @@ export function ChatSidebar() {
 
       {/* DM List Divider */}
       <div className="px-4 pb-2 flex justify-between items-center group">
-        <span className="text-xs font-bold text-base-content/50 uppercase tracking-widest hover:text-base-content transition-colors cursor-default">
+        <span className="text-xs font-bold text-base-content/50 uppercase tracking-widest transition-colors cursor-default">
           Direct Messages
         </span>
-        <button className="text-base-content/50 hover:text-base-content opacity-0 group-hover:opacity-100 transition-opacity">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-        </button>
       </div>
 
       {/* Scrollable Chat List */}
@@ -63,9 +58,9 @@ export function ChatSidebar() {
 
           if (chat.type === "direct") {
             const otherUserIds = chat.memberIds.filter(
-              (id) => id !== tempCurrentUserId
+              (id) => id !== currentUserId
             );
-            const otherUserId = otherUserIds.length > 0 ? otherUserIds[0] : tempCurrentUserId;
+            const otherUserId = otherUserIds.length > 0 ? otherUserIds[0] : currentUserId;
             displayUserId = typeof otherUserId === 'number' ? otherUserId : 0;
             
             displayName = otherUserIds.length > 0 ? `User ${otherUserId}` : "You";

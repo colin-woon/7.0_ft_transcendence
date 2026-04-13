@@ -15,7 +15,7 @@ const BUBBLE_COLORS = [
 
 export function MessageArea() {
   const { fetchChatHistory, sendReadReceipt } = useChatActions();
-  const { chatId, tempCurrentUserId, messages, typingUsers, readReceipts } = useCurrentChatSession();
+  const { chatId, currentUserId, messages, typingUsers, readReceipts } = useCurrentChatSession();
   
   // Refs for message elements to attach Intersection Observer
   const messageRefs = useRef<Map<number | string, HTMLDivElement>>(new Map());
@@ -24,7 +24,7 @@ export function MessageArea() {
   const { observeElement } = useMessageVisibility({
     chatId,
     messages: messages || [],
-    userId: tempCurrentUserId,
+    userId: currentUserId,
     onReadReceipt: sendReadReceipt,
   });
 
@@ -50,21 +50,21 @@ export function MessageArea() {
 
   // Find users currently typing (excluding ourself)
   const activeTypingUserIds = Object.keys(typingUsers || {}).filter(
-    (userIdStr) => Number(userIdStr) !== tempCurrentUserId
+    (userIdStr) => Number(userIdStr) !== currentUserId
   );
 
   // Pre-calculate which message ID should display the "Read by [User]" tag for each user.
   // We only show it on the *latest* message sent by the current user that the other user has read.
   const latestReadByMessageId: Record<number, number[]> = {};
   
-  if (tempCurrentUserId) {
+  if (currentUserId) {
     Object.entries(readReceipts || {}).forEach(([uid, lastReadId]) => {
       const userId = Number(uid);
-      if (userId === tempCurrentUserId) return;
+      if (userId === currentUserId) return;
 
       let maxMsgId = -1;
       for (const msg of loadedMessages) {
-        if (msg.senderId !== tempCurrentUserId) continue;
+        if (msg.senderId !== currentUserId) continue;
         const msgIdNum = typeof msg.id === 'number' ? msg.id : parseInt(String(msg.id), 10);
         if (msgIdNum <= lastReadId && msgIdNum > maxMsgId) {
           maxMsgId = msgIdNum;
@@ -100,7 +100,7 @@ export function MessageArea() {
 
       {/* CHAT MESSAGES */}
       {loadedMessages.map((msg) => {
-        const isMe = msg.senderId === tempCurrentUserId;
+        const isMe = msg.senderId === currentUserId;
 
         // Step 2: Assign a consistent color using modulo on the senderId
         const colorClass = isMe 

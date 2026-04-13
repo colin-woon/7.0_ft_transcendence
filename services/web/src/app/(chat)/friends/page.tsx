@@ -11,21 +11,21 @@ export default function FriendsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('All');
   const [searchQuery, setSearchQuery] = useState('');
   
-  const { allFriendships, pendingRequests, tempCurrentUserId, isLoading, error } = useFriendList();
+  const { allFriendships, pendingRequests, currentUserId, isLoading, error } = useFriendList();
   const { fetchAllFriendships, fetchPendingFriendships } = useChatActions();
 
   useEffect(() => {
-    if (tempCurrentUserId) {
-      fetchAllFriendships(tempCurrentUserId);
-      fetchPendingFriendships(tempCurrentUserId);
+    if (currentUserId) {
+      fetchAllFriendships();
+      fetchPendingFriendships();
     }
-  }, [tempCurrentUserId, fetchAllFriendships, fetchPendingFriendships]);
+  }, [currentUserId, fetchAllFriendships, fetchPendingFriendships]);
 
   const handleUpdateStatus = async (friendId: number, status: 'accepted' | 'declined') => {
-    if (tempCurrentUserId) {
-      await updateFriendshipStatus(friendId, tempCurrentUserId, status); // assuming requester -> receiver
-      fetchPendingFriendships(tempCurrentUserId);
-      fetchAllFriendships(tempCurrentUserId);
+    if (currentUserId) {
+      await updateFriendshipStatus(friendId, status); // assuming requester -> receiver
+      fetchPendingFriendships();
+      fetchAllFriendships();
     }
   };
 
