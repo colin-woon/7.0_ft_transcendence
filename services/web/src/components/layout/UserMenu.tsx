@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { LayoutDashboard, LogOut, ChevronDown } from 'lucide-react'
+import { LayoutDashboard, LogOut, ChevronDown, Settings } from 'lucide-react'
 import { useAuth } from '@/features/auth/models/AuthContext'
 
 export default function UserMenu() {
@@ -70,52 +70,20 @@ export default function UserMenu() {
             <Link
               href="/profile"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-[#8EE7E3]/10 hover:text-[#0f6f6b] transition-colors"
-            >
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-[#8EE7E3]/10 hover:text-[#0f6f6b] transition-colors">
               <LayoutDashboard size={16} />
               Profile
             </Link>
+
+            <Link
+              href="/settings"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-[#8EE7E3]/10 hover:text-[#0f6f6b] transition-colors">
+              <Settings size={16} />
+                Settings
+            </Link>
           </div>
 
-          {/* Theme toggle */}
-          <div className="flex justify-center py-2 border-t border-gray-100">
-            <label className="flex cursor-pointer gap-2 items-center">
-              {/* Sun icon - light mode */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round">
-                <circle cx="12" cy="12" r="5" />
-                <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" />
-              </svg>
-              
-              <input 
-                type="checkbox" 
-                className="toggle theme-controller" 
-                value="dark"  // When checked, applies "dark" theme
-              />
-              
-              {/* Moon icon - dark mode */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-              </svg>
-            </label>
-          </div>
           {/* Logout */}
           <div className="border-t border-gray-100 py-1">
             <button
