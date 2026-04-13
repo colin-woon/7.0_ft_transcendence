@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Bell, BellOff } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Bell, BellOff } from "lucide-react";
 import {
   getProjectSubscriptionStatus,
   subscribeToProject,
   unsubscribeFromProject,
-} from '../../api/subcription';
+} from "../../../api/subcription";
 
 interface SubscriptionButtonProps {
   projectId: number;
@@ -18,7 +18,7 @@ interface SubscriptionButtonProps {
 export default function SubscriptionButton({
   projectId,
   compact = false,
-  className = '',
+  className = "",
 }: SubscriptionButtonProps) {
   const router = useRouter();
   const [subscribed, setSubscribed] = useState<boolean | null>(null);
@@ -34,7 +34,7 @@ export default function SubscriptionButton({
           setSubscribed(status.subscribed);
         }
       } catch (error) {
-        console.error('Failed to load subscription status:', error);
+        console.error("Failed to load subscription status:", error);
         if (isMounted) {
           setSubscribed(false);
         }
@@ -64,8 +64,8 @@ export default function SubscriptionButton({
 
       router.refresh();
     } catch (error) {
-      console.error('Failed to toggle subscription:', error);
-      alert('Unable to update subscription right now. Please try again.');
+      console.error("Failed to toggle subscription:", error);
+      alert("Unable to update subscription right now. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -73,8 +73,8 @@ export default function SubscriptionButton({
 
   if (subscribed === null) {
     const loadingClasses = compact
-      ? 'inline-flex h-10 w-10 items-center justify-center rounded-lg bg-slate-300 text-white opacity-70'
-      : 'rounded-full bg-slate-300 px-4 py-2 text-sm font-semibold text-white opacity-70';
+      ? "inline-flex h-10 w-10 items-center justify-center rounded-lg bg-slate-300 text-white opacity-70"
+      : "rounded-full bg-slate-300 px-4 py-2 text-sm font-semibold text-white opacity-70";
 
     return (
       <button
@@ -83,24 +83,24 @@ export default function SubscriptionButton({
         className={`${loadingClasses} ${className}`.trim()}
         aria-label="Loading subscription status"
       >
-        {compact ? <Bell className="h-4 w-4" /> : 'Loading...'}
+        {compact ? <Bell className="h-4 w-4" /> : "Loading..."}
       </button>
     );
   }
 
   const defaultClasses = compact
-    ? 'inline-flex h-10 w-10 items-center justify-center rounded-lg text-white transition-colors disabled:opacity-70'
-    : 'text-sm font-medium px-4 py-2 rounded-lg w-full text-white transition-colors disabled:opacity-70';
+    ? "inline-flex h-10 w-10 items-center justify-center rounded-lg text-white transition-colors disabled:opacity-70"
+    : "text-sm font-medium px-4 py-2 rounded-lg w-full text-white transition-colors disabled:opacity-70";
 
   const stateClasses = subscribed
-    ? 'bg-red-600 hover:bg-red-700'
-    : 'bg-emerald-600 hover:bg-emerald-700';
+    ? "bg-red-600 hover:bg-red-700"
+    : "bg-emerald-600 hover:bg-emerald-700";
 
   const buttonLabel = isSubmitting
-    ? 'Saving...'
+    ? "Saving..."
     : subscribed
-      ? 'Unsubscribe'
-      : 'Subscribe';
+      ? "Unsubscribe"
+      : "Subscribe";
 
   return (
     <button

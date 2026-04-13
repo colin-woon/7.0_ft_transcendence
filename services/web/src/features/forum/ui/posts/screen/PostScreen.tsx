@@ -1,26 +1,26 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { MessageCircle, Eye, AlertCircle } from 'lucide-react';
-import type { ForumPostDetail, ForumComment } from '@/features/forum/models';
-import PostVoteButtons from '../components/PostVoteButtons';
-import CommentVoteButtons from '../components/CommentVoteButtons';
-import WriteCommentBox from '../components/WriteCommentBox';
-import { PaginationControls } from '@/features/forum/ui_temp_ryan/projects/PaginationControls';
-import ForumTrailButtons from '@/features/forum/ui/shared/ForumTrailButtons';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { MessageCircle, Eye, AlertCircle } from "lucide-react";
+import type { ForumPostDetail, ForumComment } from "@/features/forum/models";
+import PostVoteButtons from "../components/PostVoteButtons";
+import CommentVoteButtons from "../components/CommentVoteButtons";
+import WriteCommentBox from "../components/WriteCommentBox";
+import { PaginationControls } from "@/features/forum/ui/shared/PaginationControls";
+import ForumTrailButtons from "@/features/forum/ui/shared/ForumTrailButtons";
 import {
   deleteForumComment,
   deleteForumPost,
   updateForumComment,
   updateForumPost,
-} from '@/features/forum/api/moderation';
+} from "@/features/forum/api/moderation";
 import {
   CommentModerationControls,
   EditCommentDialog,
   EditPostDialog,
   PostModerationControls,
-} from '@/features/forum/ui/projects/moderation';
+} from "@/features/forum/ui/moderation";
 
 interface PostDetailClientProps {
   post: ForumPostDetail;
@@ -50,11 +50,11 @@ function BlinkingText({
 
   return (
     <div
-      className={`inline-block whitespace-pre-wrap tracking-tight ${className ?? ''}`}
+      className={`inline-block whitespace-pre-wrap tracking-tight ${className ?? ""}`}
     >
       <span className="inline">{text}</span>
       <span
-        className={`ml-1 inline-block ${showCursor ? 'opacity-100' : 'opacity-0'}`}
+        className={`ml-1 inline-block ${showCursor ? "opacity-100" : "opacity-0"}`}
       >
         _
       </span>
@@ -82,15 +82,15 @@ export default function PostDetailClient({
 
   const totalCommentPages = Math.max(
     1,
-    Math.ceil(commentState.length / COMMENTS_PER_PAGE)
+    Math.ceil(commentState.length / COMMENTS_PER_PAGE),
   );
   const paginatedComments = commentState.slice(
     (currentCommentPage - 1) * COMMENTS_PER_PAGE,
-    currentCommentPage * COMMENTS_PER_PAGE
+    currentCommentPage * COMMENTS_PER_PAGE,
   );
 
   const editingComment =
-    typeof editingCommentId === 'number'
+    typeof editingCommentId === "number"
       ? (commentState.find((comment) => comment.id === editingCommentId) ??
         null)
       : null;
@@ -126,7 +126,7 @@ export default function PostDetailClient({
       setIsEditPostOpen(false);
     } catch (error) {
       setEditError(
-        error instanceof Error ? error.message : 'Failed to update post'
+        error instanceof Error ? error.message : "Failed to update post",
       );
     } finally {
       setIsBusy(false);
@@ -140,7 +140,7 @@ export default function PostDetailClient({
   };
 
   const handleEditComment = async (payload: { content: string }) => {
-    if (typeof editingCommentId !== 'number') {
+    if (typeof editingCommentId !== "number") {
       return;
     }
 
@@ -152,13 +152,13 @@ export default function PostDetailClient({
         prev.map((comment) =>
           comment.id === editingCommentId
             ? { ...comment, content: payload.content }
-            : comment
-        )
+            : comment,
+        ),
       );
       setEditingCommentId(null);
     } catch (error) {
       setEditError(
-        error instanceof Error ? error.message : 'Failed to update comment'
+        error instanceof Error ? error.message : "Failed to update comment",
       );
     } finally {
       setIsBusy(false);
@@ -168,7 +168,7 @@ export default function PostDetailClient({
   const handleDeleteComment = async (commentId: number) => {
     await deleteForumComment(postState.id, commentId);
     setCommentState((prev) =>
-      prev.filter((comment) => comment.id !== commentId)
+      prev.filter((comment) => comment.id !== commentId),
     );
     setPostState((prev) => ({
       ...prev,
@@ -204,7 +204,7 @@ export default function PostDetailClient({
                     className="text-xs sm:text-base leading-snug font-interface break-words line-clamp-2 sm:line-clamp-none"
                     text={
                       projectDescription ||
-                      'Share a question, project, or idea with the 42 community.'
+                      "Share a question, project, or idea with the 42 community."
                     }
                   />
                 </div>
@@ -238,9 +238,9 @@ export default function PostDetailClient({
         <ForumTrailButtons
           className="mb-0"
           items={[
-            { label: 'Projects', href: '/projects' },
+            { label: "Projects", href: "/projects" },
             { label: projectSlug, href: `/projects/${projectId}` },
-            { label: 'Post' },
+            { label: "Post" },
           ]}
         />
       </div>
@@ -318,8 +318,8 @@ export default function PostDetailClient({
                   key={comment.id}
                   className={`bg-white border rounded-lg p-6 ${
                     comment.isBestAnswer
-                      ? 'border-emerald-300 bg-emerald-50/40'
-                      : 'border-gray-200'
+                      ? "border-emerald-300 bg-emerald-50/40"
+                      : "border-gray-200"
                   }`}
                 >
                   <div className="flex gap-3">
@@ -400,7 +400,7 @@ export default function PostDetailClient({
 
       <EditCommentDialog
         isOpen={Boolean(editingComment)}
-        initialContent={editingComment?.content ?? ''}
+        initialContent={editingComment?.content ?? ""}
         isSubmitting={isBusy}
         error={editError}
         onCancel={() => {

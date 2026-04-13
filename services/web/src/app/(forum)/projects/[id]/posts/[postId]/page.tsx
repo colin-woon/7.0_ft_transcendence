@@ -1,7 +1,7 @@
-import { getPostDetail, getPostComments } from '@/features/forum/api/post';
-import { getProjectDetails } from '@/features/forum/api/project';
-import PostDetailClient from '@/features/forum/ui/projects/posts/screen/PostDetailClient';
-import { notFound } from 'next/navigation';
+import { getPostDetail, getPostComments } from "@/features/forum/api/post";
+import { getProjectDetails } from "@/features/forum/api/project";
+import PostDetailClient from "@/features/forum/ui/posts/screen/PostScreen";
+import { notFound } from "next/navigation";
 
 interface PostDetailPageProps {
   params: Promise<{
@@ -15,7 +15,12 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
   const projectIdNum = Number(id);
   const postIdNum = Number(postId);
 
-  if (!Number.isFinite(projectIdNum) || projectIdNum <= 0 || !Number.isFinite(postIdNum) || postIdNum <= 0) {
+  if (
+    !Number.isFinite(projectIdNum) ||
+    projectIdNum <= 0 ||
+    !Number.isFinite(postIdNum) ||
+    postIdNum <= 0
+  ) {
     notFound();
   }
 
@@ -32,12 +37,15 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
         comments={comments}
         projectId={projectIdNum}
         projectName={project?.name ?? projectName ?? post.category}
-        projectSlug={project?.slug ?? (projectName ?? post.category).toLowerCase().replace(/\s+/g, '-')}
-        projectDescription={project?.description ?? ''}
+        projectSlug={
+          project?.slug ??
+          (projectName ?? post.category).toLowerCase().replace(/\s+/g, "-")
+        }
+        projectDescription={project?.description ?? ""}
       />
     );
   } catch (error) {
-    console.error('Failed to load post detail:', error);
+    console.error("Failed to load post detail:", error);
     notFound();
   }
 }

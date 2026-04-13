@@ -1,18 +1,18 @@
-'use client';
-import React, { useEffect, useState } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Search } from 'lucide-react';
-import type { Project, Difficulty } from '../../models/projects';
-import { AnimatedProjectsGrid } from './AnimatedProjectsGrid';
-import TextType from '@/components/react-bits/TextType';
-import { AdminProjectCreateButton } from '@/features/forum/ui/projects/moderation';
-import { PaginationControls } from './PaginationControls';
-import ForumTrailButtons from '@/features/forum/ui/shared/ForumTrailButtons';
+"use client";
+import React, { useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Search } from "lucide-react";
+import type { Project, Difficulty } from "../../../models/projects";
+import { AnimatedProjectsGrid } from "../../animations/AnimatedProjectsGrid";
+import TextType from "@/components/react-bits/TextType";
+import { AdminProjectCreateButton } from "@/features/forum/ui/moderation";
+import { PaginationControls } from "../../shared/PaginationControls";
+import ForumTrailButtons from "@/features/forum/ui/shared/ForumTrailButtons";
 
 export default function ProjectsPage({
   projects,
   subscribedProjectIds,
-  initialSearch = '',
+  initialSearch = "",
 }: {
   projects: Project[];
   subscribedProjectIds: number[];
@@ -24,20 +24,20 @@ export default function ProjectsPage({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(initialSearch);
-  const [filter, setFilter] = useState<'All' | 'Subscribed' | Difficulty>(
-    'All'
+  const [filter, setFilter] = useState<"All" | "Subscribed" | Difficulty>(
+    "All",
   );
   const [currentPage, setCurrentPage] = useState(1);
   const [hydratedSubscribedIds, setHydratedSubscribedIds] =
     useState<number[]>(subscribedProjectIds);
 
-  const filters: ('All' | 'Subscribed' | Difficulty)[] = [
-    'All',
-    'Subscribed',
-    'Beginner',
-    'Intermediate',
-    'Advanced',
-    'Expert',
+  const filters: ("All" | "Subscribed" | Difficulty)[] = [
+    "All",
+    "Subscribed",
+    "Beginner",
+    "Intermediate",
+    "Advanced",
+    "Expert",
   ];
 
   useEffect(() => {
@@ -49,9 +49,9 @@ export default function ProjectsPage({
 
     async function loadSubscribedProjects() {
       try {
-        const response = await fetch('/api/forum/projects/me/subscriptions', {
-          method: 'GET',
-          cache: 'no-store',
+        const response = await fetch("/api/forum/projects/me/subscriptions", {
+          method: "GET",
+          cache: "no-store",
         });
 
         if (!response.ok || cancelled) {
@@ -82,9 +82,9 @@ export default function ProjectsPage({
       const trimmedSearch = search.trim();
 
       if (trimmedSearch.length >= 2) {
-        nextParams.set('q', trimmedSearch);
+        nextParams.set("q", trimmedSearch);
       } else {
-        nextParams.delete('q');
+        nextParams.delete("q");
       }
 
       const currentParams = searchParams.toString();
@@ -105,10 +105,10 @@ export default function ProjectsPage({
 
   const subscribedIdSet = new Set(hydratedSubscribedIds);
   const filtered = projects.filter((project) => {
-    const matchesFilter = filter === 'All' || project.difficulty === filter;
+    const matchesFilter = filter === "All" || project.difficulty === filter;
     const normalizedSearch = search.trim().toLowerCase();
 
-    if (filter === 'Subscribed') {
+    if (filter === "Subscribed") {
       return subscribedIdSet.has(project.id);
     }
 
@@ -117,8 +117,8 @@ export default function ProjectsPage({
     }
 
     const matchesSearch =
-      (project.name?.toLowerCase() || '').includes(normalizedSearch) ||
-      (project.description?.toLowerCase() || '').includes(normalizedSearch);
+      (project.name?.toLowerCase() || "").includes(normalizedSearch) ||
+      (project.description?.toLowerCase() || "").includes(normalizedSearch);
 
     return matchesFilter && matchesSearch;
   });
@@ -130,7 +130,7 @@ export default function ProjectsPage({
     filter,
     search.trim().toLowerCase(),
     String(currentPage),
-  ].join('|');
+  ].join("|");
 
   useEffect(() => {
     setCurrentPage(1);
@@ -166,7 +166,7 @@ export default function ProjectsPage({
               <TextType
                 className="text-xs sm:text-base leading-snug font-interface break-words line-clamp-2 sm:line-clamp-none"
                 text={
-                  'Welcome to 42 Overflow! Where you can explore and discuss all the projects in the 42 curriculum :>'
+                  "Welcome to 42 Overflow! Where you can explore and discuss all the projects in the 42 curriculum :>"
                 }
                 typingSpeed={75}
                 pauseDuration={1500}
@@ -204,7 +204,7 @@ export default function ProjectsPage({
                       key={f}
                       type="button"
                       role="tab"
-                      className={`tab ${filter === f ? 'tab-active' : ''}`}
+                      className={`tab ${filter === f ? "tab-active" : ""}`}
                       onClick={() => setFilter(f)}
                     >
                       {f}
@@ -230,7 +230,7 @@ export default function ProjectsPage({
                       key={f}
                       type="button"
                       role="tab"
-                      className={`tab ${filter === f ? 'tab-active' : ''}`}
+                      className={`tab ${filter === f ? "tab-active" : ""}`}
                       onClick={() => setFilter(f)}
                     >
                       {f}
@@ -244,9 +244,9 @@ export default function ProjectsPage({
       </div>
 
       <div className="w-full max-w-6xl mx-auto px-4 pt-15 flex items-center justify-between gap-3">
-        <ForumTrailButtons className="mb-0" items={[{ label: 'Projects' }]} />
+        <ForumTrailButtons className="mb-0" items={[{ label: "Projects" }]} />
         <p className="text-xs text-slate-400 mb-0 text-right font-interface">
-          Results: {filtered.length} project{filtered.length !== 1 ? 's' : ''}
+          Results: {filtered.length} project{filtered.length !== 1 ? "s" : ""}
         </p>
       </div>
 

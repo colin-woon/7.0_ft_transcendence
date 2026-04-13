@@ -1,5 +1,5 @@
-import type { ForumSort, ForumViewMode } from '../../../../models';
-import { Search } from 'lucide-react';
+import type { ForumSort, ForumViewMode } from "../../../models";
+import { Search } from "lucide-react";
 
 interface PostListControlsProps {
   searchValue: string;
@@ -63,22 +63,22 @@ export default function PostListControls({
           <div className="inline-flex rounded-md border border-gray-200 overflow-hidden">
             <button
               type="button"
-              onClick={() => setViewMode('card')}
+              onClick={() => setViewMode("card")}
               className={`px-3 py-1.5 text-sm transition ${
-                viewMode === 'card'
-                  ? 'bg-[#8EE7E3]/20 text-[#0f6f6b]'
-                  : 'bg-white text-slate-700 hover:bg-gray-50'
+                viewMode === "card"
+                  ? "bg-[#8EE7E3]/20 text-[#0f6f6b]"
+                  : "bg-white text-slate-700 hover:bg-gray-50"
               }`}
             >
               Card
             </button>
             <button
               type="button"
-              onClick={() => setViewMode('compact')}
+              onClick={() => setViewMode("compact")}
               className={`px-3 py-1.5 text-sm transition ${
-                viewMode === 'compact'
-                  ? 'bg-[#8EE7E3]/20 text-[#0f6f6b]'
-                  : 'bg-white text-slate-700 hover:bg-gray-50'
+                viewMode === "compact"
+                  ? "bg-[#8EE7E3]/20 text-[#0f6f6b]"
+                  : "bg-white text-slate-700 hover:bg-gray-50"
               }`}
             >
               Compact
@@ -95,8 +95,8 @@ export default function PostListControls({
             onClick={() => setActiveCategory(category)}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
               category === activeCategory
-                ? 'bg-[#0f6f6b] text-white'
-                : 'bg-gray-100 text-slate-700 hover:bg-[#8EE7E3]/30'
+                ? "bg-[#0f6f6b] text-white"
+                : "bg-gray-100 text-slate-700 hover:bg-[#8EE7E3]/30"
             }`}
           >
             {category}

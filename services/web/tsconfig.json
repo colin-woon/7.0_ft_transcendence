@@ -26,14 +26,15 @@
       "@/*": [
         "./src/*"
       ]
-    }
+    },
+    "forceConsistentCasingInFileNames": true
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
     "next-env.d.ts",
-    "src/components/ui/ComponentLogic",
+    "src/components/ui/ComponentLogic"
   ],
   "exclude": [
     "node_modules"

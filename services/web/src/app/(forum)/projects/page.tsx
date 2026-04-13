@@ -1,10 +1,6 @@
 // import ProjectsGridPage from '@/features/forum/ui/projects/ProjectsGridPage'
-import ProjectsGridPage from '@/features/forum/ui_temp_ryan/projects/ProjectsGridPage'
-import {
-  getAllProjects,
-  searchProjects,
-} from '@/features/forum/api/project'
-
+import ProjectsGridPage from "@/features/forum/ui/projects/screen/ProjectsListScreen";
+import { getAllProjects, searchProjects } from "@/features/forum/api/project";
 
 interface ProjectsRouteProps {
   searchParams?: Promise<{
@@ -12,18 +8,20 @@ interface ProjectsRouteProps {
   }>;
 }
 
-export default async function ProjectsPage({ searchParams }: ProjectsRouteProps) {
+export default async function ProjectsPage({
+  searchParams,
+}: ProjectsRouteProps) {
   const params = searchParams ? await searchParams : undefined;
   const qRaw = params?.q;
   const q = Array.isArray(qRaw) ? qRaw[0] : qRaw;
-  const searchQuery = (q ?? '').trim();
+  const searchQuery = (q ?? "").trim();
 
   const projectsResult = await Promise.allSettled([
     searchQuery.length >= 2 ? searchProjects(searchQuery) : getAllProjects(),
   ]);
 
   const projects =
-    projectsResult[0].status === 'fulfilled' ? projectsResult[0].value : [];
+    projectsResult[0].status === "fulfilled" ? projectsResult[0].value : [];
 
   return (
     <ProjectsGridPage
@@ -31,5 +29,5 @@ export default async function ProjectsPage({ searchParams }: ProjectsRouteProps)
       subscribedProjectIds={[]}
       initialSearch={searchQuery}
     />
-  )
+  );
 }

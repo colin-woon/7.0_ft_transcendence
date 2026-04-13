@@ -1,39 +1,39 @@
-'use client';
-import React, { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Zap, MessageCircle, Users, Search } from 'lucide-react';
-import type { Project } from '../../models/projects';
-import PostVoteButtons from '../../ui/projects/posts/components/PostVoteButtons';
-import ProjectInfoCard from './ProjectInforCard';
-import { deleteForumPost } from '@/features/forum/api/moderation';
-import { PostModerationControls } from '@/features/forum/ui/projects/moderation';
-import TextType from '@/components/react-bits/TextType';
-import SubscriptionButton from '@/features/forum/ui/projects/SubscriptionButton';
-import CreatePostButton from './CreatePostButton';
-import { AnimatedPostsGrid } from './AnimatedPostsGrid';
-import { PaginationControls } from './PaginationControls';
-import ForumTrailButtons from '@/features/forum/ui/shared/ForumTrailButtons';
+"use client";
+import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Zap, MessageCircle, Users, Search } from "lucide-react";
+import type { Project } from "../../../models/projects";
+import PostVoteButtons from "../components/PostVoteButtons";
+import ProjectInfoCard from "../../projects/components/ProjectHeaderDetails";
+import { deleteForumPost } from "@/features/forum/api/moderation";
+import { PostModerationControls } from "@/features/forum/ui/moderation";
+import TextType from "@/components/react-bits/TextType";
+import SubscriptionButton from "@/features/forum/ui/projects/components/SubscriptionButton";
+import CreatePostButton from "../../create/component/CreatePostButton";
+import { AnimatedPostsGrid } from "../../animations/AnimatedPostsGrid";
+import { PaginationControls } from "../../shared/PaginationControls";
+import ForumTrailButtons from "@/features/forum/ui/shared/ForumTrailButtons";
 
-const sortOptions = ['New', 'Top'];
+const sortOptions = ["New", "Top"];
 
 export default function ProjectForumPage({ project }: { project: Project }) {
   const PAGE_SIZE = 8;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const activeSort = searchParams.get('sort') === 'New' ? 'New' : 'Top';
-  const [postSearch, setPostSearch] = useState('');
+  const activeSort = searchParams.get("sort") === "New" ? "New" : "Top";
+  const [postSearch, setPostSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [projectPosts, setProjectPosts] = useState(project.posts);
   const [isBusy, setIsBusy] = useState(false);
   const displayTags = project.tags?.length
     ? project.tags.slice(0, 4)
-    : ['No Tag'];
+    : ["No Tag"];
 
   const handleSortChange = (sort: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
-    nextParams.set('sort', sort);
+    nextParams.set("sort", sort);
     router.replace(`${pathname}?${nextParams.toString()}`);
   };
 
@@ -74,7 +74,7 @@ export default function ProjectForumPage({ project }: { project: Project }) {
         timestamp: post.timestamp,
         isPinned: post.isPinned,
       })),
-    [filteredPosts]
+    [filteredPosts],
   );
 
   const totalPages = Math.max(1, Math.ceil(rowPosts.length / PAGE_SIZE));
@@ -88,7 +88,7 @@ export default function ProjectForumPage({ project }: { project: Project }) {
     activeSort,
     postSearch.trim().toLowerCase(),
     String(currentPage),
-  ].join('|');
+  ].join("|");
 
   useEffect(() => {
     setCurrentPage(1);
@@ -107,7 +107,7 @@ export default function ProjectForumPage({ project }: { project: Project }) {
       setProjectPosts((prev) => prev.filter((post) => post.id !== postId));
     } catch (error) {
       window.alert(
-        error instanceof Error ? error.message : 'Failed to delete post'
+        error instanceof Error ? error.message : "Failed to delete post",
       );
     } finally {
       setIsBusy(false);
@@ -177,7 +177,7 @@ export default function ProjectForumPage({ project }: { project: Project }) {
                           key={f}
                           type="button"
                           role="tab"
-                          className={`tab ${activeSort === f ? 'tab-active' : ''}`}
+                          className={`tab ${activeSort === f ? "tab-active" : ""}`}
                           onClick={() => handleSortChange(f)}
                         >
                           {f}
@@ -238,13 +238,13 @@ export default function ProjectForumPage({ project }: { project: Project }) {
         <ForumTrailButtons
           className="mb-0"
           items={[
-            { label: 'Projects', href: '/projects' },
+            { label: "Projects", href: "/projects" },
             { label: project.slug },
           ]}
         />
         <p className="text-xs text-slate-400 mb-0 text-right font-interface">
           Results: {filteredPosts.length} post
-          {filteredPosts.length !== 1 ? 's' : ''}
+          {filteredPosts.length !== 1 ? "s" : ""}
         </p>
       </div>
 
@@ -258,8 +258,8 @@ export default function ProjectForumPage({ project }: { project: Project }) {
                   <div className="w-full bg-white border border-gray-200 rounded-lg p-8 text-center">
                     <h3 className="text-base font-semibold text-slate-800 mb-1">
                       {postSearch.trim().length > 0
-                        ? 'No matching questions'
-                        : 'No questions yet'}
+                        ? "No matching questions"
+                        : "No questions yet"}
                     </h3>
                     <p className="text-sm text-slate-500">
                       {postSearch.trim().length > 0

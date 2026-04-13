@@ -1,7 +1,7 @@
-import Link from 'next/link';
-import { Plus, Zap, MessageCircle, Users } from 'lucide-react';
-import type { Project } from '../../models/projects';
-import SubscriptionButton from '@/features/forum/ui/projects/SubscriptionButton';
+import Link from "next/link";
+import { Plus, Zap, MessageCircle, Users } from "lucide-react";
+import type { Project } from "../../../models/projects";
+import SubscriptionButton from "@/features/forum/ui/projects/components/SubscriptionButton";
 
 export default function ProjectInfoCard({
   project,
@@ -11,7 +11,7 @@ export default function ProjectInfoCard({
   className?: string;
 }) {
   return (
-    <div className={`w-64 shrink-0 space-y-3 ${className ?? ''}`}>
+    <div className={`w-64 shrink-0 space-y-3 ${className ?? ""}`}>
       <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
         <div>
           <h2 className="text-base font-bold text-gray-900">{project.name}</h2>
