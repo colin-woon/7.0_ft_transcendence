@@ -110,28 +110,20 @@ export default function TmpProfilePage() {
    >
         <div className="w-full max-w-6xl flex flex-col gap-5 mx-auto pb-40 p-4 pt-6">
 
-        <motion.div whileHover={{ y: -2, scale: 1.002 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
-          <ProfileCard user={mockUser} profile={profileCardData} initials={initials} isOwnProfile={isOwnProfile}/>
-        </motion.div>
+        <ProfileCard user={mockUser} profile={profileCardData} initials={initials} isOwnProfile={isOwnProfile}/>
 
         {/* Recent Projects: full width, classic design */}
-        <motion.div whileHover={{ y: -2, scale: 1.002 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
-          <ProfileProjectCard projects={mockProjects} />
-        </motion.div>
+        <ProfileProjectCard projects={mockProjects} />
 
         {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 w-full">
           <ProfileSearchCard isOwnProfile={isOwnProfile} />
           <LinkAccountCard isOwnProfile={isOwnProfile} />
           <PasswordCard isOwnProfile={isOwnProfile} hasPassword={mockUser.hasPassword} />
         </div> */}
-        <motion.div whileHover={{ y: -2, scale: 1.002 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
-          <SessionCard sessions={mockSessions} isOwnProfile={isOwnProfile} />
-        </motion.div>
+        <SessionCard sessions={mockSessions} isOwnProfile={isOwnProfile} />
 
         {mockUser.role === 'ADMIN' && (
-          <motion.div whileHover={{ y: -2, scale: 1.002 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
-            <AdminCard isOwnProfile={isOwnProfile}/>
-          </motion.div>
+          <AdminCard isOwnProfile={isOwnProfile}/>
         )}
       </div>
     </motion.div>
