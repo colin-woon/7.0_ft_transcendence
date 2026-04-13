@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { LayoutDashboard, LogOut, ChevronDown } from 'lucide-react'
+import { LayoutDashboard, LogOut, ChevronDown, Settings } from 'lucide-react'
 import { useAuth } from '@/features/auth/models/AuthContext'
 
 export default function UserMenu() {
@@ -70,10 +70,17 @@ export default function UserMenu() {
             <Link
               href="/profile"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-[#8EE7E3]/10 hover:text-[#0f6f6b] transition-colors"
-            >
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-[#8EE7E3]/10 hover:text-[#0f6f6b] transition-colors">
               <LayoutDashboard size={16} />
               Profile
+            </Link>
+
+            <Link
+              href="/settings"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-[#8EE7E3]/10 hover:text-[#0f6f6b] transition-colors">
+              <Settings size={16} />
+                Settings
             </Link>
           </div>
 
