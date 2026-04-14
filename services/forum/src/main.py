@@ -86,8 +86,6 @@ def health():
     return {"status": "ok"}
 
 
-# Read user id from gateway-injected identity header.
-# If missing (e.g. local dev without gateway auth), fall back to user_id=1.
 def _parse_roles(raw_roles: str | None) -> set[str]:
     if not raw_roles:
         return set()
@@ -112,9 +110,9 @@ def get_request_identity(
             request.client.host if request.client else "unknown",
             request.headers.get("host", "unknown"),
         )
-        fallback_user_id = 6
-        roles = _parse_roles(x_intra_user_roles)
-        return fallback_user_id, "ADMIN" in roles
+        raise HTTPException(
+            status_code=401, detail="Missing X-Intra-User-Id header"
+        )
 
     try:
         parsed_user_id = int(x_intra_user_id.strip())
@@ -452,6 +450,7 @@ def vote_on_post(
     "/posts/{post_id}/comments/{comment_id}/vote", status_code=status.HTTP_200_OK
 )
 def vote_on_comment(
+    post_id: int,
     comment_id: int,
     action: schemas.VoteAction,
     db: Session = Depends(get_db),
