@@ -132,7 +132,7 @@ prune:
 	docker system prune -f
 
 ensure-prod-certs:
-	@test -f $(GRAFANA_PROD_DS) || ./certs.sh
+	@(test -d ./certs && test -f "$(GRAFANA_PROD_DS)") || ./certs.sh
 
 certs:
 	./certs.sh
