@@ -4,9 +4,11 @@ from datetime import datetime
 
 # --- Projects ---
 
+
 class ProjectSummary(BaseModel):
     name: str
     description: Optional[str] = None
+
 
 class ProjectCreate(BaseModel):
     slug: str
@@ -35,8 +37,10 @@ class ProjectResponse(ProjectCreate):
     id: int
     created_at: datetime
     subscriber_count: int = 0
+
     class Config:
         from_attributes = True
+
 
 class ProjectListPage(BaseModel):
     items: List[ProjectResponse]
@@ -68,6 +72,7 @@ class ProjectSubscriberCountResponse(BaseModel):
     project_id: int
     subscriber_count: int
 
+
 # --- POSTS ---
 class PostCreate(BaseModel):
     title: str
@@ -77,6 +82,7 @@ class PostCreate(BaseModel):
 class PostUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
+
 
 class PostSummary(BaseModel):
     id: int
@@ -88,12 +94,15 @@ class PostSummary(BaseModel):
     vote_score: int = 0
     user_vote: int = 0
     comment_count: int = 0
+
     class Config:
         from_attributes = True
 
+
 class PostDetail(PostSummary):
     content: str
-    
+
+
 # --- Comments ---
 class CommentCreate(BaseModel):
     content: str
@@ -102,18 +111,20 @@ class CommentCreate(BaseModel):
 class CommentUpdate(BaseModel):
     content: Optional[str] = None
 
+
 class CommentResponse(BaseModel):
     id: int
-    post_id: int 
+    post_id: int
     author_id: int
     content: str
     is_best_answer: bool = False
     vote_score: int = 0
     user_vote: int = 0
     created_at: datetime
+
     class Config:
         from_attributes = True
 
+
 class VoteAction(BaseModel):
     vote_value: int
-

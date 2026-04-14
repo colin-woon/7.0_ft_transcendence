@@ -30,6 +30,7 @@ def load_seed_json(json_path: str | Path) -> list[dict[str, Any]]:
 
     return data
 
+
 def seed_projects_from_json(db: Session, json_path: str | Path) -> dict[str, int]:
     rows = load_seed_json(json_path)
     created = 0
@@ -45,7 +46,9 @@ def seed_projects_from_json(db: Session, json_path: str | Path) -> dict[str, int
                 skipped += 1
                 continue
 
-            existing_project = db.query(models.Project).filter(models.Project.slug == slug).first()
+            existing_project = (
+                db.query(models.Project).filter(models.Project.slug == slug).first()
+            )
             if existing_project:
                 skipped += 1
                 continue
@@ -56,7 +59,7 @@ def seed_projects_from_json(db: Session, json_path: str | Path) -> dict[str, int
             new_project = models.Project(
                 slug=slug,
                 name=name,
-                xp = difficulty,
+                xp=difficulty,
                 description=first_session.get("description"),
                 solo=first_session.get("solo"),
                 objectives=first_session.get("objectives") or [],
@@ -70,6 +73,7 @@ def seed_projects_from_json(db: Session, json_path: str | Path) -> dict[str, int
     except Exception:
         db.rollback()
         raise
+
 
 def backfill_forum_counters(db: Session) -> dict[str, int]:
     project_counts = dict(
@@ -100,19 +104,26 @@ def backfill_forum_counters(db: Session) -> dict[str, int]:
 
 # --- HELPER COUNT FUNCTIONS ---
 def get_project_post_count(db: Session, project_id: int) -> int:
-    count = db.query(func.count(models.ForumPost.id))\
-              .filter(models.ForumPost.project_id == project_id)\
-              .scalar()
+    count = (
+        db.query(func.count(models.ForumPost.id))
+        .filter(models.ForumPost.project_id == project_id)
+        .scalar()
+    )
     return count or 0
+
 
 def get_post_comment_count(db: Session, post_id: int) -> int:
-    count = db.query(func.count(models.Comment.id))\
-              .filter(models.Comment.post_id == post_id)\
-              .scalar()
+    count = (
+        db.query(func.count(models.Comment.id))
+        .filter(models.Comment.post_id == post_id)
+        .scalar()
+    )
     return count or 0
 
 
-def get_project_subscriber_counts(db: Session, project_ids: list[int]) -> dict[int, int]:
+def get_project_subscriber_counts(
+    db: Session, project_ids: list[int]
+) -> dict[int, int]:
     if not project_ids:
         return {}
 
@@ -144,6 +155,7 @@ def attach_subscriber_counts(db: Session, projects: list[models.Project]) -> Non
 def get_all_projects(db: Session) -> List[models.Project]:
     return db.query(models.Project).all()
 
+
 def get_all_projects_paginated(db: Session, page: int, page_size: int) -> dict:
     offset = (page - 1) * page_size
     total = db.query(models.Project).count()
@@ -151,10 +163,11 @@ def get_all_projects_paginated(db: Session, page: int, page_size: int) -> dict:
         db.query(
             models.Project,
             (
-                models.Project.post_count + 
-                #coalesce is needed here because the sum of an empty set in sql = NULL, not 0
+                models.Project.post_count
+                +
+                # coalesce is needed here because the sum of an empty set in sql = NULL, not 0
                 func.coalesce(func.sum(models.ForumPost.comment_count), 0)
-            ).label("hot_score")
+            ).label("hot_score"),
         )
         .outerjoin(models.ForumPost, models.Project.id == models.ForumPost.project_id)
         .group_by(models.Project.id)
@@ -163,8 +176,8 @@ def get_all_projects_paginated(db: Session, page: int, page_size: int) -> dict:
         .limit(page_size)
         .all()
     )
-    
-    #unpack tuple to get project list with list comprehension
+
+    # unpack tuple to get project list with list comprehension
     items = [project for project, hot_score in results]
     attach_subscriber_counts(db, items)
 
@@ -176,6 +189,7 @@ def get_all_projects_paginated(db: Session, page: int, page_size: int) -> dict:
         "page_size": page_size,
         "total_pages": total_pages,
     }
+
 
 def get_project_by_id(db: Session, project_id: int) -> models.Project:
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
@@ -191,11 +205,15 @@ def require_admin(is_admin: bool) -> None:
         raise HTTPException(status_code=403, detail="Admin role required")
 
 
-def require_owner_or_admin(resource_owner_id: int, user_id: int, is_admin: bool) -> None:
+def require_owner_or_admin(
+    resource_owner_id: int, user_id: int, is_admin: bool
+) -> None:
     if is_admin:
         return
     if resource_owner_id != user_id:
-        raise HTTPException(status_code=403, detail="You are not allowed to modify this resource")
+        raise HTTPException(
+            status_code=403, detail="You are not allowed to modify this resource"
+        )
 
 
 def create_project(db: Session, data: schemas.ProjectCreate) -> models.Project:
@@ -210,14 +228,18 @@ def create_project(db: Session, data: schemas.ProjectCreate) -> models.Project:
     return new_project
 
 
-def update_project(db: Session, project_id: int, data: schemas.ProjectUpdate) -> models.Project:
+def update_project(
+    db: Session, project_id: int, data: schemas.ProjectUpdate
+) -> models.Project:
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
     payload = data.model_dump(exclude_unset=True)
     if not payload:
-        raise HTTPException(status_code=400, detail="No fields provided for project update")
+        raise HTTPException(
+            status_code=400, detail="No fields provided for project update"
+        )
 
     for field, value in payload.items():
         setattr(project, field, value)
@@ -242,15 +264,21 @@ def delete_project(db: Session, project_id: int) -> None:
     db.commit()
 
 
-def subscribe_to_project(db: Session, project_id: int, user_id: int) -> tuple[models.ProjectSubscription, bool]:
+def subscribe_to_project(
+    db: Session, project_id: int, user_id: int
+) -> tuple[models.ProjectSubscription, bool]:
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    existing = db.query(models.ProjectSubscription).filter(
-        models.ProjectSubscription.project_id == project_id,
-        models.ProjectSubscription.user_id == user_id,
-    ).first()
+    existing = (
+        db.query(models.ProjectSubscription)
+        .filter(
+            models.ProjectSubscription.project_id == project_id,
+            models.ProjectSubscription.user_id == user_id,
+        )
+        .first()
+    )
     if existing:
         return existing, False
 
@@ -266,10 +294,14 @@ def unsubscribe_from_project(db: Session, project_id: int, user_id: int) -> bool
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    existing = db.query(models.ProjectSubscription).filter(
-        models.ProjectSubscription.project_id == project_id,
-        models.ProjectSubscription.user_id == user_id,
-    ).first()
+    existing = (
+        db.query(models.ProjectSubscription)
+        .filter(
+            models.ProjectSubscription.project_id == project_id,
+            models.ProjectSubscription.user_id == user_id,
+        )
+        .first()
+    )
     if not existing:
         return False
 
@@ -296,10 +328,14 @@ def is_user_subscribed_to_project(db: Session, project_id: int, user_id: int) ->
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    existing = db.query(models.ProjectSubscription).filter(
-        models.ProjectSubscription.project_id == project_id,
-        models.ProjectSubscription.user_id == user_id,
-    ).first()
+    existing = (
+        db.query(models.ProjectSubscription)
+        .filter(
+            models.ProjectSubscription.project_id == project_id,
+            models.ProjectSubscription.user_id == user_id,
+        )
+        .first()
+    )
     return existing is not None
 
 
@@ -308,21 +344,24 @@ def get_project_subscriber_count(db: Session, project_id: int) -> int:
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    count = db.query(func.count(models.ProjectSubscription.user_id)).filter(
-        models.ProjectSubscription.project_id == project_id
-    ).scalar()
+    count = (
+        db.query(func.count(models.ProjectSubscription.user_id))
+        .filter(models.ProjectSubscription.project_id == project_id)
+        .scalar()
+    )
     return int(count or 0)
 
 
-
 # --- POSTS ---
-def get_all_posts(db:Session, user_id: int) -> List[models.ForumPost]:
+def get_all_posts(db: Session, user_id: int) -> List[models.ForumPost]:
     results = (
         db.query(
             models.ForumPost,
             func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score"),
             func.coalesce(
-                func.max(models.PostVote.vote_value).filter(models.PostVote.user_id == user_id),
+                func.max(models.PostVote.vote_value).filter(
+                    models.PostVote.user_id == user_id
+                ),
                 0,
             ).label("user_vote"),
         )
@@ -337,13 +376,16 @@ def get_all_posts(db:Session, user_id: int) -> List[models.ForumPost]:
         posts.append(post_obj)
     return posts
 
-def get_all_posts_sort_by_top(db:Session, user_id: int) -> List[models.ForumPost]:
+
+def get_all_posts_sort_by_top(db: Session, user_id: int) -> List[models.ForumPost]:
     results = (
         db.query(
             models.ForumPost,
             func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score"),
             func.coalesce(
-                func.max(models.PostVote.vote_value).filter(models.PostVote.user_id == user_id),
+                func.max(models.PostVote.vote_value).filter(
+                    models.PostVote.user_id == user_id
+                ),
                 0,
             ).label("user_vote"),
         )
@@ -359,13 +401,16 @@ def get_all_posts_sort_by_top(db:Session, user_id: int) -> List[models.ForumPost
         posts.append(post_obj)
     return posts
 
-def get_all_posts_sort_by_new(db:Session, user_id: int) -> List[models.ForumPost]:
+
+def get_all_posts_sort_by_new(db: Session, user_id: int) -> List[models.ForumPost]:
     results = (
         db.query(
             models.ForumPost,
             func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score"),
             func.coalesce(
-                func.max(models.PostVote.vote_value).filter(models.PostVote.user_id == user_id),
+                func.max(models.PostVote.vote_value).filter(
+                    models.PostVote.user_id == user_id
+                ),
                 0,
             ).label("user_vote"),
         )
@@ -381,13 +426,18 @@ def get_all_posts_sort_by_new(db:Session, user_id: int) -> List[models.ForumPost
         posts.append(post_obj)
     return posts
 
-def get_posts_by_project(db: Session, project_id: int, user_id: int) -> List[models.ForumPost]:
+
+def get_posts_by_project(
+    db: Session, project_id: int, user_id: int
+) -> List[models.ForumPost]:
     results = (
         db.query(
             models.ForumPost,
             func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score"),
             func.coalesce(
-                func.max(models.PostVote.vote_value).filter(models.PostVote.user_id == user_id),
+                func.max(models.PostVote.vote_value).filter(
+                    models.PostVote.user_id == user_id
+                ),
                 0,
             ).label("user_vote"),
         )
@@ -403,13 +453,18 @@ def get_posts_by_project(db: Session, project_id: int, user_id: int) -> List[mod
         posts.append(post_obj)
     return posts
 
-def get_posts_by_project_sort_by_top(db: Session, project_id: int, user_id: int) -> List[models.ForumPost]:
+
+def get_posts_by_project_sort_by_top(
+    db: Session, project_id: int, user_id: int
+) -> List[models.ForumPost]:
     results = (
         db.query(
             models.ForumPost,
             func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score"),
             func.coalesce(
-                func.max(models.PostVote.vote_value).filter(models.PostVote.user_id == user_id),
+                func.max(models.PostVote.vote_value).filter(
+                    models.PostVote.user_id == user_id
+                ),
                 0,
             ).label("user_vote"),
         )
@@ -426,13 +481,18 @@ def get_posts_by_project_sort_by_top(db: Session, project_id: int, user_id: int)
         posts.append(post_obj)
     return posts
 
-def get_posts_by_project_sort_by_new(db: Session, project_id: int, user_id: int) -> List[models.ForumPost]:
+
+def get_posts_by_project_sort_by_new(
+    db: Session, project_id: int, user_id: int
+) -> List[models.ForumPost]:
     results = (
         db.query(
             models.ForumPost,
             func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score"),
             func.coalesce(
-                func.max(models.PostVote.vote_value).filter(models.PostVote.user_id == user_id),
+                func.max(models.PostVote.vote_value).filter(
+                    models.PostVote.user_id == user_id
+                ),
                 0,
             ).label("user_vote"),
         )
@@ -449,7 +509,10 @@ def get_posts_by_project_sort_by_new(db: Session, project_id: int, user_id: int)
         posts.append(post_obj)
     return posts
 
-def create_post(db: Session, project_id: int, user_id: int, data: schemas.PostCreate) -> models.ForumPost:
+
+def create_post(
+    db: Session, project_id: int, user_id: int, data: schemas.PostCreate
+) -> models.ForumPost:
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -468,7 +531,9 @@ def create_post(db: Session, project_id: int, user_id: int, data: schemas.PostCr
     return new_post
 
 
-def update_post(db: Session, post_id: int, user_id: int, is_admin: bool, data: schemas.PostUpdate) -> models.ForumPost:
+def update_post(
+    db: Session, post_id: int, user_id: int, is_admin: bool, data: schemas.PostUpdate
+) -> models.ForumPost:
     post = db.query(models.ForumPost).filter(models.ForumPost.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
@@ -477,7 +542,9 @@ def update_post(db: Session, post_id: int, user_id: int, is_admin: bool, data: s
 
     payload = data.model_dump(exclude_unset=True)
     if not payload:
-        raise HTTPException(status_code=400, detail="No fields provided for post update")
+        raise HTTPException(
+            status_code=400, detail="No fields provided for post update"
+        )
 
     for field, value in payload.items():
         setattr(post, field, value)
@@ -495,7 +562,9 @@ def delete_post(db: Session, post_id: int, user_id: int, is_admin: bool) -> None
 
     require_owner_or_admin(post.author_id, user_id, is_admin)
 
-    project = db.query(models.Project).filter(models.Project.id == post.project_id).first()
+    project = (
+        db.query(models.Project).filter(models.Project.id == post.project_id).first()
+    )
     if project and project.post_count > 0:
         project.post_count -= 1
 
@@ -516,27 +585,35 @@ def get_post_detail(db: Session, post_id: int, user_id: int) -> models.ForumPost
     return post
 
 
-
-
 # --- COMMENTS ---
-def get_comments_by_post(db: Session, post_id: int, user_id: int) -> List[models.Comment]:
+def get_comments_by_post(
+    db: Session, post_id: int, user_id: int
+) -> List[models.Comment]:
     results = (
-            db.query(
-                models.Comment,
-                func.coalesce(func.sum(models.CommentVote.vote_value), 0).label("vote_score"),
-                func.coalesce(
-                    func.max(
-                        models.CommentVote.vote_value
-                    ).filter(models.CommentVote.user_id == user_id),
-                    0,
-                ).label("user_vote"),
-            )
-            .outerjoin(models.CommentVote, models.Comment.id == models.CommentVote.comment_id)
-            .filter(models.Comment.post_id == post_id)
-            .group_by(models.Comment.id)
-            .order_by(text("vote_score DESC"), models.Comment.created_at.asc(), models.Comment.id.asc())
-            .all()
+        db.query(
+            models.Comment,
+            func.coalesce(func.sum(models.CommentVote.vote_value), 0).label(
+                "vote_score"
+            ),
+            func.coalesce(
+                func.max(models.CommentVote.vote_value).filter(
+                    models.CommentVote.user_id == user_id
+                ),
+                0,
+            ).label("user_vote"),
         )
+        .outerjoin(
+            models.CommentVote, models.Comment.id == models.CommentVote.comment_id
+        )
+        .filter(models.Comment.post_id == post_id)
+        .group_by(models.Comment.id)
+        .order_by(
+            text("vote_score DESC"),
+            models.Comment.created_at.asc(),
+            models.Comment.id.asc(),
+        )
+        .all()
+    )
     comments = []
     for comment_obj, score, user_vote in results:
         comment_obj.vote_score = score
@@ -550,24 +627,35 @@ def get_comments_by_post(db: Session, post_id: int, user_id: int) -> List[models
 
     return comments
 
-def get_comments_by_post_sort_by_top(db: Session, post_id: int, user_id: int) -> List[models.Comment]:
+
+def get_comments_by_post_sort_by_top(
+    db: Session, post_id: int, user_id: int
+) -> List[models.Comment]:
     results = (
-            db.query(
-                models.Comment,
-                func.coalesce(func.sum(models.CommentVote.vote_value), 0).label("vote_score"),
-                func.coalesce(
-                    func.max(
-                        models.CommentVote.vote_value
-                    ).filter(models.CommentVote.user_id == user_id),
-                    0,
-                ).label("user_vote"),
-            )
-            .outerjoin(models.CommentVote, models.Comment.id == models.CommentVote.comment_id)
-            .filter(models.Comment.post_id == post_id)
-            .group_by(models.Comment.id)
-            .order_by(text("vote_score DESC"), models.Comment.created_at.asc(), models.Comment.id.asc())
-            .all()
+        db.query(
+            models.Comment,
+            func.coalesce(func.sum(models.CommentVote.vote_value), 0).label(
+                "vote_score"
+            ),
+            func.coalesce(
+                func.max(models.CommentVote.vote_value).filter(
+                    models.CommentVote.user_id == user_id
+                ),
+                0,
+            ).label("user_vote"),
         )
+        .outerjoin(
+            models.CommentVote, models.Comment.id == models.CommentVote.comment_id
+        )
+        .filter(models.Comment.post_id == post_id)
+        .group_by(models.Comment.id)
+        .order_by(
+            text("vote_score DESC"),
+            models.Comment.created_at.asc(),
+            models.Comment.id.asc(),
+        )
+        .all()
+    )
     comments = []
     for comment_obj, score, user_vote in results:
         comment_obj.vote_score = score
@@ -581,24 +669,31 @@ def get_comments_by_post_sort_by_top(db: Session, post_id: int, user_id: int) ->
 
     return comments
 
-def get_comments_by_post_sort_by_new(db: Session, post_id: int, user_id: int) -> List[models.Comment]:
+
+def get_comments_by_post_sort_by_new(
+    db: Session, post_id: int, user_id: int
+) -> List[models.Comment]:
     results = (
-            db.query(
-                models.Comment,
-                func.coalesce(func.sum(models.CommentVote.vote_value), 0).label("vote_score"),
-                func.coalesce(
-                    func.max(
-                        models.CommentVote.vote_value
-                    ).filter(models.CommentVote.user_id == user_id),
-                    0,
-                ).label("user_vote"),
-            )
-            .outerjoin(models.CommentVote, models.Comment.id == models.CommentVote.comment_id)
-            .filter(models.Comment.post_id == post_id)
-            .group_by(models.Comment.id)
-            .order_by(text ("created_at DESC"))
-            .all()
+        db.query(
+            models.Comment,
+            func.coalesce(func.sum(models.CommentVote.vote_value), 0).label(
+                "vote_score"
+            ),
+            func.coalesce(
+                func.max(models.CommentVote.vote_value).filter(
+                    models.CommentVote.user_id == user_id
+                ),
+                0,
+            ).label("user_vote"),
         )
+        .outerjoin(
+            models.CommentVote, models.Comment.id == models.CommentVote.comment_id
+        )
+        .filter(models.Comment.post_id == post_id)
+        .group_by(models.Comment.id)
+        .order_by(text("created_at DESC"))
+        .all()
+    )
     comments = []
     for comment_obj, score, user_vote in results:
         comment_obj.vote_score = score
@@ -614,7 +709,10 @@ def get_comments_by_post_sort_by_new(db: Session, post_id: int, user_id: int) ->
 
     return comments
 
-def create_comment(db: Session, post_id: int, user_id: int, data: schemas.CommentCreate) -> models.Comment:
+
+def create_comment(
+    db: Session, post_id: int, user_id: int, data: schemas.CommentCreate
+) -> models.Comment:
     post = db.query(models.ForumPost).filter(models.ForumPost.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
@@ -648,13 +746,17 @@ def update_comment(
         raise HTTPException(status_code=404, detail="Comment not found")
 
     if comment.post_id != post_id:
-        raise HTTPException(status_code=400, detail="Comment does not belong to this post")
+        raise HTTPException(
+            status_code=400, detail="Comment does not belong to this post"
+        )
 
     require_owner_or_admin(comment.author_id, user_id, is_admin)
 
     payload = data.model_dump(exclude_unset=True)
     if not payload:
-        raise HTTPException(status_code=400, detail="No fields provided for comment update")
+        raise HTTPException(
+            status_code=400, detail="No fields provided for comment update"
+        )
 
     for field, value in payload.items():
         setattr(comment, field, value)
@@ -666,7 +768,9 @@ def update_comment(
     return comment
 
 
-def delete_comment(db: Session, post_id: int, comment_id: int, user_id: int, is_admin: bool) -> None:
+def delete_comment(
+    db: Session, post_id: int, comment_id: int, user_id: int, is_admin: bool
+) -> None:
     post = db.query(models.ForumPost).filter(models.ForumPost.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
@@ -676,7 +780,9 @@ def delete_comment(db: Session, post_id: int, comment_id: int, user_id: int, is_
         raise HTTPException(status_code=404, detail="Comment not found")
 
     if comment.post_id != post_id:
-        raise HTTPException(status_code=400, detail="Comment does not belong to this post")
+        raise HTTPException(
+            status_code=400, detail="Comment does not belong to this post"
+        )
 
     require_owner_or_admin(comment.author_id, user_id, is_admin)
 
@@ -685,7 +791,6 @@ def delete_comment(db: Session, post_id: int, comment_id: int, user_id: int, is_
 
     db.delete(comment)
     db.commit()
-
 
 
 # --- VOTING ---
@@ -697,10 +802,14 @@ def cast_post_vote(db: Session, post_id: int, user_id: int, vote_value: int) -> 
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
 
-    existing_vote = db.query(models.PostVote).filter(
-        models.PostVote.post_id == post_id,
-        models.PostVote.user_id == user_id,
-    ).first()
+    existing_vote = (
+        db.query(models.PostVote)
+        .filter(
+            models.PostVote.post_id == post_id,
+            models.PostVote.user_id == user_id,
+        )
+        .first()
+    )
 
     if existing_vote:
         if existing_vote.vote_value == vote_value:
@@ -724,7 +833,10 @@ def cast_post_vote(db: Session, post_id: int, user_id: int, vote_value: int) -> 
     score = get_post_vote_score(db, post_id)
     return {"message": "Vote registered", "vote_score": score, "user_vote": vote_value}
 
-def cast_comment_vote(db: Session, comment_id: int, user_id: int, vote_value: int) -> dict:
+
+def cast_comment_vote(
+    db: Session, comment_id: int, user_id: int, vote_value: int
+) -> dict:
     if vote_value not in [1, -1]:
         raise HTTPException(status_code=400, detail="Vote value must be 1 or -1")
 
@@ -732,10 +844,14 @@ def cast_comment_vote(db: Session, comment_id: int, user_id: int, vote_value: in
     if not post:
         raise HTTPException(status_code=404, detail="Comment not found")
 
-    existing_vote = db.query(models.CommentVote).filter(
-        models.CommentVote.comment_id == comment_id,
-        models.CommentVote.user_id == user_id,
-    ).first()
+    existing_vote = (
+        db.query(models.CommentVote)
+        .filter(
+            models.CommentVote.comment_id == comment_id,
+            models.CommentVote.user_id == user_id,
+        )
+        .first()
+    )
 
     if existing_vote:
         if existing_vote.vote_value == vote_value:
@@ -759,28 +875,42 @@ def cast_comment_vote(db: Session, comment_id: int, user_id: int, vote_value: in
     score = get_comment_vote_score(db, comment_id)
     return {"message": "Vote registered", "vote_score": score, "user_vote": vote_value}
 
+
 def get_post_vote_score(db: Session, post_id: int) -> int:
-    score = db.query(func.sum(models.PostVote.vote_value))\
-        .filter(models.PostVote.post_id == post_id).scalar()
+    score = (
+        db.query(func.sum(models.PostVote.vote_value))
+        .filter(models.PostVote.post_id == post_id)
+        .scalar()
+    )
     return int(score or 0)
+
 
 def get_post_user_vote(db: Session, post_id: int, user_id: int) -> int:
-    user_vote = db.query(models.PostVote.vote_value)\
-        .filter(models.PostVote.post_id == post_id, models.PostVote.user_id == user_id).scalar()
+    user_vote = (
+        db.query(models.PostVote.vote_value)
+        .filter(models.PostVote.post_id == post_id, models.PostVote.user_id == user_id)
+        .scalar()
+    )
     return int(user_vote or 0)
 
-def get_comment_vote_score(db: Session, id: int) -> int:
-    score = db.query(func.sum(models.CommentVote.vote_value))\
-        .filter(models.CommentVote.comment_id == id).scalar()
-    return int(score or 0)
 
+def get_comment_vote_score(db: Session, id: int) -> int:
+    score = (
+        db.query(func.sum(models.CommentVote.vote_value))
+        .filter(models.CommentVote.comment_id == id)
+        .scalar()
+    )
+    return int(score or 0)
 
 
 # --- SEARCH ---
 def search_project(db: Session, query: str) -> list[models.Project]:
-    projects = db.query(models.Project).filter(models.Project.name.ilike(f"%{query}%")).all()
+    projects = (
+        db.query(models.Project).filter(models.Project.name.ilike(f"%{query}%")).all()
+    )
     attach_subscriber_counts(db, projects)
     return projects
+
 
 def search_posts(db: Session, query: str, user_id: int) -> list[models.ForumPost]:
     results = (
@@ -788,7 +918,9 @@ def search_posts(db: Session, query: str, user_id: int) -> list[models.ForumPost
             models.ForumPost,
             func.coalesce(func.sum(models.PostVote.vote_value), 0).label("vote_score"),
             func.coalesce(
-                func.max(models.PostVote.vote_value).filter(models.PostVote.user_id == user_id),
+                func.max(models.PostVote.vote_value).filter(
+                    models.PostVote.user_id == user_id
+                ),
                 0,
             ).label("user_vote"),
         )

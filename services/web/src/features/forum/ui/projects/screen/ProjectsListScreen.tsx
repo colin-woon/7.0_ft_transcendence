@@ -144,10 +144,10 @@ export default function ProjectsPage({
 
   return (
     <div className="flex min-h-full flex-col font-sans">
-      <div className="sticky top-16 z-50">
+      <div className="sticky top-11 z-50">
         {/* Header */}
         <div className="card card-border shadow-xl w-full max-w-full rounded-none sm:rounded-box backdrop-blur-sm">
-          <div className="card-body px-4 sm:px-6 py-4 sm:py-5 min-h-0 sm:min-h-[13rem] overflow-hidden">
+          <div className="card-body px-4 sm:px-6 py- sm:py-5 min-h-0 sm:min-h-[10rem] overflow-hidden">
             <TextType
               className="text-2xl sm:text-5xl leading-tight text-slate-800 font-interface tracking-wide uppercase break-words line-clamp-2 sm:line-clamp-none"
               text="Cursus Projects"
@@ -182,7 +182,7 @@ export default function ProjectsPage({
             </div>
 
             {/* Search bar and tabs row: flex on sm+, stacked on mobile */}
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center min-w-0">
+            <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-center min-w-0">
               <div className="relative flex-1 max-w-md min-w-0">
                 <Search
                   size={16}
@@ -243,7 +243,7 @@ export default function ProjectsPage({
         </div>
       </div>
 
-      <div className="w-full max-w-6xl mx-auto px-4 pt-15 flex items-center justify-between gap-3">
+      <div className="w-full max-w-6xl mx-auto px-4 pt-10 flex items-center justify-between gap-3">
         <ForumTrailButtons className="mb-0" items={[{ label: "Projects" }]} />
         <p className="text-xs text-slate-400 mb-0 text-right font-interface">
           Results: {filtered.length} project{filtered.length !== 1 ? "s" : ""}
@@ -251,8 +251,8 @@ export default function ProjectsPage({
       </div>
 
       {/* Grid */}
-      <div className="sm:p-6 w-full">
-        <div className="mt-0 flex flex-col gap-3 pb-10 sm:pb-10 w-full items-center">
+      <div className="sm:p-6 w-full items-center">
+        <div className="mt-0 flex flex-col gap-3 pb-10 sm:pb-10 w-5xl items-center justify-self-center">
           <AnimatedProjectsGrid
             pageKey={pageKey}
             projects={paginatedProjects}

@@ -116,11 +116,11 @@ export default function ProjectForumPage({ project }: { project: Project }) {
 
   return (
     <div className="flex min-h-full flex-col font-sans">
-      <div className="sticky top-16 z-50 ">
+      <div className="sticky top-11 z-50 ">
         {/* Header */}
         <div className="card card-border shadow-xl w-full max-w-full rounded-none sm:rounded-box backdrop-blur-sm">
-          <div className="card-body px-4 sm:px-6 py-4 sm:py-5 min-h-0 sm:min-h-[13rem] overflow-hidden">
-            <div className="grid h-full grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_11rem] lg:gap-6">
+          <div className="card-body px-4 sm:px-6 py-4 sm:py-5 min-h-0 sm:min-h-[10rem] overflow-hidden">
+            <div className="grid h-full grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_10rem] lg:gap-6">
               <div className="min-w-0">
                 <TextType
                   className="text-2xl sm:text-5xl leading-tight text-slate-800 font-interface tracking-wide uppercase break-words line-clamp-2 sm:line-clamp-none"
@@ -155,7 +155,7 @@ export default function ProjectForumPage({ project }: { project: Project }) {
                 </div>
 
                 {/* Search bar and tabs row: flex on sm+, stacked on mobile */}
-                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center min-w-0">
+                <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-center min-w-0">
                   <div className="relative flex-1 max-w-md min-w-0">
                     <Search
                       size={16}
@@ -189,38 +189,41 @@ export default function ProjectForumPage({ project }: { project: Project }) {
               </div>
 
               <div className="w-50 shrink-0 justify-self-center lg:justify-self-center">
-                <div className="grid grid-cols-3 gap-2 lg:grid-cols-3 lg:gap-2 justify-self-center lg:justify-self-end">
-                  <div className="text-center py-1">
-                    <Zap className="mx-auto mb-1 h-3 w-3 text-slate-500" />
-                    <p className="text-xs font-semibold text-gray-900">
-                      {project.xp ?? 0} xp
-                    </p>
+                <div className="flex flex-row items-center justify-center gap-6 lg:flex-col lg:items-end lg:gap-0">
+                  <div className="grid grid-cols-3 shrink-0 gap-2 lg:grid-cols-3 lg:gap-2 justify-center lg:justify-end">
+                    <div className="text-center py-1">
+                      <Zap className="mx-auto mb-1 h-3 w-3 text-slate-500" />
+                      <p className="text-xs font-semibold text-gray-900">
+                        {project.xp ?? 0} xp
+                      </p>
+                    </div>
+                    <div className="text-center py-1">
+                      <MessageCircle className="mx-auto mb-1 h-3 w-3 text-slate-500" />
+                      <p className="text-xs font-semibold text-gray-900">
+                        {project.posts?.length ?? 0} posts
+                      </p>
+                    </div>
+                    <div className="text-center py-1">
+                      <Users className="mx-auto mb-1 h-3 w-3 text-slate-500" />
+                      <p className="text-xs font-semibold text-gray-900">
+                        {project.students ?? 0} students
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-center py-1">
-                    <MessageCircle className="mx-auto mb-1 h-3 w-3 text-slate-500" />
-                    <p className="text-xs font-semibold text-gray-900">
-                      {project.posts?.length ?? 0} posts
-                    </p>
-                  </div>
-                  <div className="text-center py-1">
-                    <Users className="mx-auto mb-1 h-3 w-3 text-slate-500" />
-                    <p className="text-xs font-semibold text-gray-900">
-                      {project.students ?? 0} students
-                    </p>
+
+                  <div className="mt-0 lg:mt-5 flex flex-wrap gap-1.5 justify-center lg:justify-end">
+                    {displayTags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600"
+                      >
+                        {tag}
+                      </span>
+                    ))}
                   </div>
                 </div>
 
-                <div className="mt-5 flex flex-wrap gap-1.5 justify-self-center lg:justify-self-end">
-                  {displayTags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <div className="flex mt-5 items-center justify-self-center lg:justify-self-end gap-1.5">
+                <div className="flex mt-5 items-center justify-center lg:justify-end gap-1.5">
                   <SubscriptionButton
                     projectId={project.id}
                     compact
@@ -234,7 +237,7 @@ export default function ProjectForumPage({ project }: { project: Project }) {
         </div>
       </div>
 
-      <div className="w-full max-w-6xl mx-auto px-4 pt-15 flex items-center justify-between gap-3">
+      <div className="w-full max-w-6xl mx-auto px-4 pt-10 flex items-center justify-between gap-3">
         <ForumTrailButtons
           className="mb-0"
           items={[

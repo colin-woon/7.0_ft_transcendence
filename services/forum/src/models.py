@@ -5,10 +5,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
 
+
 # --- 1. PROJECTS ---
 class Project(Base):
     __tablename__ = "projects"
-    __table_args__ = {"schema": "forum_service"} 
+    __table_args__ = {"schema": "forum_service"}
 
     id: Mapped[int] = mapped_column(primary_key=True)
     slug: Mapped[str] = mapped_column(String(100), unique=True)
@@ -23,9 +24,9 @@ class Project(Base):
     post_count: Mapped[int] = mapped_column(Integer, default=0)
     posts: Mapped[List["ForumPost"]] = relationship(back_populates="project")
     subscriptions: Mapped[List["ProjectSubscription"]] = relationship(
-        back_populates="project",
-        cascade="all, delete-orphan"
+        back_populates="project", cascade="all, delete-orphan"
     )
+
 
 # --- 2. FORUM POSTS ---
 class ForumPost(Base):
@@ -33,12 +34,12 @@ class ForumPost(Base):
     __table_args__ = {"schema": "forum_service"}
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    author_id: Mapped[int] = mapped_column() 
-    
+    author_id: Mapped[int] = mapped_column()
+
     project_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("forum_service.projects.id", ondelete="SET NULL")
     )
-    
+
     title: Mapped[str] = mapped_column(String(255))
     content: Mapped[str] = mapped_column(Text)
     view_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -46,7 +47,10 @@ class ForumPost(Base):
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     project: Mapped["Project"] = relationship(back_populates="posts")
-    comments: Mapped[List["Comment"]] = relationship(back_populates="post", cascade="all, delete-orphan")
+    comments: Mapped[List["Comment"]] = relationship(
+        back_populates="post", cascade="all, delete-orphan"
+    )
+
 
 # --- 3. COMMENTS ---
 class Comment(Base):
@@ -54,8 +58,8 @@ class Comment(Base):
     __table_args__ = {"schema": "forum_service"}
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    author_id: Mapped[int] = mapped_column() 
-    
+    author_id: Mapped[int] = mapped_column()
+
     post_id: Mapped[int] = mapped_column(
         ForeignKey("forum_service.forum_posts.id", ondelete="CASCADE")
     )
@@ -65,20 +69,21 @@ class Comment(Base):
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     post: Mapped["ForumPost"] = relationship(back_populates="comments")
-    
+
+
 class PostVote(Base):
     __tablename__ = "post_votes"
     __table_args__ = {"schema": "forum_service"}
 
     # composite primary key naturally prevents a user from voting twice
     post_id: Mapped[int] = mapped_column(
-        ForeignKey("forum_service.forum_posts.id", ondelete="CASCADE"), 
-        primary_key=True
+        ForeignKey("forum_service.forum_posts.id", ondelete="CASCADE"), primary_key=True
     )
     user_id: Mapped[int] = mapped_column(primary_key=True)
-    
+
     # will store 1 for upvote, -1 for downvote
     vote_value: Mapped[int] = mapped_column(Integer)
+
 
 class CommentVote(Base):
     __tablename__ = "comment_votes"
@@ -86,11 +91,10 @@ class CommentVote(Base):
 
     # composite primary key naturally prevents a user from voting twice
     comment_id: Mapped[int] = mapped_column(
-        ForeignKey("forum_service.comments.id", ondelete="CASCADE"), 
-        primary_key=True
+        ForeignKey("forum_service.comments.id", ondelete="CASCADE"), primary_key=True
     )
     user_id: Mapped[int] = mapped_column(primary_key=True)
-    
+
     # will store 1 for upvote, -1 for downvote
     vote_value: Mapped[int] = mapped_column(Integer)
 

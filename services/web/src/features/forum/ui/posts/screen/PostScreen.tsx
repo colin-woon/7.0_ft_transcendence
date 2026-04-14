@@ -189,9 +189,9 @@ export default function PostDetailClient({
 
   return (
     <div className="flex min-h-full flex-col font-sans">
-      <div className="sticky top-16 z-50">
+      <div className="sticky top-11 z-50">
         <div className="card card-border shadow-xl w-full max-w-full rounded-none sm:rounded-box backdrop-blur-sm">
-          <div className="card-body px-4 sm:px-6 py-4 sm:py-5 min-h-0 sm:min-h-[13rem] overflow-hidden">
+          <div className="card-body px-4 sm:px-6 py-4 sm:py-5 min-h-0 sm:min-h-[10rem] overflow-hidden">
             <div className="grid h-full grid-cols-1 gap-4">
               <div className="min-w-0">
                 <BlinkingText
@@ -208,7 +208,7 @@ export default function PostDetailClient({
                     }
                   />
                 </div>
-                <div className="mt-5 flex items-start gap-2">
+                <div className="mt-1 flex items-start gap-2">
                   <AlertCircle
                     size={14}
                     className="text-amber-500 mt-0.5 flex-shrink-0"
@@ -234,7 +234,7 @@ export default function PostDetailClient({
         </div>
       </div>
 
-      <div className="w-full max-w-6xl mx-auto px-4 pt-15">
+      <div className="w-full max-w-6xl mx-auto px-4 pt-10">
         <ForumTrailButtons
           className="mb-0"
           items={[

@@ -20,7 +20,7 @@ export default function ForumRouteTransition({ children }: { children: ReactNode
   const key = pathname ?? 'forum-route'
   const transition = reduceMotion
     ? { duration: 0 }
-    : { duration: 1, ease: 'easeOut' as const }
+    : { duration: 0.5, ease: 'easeOut' as const }
 
   return (
     <AnimatePresence mode="sync" initial={false}>
