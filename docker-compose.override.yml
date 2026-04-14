@@ -92,6 +92,7 @@ services:
             - MTLS_CRT_PATH=
             - MTLS_CA_PATH=
             - NODE_EXTRA_CA_CERTS=
+            - WEB_LOG_NEXT_CACHE=1
         healthcheck:
             test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
             interval: 10s
@@ -115,8 +116,8 @@ services:
             test: ['CMD', 'curl', '-f', 'http://localhost:8180/q/health']
             interval: 10s
             timeout: 5s
-            start_period: 40s
-            retries: 3
+            start_period: 120s
+            retries: 6
         volumes:
             - ./services/gateway:/app
         depends_on:

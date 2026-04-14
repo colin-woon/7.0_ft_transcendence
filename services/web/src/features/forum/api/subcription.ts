@@ -7,7 +7,10 @@ import type {
 
 const FORUM_API_BASE = '/api/forum';
 
-async function forumClientFetch(path: string, init?: RequestInit): Promise<Response> {
+async function forumClientFetch(
+  path: string,
+  init?: RequestInit
+): Promise<Response> {
   const headers = new Headers(init?.headers);
 
   return fetch(`${FORUM_API_BASE}${path}`, {
@@ -17,11 +20,16 @@ async function forumClientFetch(path: string, init?: RequestInit): Promise<Respo
   });
 }
 
-export async function getProjectSubscriptionStatus(projectId: number): Promise<ProjectSubscriptionStatus> {
-  const response = await forumClientFetch(`/projects/${projectId}/subscription-status`, {
-    method: 'GET',
-    cache: 'no-store',
-  });
+export async function getProjectSubscriptionStatus(
+  projectId: number
+): Promise<ProjectSubscriptionStatus> {
+  const response = await forumClientFetch(
+    `/projects/${projectId}/subscription-status`,
+    {
+      method: 'GET',
+      cache: 'no-store',
+    }
+  );
 
   if (!response.ok) {
     throw new Error('Failed to fetch subscription status');
@@ -30,11 +38,16 @@ export async function getProjectSubscriptionStatus(projectId: number): Promise<P
   return (await response.json()) as ProjectSubscriptionStatus;
 }
 
-export async function getProjectSubscriberCount(projectId: number): Promise<ProjectSubscriberCount> {
-  const response = await forumClientFetch(`/projects/${projectId}/subscribers/count`, {
-    method: 'GET',
-    cache: 'no-store',
-  });
+export async function getProjectSubscriberCount(
+  projectId: number
+): Promise<ProjectSubscriberCount> {
+  const response = await forumClientFetch(
+    `/projects/${projectId}/subscribers/count`,
+    {
+      method: 'GET',
+      cache: 'no-store',
+    }
+  );
 
   if (!response.ok) {
     throw new Error('Failed to fetch subscriber count');
@@ -43,7 +56,9 @@ export async function getProjectSubscriberCount(projectId: number): Promise<Proj
   return (await response.json()) as ProjectSubscriberCount;
 }
 
-export async function subscribeToProject(projectId: number): Promise<ProjectSubscriptionRow> {
+export async function subscribeToProject(
+  projectId: number
+): Promise<ProjectSubscriptionRow> {
   const response = await forumClientFetch(`/projects/${projectId}/subscribe`, {
     method: 'POST',
     cache: 'no-store',
@@ -56,7 +71,9 @@ export async function subscribeToProject(projectId: number): Promise<ProjectSubs
   return (await response.json()) as ProjectSubscriptionRow;
 }
 
-export async function unsubscribeFromProject(projectId: number): Promise<ActionResponse> {
+export async function unsubscribeFromProject(
+  projectId: number
+): Promise<ActionResponse> {
   const response = await forumClientFetch(`/projects/${projectId}/subscribe`, {
     method: 'DELETE',
     cache: 'no-store',

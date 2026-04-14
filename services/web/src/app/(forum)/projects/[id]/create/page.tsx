@@ -1,4 +1,4 @@
-import CreatePage from '@/features/forum/ui/create/CreatePage'
+import CreatePage from '@/features/forum/ui/create/screen/CreatePostPage'
 import { getProjectDetails } from '@/features/forum/api/project'
 import { notFound } from 'next/navigation'
 
@@ -19,5 +19,12 @@ export default async function ProjectCreatePage({ params }: ProjectCreatePagePro
     return notFound()
   }
 
-  return <CreatePage projectId={project.id} projectName={project.name} />
+  return (
+    <CreatePage
+      projectId={project.id}
+      projectName={project.name}
+      projectSlug={project.slug}
+      projectDescription={project.description}
+    />
+  )
 }

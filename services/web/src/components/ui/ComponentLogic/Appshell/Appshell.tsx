@@ -1,8 +1,8 @@
 "use client"
 
 import { useAppShell } from './context/AppShellContext'
-import Header from '@/components/layout/Header'
-import Sidebar from '@/components/layout/Sidebar'
+import Header from '../../../layout/Header'
+import Sidebar from '../../../layout/Sidebar'
 import { ReactNode } from 'react'
 
 interface AppShellProps {
@@ -13,7 +13,7 @@ export function AppShell({ children }: AppShellProps) {
   const { isSidebarOpen, closeSidebar } = useAppShell()
   
   return (
-    // Outer container: lock to screen height, stack block flex
+    // h-screen + overflow-hidden locks the browser window size
     <div className="h-screen bg-[#f9f9f9] text-slate-900 flex flex-col overflow-hidden">
       
       {/* 1. Header is pushed to the top and won't shrink */}
