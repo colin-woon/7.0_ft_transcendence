@@ -1,7 +1,7 @@
 import { apiClient } from '@/lib/apiClient';
 import type { StreamEvent, ChatId, ChatMessage, FriendStatus, FriendId, FriendList, PendingFriendRequest, SendMessageRequest, ChatRoom } from '../models/chat-types';
 
-const CHAT_API_BASE_PREFIX = '/api/chat';
+const CHAT_API_BASE_PREFIX = '/chat';
 
 export async function getFriendList(): Promise<FriendList> {
   return apiClient.get<FriendList>(`${CHAT_API_BASE_PREFIX}/friendship`);

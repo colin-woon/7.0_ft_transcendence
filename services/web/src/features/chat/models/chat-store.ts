@@ -6,7 +6,6 @@ import debounce from 'lodash.debounce';
 import { useAuth } from '@/features/auth/models/AuthContext';
 
 export interface ChatState {
-  currentUserId: FriendId | null;
   currentChatSessionId: ChatId | null;
   allChatSessions: AllChatSessions;
   allFriendships: FriendList;
@@ -18,7 +17,6 @@ export interface ChatState {
 }
 
 export interface ChatActions {
-  setCurrentUserId: (userId: FriendId) => void;
   setUserStatus: (userId: FriendId, isOnline: boolean) => void;
   setChatSession: (chatId: ChatId, type: ChatRoomType, name: string | null, friendIds: FriendId[], messages: ChatMessage[] | null) => void;
   addMessage: (msg: ChatMessage) => void;
@@ -58,16 +56,11 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
       allFriendships: [],
       pendingRequests: [],
       currentChatSessionId: null,
-      currentUserId: user?.id || null,
       isLoadingFriends: false,
       friendsError: null,
       typingUsers: {},
       readReceipts: {},
 
-      setCurrentUserId: (userId: FriendId) =>
-        set((state) => {
-          state.currentUserId = userId;
-      }),
       setUserStatus: (userId: FriendId, isOnline: boolean) =>
         set((state) => {
           // Find the actual friend object by matching the ID

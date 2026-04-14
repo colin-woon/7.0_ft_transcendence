@@ -19,7 +19,7 @@ class ApiClient {
         'Content-Type': 'application/json',
         ...options.headers,
       },
-      // credentials: 'include', // CRITICAL: Ensures browser cookies go to the Gateway
+      credentials: 'include', // CRITICAL: Ensures browser cookies go to the Gateway
     });
 
     if (!res.ok) {

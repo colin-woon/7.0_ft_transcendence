@@ -6,6 +6,7 @@ import { useStore } from 'zustand';
 import { useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createGroupChat } from '../api/chat-services';
 import debounce from 'lodash.debounce';
+import { useAuth } from '@/features/auth/models/AuthContext';
 
 const EMPTY_MESSAGES: ChatMessage[] = [];
 const EMPTY_FRIENDIDS: FriendId[] = [];
@@ -17,7 +18,6 @@ export const useChatActions = () => {
     if (!store) throw new Error('useChatActions must be used within ChatStoreProvider');
 
     return {
-        setCurrentUserId: useStore(store, (s) => s.setCurrentUserId),
         setUserStatus: useStore(store, (s) => s.setUserStatus),
         setChatSession: useStore(store, (s) => s.setChatSession),
         addMessage: useStore(store, (s) => s.addMessage),
@@ -37,10 +37,12 @@ export const useChatActions = () => {
 // For your one on one chats
 export const useCurrentChatSession = () => {
     const store = useContext(ChatStoreContext);
+    const { user } = useAuth();
+
     if (!store) throw new Error('useCurrentSession must be used within ChatStoreProvider');
 
     return {
-        currentUserId: useStore(store, (s) => s.currentUserId),
+        currentUserId: user?.id || null,
         chatId: useStore(store, (s) => s.currentChatSessionId),
         friendIds: useStore(store, (s) => 
         s.currentChatSessionId ? s.allChatSessions[s.currentChatSessionId]?.memberIds : EMPTY_FRIENDIDS
@@ -66,19 +68,21 @@ export const useCurrentChatSession = () => {
 // For all of your friends
 export const useAllChatSessions = () => {
     const store = useContext(ChatStoreContext);
+    const { user } = useAuth();
     if (!store) throw new Error('useChat must be used within a ChatStoreProvider');
 
     return {
-        currentUserId: useStore(store, (s) => s.currentUserId),
+        currentUserId: user?.id || null,
         allChatSessions: useStore(store, (s) => s.allChatSessions),
     };
 };
 
 export const useFriendList = () => {
     const store = useContext(ChatStoreContext);
+    const { user } = useAuth();
     if (!store) throw new Error('ChatStoreContext not found');
     return {
-        currentUserId: useStore(store, (s) => s.currentUserId),
+        currentUserId: user?.id || null,
         allFriendships: useStore(store, (s) => s.allFriendships),
         pendingRequests: useStore(store, (s) => s.pendingRequests),
         isLoading: useStore(store, (s) => s.isLoadingFriends), 
@@ -288,18 +292,20 @@ export const useUserStatus = (userId: FriendId) => {
 
 export const useHasUnreadMessages = (chatId: ChatId | null) => {
     const store = useContext(ChatStoreContext);
+    const { user } = useAuth();
+    const currentUserId = user?.id || null;
     if (!store) throw new Error('useHasUnreadMessages must be used within ChatStoreProvider');
     
     return useStore(store, (s) => {
-        if (!chatId || !s.currentUserId) return false;
+        if (!chatId || !currentUserId) return false;
         
         const chat = s.allChatSessions[chatId];
         if (!chat || !chat.messages || chat.messages.length === 0) return false;
         
         const latestMessage = chat.messages[0]; // messages are unshifted (newest first)
-        if (latestMessage.senderId === s.currentUserId) return false; // Sent by myself
+        if (latestMessage.senderId === currentUserId) return false; // Sent by myself
         
-        const myReadReceipt = s.readReceipts[chatId]?.[s.currentUserId] || 0;
+        const myReadReceipt = s.readReceipts[chatId]?.[currentUserId] || 0;
         
         const latestIdNum = typeof latestMessage.id === 'string' ? parseInt(latestMessage.id, 10) : latestMessage.id;
         
