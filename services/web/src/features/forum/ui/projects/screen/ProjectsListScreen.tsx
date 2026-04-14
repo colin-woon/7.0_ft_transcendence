@@ -144,10 +144,10 @@ export default function ProjectsPage({
 
   return (
     <div className="flex min-h-full flex-col font-sans">
-      <div className="sticky top-11 z-50">
+      <div className="sticky top-0 z-50">
         {/* Header */}
         <div className="card card-border shadow-xl w-full max-w-full rounded-none sm:rounded-box backdrop-blur-sm">
-          <div className="card-body px-4 sm:px-6 py- sm:py-5 min-h-0 sm:min-h-[10rem] overflow-hidden">
+          <div className="card-body px-4 sm:px-6 py-4 sm:py-5 min-h-0 sm:min-h-[10rem] overflow-hidden">
             <TextType
               className="text-2xl sm:text-5xl leading-tight text-slate-800 font-interface tracking-wide uppercase break-words line-clamp-2 sm:line-clamp-none"
               text="Cursus Projects"
@@ -251,8 +251,8 @@ export default function ProjectsPage({
       </div>
 
       {/* Grid */}
-      <div className="sm:p-6 w-full items-center">
-        <div className="mt-0 flex flex-col gap-3 pb-10 sm:pb-10 w-5xl items-center justify-self-center">
+      <div className="w-full px-4 sm:px-6">
+        <div className="mx-auto mt-0 flex w-full max-w-6xl flex-col gap-3 pb-10">
           <AnimatedProjectsGrid
             pageKey={pageKey}
             projects={paginatedProjects}

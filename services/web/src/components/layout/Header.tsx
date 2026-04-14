@@ -48,7 +48,7 @@ export default function Header() {
             >
               <Menu size={20} className="block h-5 w-5 text-slate-700" strokeWidth={2.25} />
             </button>
-            <Link href="/projects" className="pl-10 text-base-content text-xl font-bold inline hover:text-secondary transition-colors">
+            <Link href="/projects" className="pl-3 text-base-content text-xl font-bold inline hover:text-secondary transition-colors">
                   <Image
                     src="/assets/42overflow.png" 
                     alt="42 Overflow Logo"

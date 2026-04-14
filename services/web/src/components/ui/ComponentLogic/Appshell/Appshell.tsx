@@ -14,10 +14,11 @@ export function AppShell({ children }: AppShellProps) {
   
   return (
     // h-screen + overflow-hidden locks the browser window size
-    <div className="h-screen bg-[#f9f9f9] text-slate-900 flex flex-col overflow-y-auto">
-      <Header />
-      <div className="w-full py-6 flex-1">
-            {children}
+    <div className="h-screen bg-[#f9f9f9] text-slate-900 flex flex-col overflow-hidden">
+      
+      {/* 1. Header is pushed to the top and won't shrink */}
+      <div className="flex-shrink-0 z-[60]">
+        <Header />
       </div>
 
       {/* 2. Flex row container for Sidebar + Main Content */}
