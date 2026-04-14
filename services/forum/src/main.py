@@ -19,6 +19,8 @@ from contextlib import asynccontextmanager
 from src.database import engine, Base, get_db, SessionLocal
 from src import schemas, logic
 
+from prometheus_fastapi_instrumentator import Instrumentator
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("forum_service")
 
@@ -67,6 +69,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Forum Service API", lifespan=lifespan)
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 
 @app.exception_handler(HTTPException)
@@ -79,6 +82,7 @@ async def http_exception_logger(request: Request, exc: HTTPException):
         exc.detail,
     )
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
 
 
 @app.get("/health")
@@ -257,6 +261,7 @@ def list_all_posts(
     return logic.get_all_posts(db, user_id)
 
 
+
 @router.get("/posts/top", response_model=List[schemas.PostSummary])
 def list_all_posts_by_top(
     db: Session = Depends(get_db),
@@ -266,6 +271,7 @@ def list_all_posts_by_top(
     return logic.get_all_posts_sort_by_top(db, user_id)
 
 
+
 @router.get("/posts/new", response_model=List[schemas.PostSummary])
 def list_all_posts_by_new(
     db: Session = Depends(get_db),
@@ -273,6 +279,7 @@ def list_all_posts_by_new(
 ):
     user_id, _ = identity
     return logic.get_all_posts_sort_by_new(db, user_id)
+
 
 
 @router.get("/projects/{project_id}/posts", response_model=List[schemas.PostSummary])
@@ -352,6 +359,7 @@ def get_post(
 ):
     user_id, _ = identity
     return logic.get_post_detail(db, post_id, user_id)
+
 
 
 # --- COMMENTS API ENDPOINT ---
@@ -479,6 +487,7 @@ def search_posts(
 ):
     user_id, _ = identity
     return logic.search_posts(db, search_query, user_id)
+
 
 
 app.include_router(router)

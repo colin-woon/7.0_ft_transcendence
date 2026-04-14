@@ -1,0 +1,72 @@
+groups:
+    - name: service-health
+      rules:
+          - alert: GatewayServiceDown
+            expr: up{job="gateway"} == 0
+            for: 5m
+            labels:
+                severity: critical
+                category: availability
+            annotations:
+                summary: 'Gateway service is down'
+                description: 'Prometheus has failed to scrape gateway for more than 5 minutes.'
+
+          - alert: AuthServiceDown
+            expr: up{job="auth"} == 0
+            for: 5m
+            labels:
+                severity: critical
+                category: availability
+            annotations:
+                summary: 'Auth service is down'
+                description: 'Prometheus has failed to scrape auth for more than 5 minutes.'
+
+          - alert: ForumServiceDown
+            expr: up{job="forum"} == 0
+            for: 5m
+            labels:
+                severity: critical
+                category: availability
+            annotations:
+                summary: 'Forum service is down'
+                description: 'Prometheus has failed to scrape forum for more than 5 minutes.'
+
+          - alert: ChatServiceDown
+            expr: up{job="chat"} == 0
+            for: 5m
+            labels:
+                severity: critical
+                category: availability
+            annotations:
+                summary: 'Chat service is down'
+                description: 'Prometheus has failed to scrape chat for more than 5 minutes.'
+
+          - alert: WebServiceDown
+            expr: up{job="web"} == 0
+            for: 5m
+            labels:
+                severity: critical
+                category: availability
+            annotations:
+                summary: 'Web service is down'
+                description: 'Prometheus has failed to scrape web for more than 5 minutes.'
+
+          - alert: DatabaseDown
+            expr: pg_up == 0
+            for: 5m
+            labels:
+                severity: critical
+                category: availability
+            annotations:
+                summary: 'Database is down'
+                description: 'The Postgres exporter reports the database as unavailable for more than 5 minutes.'
+
+          - alert: PostgresExporterDown
+            expr: up{job="postgres"} == 0
+            for: 5m
+            labels:
+                severity: critical
+                category: monitoring
+            annotations:
+                summary: 'Postgres exporter is down'
+                description: 'Prometheus has failed to scrape the Postgres exporter for more than 5 minutes.'

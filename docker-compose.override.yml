@@ -19,8 +19,8 @@ services:
             test: ['CMD', 'curl', '-f', 'http://localhost:9000/q/health']
             interval: 10s
             timeout: 5s
-            start_period: 30s
-            retries: 3
+            start_period: 90s
+            retries: 5
 
     chat-service:
         build:
@@ -42,8 +42,8 @@ services:
             test: ['CMD', 'curl', '-f', 'http://localhost:8080/health']
             interval: 10s
             timeout: 5s
-            start_period: 20s
-            retries: 3
+            start_period: 30s
+            retries: 5
 
     forum-service:
         build:
@@ -56,8 +56,8 @@ services:
             test: ['CMD', 'curl', '-fk', 'http://localhost:8080/health'] # need to open public route
             interval: 10s
             timeout: 5s
-            start_period: 20s
-            retries: 3
+            start_period: 30s
+            retries: 5
         ports:
             - '${FORUM_PORT}:8080'
         volumes:
@@ -94,11 +94,11 @@ services:
             - NODE_EXTRA_CA_CERTS=
             - WEB_LOG_NEXT_CACHE=1
         healthcheck:
-            test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
+            test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
             interval: 10s
             timeout: 5s
-            start_period: 30s
-            retries: 3
+            start_period: 60s
+            retries: 5
 
     gateway-service:
         build:
@@ -116,8 +116,8 @@ services:
             test: ['CMD', 'curl', '-f', 'http://localhost:8180/q/health']
             interval: 10s
             timeout: 5s
-            start_period: 120s
-            retries: 6
+            start_period: 90s
+            retries: 5
         volumes:
             - ./services/gateway:/app
         depends_on:
@@ -148,9 +148,14 @@ services:
             retries: 3
         volumes:
             - ./infra/obs/prometheus/prometheus.dev.yml:/etc/prometheus/prometheus.yml:ro
+            - ./infra/obs/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
             - ./infra/obs/prometheus/web.dev.yml:/etc/prometheus/web.yml:ro
         ports:
             - '9090:9090'
+
+    postgres-exporter-service:
+        volumes:
+            - ./infra/obs/postgres-exporter/web.dev.yml:/etc/postgres-exporter/web.yml:ro
 
     grafana-service:
         healthcheck:

@@ -23,6 +23,7 @@ SAN_NGINX="nginx-proxy"
 SAN_WEB="web-service"
 SAN_PROMETHEUS="prometheus-service"
 SAN_GRAFANA="grafana-service"
+SAN_POSTGRES_EXPORTER="postgres-exporter-service"
 
 P12_PASS="bumintra"
 TRUSTSTORE_PASS="bumintra"
@@ -44,6 +45,7 @@ ensure_dirs() {
 	mkdir -p certs/runtime/web
 	mkdir -p certs/runtime/prometheus
 	mkdir -p certs/runtime/grafana
+	mkdir -p certs/runtime/postgres_exporter
 }
 
 clean_all() {
@@ -128,6 +130,15 @@ subjectAltName = @grafana_san
 
 [ grafana_san ]
 DNS.1 = ${SAN_GRAFANA}
+
+[ req_postgres_exporter ]
+basicConstraints = critical, CA:FALSE
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth, clientAuth
+subjectAltName = @postgres_exporter_san
+
+[ postgres_exporter_san ]
+DNS.1 = ${SAN_POSTGRES_EXPORTER}
 EOF
 	echo "✔ SAN config generated."
 }
@@ -152,7 +163,7 @@ verify_all() {
 	openssl x509 -in certs/ca/ca.crt -noout -subject -issuer -dates
 	echo "-----------------------------------"
 
-	for dir in gateway auth chat forum nginx web prometheus grafana; do
+	for dir in gateway auth chat forum nginx web prometheus grafana postgres_exporter; do
 		CRT="certs/runtime/${dir}/${dir}.crt"
 		if [ -f "$CRT" ]; then
 			echo "[$dir] crt present"
@@ -234,7 +245,7 @@ ensure_dirs
 generate_ca
 write_san_config
 
-for dir in gateway auth chat forum nginx web prometheus grafana; do
+for dir in gateway auth chat forum nginx web prometheus grafana postgres_exporter; do
 	case "$dir" in
 	gateway) SVC_CN="$SAN_GATEWAY" ;;
 	auth) SVC_CN="$SAN_AUTH" ;;
@@ -244,6 +255,7 @@ for dir in gateway auth chat forum nginx web prometheus grafana; do
 	web) SVC_CN="$SAN_WEB" ;;
 	prometheus) SVC_CN="$SAN_PROMETHEUS" ;;
 	grafana) SVC_CN="$SAN_GRAFANA" ;;
+	postgres_exporter) SVC_CN="$SAN_POSTGRES_EXPORTER" ;;
 	esac
 
 	KEY="certs/runtime/${dir}/${dir}.key"
