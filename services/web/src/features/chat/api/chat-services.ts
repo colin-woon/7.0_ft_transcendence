@@ -38,7 +38,8 @@ export async function getMessageHistory(chatId: ChatId): Promise<ChatMessage[]> 
 export function getMessageStream(
   onStreamChunkReceived: (event: StreamEvent) => void
 ): EventSource {
-  const sse = new EventSource(`${CHAT_API_BASE_PREFIX}/message/stream`, { withCredentials: true });
+  const sse = new EventSource(`/api/stream${CHAT_API_BASE_PREFIX}/message/stream`, { withCredentials: true });
+  // const sse = new EventSource(`http://localhost:8003/message/stream`, { withCredentials: true });
 
   sse.onmessage = (streamResponse) => {
     try {

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useChatActions, useCurrentChatSession } from '../../models';
 import { useMessageVisibility } from '../../models';
+import { useAuth } from '@/features/auth/models/AuthContext';
 
 // Step 1: Define a color array using DaisyUI chat bubble classes
 const BUBBLE_COLORS = [
@@ -15,8 +16,10 @@ const BUBBLE_COLORS = [
 
 export function MessageArea() {
   const { fetchChatHistory, sendReadReceipt } = useChatActions();
-  const { chatId, currentUserId, messages, typingUsers, readReceipts } = useCurrentChatSession();
-  
+  const { chatId, messages, typingUsers, readReceipts } = useCurrentChatSession();
+  const { user } = useAuth();
+  const currentUserId = user?.id || null;
+    
   // Refs for message elements to attach Intersection Observer
   const messageRefs = useRef<Map<number | string, HTMLDivElement>>(new Map());
 

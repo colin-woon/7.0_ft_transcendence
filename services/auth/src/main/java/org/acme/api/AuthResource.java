@@ -87,7 +87,7 @@ public class AuthResource {
 	// }
 
 	// To refresh the user after access token expires
-	@POST
+	@GET
 	@Path("/refresh")
 	@PermitAll
 	public Response refresh(
@@ -243,7 +243,7 @@ public class AuthResource {
 	}
 
 	// To search for users by email or username
-	// ADMIN users can search for all users, 
+	// ADMIN users can search for all users,
 	// while STUDENT users can only search for other STUDENT users
 	@GET
 	@Path("/users")
@@ -254,12 +254,12 @@ public class AuthResource {
 			@QueryParam("size") @DefaultValue("10") int size) {
 
 		JsonWebToken jwt = (JsonWebToken) identity.getPrincipal();
-		
+
 		return profileService.searchUser(query, page, size, jwt.getGroups());
 	}
 
 	// To lookup user by id, returning user info
-	// ADMIN users can lookup all users, 
+	// ADMIN users can lookup all users,
 	// while STUDENT users can only lookup other STUDENT users
 	@GET
 	@Path("/users/{id}")

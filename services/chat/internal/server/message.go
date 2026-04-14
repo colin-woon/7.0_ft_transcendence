@@ -123,6 +123,9 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Fprintf(w, "data: {\"status\":\"connected\"}\n\n")
+	flusher.Flush()
+
 	sseCh := make(chan string, 10)
 	s.sseHub.mutex.Lock()
 	s.sseHub.userChannels[userId] = sseCh
@@ -282,7 +285,7 @@ func (s *Server) CreateGroupChat(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-// SendTypingEvent handles the POST /message/typing/{chatId}/{tempSenderId} endpoint
+// SendTypingEvent handles the POST /message/typing/{chatId} endpoint
 // 1. Fetch all members of this room
 // 2. Validate that the sender is actually a member of the chat
 // Return 403 if they don't belong to the chat
@@ -292,7 +295,7 @@ func (s *Server) CreateGroupChat(w http.ResponseWriter, r *http.Request) {
 func (s *Server) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID) {
 	ctx := r.Context()
 
-	tempSenderId, ok := r.Context().Value(userIDKey).(int)
+	senderId, ok := r.Context().Value(userIDKey).(int)
 	if !ok {
 		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
 		return
@@ -305,7 +308,7 @@ func (s *Server) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId 
 	}
 	isMember := false
 	for _, id := range memberIDs {
-		if int(id) == tempSenderId {
+		if int(id) == senderId {
 			isMember = true
 			break
 		}
@@ -319,7 +322,7 @@ func (s *Server) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId 
 	}
 	err = data.Payload.FromTypingIndicator(api.TypingIndicator{
 		ChatId:   chatId,
-		SenderId: tempSenderId,
+		SenderId: senderId,
 	})
 	if err != nil {
 		http.Error(w, "Failed to construct typing event payload", http.StatusInternalServerError)
@@ -330,7 +333,7 @@ func (s *Server) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId 
 		http.Error(w, "Failed to serialize typing event", http.StatusInternalServerError)
 		return
 	}
-	s.sseHub.BroadcastToRoomExcept(memberIDs, tempSenderId, string(jsonData))
+	s.sseHub.BroadcastToRoomExcept(memberIDs, senderId, string(jsonData))
 	w.WriteHeader(http.StatusNoContent)
 }
 

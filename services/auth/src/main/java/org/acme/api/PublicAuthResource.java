@@ -53,24 +53,24 @@ public class PublicAuthResource {
 		return responseBuilder.build();
 	}
 
-	/**
-	 * OAuth callback endpoint - Handles OAuth provider redirect
-	 * 
-	 * OIDC automatically processes the code/state parameters.
-	 * After code exchange and token validation, OIDC sets q_auth cookie.
-	 * 
-	 * With restore-path-after-redirect=true, Quarkus will redirect browser
-	 * back to the original login path (/api/public/auth/login/{provider})
-	 * which will now execute the login() method above.
-	 * 
-	 * This endpoint just receives the callback - OIDC handles everything.
-	 */
-	@GET
-	@Path("/callback/{provider}")
-	@PermitAll
-	public Response handleCallback(@PathParam("provider") String provider) {
-		// OIDC has already processed the callback and set cookies
-		// Return OK - OIDC will handle the redirect back to login path
-		return Response.ok("{\"status\": \"callback received\"}").build();
-	}
+	// /**
+	//  * OAuth callback endpoint - Handles OAuth provider redirect
+	//  *
+	//  * OIDC automatically processes the code/state parameters.
+	//  * After code exchange and token validation, OIDC sets q_auth cookie.
+	//  *
+	//  * With restore-path-after-redirect=true, Quarkus will redirect browser
+	//  * back to the original login path (/api/public/auth/login/{provider})
+	//  * which will now execute the login() method above.
+	//  *
+	//  * This endpoint just receives the callback - OIDC handles everything.
+	//  */
+	// @GET
+	// @Path("/callback/{provider}")
+	// @PermitAll
+	// public Response handleCallback(@PathParam("provider") String provider) {
+	// 	// OIDC has already processed the callback and set cookies
+	// 	// Return OK - OIDC will handle the redirect back to login path
+	// 	return Response.ok("{\"status\": \"callback received\"}").build();
+	// }
 }

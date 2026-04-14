@@ -256,7 +256,7 @@ class AuthService {
   private async performRefresh(): Promise<AuthResponse> {
     const refreshStartedAtVersion = this.authStateVersion
     const response = await fetch(getApiUrl('/api/auth/refresh'), {
-      method: 'POST',
+      method: 'GET',
       credentials: 'include',
       cache: 'no-store',
     })
