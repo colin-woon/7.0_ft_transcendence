@@ -8,17 +8,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
-
-type SseConnectionHub struct {
-	userChannels map[int]chan string
-	mutex        sync.RWMutex
-}
 
 func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId uuid.UUID, senderId int) {
 	ctx := r.Context()
@@ -67,7 +61,7 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId uuid
 	}
 	payload := string(jsonData)
 
-	s.broadcastToRoomExcept(memberIDs, senderId, payload)
+	s.sseHub.BroadcastToRoomExcept(memberIDs, senderId, payload)
 
 	// 5. Return 201 Created to the sender
 	w.WriteHeader(http.StatusCreated)
@@ -122,6 +116,9 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request, tempUs
 	s.sseHub.userChannels[tempUserId] = sseCh
 	s.sseHub.mutex.Unlock()
 
+	// Broadcast "online" status to friends in a goroutine (non-blocking)
+	go s.broadcastStatusToFriends(tempUserId, true)
+
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 	for {
@@ -130,6 +127,9 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request, tempUs
 			s.sseHub.mutex.Lock()
 			delete(s.sseHub.userChannels, tempUserId)
 			s.sseHub.mutex.Unlock()
+
+			// Broadcast "offline" status to friends (synchronous during cleanup)
+			s.broadcastStatusToFriends(tempUserId, false)
 			return
 
 		case message := <-sseCh:
@@ -258,27 +258,6 @@ func (s *Server) CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUse
 	w.WriteHeader(http.StatusCreated)
 }
 
-// Helper function to broadcast SSE events to room members, excluding the sender
-// Don't send the event back to the sender
-// If the member is online, send it
-// Non-blocking send to prevent one slow client from freezing the loop
-func (s *Server) broadcastToRoomExcept(memberIDs []int32, senderId int, payload string) {
-	s.sseHub.mutex.RLock()
-	defer s.sseHub.mutex.RUnlock()
-	for _, memberId := range memberIDs {
-		if int(memberId) == senderId {
-			continue
-		}
-		if ch, ok := s.sseHub.userChannels[int(memberId)]; ok {
-			select {
-			case ch <- payload:
-			default:
-				fmt.Printf("Warning: channel full for user %d\n", memberId)
-			}
-		}
-	}
-}
-
 // SendTypingEvent handles the POST /message/typing/{chatId}/{tempSenderId} endpoint
 // 1. Fetch all members of this room
 // 2. Validate that the sender is actually a member of the chat
@@ -320,7 +299,7 @@ func (s *Server) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId 
 		http.Error(w, "Failed to serialize typing event", http.StatusInternalServerError)
 		return
 	}
-	s.broadcastToRoomExcept(memberIDs, tempSenderId, string(jsonData))
+	s.sseHub.BroadcastToRoomExcept(memberIDs, tempSenderId, string(jsonData))
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -369,6 +348,6 @@ func (s *Server) UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatI
 		return
 	}
 
-	s.broadcastToRoomExcept(memberIDs, tempUserId, string(jsonData))
+	s.sseHub.BroadcastToRoomExcept(memberIDs, tempUserId, string(jsonData))
 	w.WriteHeader(http.StatusNoContent)
 }

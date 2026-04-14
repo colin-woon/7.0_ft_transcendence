@@ -79,15 +79,13 @@ func (q *Queries) CreateFriendship(ctx context.Context, arg CreateFriendshipPara
 
 const getFriendListWithChatIds = `-- name: GetFriendListWithChatIds :many
 WITH friends AS (
-    -- 1. Extract the friend's ID just like before
-    SELECT
-        CASE
-            WHEN requester_id = $1 THEN addressee_id
-            ELSE requester_id
-        END AS friend_id
+    SELECT addressee_id AS friend_id
     FROM chat_service.friendships
-    WHERE (requester_id = $1 OR addressee_id = $1)
-      AND status = 'accepted'
+    WHERE requester_id = $1 AND status = 'accepted'
+    UNION
+    SELECT requester_id AS friend_id
+    FROM chat_service.friendships
+    WHERE addressee_id = $1 AND status = 'accepted'
 )
 SELECT
     f.friend_id,
@@ -106,8 +104,8 @@ FROM friends f
 `
 
 type GetFriendListWithChatIdsRow struct {
-	FriendID interface{} `json:"friendId"`
-	ChatID   uuid.UUID   `json:"chatId"`
+	FriendID int32     `json:"friendId"`
+	ChatID   uuid.UUID `json:"chatId"`
 }
 
 func (q *Queries) GetFriendListWithChatIds(ctx context.Context, userID int32) ([]GetFriendListWithChatIdsRow, error) {

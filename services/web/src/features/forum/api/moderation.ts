@@ -1,6 +1,9 @@
 const FORUM_API_BASE = '/api/forum';
 
-async function forumClientFetch(path: string, init?: RequestInit): Promise<Response> {
+async function forumClientFetch(
+  path: string,
+  init?: RequestInit
+): Promise<Response> {
   const headers = new Headers(init?.headers);
 
   return fetch(`${FORUM_API_BASE}${path}`, {
@@ -10,7 +13,10 @@ async function forumClientFetch(path: string, init?: RequestInit): Promise<Respo
   });
 }
 
-async function parseError(response: Response, fallback: string): Promise<never> {
+async function parseError(
+  response: Response,
+  fallback: string
+): Promise<never> {
   const text = await response.text();
   if (!text.trim()) {
     throw new Error(fallback);
@@ -43,7 +49,10 @@ export interface CreateProjectPayload {
   description?: string;
 }
 
-export async function updateForumPost(postId: number, payload: UpdatePostPayload): Promise<void> {
+export async function updateForumPost(
+  postId: number,
+  payload: UpdatePostPayload
+): Promise<void> {
   const response = await forumClientFetch(`/posts/${postId}`, {
     method: 'PATCH',
     headers: {
@@ -72,34 +81,45 @@ export async function deleteForumPost(postId: number): Promise<void> {
 export async function updateForumComment(
   postId: number,
   commentId: number,
-  payload: UpdateCommentPayload,
+  payload: UpdateCommentPayload
 ): Promise<void> {
-  const response = await forumClientFetch(`/posts/${postId}/comments/${commentId}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-    cache: 'no-store',
-  });
+  const response = await forumClientFetch(
+    `/posts/${postId}/comments/${commentId}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      cache: 'no-store',
+    }
+  );
 
   if (!response.ok) {
     await parseError(response, 'Failed to update comment');
   }
 }
 
-export async function deleteForumComment(postId: number, commentId: number): Promise<void> {
-  const response = await forumClientFetch(`/posts/${postId}/comments/${commentId}`, {
-    method: 'DELETE',
-    cache: 'no-store',
-  });
+export async function deleteForumComment(
+  postId: number,
+  commentId: number
+): Promise<void> {
+  const response = await forumClientFetch(
+    `/posts/${postId}/comments/${commentId}`,
+    {
+      method: 'DELETE',
+      cache: 'no-store',
+    }
+  );
 
   if (!response.ok) {
     await parseError(response, 'Failed to delete comment');
   }
 }
 
-export async function createForumProject(payload: CreateProjectPayload): Promise<void> {
+export async function createForumProject(
+  payload: CreateProjectPayload
+): Promise<void> {
   const response = await forumClientFetch('/projects', {
     method: 'POST',
     headers: {

@@ -22,7 +22,7 @@ export default function Home() {
       <p className="text-slate-500 text-sm">{user.email}</p>
       <p className="text-xs text-slate-400">Role: {user.role}</p>
       <Link
-        href="/home"
+        href="/projects"
         className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-500 transition-colors"
       >
         Go to Forum

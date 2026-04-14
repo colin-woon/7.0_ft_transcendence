@@ -1,15 +1,14 @@
 package server
 
 import (
+	"app/internal/database"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
-	"sync"
 	"time"
-	"app/internal/database"
 )
 
 type Server struct {
@@ -28,13 +27,9 @@ type TransportConfig struct {
 func NewServer() (*http.Server, func(), TransportConfig) {
 	port := envInt("CHAT_PORT", 8080)
 	NewServer := &Server{
-		port: port,
-		sseHub: &SseConnectionHub{
-			userChannels: make(map[int]chan string),
-			mutex:        sync.RWMutex{},
-		},
-
-		db: database.NewConnection(),
+		port:   port,
+		sseHub: NewSseConnectionHub(),
+		db:     database.NewConnection(),
 	}
 
 	// Declare Server config
