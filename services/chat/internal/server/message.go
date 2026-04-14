@@ -14,8 +14,14 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId uuid.UUID, senderId int) {
+func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId uuid.UUID) {
 	ctx := r.Context()
+
+	senderId, ok := r.Context().Value(userIDKey).(int)
+	if !ok {
+		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
+		return
+	}
 
 	var body api.SendMessageJSONRequestBody
 
@@ -93,7 +99,13 @@ func (s *Server) GetMessageHistory(w http.ResponseWriter, r *http.Request, chatI
 // Heartbeat trigger
 // Lines starting with a colon are SSE comments.
 // The frontend EventSource ignores this, but it keeps the network socket alive.
-func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request, tempUserId int) {
+func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request) {
+	userId, ok := r.Context().Value(userIDKey).(int)
+	if !ok {
+		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
+		return
+	}
+
 	rc := http.NewResponseController(w)
 	err := rc.SetWriteDeadline(time.Time{}) // time.Time{} is "zero value", meaning NO timeout
 	if err != nil {
@@ -113,11 +125,11 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request, tempUs
 
 	sseCh := make(chan string, 10)
 	s.sseHub.mutex.Lock()
-	s.sseHub.userChannels[tempUserId] = sseCh
+	s.sseHub.userChannels[userId] = sseCh
 	s.sseHub.mutex.Unlock()
 
 	// Broadcast "online" status to friends in a goroutine (non-blocking)
-	go s.broadcastStatusToFriends(tempUserId, true)
+	go s.broadcastStatusToFriends(userId, true)
 
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
@@ -125,11 +137,11 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request, tempUs
 		select {
 		case <-r.Context().Done():
 			s.sseHub.mutex.Lock()
-			delete(s.sseHub.userChannels, tempUserId)
+			delete(s.sseHub.userChannels, userId)
 			s.sseHub.mutex.Unlock()
 
 			// Broadcast "offline" status to friends (synchronous during cleanup)
-			s.broadcastStatusToFriends(tempUserId, false)
+			s.broadcastStatusToFriends(userId, false)
 			return
 
 		case message := <-sseCh:
@@ -147,10 +159,16 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request, tempUs
 // Handle sql.NullString -> *string
 // Handle []int32 -> *[]int
 // 3. Encode the mapped slice
-func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId int) {
+func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	rows, err := s.db.GetQueries().GetUserInbox(ctx, int32(tempUserId))
+	userId, ok := r.Context().Value(userIDKey).(int)
+	if !ok {
+		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
+		return
+	}
+
+	rows, err := s.db.GetQueries().GetUserInbox(ctx, int32(userId))
 	if err != nil {
 		http.Error(w, "Failed to retrieve user chats", http.StatusInternalServerError)
 		return
@@ -187,12 +205,18 @@ func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request, tempUserId
 
 // 1. Create a slice of the correct type ([]int32) with the right capacity
 // 2. Convert and append the members from the request body
-// 3. Append the creator (tempUserId) converted to int32
+// 3. Append the creator (userId) converted to int32
 // 4. Use it in your database params
 // 5. Explicitly Commit the Transaction
 // Create the response slice with the type the API expects ([]int)
-func (s *Server) CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUserId int) {
+func (s *Server) CreateGroupChat(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	userId, ok := r.Context().Value(userIDKey).(int)
+	if !ok {
+		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
+		return
+	}
 
 	var body api.CreateGroupChatJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -225,11 +249,11 @@ func (s *Server) CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUse
 		members32 = append(members32, int32(id))
 	}
 
-	members32 = append(members32, int32(tempUserId))
+	members32 = append(members32, int32(userId))
 
 	err = qtx.CreateRoomMembersForGroupChat(ctx, database.CreateRoomMembersForGroupChatParams{
 		Column1: chatRoom.ID,
-		Column2: int32(tempUserId),
+		Column2: int32(userId),
 		Column3: members32,
 	})
 
@@ -265,8 +289,15 @@ func (s *Server) CreateGroupChat(w http.ResponseWriter, r *http.Request, tempUse
 // 3. Create the Typing Indicator Event
 // 4. Push to all online members using our new helper
 // 5. Ephemeral action complete; return 204 No Content
-func (s *Server) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempSenderId int) {
+func (s *Server) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID) {
 	ctx := r.Context()
+
+	tempSenderId, ok := r.Context().Value(userIDKey).(int)
+	if !ok {
+		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
+		return
+	}
+
 	memberIDs, err := s.db.GetQueries().GetRoomMemberIDs(ctx, chatId)
 	if err != nil {
 		http.Error(w, "Failed to fetch room members", http.StatusInternalServerError)
@@ -303,9 +334,15 @@ func (s *Server) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// UpdateReadReceipt handles the PATCH /message/read/{chatId}/{tempUserId} endpoint
-func (s *Server) UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID, tempUserId int) {
+// UpdateReadReceipt handles the PATCH /message/read/{chatId} endpoint
+func (s *Server) UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID) {
 	ctx := r.Context()
+
+	userId, ok := r.Context().Value(userIDKey).(int)
+	if !ok {
+		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
+		return
+	}
 
 	var reqBody api.UpdateReadReceiptJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
@@ -316,7 +353,7 @@ func (s *Server) UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatI
 	err := s.db.GetQueries().UpdateLastReadMessageID(ctx, database.UpdateLastReadMessageIDParams{
 		LastReadMessageID: sql.NullInt64{Int64: int64(reqBody.MessageId), Valid: true},
 		ChatID:            chatId,
-		UserID:            int32(tempUserId),
+		UserID:            int32(userId),
 	})
 	if err != nil {
 		http.Error(w, "Failed to update read receipt", http.StatusInternalServerError)
@@ -334,7 +371,7 @@ func (s *Server) UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatI
 	}
 	err = data.Payload.FromReadReceipt(api.ReadReceipt{
 		ChatId:    chatId,
-		UserId:    tempUserId,
+		UserId:    userId,
 		MessageId: reqBody.MessageId,
 	})
 	if err != nil {
@@ -348,6 +385,6 @@ func (s *Server) UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatI
 		return
 	}
 
-	s.sseHub.BroadcastToRoomExcept(memberIDs, tempUserId, string(jsonData))
+	s.sseHub.BroadcastToRoomExcept(memberIDs, userId, string(jsonData))
 	w.WriteHeader(http.StatusNoContent)
 }

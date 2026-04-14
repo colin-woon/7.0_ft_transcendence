@@ -5,17 +5,17 @@ import {
   useAllChatSessions,
   useChatActions,
   useCurrentChatSession,
-} from "../models";
+} from "../../models";
 
-export function ChatInbox() {
+export function UserInbox() {
   const { fetchAllChatSessions, setCurrentChatSessionId } = useChatActions();
-  const { allChatSessions, tempCurrentUserId } = useAllChatSessions();
+  const { allChatSessions, currentUserId } = useAllChatSessions();
   const { chatId: activeChatId } = useCurrentChatSession();
 
   useEffect(() => {
     // Fetch all sessions when the component mounts
-    fetchAllChatSessions(tempCurrentUserId!);
-  }, [fetchAllChatSessions, tempCurrentUserId]);
+    fetchAllChatSessions();
+  }, [fetchAllChatSessions]);
 
   useEffect(() => {
     // Auto-select the first chat if none is selected and chats are available
@@ -43,7 +43,7 @@ export function ChatInbox() {
           // If direct message, find the other user's ID
           if (chat.type === "direct") {
             const otherUserIds = chat.memberIds.filter(
-              (id) => id !== tempCurrentUserId
+              (id) => id !== currentUserId
             );
             // Temporarily use the other userId as the username
             displayName =

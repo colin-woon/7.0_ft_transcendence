@@ -4,16 +4,16 @@ import { useEffect } from 'react';
 import { useCurrentChatSession, useChatActions } from '../models';
 import { getMessageStream } from '../api/chat-services';
 
-export function MessageStreamController() {
-  const { addMessage, setTypingStatus, updateReadReceipt } = useChatActions();
-  const { tempCurrentUserId, chatId } = useCurrentChatSession();
+export function SSEStreamController() {
+  const { addMessage, setTypingStatus, updateReadReceipt, setUserStatus } = useChatActions();
+  const { currentUserId, chatId } = useCurrentChatSession();
 
   useEffect(() => {
-    if (!chatId || !tempCurrentUserId) return;
+    if (!currentUserId) return;
     
-    const eventSource = getMessageStream(tempCurrentUserId, (eventContent) => {
+    const eventSource = getMessageStream((eventContent) => {
       if (eventContent.type === 'NEW_MESSAGE' && eventContent.payload.chatId === chatId) {
-        const chatUserId = tempCurrentUserId === 1 ? eventContent.payload.senderId : 1;
+        const chatUserId = currentUserId === 1 ? eventContent.payload.senderId : 1;
         addMessage({
           id: eventContent.payload.id,
           chatId: chatId!,
@@ -28,6 +28,9 @@ export function MessageStreamController() {
       else if (eventContent.type === 'USER_READ' && eventContent.payload.chatId === chatId) {
         updateReadReceipt(eventContent.payload.chatId, eventContent.payload.userId, eventContent.payload.messageId);
       }
+      else if (eventContent.type === 'USER_STATUS') {
+        setUserStatus(eventContent.payload.userId, eventContent.payload.isOnline);
+      }
   });
 
     // 3. Cleanup: Close connection when navigating away or changing chats
@@ -36,7 +39,7 @@ export function MessageStreamController() {
         eventSource.close();
       }
     };
-  }, [chatId, tempCurrentUserId, addMessage, updateReadReceipt]);
+  }, [chatId, currentUserId, addMessage, updateReadReceipt]);
 
   // Headless: Handles logic, renders no UI
   return null; 
