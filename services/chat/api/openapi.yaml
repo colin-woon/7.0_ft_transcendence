@@ -67,6 +67,16 @@ components:
           type: integer
         messageId:
           type: integer
+    UserStatus:
+      type: object
+      required: [userId, isOnline]
+      properties:
+        userId:
+          type: integer
+          description: The user whose status changed
+        isOnline:
+          type: boolean
+          description: Whether the user is now online or offline
     FriendList:
       type: array
       items:
@@ -79,9 +89,13 @@ components:
             type: string
             format: uuid
             description: Unique identifier for the chat between the user and the friend
+          isOnline:
+            type: boolean
+            description: Whether the friend is currently online
       example:
         friendId: 123
         chatId: "550e8400-e29b-41d4-a716"
+        isOnline: true
     StreamEvent:
       type: object
       required: [type, payload]
@@ -98,7 +112,7 @@ components:
             - $ref: "#/components/schemas/ChatMessage"
             - $ref: "#/components/schemas/TypingIndicator"
             - $ref: "#/components/schemas/ReadReceipt"
-            # You can add other schemas here later, like USER_STATUS
+            - $ref: "#/components/schemas/UserStatus"
 
 paths:
   /friendship/{requesterId}/{receiverId}:
@@ -251,7 +265,7 @@ paths:
     get:
       tags:
         - Message
-      summary: Opens an SSE connection for real-time chat message updates
+      summary: Opens an SSE connection for real-time functionalities
       operationId: getMessageStream
       parameters:
         - name: tempUserId

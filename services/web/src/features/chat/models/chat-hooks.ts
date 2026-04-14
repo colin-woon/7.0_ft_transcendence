@@ -172,7 +172,7 @@ export function useMessageVisibility({
   chatId,
   userId,
   onReadReceipt,
-  debounceMs = 2500,
+  debounceMs = 500,
   threshold = 0.5,
 }: UseMessageVisibilityOptions) {
   const visibleMessageIds = useRef<Set<number | string>>(new Set());

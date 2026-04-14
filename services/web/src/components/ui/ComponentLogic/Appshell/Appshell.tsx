@@ -19,11 +19,17 @@ export function AppShell({ children }: AppShellProps) {
       <div className="w-full py-6 flex-1">
             {children}
       </div>
-      <div className="min-h-0">
-        {/* Sidebar stays locked to the left */}
-        <Sidebar/>
+
+      {/* 2. Flex row container for Sidebar + Main Content */}
+      <div className="flex flex-1 overflow-hidden relative">
+        <Sidebar />
         
+        {/* 3. Main content scrolls independently */}
+        <main className="flex-1 overflow-y-auto w-full">
+          {children}
+        </main>
       </div>
+      
     </div>
   )
 }
