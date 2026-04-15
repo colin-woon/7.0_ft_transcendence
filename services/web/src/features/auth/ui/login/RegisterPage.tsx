@@ -8,6 +8,7 @@ import {
   registerWithPasswordSchema,
   type PasswordRegisterFormValues,
 } from '@/features/auth/validation/authSchemas'
+import { fileToDataUrl } from '@/features/auth/utils/avatarFile'
 import { BackgroundBlobs } from '@/features/auth/ui/login/BackgroundBlobs'
 import { GlassCard } from '@/features/auth/ui/login/GlassCard'
 
@@ -28,11 +29,12 @@ export default function RegisterPage({ initialEmail = '' }: RegisterPageProps) {
     email: initialEmail,
     username: '',
     fullName: '',
-    avatarUrl: '',
+    avatarFile: '',
     bio: '',
     password: '',
     confirmPassword: '',
   })
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
 
   const [errors, setErrors] = useState<Partial<Record<keyof PasswordRegisterFormValues, string>>>({})
   const [formError, setFormError] = useState<string | null>(null)
@@ -69,7 +71,11 @@ export default function RegisterPage({ initialEmail = '' }: RegisterPageProps) {
     setFormError(null)
 
     try {
-      await registerWithPassword(parsed.data)
+      const avatarPayload = avatarFile ? await fileToDataUrl(avatarFile) : undefined
+      await registerWithPassword({
+        ...parsed.data,
+        avatarFile: avatarPayload,
+      })
       router.push('/profile')
     } catch (error) {
       if (error instanceof AuthApiError && error.status === 409) {
@@ -138,16 +144,18 @@ export default function RegisterPage({ initialEmail = '' }: RegisterPageProps) {
                 <FieldError message={errors.fullName} />
               </div>
 
-              <div className="sm:col-span-2">
-                <input
-                  type="url"
-                  aria-label="Avatar URL (optional)"
-                  placeholder="Avatar URL (optional)"
-                  value={values.avatarUrl ?? ''}
-                  onChange={(event) => handleChange('avatarUrl', event.target.value)}
-                  className="w-full border border-slate-300 bg-white/80 rounded-xl px-3 py-2.5 text-sm text-slate-700"
-                />
-                <FieldError message={errors.avatarUrl} />
+              <div className="sm:col-span-2 space-y-1">
+                <label className="w-full inline-flex items-center justify-center border border-slate-300 bg-white/80 rounded-xl px-3 py-2.5 text-sm text-slate-700 cursor-pointer">
+                  Choose avatar image (optional)
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => setAvatarFile(event.target.files?.[0] ?? null)}
+                  />
+                </label>
+                {avatarFile ? <p className="text-xs text-slate-500">Selected: {avatarFile.name}</p> : null}
+                <FieldError message={errors.avatarFile} />
               </div>
 
               <div className="sm:col-span-2">

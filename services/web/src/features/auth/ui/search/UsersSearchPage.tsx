@@ -3,6 +3,7 @@
 import { Loader2, Shield, Trash2, UserRound, UserX } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { fileToDataUrl } from "@/features/auth/utils/avatarFile";
 import { useAdminUsers } from "@/features/auth/hooks/useAdminUsers";
 import { useUserLookup } from "@/features/auth/hooks/useUserLookup";
 import { useUserSearch } from "@/features/auth/hooks/useUserSearch";
@@ -49,10 +50,10 @@ export default function UsersSearchPage({
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [editUserId, setEditUserId] = useState<number | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
   const [editDraft, setEditDraft] = useState<EditUserDraft>({
     username: "",
     fullName: "",
-    avatarUrl: "",
     bio: "",
   });
 
@@ -76,9 +77,9 @@ export default function UsersSearchPage({
     setEditDraft({
       username: detailed.username,
       fullName: detailed.fullName,
-      avatarUrl: detailed.avatarUrl ?? "",
       bio: detailed.bio ?? "",
     });
+    setPendingAvatarFile(null);
     setEditOpen(true);
   };
 
@@ -87,13 +88,18 @@ export default function UsersSearchPage({
    */
   const saveAdminEdit = async () => {
     if (!editUserId) return;
+    const avatarFile = pendingAvatarFile
+      ? await fileToDataUrl(pendingAvatarFile)
+      : undefined;
+
     const updated = await updateUser(editUserId, {
       username: editDraft.username.trim() || undefined,
       fullName: editDraft.fullName.trim() || undefined,
-      avatarUrl: editDraft.avatarUrl.trim() || undefined,
       bio: editDraft.bio.trim() || undefined,
+      avatarFile,
     });
     if (!updated) return;
+    setPendingAvatarFile(null);
     setEditOpen(false);
   };
 
@@ -206,9 +212,9 @@ export default function UsersSearchPage({
                   className="flex items-center gap-3 min-w-0 text-left"
                   onClick={() => router.push(`/users/${result.id}`)}
                 >
-                  {result.avatarUrl ? (
+                  {result.avatarImage ? (
                     <img
-                      src={result.avatarUrl}
+                      src={result.avatarImage}
                       alt={`${result.fullName} avatar`}
                       className="w-10 h-10 rounded-full object-cover bg-base-200"
                     />
@@ -347,6 +353,9 @@ export default function UsersSearchPage({
         saving={adminLoading}
         error={adminError}
         onChange={(next) => setEditDraft((prev) => ({ ...prev, ...next }))}
+        showAvatarUpload
+        avatarFileName={pendingAvatarFile?.name ?? null}
+        onAvatarFileChange={setPendingAvatarFile}
         onClose={() => setEditOpen(false)}
         onSubmit={saveAdminEdit}
       />

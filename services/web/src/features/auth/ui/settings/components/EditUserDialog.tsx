@@ -3,7 +3,6 @@
 export interface EditUserDraft {
   username: string;
   fullName: string;
-  avatarUrl: string;
   bio: string;
 }
 
@@ -11,9 +10,12 @@ export interface EditUserDialogProps {
   open: boolean;
   title: string;
   draft: EditUserDraft;
+  showAvatarUpload?: boolean;
   saving?: boolean;
   error?: string | null;
+  avatarFileName?: string | null;
   onChange: (next: Partial<EditUserDraft>) => void;
+  onAvatarFileChange?: (file: File | null) => void;
   onClose: () => void;
   onSubmit: () => Promise<void> | void;
 }
@@ -25,9 +27,12 @@ export default function EditUserDialog({
   open,
   title,
   draft,
+  showAvatarUpload = false,
   saving = false,
   error,
+  avatarFileName,
   onChange,
+  onAvatarFileChange,
   onClose,
   onSubmit,
 }: EditUserDialogProps) {
@@ -54,12 +59,22 @@ export default function EditUserDialog({
             value={draft.fullName}
             onChange={(event) => onChange({ fullName: event.target.value })}
           />
-          <input
-            className="input input-bordered w-full"
-            placeholder="Avatar URL"
-            value={draft.avatarUrl}
-            onChange={(event) => onChange({ avatarUrl: event.target.value })}
-          />
+          {showAvatarUpload && (
+            <div className="space-y-1">
+              <label className="btn btn-outline btn-sm w-full">
+                Choose avatar image
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(event) => onAvatarFileChange?.(event.target.files?.[0] ?? null)}
+                />
+              </label>
+              {avatarFileName && (
+                <p className="text-xs text-base-content/60">Selected avatar: {avatarFileName}</p>
+              )}
+            </div>
+          )}
           <textarea
             className="textarea textarea-bordered w-full"
             placeholder="Bio"

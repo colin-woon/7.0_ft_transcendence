@@ -8,6 +8,7 @@ import {
   LogOut,
   RefreshCcw,
   Trash2,
+  Upload,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -24,6 +25,7 @@ import { useProfileEdit } from "@/features/auth/hooks/useProfileEdit";
 import { useSessions } from "@/features/auth/hooks/useSessions";
 import { useUserProfile } from "@/features/auth/hooks/useUserProfile";
 import { useAuth } from "@/features/auth/models/AuthContext";
+import { fileToDataUrl } from "@/features/auth/utils/avatarFile";
 import ConfirmActionDialog from "@/features/auth/ui/settings/components/ConfirmActionDialog";
 import EditUserDialog, {
   type EditUserDraft,
@@ -198,7 +200,6 @@ export default function SettingsPage({
   const [editDraft, setEditDraft] = useState<EditUserDraft>({
     username: "",
     fullName: "",
-    avatarUrl: "",
     bio: "",
   });
 
@@ -218,12 +219,12 @@ export default function SettingsPage({
   );
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [reloadingIntra, setReloadingIntra] = useState(false);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
 
   const [newUserForm, setNewUserForm] = useState<CreateUserPayload>({
     username: "",
     fullName: "",
     email: "",
-    avatarUrl: "",
     bio: "",
     role: "STUDENT",
     isBanned: false,
@@ -244,7 +245,6 @@ export default function SettingsPage({
     setEditDraft({
       username: activeProfile.username,
       fullName: activeProfile.fullName,
-      avatarUrl: activeProfile.avatarUrl ?? "",
       bio: activeProfile.bio ?? "",
     });
   }, [activeProfile]);
@@ -286,15 +286,21 @@ export default function SettingsPage({
    * Persists profile edits for the currently authenticated user.
    */
   const handleSaveOwnProfile = async () => {
+    let avatarFilePayload: string | undefined;
+    if (pendingAvatarFile) {
+      avatarFilePayload = await fileToDataUrl(pendingAvatarFile);
+    }
+
     const updated = await saveProfile({
       username: editDraft.username.trim() || undefined,
       fullName: editDraft.fullName.trim() || undefined,
-      avatarUrl: editDraft.avatarUrl.trim() || undefined,
       bio: editDraft.bio.trim() || undefined,
+      avatarFile: avatarFilePayload,
     });
 
     if (!updated) return;
 
+    setPendingAvatarFile(null);
     setEditModalOpen(false);
     await refetch();
     setAdminActionSuccess("Profile updated successfully.");
@@ -383,6 +389,38 @@ export default function SettingsPage({
   };
 
   /**
+   * Uploads avatar image through PATCH /me JSON payload.
+   */
+  const handleAvatarUpload = async () => {
+    if (!pendingAvatarFile) {
+      setAdminActionError("Select an image before uploading.");
+      return;
+    }
+
+    if (!pendingAvatarFile.type.startsWith("image/")) {
+      setAdminActionError("Only image files are allowed.");
+      return;
+    }
+
+    const maxBytes = 2 * 1024 * 1024;
+    if (pendingAvatarFile.size > maxBytes) {
+      setAdminActionError("Avatar must be 2MB or smaller.");
+      return;
+    }
+
+    setAdminActionError(null);
+    setAdminActionSuccess(null);
+
+    const avatarFile = await fileToDataUrl(pendingAvatarFile);
+    const updated = await saveProfile({ avatarFile });
+    if (!updated) return;
+
+    setPendingAvatarFile(null);
+    setAdminActionSuccess("Avatar uploaded successfully.");
+    await refetch();
+  };
+
+  /**
    * Creates a user as admin using the fuller UserInfoDTO-aligned fields.
    */
   const handleAdminCreateUser = async (
@@ -396,7 +434,6 @@ export default function SettingsPage({
       username: newUserForm.username.trim(),
       fullName: newUserForm.fullName.trim(),
       email: newUserForm.email.trim(),
-      avatarUrl: newUserForm.avatarUrl?.trim() || undefined,
       bio: newUserForm.bio?.trim() || undefined,
       role: newUserForm.role,
       isBanned: newUserForm.isBanned,
@@ -411,7 +448,6 @@ export default function SettingsPage({
       username: "",
       fullName: "",
       email: "",
-      avatarUrl: "",
       bio: "",
       role: "STUDENT",
       isBanned: false,
@@ -572,6 +608,31 @@ export default function SettingsPage({
                 >
                   Edit profile
                 </button>
+                <label className="btn btn-sm btn-outline">
+                  Choose avatar
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      setPendingAvatarFile(file);
+                      setAdminActionError(null);
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline"
+                  onClick={handleAvatarUpload}
+                  disabled={!pendingAvatarFile || profileSaving}
+                >
+                  <Upload
+                    size={14}
+                    className={profileSaving ? "animate-pulse" : ""}
+                  />
+                  {profileSaving ? "Uploading..." : "Upload avatar"}
+                </button>
                 <button
                   type="button"
                   className="btn btn-sm btn-ghost"
@@ -585,6 +646,12 @@ export default function SettingsPage({
                   {reloadingIntra ? "Reloading..." : "Reload 42 data"}
                 </button>
               </div>
+
+              {pendingAvatarFile && (
+                <p className="text-xs text-base-content/60 mt-2">
+                  Selected avatar: {pendingAvatarFile.name}
+                </p>
+              )}
 
               <h2 className="text-base font-bold text-base-content mt-8">
                 Account Connections
@@ -910,17 +977,6 @@ export default function SettingsPage({
                     }))
                   }
                   required
-                />
-                <input
-                  className="input input-bordered md:col-span-2"
-                  placeholder="Avatar URL (optional)"
-                  value={newUserForm.avatarUrl ?? ""}
-                  onChange={(event) =>
-                    setNewUserForm((prev) => ({
-                      ...prev,
-                      avatarUrl: event.target.value,
-                    }))
-                  }
                 />
                 <textarea
                   className="textarea textarea-bordered md:col-span-2"
