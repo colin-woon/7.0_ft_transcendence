@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { FriendCard } from '@/features/chat/ui';
 import { useFriendList, useChatActions } from '@/features/chat/models';
 import { updateFriendshipStatus } from '@/features/chat/api';
+import Link from 'next/link';
 
 type TabType = 'Online' | 'All' | 'Pending' | 'Blocked';
 
@@ -71,6 +72,14 @@ export default function FriendsPage() {
       <header className="flex justify-between px-4 items-center h-14 border-b border-base-300 shrink-0 shadow-sm z-10">
         <div className='flex items-center gap-2 font-bold text-base pr-4'>
         <div className="flex items-center gap-2 font-bold text-base border-r border-base-300 pr-4">
+          <Link 
+              href="/messages"
+              className="md:hidden btn btn-ghost btn-circle btn-sm mr-2 text-base-content/70"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
+              </svg>
+          </Link>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-base-content/70">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
           </svg>
