@@ -4,6 +4,7 @@ import { useAppShell } from './context/AppShellContext'
 import Header from '../../../layout/Header'
 import Sidebar from '../../../layout/Sidebar'
 import { ReactNode } from 'react'
+import { usePathname } from 'next/navigation'
 
 interface AppShellProps {
   children: ReactNode
@@ -11,7 +12,18 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const { isSidebarOpen, closeSidebar } = useAppShell()
-  
+  const pathname = usePathname()
+
+  const isAuthRoute = pathname?.startsWith('/login') || pathname?.startsWith('/register') || pathname?.startsWith('/callback')
+
+  if (isAuthRoute) {
+    return (
+      <div className="h-screen bg-[#f9f9f9] text-slate-900 flex flex-col overflow-auto">
+        {children}
+      </div>
+    )
+  }
+
   return (
     // h-screen + overflow-hidden locks the browser window size
     <div className="h-screen bg-[#f9f9f9] text-slate-900 flex flex-col overflow-hidden">
