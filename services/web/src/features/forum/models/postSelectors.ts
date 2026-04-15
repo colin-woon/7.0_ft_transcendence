@@ -1,13 +1,17 @@
 import type { ForumPost, ForumSort } from './post';
 
-export function filterPosts(posts: ForumPost[], searchQuery: string, category: string) {
+export function filterPosts(
+  posts: ForumPost[],
+  searchQuery: string,
+  category: string
+) {
   const normalizedSearch = searchQuery.trim().toLowerCase();
 
   return posts.filter((post) => {
     const matchesCategory = category === 'All' || post.category === category;
     const matchesSearch =
       normalizedSearch.length === 0 ||
-      post.title.toLowerCase().includes(normalizedSearch)
+      post.title.toLowerCase().includes(normalizedSearch);
 
     return matchesCategory && matchesSearch;
   });

@@ -1,5 +1,6 @@
 import React from 'react';
-import ChatSidebar from '@/features/chat/ui/ChatSidebar';
+import { ChatSidebar } from '@/features/chat/ui';
+import { SSEStreamController } from '@/features/chat/ui';
 
 export default function ChatLayout({
   children,
@@ -24,6 +25,7 @@ export default function ChatLayout({
         Renders the active chat window or the friends list.
       */}
       <main className="flex-1 flex flex-col h-full w-full overflow-hidden relative bg-base-100">
+        <SSEStreamController />
         {children}
       </main>
 

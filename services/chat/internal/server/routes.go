@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
@@ -18,12 +20,10 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Intra-User-Id"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
-
-	api.HandlerFromMux(s, r)
 
 	r.Get("/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./api/openapi.yaml")
@@ -35,8 +35,21 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.Get("/", s.HelloWorldHandler)
 
 	r.Get("/health", s.healthHandler)
+	r.Handle("/metrics", promhttp.Handler())
 
-	// r.Get("/websocket", s.websocketHandler)
+	r.Group(func(protected chi.Router) {
+		// Grab the environment variable (default to development if not set)
+		env := os.Getenv("APP_ENV")
+		if env == "" {
+			env = "development"
+		}
+
+		// Apply your custom AuthMiddleware ONLY to this group
+		protected.Use(AuthMiddleware(env))
+
+		// Register the oapi-codegen handlers onto this protected router group
+		api.HandlerFromMux(s, protected)
+	})
 
 	return r
 }

@@ -1,9 +1,6 @@
-import ProjectsGridPage from '@/features/forum/ui/projects/ProjectsGridPage'
-import {
-  getAllProjects,
-  getMySubscribedProjects,
-  searchProjects,
-} from '@/features/forum/api/project'
+// import ProjectsGridPage from '@/features/forum/ui/projects/ProjectsGridPage'
+import ProjectsGridPage from "@/features/forum/ui/projects/screen/ProjectsListScreen";
+import { getAllProjects, searchProjects } from "@/features/forum/api/project";
 
 interface ProjectsRouteProps {
   searchParams?: Promise<{
@@ -11,26 +8,26 @@ interface ProjectsRouteProps {
   }>;
 }
 
-export default async function ProjectsPage({ searchParams }: ProjectsRouteProps) {
+export default async function ProjectsPage({
+  searchParams,
+}: ProjectsRouteProps) {
   const params = searchParams ? await searchParams : undefined;
   const qRaw = params?.q;
   const q = Array.isArray(qRaw) ? qRaw[0] : qRaw;
-  const searchQuery = (q ?? '').trim();
+  const searchQuery = (q ?? "").trim();
 
-  const [projectsResult, subscribedProjectsResult] = await Promise.allSettled([
+  const projectsResult = await Promise.allSettled([
     searchQuery.length >= 2 ? searchProjects(searchQuery) : getAllProjects(),
-    getMySubscribedProjects(),
   ]);
 
-  const projects = projectsResult.status === 'fulfilled' ? projectsResult.value : [];
-  const subscribedProjects =
-    subscribedProjectsResult.status === 'fulfilled' ? subscribedProjectsResult.value : [];
+  const projects =
+    projectsResult[0].status === "fulfilled" ? projectsResult[0].value : [];
 
   return (
     <ProjectsGridPage
       projects={projects}
-      subscribedProjectIds={subscribedProjects.map((project) => project.id)}
+      subscribedProjectIds={[]}
       initialSearch={searchQuery}
     />
-  )
+  );
 }

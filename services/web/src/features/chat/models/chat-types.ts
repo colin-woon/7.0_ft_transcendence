@@ -1,12 +1,27 @@
+export const BUBBLE_COLORS = [
+    'bg-emerald-500',
+    'bg-teal-500',
+    'bg-cyan-600',
+    'bg-sky-500',
+    'bg-indigo-500'
+  ];
+
 export type FriendId = number; 
 export type ChatId = string; 
 
 export interface Friendship {
   friendId: FriendId;
   chatId: ChatId;
+  isOnline?: boolean;
 }
 
 export type FriendList = Friendship[];
+
+export interface PendingFriendRequest {
+  requesterId: FriendId;
+  addresseeId: FriendId;
+  status: 'pending';
+}
 
 export interface ChatMessage {
     id: number | string;
@@ -22,8 +37,8 @@ export interface UserTyping {
 }
 
 export interface UserStatus {
-  userId: string;
-  status: 'online' | 'offline';
+  userId: number;
+  isOnline: boolean;
 }
 
 export interface ReadReceipt {

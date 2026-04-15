@@ -47,6 +47,26 @@ services:
         networks:
             - 42_overflow
 
+    postgres-exporter-service:
+        image: prometheuscommunity/postgres-exporter:v0.19.1
+        container_name: postgres-exporter-service
+        restart: unless-stopped
+        profiles: ['db', 'all']
+        depends_on:
+            db-service:
+                condition: service_healthy
+        command:
+            - --web.config.file=/etc/postgres-exporter/web.yml
+        environment:
+            - DATA_SOURCE_NAME=postgresql://dev_user:dev_password@db-service:5432/postgres_db?sslmode=disable
+        volumes:
+            - ./infra/obs/postgres-exporter/web.prod.yml:/etc/postgres-exporter/web.yml:ro
+            - ./certs/runtime/postgres_exporter/postgres_exporter.crt:/certs/postgres-exporter.crt:ro
+            - ./certs/runtime/postgres_exporter/postgres_exporter.key:/certs/postgres-exporter.key:ro
+            - ./certs/ca/ca.crt:/certs/internal-ca.crt:ro
+        networks:
+            - 42_overflow
+
     auth-service:
         build:
             context: .
@@ -75,7 +95,7 @@ services:
                 ]
             interval: 10s
             timeout: 5s
-            start_period: 30s
+            start_period: 60s
             retries: 3
         env_file:
             - ./environment/shared.env
@@ -207,11 +227,11 @@ services:
                     '/certs/web.crt',
                     '--key',
                     '/certs/web.key',
-                    'https://localhost:3000/api/health',
+                    'https://localhost:3000/health',
                 ]
             interval: 10s
             timeout: 5s
-            start_period: 30s
+            start_period: 45s
             retries: 3
         volumes:
             - ./certs/runtime/web/web.crt:/certs/web.crt:ro
@@ -242,7 +262,7 @@ services:
                 ]
             interval: 10s
             timeout: 5s
-            start_period: 40s
+            start_period: 60s
             retries: 3
         depends_on:
             # update to auth_service, now just temporary dev test
@@ -327,6 +347,7 @@ services:
             - --web.route-prefix=/prometheus/
         volumes:
             - ./infra/obs/prometheus/prometheus.prod.yml:/etc/prometheus/prometheus.yml:ro
+            - ./infra/obs/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
             - ./infra/obs/prometheus/web.prod.yml:/etc/prometheus/web.yml:ro
             - prometheus_data:/prometheus
             - ./certs/runtime/prometheus/prometheus.crt:/certs/prometheus.crt:ro

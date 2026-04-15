@@ -1,14 +1,15 @@
 import { createStore } from 'zustand/vanilla';
 import { immer } from 'zustand/middleware/immer';
-import type { AllChatSessions, FriendId, ChatMessage, ChatId, FriendList, ChatRoomType } from './chat-types';
-import { getFriendList, getUserInbox, getMessageHistory, updateReadReceipt as apiUpdateReadReceipt } from '../api';
+import type { AllChatSessions, FriendId, ChatMessage, ChatId, FriendList, ChatRoomType, PendingFriendRequest } from './chat-types';
+import { getFriendList, getUserInbox, getMessageHistory, updateReadReceipt as apiUpdateReadReceipt, getPendingFriendRequests } from '../api';
 import debounce from 'lodash.debounce';
+import { useAuth } from '@/features/auth/models/AuthContext';
 
 export interface ChatState {
-  tempCurrentUserId: FriendId | null;
   currentChatSessionId: ChatId | null;
   allChatSessions: AllChatSessions;
   allFriendships: FriendList;
+  pendingRequests: PendingFriendRequest[];
   isLoadingFriends: boolean;
   friendsError: string | null;
   typingUsers: Record<ChatId, Record<FriendId, boolean>>;
@@ -16,13 +17,14 @@ export interface ChatState {
 }
 
 export interface ChatActions {
-  setTempCurrentUserId: (userId: FriendId) => void;
+  setUserStatus: (userId: FriendId, isOnline: boolean) => void;
   setChatSession: (chatId: ChatId, type: ChatRoomType, name: string | null, friendIds: FriendId[], messages: ChatMessage[] | null) => void;
   addMessage: (msg: ChatMessage) => void;
   setAllFriendships: (friendList: FriendList) => void;
   setCurrentChatSessionId: (chatId: ChatId | null) => void;
-  fetchAllFriendships: (userId: FriendId) => Promise<void>;
-  fetchAllChatSessions: (userId: FriendId) => Promise<void>;
+  fetchAllFriendships: () => Promise<void>;
+  fetchPendingFriendships: () => Promise<void>;
+  fetchAllChatSessions: () => Promise<void>;
   fetchChatHistory: (chatId: ChatId) => Promise<void>;
   setTypingStatus: (chatId: ChatId, senderId: FriendId) => void;
   updateReadReceipt: (chatId: ChatId, userId: FriendId, messageId: number) => void;
@@ -46,21 +48,28 @@ const clearTypingStatus = debounce(
 
 // Factory pattern: creates a new store instance per Provider
 export const createChatStore = (initialSessions: AllChatSessions = {}) => {
+  const { user } = useAuth();
+
   return createStore<ChatStore>()(
     immer((set, get) => ({
       allChatSessions: initialSessions,
       allFriendships: [],
+      pendingRequests: [],
       currentChatSessionId: null,
-      tempCurrentUserId: 1, // TEMP Hardcoded on mount as requested
       isLoadingFriends: false,
       friendsError: null,
       typingUsers: {},
       readReceipts: {},
 
-      setTempCurrentUserId: (userId: FriendId) =>
+      setUserStatus: (userId: FriendId, isOnline: boolean) =>
         set((state) => {
-          state.tempCurrentUserId = userId;
-      }),
+          // Find the actual friend object by matching the ID
+          const friend = state.allFriendships.find(f => f.friendId === userId);
+          
+          if (friend) {
+            friend.isOnline = isOnline;
+          }
+        }),
       setChatSession: (chatId: ChatId, type: ChatRoomType, name: string | null, friendIds: FriendId[], messages: ChatMessage[] | null) => 
         set((state) => {
           state.currentChatSessionId = chatId;
@@ -93,16 +102,23 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
           state.allFriendships = friendList;
         }),
 
-      fetchAllFriendships: async (userId: FriendId) => {
-        const friendList = await getFriendList(userId);
+      fetchAllFriendships: async () => {
+        const friendList = await getFriendList();
         set((state) => {
           state.allFriendships = friendList;
         });
       },
 
-      fetchAllChatSessions: async (userId: FriendId) => {
+      fetchPendingFriendships: async () => {
+        const pending = await getPendingFriendRequests();
+        set((state) => {
+          state.pendingRequests = pending;
+        });
+      },
+
+      fetchAllChatSessions: async () => {
         try {
-          const rawSessions = await getUserInbox(userId);
+          const rawSessions = await getUserInbox();
           set((state) => {
             const transformedSessions: AllChatSessions = {};
             rawSessions.forEach((session) => {
@@ -180,7 +196,7 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
           });
 
           // Send to backend
-          await apiUpdateReadReceipt(chatId, userId, messageId);
+          await apiUpdateReadReceipt(chatId, messageId);
         } catch (error) {
           console.error('Failed to send read receipt:', error);
           // In a production app, you might want to rollback the optimistic update here

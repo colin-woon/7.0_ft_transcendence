@@ -1,0 +1,5 @@
+tls_server_config:
+    cert_file: /certs/postgres-exporter.crt
+    key_file: /certs/postgres-exporter.key
+    client_auth_type: RequireAndVerifyClientCert
+    client_ca_file: /certs/internal-ca.crt

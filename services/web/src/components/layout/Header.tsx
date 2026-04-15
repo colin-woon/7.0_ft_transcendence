@@ -1,33 +1,34 @@
 "use client";
 
-import { Menu, Search, Trash2, UserRound, UserX } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { useAppShell } from "@/components/ui/ComponentLogic/Appshell/context/AppShellContext";
-import { useAdminUsers } from "@/features/auth/hooks/useAdminUsers";
-import { useUserSearch } from "@/features/auth/hooks/useUserSearch";
-import { useAuth } from "@/features/auth/models/AuthContext";
-import ConfirmActionDialog from "@/features/auth/ui/settings/components/ConfirmActionDialog";
-import UserMenu from "./UserMenu";
+import Link from 'next/link'
+import Image from 'next/image'
+import { useRouter } from 'next/navigation'
+import { useState, useRef, useEffect } from 'react'
+import { Menu, Search, Trash2, UserRound, UserX } from 'lucide-react'
+import { useAppShell } from '@/components/ui/ComponentLogic/Appshell/context/AppShellContext'
+import { useAdminUsers } from '@/features/auth/hooks/useAdminUsers'
+import { useUserSearch } from '@/features/auth/hooks/useUserSearch'
+import { useAuth } from '@/features/auth/models/AuthContext'
+import ConfirmActionDialog from '@/features/auth/ui/settings/components/ConfirmActionDialog'
+import UserMenu from './UserMenu'
 
 type HeaderConfirmAction =
-  | { kind: "logout"; userId: number; username: string }
-  | { kind: "delete"; userId: number; username: string };
+  | { kind: 'logout'; userId: number; username: string }
+  | { kind: 'delete'; userId: number; username: string }
 
 function SearchAvatar({
   fullName,
   avatarImage,
 }: {
-  fullName: string;
-  avatarImage?: string | null;
+  fullName: string
+  avatarImage?: string | null
 }) {
   const initials = fullName
-    .split(" ")
+    .split(' ')
     .map((name) => name[0])
-    .join("")
+    .join('')
     .slice(0, 2)
-    .toUpperCase();
+    .toUpperCase()
 
   if (avatarImage) {
     return (
@@ -36,14 +37,14 @@ function SearchAvatar({
         alt={`${fullName} avatar`}
         className="w-8 h-8 rounded-full object-cover bg-slate-100"
       />
-    );
+    )
   }
 
   return (
     <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold">
       {initials}
     </div>
-  );
+  )
 }
 
 export default function Header() {
@@ -147,11 +148,15 @@ export default function Header() {
                 strokeWidth={2.25}
               />
             </button>
-            <Link
-              href="/projects"
-              className="text-base-content text-xl font-bold hidden md:inline hover:text-secondary transition-colors"
-            >
-              42 overflow
+            <Link href="/projects" className="pl-3 text-base-content text-xl font-bold inline hover:text-secondary transition-colors">
+                  <Image
+                    src="/assets/42overflow.png" 
+                    alt="42 Overflow Logo"
+                    width={204}
+                     height={40}
+                    className="object-contain"
+                    priority
+                  />
             </Link>
           </div>
 

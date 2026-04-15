@@ -131,6 +131,43 @@ func (q *Queries) GetFriendListWithChatIds(ctx context.Context, userID int32) ([
 	return items, nil
 }
 
+const getPendingFriendRequests = `-- name: GetPendingFriendRequests :many
+SELECT requester_id, addressee_id, status
+FROM chat_service.friendships
+WHERE addressee_id = $1
+    AND status = 'pending'
+ORDER BY requester_id ASC
+`
+
+type GetPendingFriendRequestsRow struct {
+	RequesterID int32                       `json:"requesterId"`
+	AddresseeID int32                       `json:"addresseeId"`
+	Status      NullChatServiceFriendStatus `json:"status"`
+}
+
+func (q *Queries) GetPendingFriendRequests(ctx context.Context, addresseeID int32) ([]GetPendingFriendRequestsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPendingFriendRequests, addresseeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPendingFriendRequestsRow
+	for rows.Next() {
+		var i GetPendingFriendRequestsRow
+		if err := rows.Scan(&i.RequesterID, &i.AddresseeID, &i.Status); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateFriendshipStatus = `-- name: UpdateFriendshipStatus :exec
 UPDATE chat_service.friendships
 SET status = $3, updated_at = CURRENT_TIMESTAMP

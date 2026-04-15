@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Home, MessageCircle, Shield, FileText, LogOut, X } from "lucide-react";
+import { Home, MessageCircle, Shield, FileText, LogOut, X, Laugh } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/features/auth/models/AuthContext";
 import { useRouter } from "next/navigation";
@@ -56,7 +56,7 @@ export default function Sidebar() {
         />
       )}
 
-      <aside className={`absolute md:relative h-full flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out z-50 ${
+      <aside className={`absolute md:relative h-full flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out z-60 ${
         isOpen ? 'w-64 md:w-72 lg:w-60' : 'w-0'
       }`}>
         <div className="h-full flex flex-col bg-white border-r border-gray-200">

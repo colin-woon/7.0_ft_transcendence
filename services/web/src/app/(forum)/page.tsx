@@ -1,9 +1,11 @@
-import ProjectsGridPage from '@/features/forum/ui/projects/ProjectsGridPage'
+import ProjectsGridPage from "@/features/forum/ui/projects/screen/ProjectsListScreen";
 import {
   getAllProjects,
   getMySubscribedProjects,
   searchProjects,
-} from '@/features/forum/api/project'
+} from "@/features/forum/api/project";
+
+export const revalidate = 30;
 
 interface HomeRouteProps {
   searchParams?: Promise<{
@@ -15,16 +17,19 @@ export default async function HomePage({ searchParams }: HomeRouteProps) {
   const params = searchParams ? await searchParams : undefined;
   const qRaw = params?.q;
   const q = Array.isArray(qRaw) ? qRaw[0] : qRaw;
-  const searchQuery = (q ?? '').trim();
+  const searchQuery = (q ?? "").trim();
 
   const [projectsResult, subscribedProjectsResult] = await Promise.allSettled([
     searchQuery.length >= 2 ? searchProjects(searchQuery) : getAllProjects(),
     getMySubscribedProjects(),
   ]);
 
-  const projects = projectsResult.status === 'fulfilled' ? projectsResult.value : [];
+  const projects =
+    projectsResult.status === "fulfilled" ? projectsResult.value : [];
   const subscribedProjects =
-    subscribedProjectsResult.status === 'fulfilled' ? subscribedProjectsResult.value : [];
+    subscribedProjectsResult.status === "fulfilled"
+      ? subscribedProjectsResult.value
+      : [];
 
   return (
     <ProjectsGridPage
@@ -32,6 +37,5 @@ export default async function HomePage({ searchParams }: HomeRouteProps) {
       subscribedProjectIds={subscribedProjects.map((project) => project.id)}
       initialSearch={searchQuery}
     />
-  )
+  );
 }
-  

@@ -19,7 +19,7 @@ class ApiClient {
         'Content-Type': 'application/json',
         ...options.headers,
       },
-      // credentials: 'include', // CRITICAL: Ensures browser cookies go to the Gateway
+      credentials: 'include', // CRITICAL: Ensures browser cookies go to the Gateway
     });
 
     if (!res.ok) {
@@ -55,6 +55,17 @@ class ApiClient {
   patch<T>(endpoint: string, body?: any, options?: RequestInit) {
     return this.request<T>(endpoint, { ...options, method: 'PATCH', body: body ? JSON.stringify(body) : undefined });
   }
+}
+
+export function getGatewayApiBase(): string {
+  const candidate =
+    process.env.NEXT_PUBLIC_API_URL ??
+    process.env.NEXT_PUBLIC_GATEWAY_URL ??
+    process.env.GATEWAY_URL;
+
+  const base = candidate ?? 'https://gateway-service:8443';
+  const normalized = base.endsWith('/') ? base.slice(0, -1) : base;
+  return normalized.endsWith('/api') ? normalized : `${normalized}/api`;
 }
 
 // Export a single instance to be used across the app

@@ -11,6 +11,7 @@ export interface ForumPost {
   comments: number;
   views: number;
   upvotes: number;
+  userVote?: 1 | -1 | 0;
   category: string;
   timestamp: string;
   isPinned: boolean;
@@ -24,6 +25,7 @@ export interface ForumApiPostSummary {
   view_count: number;
   created_at: string;
   vote_score: number;
+  user_vote: 1 | -1 | 0;
   comment_count: number;
 }
 
@@ -38,6 +40,7 @@ export interface ForumApiProjectSummary {
   xp?: number;
   solo?: boolean;
   post_count?: number;
+  subscriber_count?: number;
   created_at?: string;
 }
 
@@ -50,6 +53,7 @@ export interface ForumApiPostDetail {
   view_count: number;
   created_at: string;
   vote_score: number;
+  user_vote: 1 | -1 | 0;
   comment_count: number;
 }
 
@@ -60,6 +64,7 @@ export interface ForumApiComment {
   content: string;
   is_best_answer: boolean;
   vote_score: number;
+  user_vote: 1 | -1 | 0;
   created_at: string;
 }
 
@@ -74,6 +79,7 @@ export interface ForumPostDetail {
   timestamp: string;
   views: number;
   upvotes: number;
+  userVote: 1 | -1 | 0;
   comments: number;
   isPinned: boolean;
 }
@@ -86,9 +92,17 @@ export interface ForumComment {
   content: string;
   timestamp: string;
   upvotes: number;
+  userVote: 1 | -1 | 0;
   isBestAnswer: boolean;
 }
 
-export const forumCategories = ['All', 'minishell', 'inception', 'philo', 'Tutorial', 'Career'] as const;
+export const forumCategories = [
+  'All',
+  'minishell',
+  'inception',
+  'philo',
+  'Tutorial',
+  'Career',
+] as const;
 
 export const forumSortOptions: readonly ForumSort[] = ['New', 'Top'];

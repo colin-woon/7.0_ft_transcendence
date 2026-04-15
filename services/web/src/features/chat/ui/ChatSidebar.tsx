@@ -1,20 +1,22 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAllChatSessions, useChatActions, BUBBLE_COLORS } from '@/features/chat/models';
 
-// Mock data based on your provided screenshot
-const MOCK_CHATS = [
-  { id: '1', name: 'Jane Doe', initials: 'JD', color: 'bg-emerald-500', isOnline: true, unread: 0 },
-  { id: '2', name: 'Design Team', initials: 'DT', color: 'bg-teal-500', isOnline: false, unread: 3 },
-  { id: '3', name: 'Alex Smith', initials: 'AS', color: 'bg-cyan-600', isOnline: false, unread: 0 },
-  { id: '4', name: 'Marketing Sync', initials: 'MS', color: 'bg-sky-500', isOnline: false, unread: 0 },
-  { id: '5', name: 'Dev Squad', initials: 'DS', color: 'bg-indigo-500', isOnline: true, unread: 1 },
-];
+import { AvatarWithStatus, CreateGroupChatButton } from '@/features/chat/ui';
 
-export default function ChatSidebar() {
+export function ChatSidebar() {
   const pathname = usePathname();
+  const { fetchAllChatSessions } = useChatActions();
+  const { allChatSessions, currentUserId } = useAllChatSessions();
+
+  useEffect(() => {
+    if (currentUserId) {
+      fetchAllChatSessions();
+    }
+  }, [fetchAllChatSessions, currentUserId]);
 
   return (
     <div className="flex flex-col h-full bg-base-200 text-base-content w-full">
@@ -33,78 +35,67 @@ export default function ChatSidebar() {
             </Link>
           </li>
           <li>
-            <button className="flex items-center gap-3 py-3 rounded-md text-base-content/80 hover:bg-base-300/50">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              Create Group
-            </button>
+              <CreateGroupChatButton />
           </li>
         </ul>
       </div>
 
       {/* DM List Divider */}
       <div className="px-4 pb-2 flex justify-between items-center group">
-        <span className="text-xs font-bold text-base-content/50 uppercase tracking-widest hover:text-base-content transition-colors cursor-default">
+        <span className="text-xs font-bold text-base-content/50 uppercase tracking-widest transition-colors cursor-default">
           Direct Messages
         </span>
-        <button className="text-base-content/50 hover:text-base-content opacity-0 group-hover:opacity-100 transition-opacity">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-        </button>
       </div>
 
       {/* Scrollable Chat List */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-4 space-y-1 custom-scrollbar">
-        {MOCK_CHATS.map((chat) => {
-          const isActive = pathname === `/messages/${chat.id}`;
+        {Object.values(allChatSessions || {}).map((chat) => {
+          const isActive = pathname === `/messages/${chat.chatId}`;
+
+          let displayName = chat.name || "Group Chat";
+          let initials = "GC";
+          let displayUserId = 0; // Default logic fallback
+
+          if (chat.type === "direct") {
+            const otherUserIds = chat.memberIds.filter(
+              (id) => id !== currentUserId
+            );
+            const otherUserId = otherUserIds.length > 0 ? otherUserIds[0] : currentUserId;
+            displayUserId = typeof otherUserId === 'number' ? otherUserId : 0;
+            
+            displayName = otherUserIds.length > 0 ? `User ${otherUserId}` : "You";
+            initials = displayName.substring(0, 2).toUpperCase();
+          } else if (chat.name) {
+            initials = chat.name.substring(0, 2).toUpperCase();
+          }
+          
+          const color = BUBBLE_COLORS[displayUserId % BUBBLE_COLORS.length];
+          const unreadCount = 0;
           
           return (
             <Link 
-              key={chat.id} 
-              href={`/messages/${chat.id}`}
+              key={chat.chatId} 
+              href={`/messages/${chat.chatId}`}
               className={`flex items-center gap-3 px-2 py-2 w-full rounded-md group transition-colors ${
                 isActive ? 'bg-base-300 text-base-content' : 'hover:bg-base-300/50 text-base-content/70'
               }`}
             >
               {/* Avatar with unread/online indicator */}
-              <div className="indicator">
-                {chat.unread > 0 && (
-                  <span className="indicator-item badge badge-error badge-sm px-1 z-10 transform translate-x-1 -translate-y-1 border-base-200 border-2">
-                    {chat.unread}
-                  </span>
-                )}
-                {chat.isOnline && chat.unread === 0 && (
-                  <span className="indicator-item indicator-bottom indicator-end status status-success status-lg z-10 transform -translate-x-1 border-base-200 border-2"></span>
-                )}
-                <div className={`avatar placeholder`}>
-                  <div className={`w-10 rounded-full ${chat.color} text-neutral-50`}>
-                    <span className="text-sm font-medium">{chat.initials}</span>
-                  </div>
-                </div>
-              </div>
+              <AvatarWithStatus 
+                userId={displayUserId} 
+                chatId={chat.chatId} 
+                name={displayName} 
+                initials={initials} 
+                color={color} 
+                isGroup={chat.type === 'group'}
+              />
 
               {/* Chat Name */}
               <div className="flex-1 truncate">
-                <span className={`text-sm truncate block ${isActive || chat.unread > 0 ? 'font-bold' : 'font-medium'}`}>
-                  {chat.name}
+                <span className={`text-sm truncate block ${isActive || unreadCount > 0 ? 'font-bold' : 'font-medium'}`}>
+                  {displayName}
                 </span>
-                {/* Optional subtitles like "Typing..." or small preview could go here */}
               </div>
-
-              {/* Close/Hide Button on Hover (Discord style) */}
-              <button 
-                className="opacity-0 group-hover:opacity-100 btn btn-xs btn-ghost btn-circle text-base-content/50 hover:text-base-content"
-                onClick={(e) => {
-                  e.preventDefault(); 
-                  // Close chat action here
-                }}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
             </Link>
           );
         })}

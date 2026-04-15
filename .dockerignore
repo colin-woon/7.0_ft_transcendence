@@ -17,6 +17,7 @@
 # Frontend / Next.js
 **/node_modules/
 **/.next/
+**/build/
 
 # Environment
 **/*.env
