@@ -9,33 +9,33 @@ import jakarta.ws.rs.core.Response;
 @ApplicationScoped
 public class ChatService {
 
-	@Inject
-	@RestClient
-	ChatClient chatClient;
+    @Inject
+    @RestClient
+    ChatClient chatClient;
 
-	@Inject
-	FaultToleranceServiceCallExecutor ex;
+    @Inject
+    FaultToleranceServiceCallExecutor ex;
 
-	@Inject
-	ServiceCallExecutor sce;
+    @Inject
+    ServiceCallExecutor sce;
 
-	public Response proxyGet(String path) {
-		return ex.execute(() -> chatClient.proxyGet(path));
-	}
+    public Response proxyGet(String path) {
+        return ex.chatExecute(() -> chatClient.proxyGet(path));
+    }
 
-	public Response proxyPost(String path, byte[] body) {
-		return sce.execute(() -> chatClient.proxyPost(path, body));
-	}
+    public Response proxyPost(String path, byte[] body) {
+        return sce.execute(() -> chatClient.proxyPost(path, body));
+    }
 
-	public Response proxyDelete(String path) {
-		return sce.execute(() -> chatClient.proxyDelete(path));
-	}
+    public Response proxyDelete(String path) {
+        return sce.execute(() -> chatClient.proxyDelete(path));
+    }
 
-	public Response proxyPut(String path, byte[] body) {
-		return sce.execute(() -> chatClient.proxyPut(path, body));
-	}
+    public Response proxyPut(String path, byte[] body) {
+        return sce.execute(() -> chatClient.proxyPut(path, body));
+    }
 
-	public Response proxyPatch(String path, byte[] body) {
-		return sce.execute(() -> chatClient.proxyPatch(path, body));
-	}
+    public Response proxyPatch(String path, byte[] body) {
+        return sce.execute(() -> chatClient.proxyPatch(path, body));
+    }
 }
