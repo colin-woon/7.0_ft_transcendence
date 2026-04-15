@@ -128,6 +128,7 @@ public class ProfileService {
 		}
 
 		LOG.warn("Deleting user account: " + user.id);
+		avatarStorageService.deleteManagedAvatar(user.avatarUrl);
 		userRepository.delete(user);
 		return new NewCookie.Builder("sessionId")
 			.value("")
