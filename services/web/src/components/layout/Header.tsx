@@ -17,10 +17,10 @@ type HeaderConfirmAction =
 
 function SearchAvatar({
   fullName,
-  avatarUrl,
+  avatarImage,
 }: {
   fullName: string;
-  avatarUrl: string | null;
+  avatarImage?: string | null;
 }) {
   const initials = fullName
     .split(" ")
@@ -29,10 +29,10 @@ function SearchAvatar({
     .slice(0, 2)
     .toUpperCase();
 
-  if (avatarUrl) {
+  if (avatarImage) {
     return (
       <img
-        src={avatarUrl}
+        src={avatarImage}
         alt={`${fullName} avatar`}
         className="w-8 h-8 rounded-full object-cover bg-slate-100"
       />
@@ -216,7 +216,7 @@ export default function Header() {
                         >
                           <SearchAvatar
                             fullName={user.fullName}
-                            avatarUrl={user.avatarUrl}
+                            avatarImage={user.avatarImage}
                           />
                           <div className="min-w-0">
                             <p className="text-sm font-semibold text-slate-800 truncate">
