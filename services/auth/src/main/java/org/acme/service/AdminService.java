@@ -1,8 +1,8 @@
 package org.acme.service;
 
-import org.acme.dto.UserInfoDTO;
 import org.acme.dto.AdminUpdateDTO;
 import org.acme.dto.IntraInfoDTO;
+import org.acme.dto.UserInfoDTO;
 import org.acme.model.User;
 import org.acme.model.UserRole;
 import org.acme.repository.SessionRepository;
@@ -25,6 +25,9 @@ public class AdminService {
 	@Inject
 	SessionRepository sessionRepository;
 
+	@Inject
+	AvatarStorageService avatarStorageService;
+
 	@Transactional
 	public UserInfoDTO adminUpdateUser(Long userId, Long adminId, AdminUpdateDTO updateDTO) {
 		User user = userRepository.findById(userId);
@@ -46,14 +49,22 @@ public class AdminService {
 			});
 			user.username = newValue;
 		});
-		updateDTO.avatarUrl.ifPresent(newValue -> user.avatarUrl = newValue );
+		updateDTO.avatarFile.ifPresent(newValue -> {
+			String trimmed = newValue.trim();
+			if (trimmed.isEmpty()) {
+				avatarStorageService.deleteManagedAvatar(user.avatarUrl);
+				user.avatarUrl = null;
+				return;
+			}
+			user.avatarUrl = avatarStorageService.storeBase64Avatar(trimmed, user.avatarUrl);
+		});
 		updateDTO.bio.ifPresent(newValue -> user.bio = newValue );
 		updateDTO.role.ifPresent(newValue -> user.role = newValue);
 		updateDTO.isBanned.ifPresent(newValue -> user.isBanned = newValue);
 		userRepository.persist(user);
 
 		IntraInfoDTO intrainfo = user.intra != null ? new IntraInfoDTO(user.intra) : null;
-		return new UserInfoDTO(user, intrainfo);
+		return avatarStorageService.toUserInfoDTO(user, intrainfo);
 	}
 
 	@Transactional
@@ -105,13 +116,15 @@ public class AdminService {
 		newUser.email = userInfo.email;
 		newUser.username = userInfo.username;
 		newUser.fullName = userInfo.fullName;
-		newUser.avatarUrl = userInfo.avatarUrl;
+		if (userInfo.avatarFile != null && !userInfo.avatarFile.isBlank()) {
+			newUser.avatarUrl = avatarStorageService.storeBase64Avatar(userInfo.avatarFile, null);
+		}
 		newUser.bio = userInfo.bio;
 		newUser.role = userInfo.role;
 		newUser.isBanned = userInfo.isBanned;
 		userRepository.persist(newUser);
 	
 		LOG.info("Admin created new user: " + newUser.id);
-		return new UserInfoDTO(newUser, null);
+		return avatarStorageService.toUserInfoDTO(newUser, null);
 	}
 }

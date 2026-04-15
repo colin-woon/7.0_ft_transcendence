@@ -36,6 +36,10 @@ public class IntraService {
 	@Inject
 	UserRepository userRepository;
 
+	@Inject
+	AvatarStorageService avatarStorageService;
+
+	@Inject
 	public IntraDTO parseUserInfo(UserInfo userinfo) {
 		try {
 			JsonObject jsonObject = userinfo.getJsonObject();
@@ -94,7 +98,9 @@ public class IntraService {
 	@Transactional
 	public void syncUserData(User user, IntraDTO dto) {
 		user.fullName = dto.usualFullName != null ? dto.usualFullName : dto.displayName;
-		user.avatarUrl = dto.image != null ? dto.image.link : null;
+		user.avatarUrl = dto.image != null
+			? avatarStorageService.mirrorRemoteAvatar(dto.image.link, user.avatarUrl)
+			: null;
 		userRepository.persist(user);
 	}
 
@@ -126,6 +132,6 @@ public class IntraService {
 		syncUserData(user, dto);
 		Intra intra = syncIntraData(user, dto);
 
-		return new UserInfoDTO(user, new IntraInfoDTO(intra));
+		return avatarStorageService.toUserInfoDTO(user, new IntraInfoDTO(intra));
 	}
 }
