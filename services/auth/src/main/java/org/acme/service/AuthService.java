@@ -10,7 +10,6 @@ import java.util.UUID;
 
 import org.acme.dto.IntraInfoDTO;
 import org.acme.dto.SessionDTO;
-import org.acme.dto.UserInfoDTO;
 import org.acme.dto.UserResponseDTO;
 import org.acme.model.Session;
 import org.acme.model.User;
@@ -45,6 +44,9 @@ public class AuthService {
 
 	@Inject
 	HttpServerRequest request;
+
+	@Inject
+	AvatarStorageService avatarStorageService;
 
 	@ConfigProperty(name = "app.domain.name", defaultValue = "localhost")
 	String domain;
@@ -87,7 +89,7 @@ public class AuthService {
 
 		IntraInfoDTO intrainfo = user.intra != null ? new IntraInfoDTO(user.intra) : null;
 		return new UserResponseDTO(accessToken, Instant.now().plusSeconds(accessExpiry),
-			new UserInfoDTO(user, intrainfo));
+			avatarStorageService.toUserInfoDTO(user, intrainfo));
 	}
 
 	@Transactional
@@ -222,7 +224,7 @@ public class AuthService {
 
 		IntraInfoDTO intrainfo = user.intra != null ? new IntraInfoDTO(user.intra) : null;
 		return new UserResponseDTO(accessToken, Instant.now().plusSeconds(accessExpiry),
-			new UserInfoDTO(user, intrainfo));
+			avatarStorageService.toUserInfoDTO(user, intrainfo));
 	}
 
 	@Transactional

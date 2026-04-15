@@ -5,12 +5,19 @@ import java.time.Instant;
 import org.acme.model.User;
 import org.acme.model.UserRole;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class UserInfoDTO {
 	// All the information about the user that we want to expose to the frontend.
 	public Long id;
 	public String username;
 	public String fullName;
-	public String avatarUrl;
+	public String avatarImage;
+	@JsonIgnore
+	public String avatarPath;
+	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+	public String avatarFile;
 	public String bio;
 	public String email;
 	public UserRole role;
@@ -27,13 +34,13 @@ public class UserInfoDTO {
 
 	public UserInfoDTO() {}
 
-	public UserInfoDTO(Long id, String username, String fullName, String avatarUrl, String bio, String email,
+	public UserInfoDTO(Long id, String username, String fullName, String avatarImage, String bio, String email,
 			UserRole role, boolean isBanned, Instant lastSeenAt, Instant createdAt, boolean linkedWithGoogle,
 			Instant updatedAt, boolean linkedWithIntra, boolean hasPassword, IntraInfoDTO intraInfo) {
 		this.id = id;
 		this.username = username;
 		this.fullName = fullName;
-		this.avatarUrl = avatarUrl;
+		this.avatarImage = avatarImage;
 		this.bio = bio;
 		this.email = email;
 		this.role = role;
@@ -51,7 +58,7 @@ public class UserInfoDTO {
 		this.id = user.id;
 		this.username = user.username;
 		this.fullName = user.fullName;
-		this.avatarUrl = user.avatarUrl;
+		this.avatarPath = user.avatarUrl;
 		this.bio = user.bio;
 		this.email = user.email;
 		this.role = user.role;
