@@ -7,7 +7,7 @@ export interface ServerAuthUser {
   username: string
   fullName: string
   email: string
-  avatarUrl: string | null
+  avatarImage: string | null
   bio: string | null
   role: 'STUDENT' | 'ADMIN'
   isBanned: boolean

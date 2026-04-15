@@ -15,6 +15,7 @@ import org.acme.dto.UserUpdateDTO;
 import org.acme.model.User;
 import org.acme.service.AdminService;
 import org.acme.service.AuthService;
+import org.acme.service.AvatarStorageService;
 import org.acme.service.IntraService;
 import org.acme.service.ProfileService;
 import org.acme.service.UserService;
@@ -61,6 +62,9 @@ public class AuthResource {
 
 	@Inject
 	UserService userService;
+
+	@Inject
+	AvatarStorageService avatarStorageService;
 
 	@Inject
 	SecurityIdentity identity;
@@ -227,7 +231,7 @@ public class AuthResource {
 
 		User user = userService.updatePassword(Long.valueOf(jwt.getSubject()), changeDTO);
 		IntraInfoDTO intraInfo = user.intra != null ? new IntraInfoDTO(user.intra) : null;
-		return new UserInfoDTO(user, intraInfo);
+		return avatarStorageService.toUserInfoDTO(user, intraInfo);
 	}
 
 	// To delete the current logged in user

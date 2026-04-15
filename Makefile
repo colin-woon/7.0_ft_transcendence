@@ -31,29 +31,29 @@ help:
 	@echo "========================================================================"
 
 # ---- Production (Group Targets) -----------------------------------------
-.PHONY: all up build rebuild restart logs stop down ensure-prod-certs
+.PHONY: all up build rebuild restart logs stop down ensure-certs
 
 all: up-all
 
 up: up-all
-up-all: ensure-prod-certs
+up-all: ensure-certs
 	$(COMPOSE_PROD) --profile all up -d --build
 
 build: build-all
-build-all: ensure-prod-certs
+build-all: ensure-certs
 	$(COMPOSE_PROD) --profile all build --no-cache
 
 rebuild: rebuild-all
-rebuild-all: ensure-prod-certs
+rebuild-all: ensure-certs
 	$(COMPOSE_PROD) --profile all down
 	$(COMPOSE_PROD) --profile all up -d --build --force-recreate
 
 restart: restart-all
-restart-all:
+restart-all: ensure-certs
 	$(COMPOSE_PROD) --profile all restart
 
 logs: logs-all
-logs-all:
+logs-all: ensure-certs
 	$(COMPOSE_PROD) --profile all logs -f --tail=200
 
 stop:
@@ -68,55 +68,55 @@ clean:
 # ---- Production (Surgical Targets) --------------------------------------
 # Usage: make build-gateway, make up-auth, etc.
 
-build-%: ensure-prod-certs
+build-%: ensure-certs
 	$(COMPOSE_PROD) build --no-cache $*-service
 
-up-%: ensure-prod-certs
+up-%: ensure-certs
 	$(COMPOSE_PROD) up -d --build $*-service
 
-rebuild-%: ensure-prod-certs
+rebuild-%: ensure-certs
 	$(COMPOSE_PROD) up -d --build --force-recreate $*-service
 
-restart-%:
+restart-%: ensure-certs
 	$(COMPOSE_PROD) restart $*-service
 
-logs-%:
+logs-%: ensure-certs
 	$(COMPOSE_PROD) logs -f --tail=200 $*-service
 
 # Legacy shorthands for quick start
-auth chat forum web gateway nginx prometheus grafana: ensure-prod-certs
+auth chat forum web gateway nginx prometheus grafana: ensure-certs
 	$(COMPOSE_PROD) up -d --build $@-service
 
 # ---- Development Targets (Group) ----------------------------------------
 .PHONY: dev-all dev-up dev-build dev-rebuild
 
 dev-all: dev-up
-dev-up:
+dev-up: ensure-certs
 	$(COMPOSE_DEV) --profile all up -d --build
 
-dev-build:
+dev-build: ensure-certs
 	$(COMPOSE_DEV) --profile all build --no-cache
 
-dev-rebuild:
+dev-rebuild: ensure-certs
 	$(COMPOSE_DEV) --profile all down
 	$(COMPOSE_DEV) --profile all up -d --build --force-recreate
 
 # ---- Development Targets (Surgical) -------------------------------------
 # Usage: make dev-build-gateway, make dev-up-auth, etc.
 
-dev-build-%:
+dev-build-%: ensure-certs
 	$(COMPOSE_DEV) build --no-cache $*-service
 
-dev-up-%:
+dev-up-%: ensure-certs
 	$(COMPOSE_DEV) up -d --build $*-service
 
-dev-rebuild-%:
+dev-rebuild-%: ensure-certs
 	$(COMPOSE_DEV) up -d --build --force-recreate $*-service
 
-dev-restart-%:
+dev-restart-%: ensure-certs
 	$(COMPOSE_DEV) restart $*-service
 
-dev-logs-%:
+dev-logs-%: ensure-certs
 	$(COMPOSE_DEV) logs -f --tail=200 $*-service
 
 # ---- Maintenance --------------------------------------------------------
@@ -131,7 +131,7 @@ config:
 prune:
 	docker system prune -f
 
-ensure-prod-certs:
+ensure-certs:
 	@(test -d ./certs && test -f "$(GRAFANA_PROD_DS)") || ./certs.sh
 
 certs:

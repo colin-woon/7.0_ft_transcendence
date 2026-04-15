@@ -103,6 +103,7 @@ services:
         volumes:
             - ./certs/runtime/auth/auth-keystore.p12:/certs/auth-keystore.p12:ro
             - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
+            - auth_avatars:/var/lib/auth/avatars
 
     chat-service:
         build:
@@ -403,3 +404,4 @@ volumes:
     postgres_data:
     prometheus_data:
     grafana_data:
+    auth_avatars:

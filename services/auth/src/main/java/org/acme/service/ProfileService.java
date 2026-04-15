@@ -3,16 +3,16 @@ package org.acme.service;
 import java.util.List;
 import java.util.Set;
 
+import org.acme.dto.IntraInfoDTO;
 import org.acme.dto.UserInfoDTO;
 import org.acme.dto.UserSummaryDTO;
 import org.acme.dto.UserUpdateDTO;
-import org.acme.dto.IntraInfoDTO;
 import org.acme.model.User;
 import org.acme.model.UserRole;
 import org.acme.repository.UserRepository;
 import org.eclipse.jdt.annotation.NonNull;
-import org.jboss.logging.Logger;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -27,6 +27,9 @@ public class ProfileService {
 
 	@Inject
 	UserRepository userRepository;
+
+	@Inject
+	AvatarStorageService avatarStorageService;
 
 	@ConfigProperty(name = "secure.cookies", defaultValue = "false")
 	Boolean secureCookies;
@@ -46,7 +49,7 @@ public class ProfileService {
 		}
 
 		IntraInfoDTO intrainfo = user.intra != null ? new IntraInfoDTO(user.intra) : null;
-		return new UserInfoDTO(user, intrainfo);
+		return avatarStorageService.toUserInfoDTO(user, intrainfo);
 	}
 
 	@Transactional
@@ -69,12 +72,20 @@ public class ProfileService {
 			});
 			user.username = newValue;
 		});
-		updateDTO.avatarUrl.ifPresent(newValue -> user.avatarUrl = newValue );
+		updateDTO.avatarFile.ifPresent(newValue -> {
+			String trimmed = newValue.trim();
+			if (trimmed.isEmpty()) {
+				avatarStorageService.deleteManagedAvatar(user.avatarUrl);
+				user.avatarUrl = null;
+				return;
+			}
+			user.avatarUrl = avatarStorageService.storeBase64Avatar(trimmed, user.avatarUrl);
+		});
 		updateDTO.bio.ifPresent(newValue -> user.bio = newValue );
 		userRepository.persist(user);
 
 		IntraInfoDTO intrainfo = user.intra != null ? new IntraInfoDTO(user.intra) : null;
-		return new UserInfoDTO(user, intrainfo);
+		return avatarStorageService.toUserInfoDTO(user, intrainfo);
 	}
 
 	public List<@NonNull UserSummaryDTO> searchUser(String query, int page, int size, Set<String> groups) {
@@ -87,9 +98,9 @@ public class ProfileService {
 		String safeQuery = (query == null) ? "" : query.trim();
 
 		if (groups.contains(UserRole.STUDENT.name())) {
-			return userRepository.searchByName(safeQuery, page, size, UserRole.STUDENT);
+			return avatarStorageService.toUserSummaryDTOs(userRepository.searchByName(safeQuery, page, size, UserRole.STUDENT));
 		}
-		return userRepository.searchByName(safeQuery, page, size);
+		return avatarStorageService.toUserSummaryDTOs(userRepository.searchByName(safeQuery, page, size));
 	}
 
 	@Transactional
@@ -105,7 +116,7 @@ public class ProfileService {
 			throw new WebApplicationException("Unauthorized", 403);
 		}
 		IntraInfoDTO intrainfo = user.intra != null ? new IntraInfoDTO(user.intra) : null;
-		return new UserInfoDTO(user, intrainfo);
+		return avatarStorageService.toUserInfoDTO(user, intrainfo);
 	}
 
 	@Transactional
@@ -117,6 +128,7 @@ public class ProfileService {
 		}
 
 		LOG.warn("Deleting user account: " + user.id);
+		avatarStorageService.deleteManagedAvatar(user.avatarUrl);
 		userRepository.delete(user);
 		return new NewCookie.Builder("sessionId")
 			.value("")
