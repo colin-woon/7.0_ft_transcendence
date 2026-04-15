@@ -15,11 +15,10 @@ import (
 type ChatServiceFriendStatus string
 
 const (
-	ChatServiceFriendStatusPending  ChatServiceFriendStatus = "pending"
-	ChatServiceFriendStatusAccepted ChatServiceFriendStatus = "accepted"
-	ChatServiceFriendStatusBlocked  ChatServiceFriendStatus = "blocked"
-	ChatServiceFriendStatusDeclined ChatServiceFriendStatus = "declined"
-	ChatServiceFriendStatusNone     ChatServiceFriendStatus = "none"
+	ChatServiceFriendStatusRequested ChatServiceFriendStatus = "requested"
+	ChatServiceFriendStatusPending   ChatServiceFriendStatus = "pending"
+	ChatServiceFriendStatusBlocked   ChatServiceFriendStatus = "blocked"
+	ChatServiceFriendStatusAccepted  ChatServiceFriendStatus = "accepted"
 )
 
 func (e *ChatServiceFriendStatus) Scan(src interface{}) error {
@@ -58,11 +57,13 @@ func (ns NullChatServiceFriendStatus) Value() (driver.Value, error) {
 }
 
 type ChatServiceFriendship struct {
-	RequesterID int32                       `json:"requesterId"`
-	AddresseeID int32                       `json:"addresseeId"`
-	Status      NullChatServiceFriendStatus `json:"status"`
-	CreatedAt   sql.NullTime                `json:"createdAt"`
-	UpdatedAt   sql.NullTime                `json:"updatedAt"`
+	RequesterID      int32                       `json:"requesterId"`
+	AddresseeID      int32                       `json:"addresseeId"`
+	LastActionUserID int32                       `json:"lastActionUserId"`
+	IsChatAllowed    sql.NullBool                `json:"isChatAllowed"`
+	Status           NullChatServiceFriendStatus `json:"status"`
+	CreatedAt        sql.NullTime                `json:"createdAt"`
+	UpdatedAt        sql.NullTime                `json:"updatedAt"`
 }
 
 type ChatServiceMessage struct {

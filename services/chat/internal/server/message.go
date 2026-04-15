@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -28,6 +29,30 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId uuid
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
+	}
+
+	permission, err := s.db.GetQueries().CheckChatPermissions(ctx, database.CheckChatPermissionsParams{
+		ID:     chatId,          // From the URL
+		UserID: int32(senderId), // From Context
+	})
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// They are not in this room, or the room doesn't exist
+			http.Error(w, "Unauthorized or chat not found", http.StatusForbidden)
+			return
+		}
+		http.Error(w, "Failed to verify chat permissions", http.StatusInternalServerError)
+		return
+	}
+
+	// 2. ENFORCE 'is_chat_allowed' ONLY FOR DIRECT CHATS
+	if permission.RoomType == "direct" {
+		// If there's no friendship record, or it explicitly says false, block it.
+		if !permission.IsChatAllowed.Valid || !permission.IsChatAllowed.Bool {
+			http.Error(w, "Sending messages is not allowed. Awaiting request approval or blocked.", http.StatusForbidden)
+			return
+		}
 	}
 
 	// 1. Save message to DB (using sqlc)
@@ -76,7 +101,16 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId uuid
 func (s *Server) GetMessageHistory(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID) {
 	ctx := r.Context()
 
-	history, err := s.db.GetQueries().GetMessageHistoryByChatId(ctx, chatId)
+	currUserId, ok := r.Context().Value(userIDKey).(int)
+	if !ok {
+		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
+		return
+	}
+
+	history, err := s.db.GetQueries().GetMessageHistoryByChatId(ctx, database.GetMessageHistoryByChatIdParams{
+		ChatID:      chatId,
+		AddresseeID: int32(currUserId),
+	})
 	if err != nil {
 		http.Error(w, "Failed to retrieve chat history", http.StatusInternalServerError)
 		return
@@ -122,6 +156,9 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Streaming not supported", http.StatusInternalServerError)
 		return
 	}
+
+	fmt.Fprintf(w, ": connected\n\n")
+	flusher.Flush()
 
 	sseCh := make(chan string, 10)
 	s.sseHub.mutex.Lock()
@@ -282,7 +319,7 @@ func (s *Server) CreateGroupChat(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-// SendTypingEvent handles the POST /message/typing/{chatId}/{tempSenderId} endpoint
+// SendTypingEvent handles the POST /message/typing/{chatId} endpoint
 // 1. Fetch all members of this room
 // 2. Validate that the sender is actually a member of the chat
 // Return 403 if they don't belong to the chat
@@ -292,7 +329,7 @@ func (s *Server) CreateGroupChat(w http.ResponseWriter, r *http.Request) {
 func (s *Server) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID) {
 	ctx := r.Context()
 
-	tempSenderId, ok := r.Context().Value(userIDKey).(int)
+	senderId, ok := r.Context().Value(userIDKey).(int)
 	if !ok {
 		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
 		return
@@ -305,7 +342,7 @@ func (s *Server) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId 
 	}
 	isMember := false
 	for _, id := range memberIDs {
-		if int(id) == tempSenderId {
+		if int(id) == senderId {
 			isMember = true
 			break
 		}
@@ -319,7 +356,7 @@ func (s *Server) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId 
 	}
 	err = data.Payload.FromTypingIndicator(api.TypingIndicator{
 		ChatId:   chatId,
-		SenderId: tempSenderId,
+		SenderId: senderId,
 	})
 	if err != nil {
 		http.Error(w, "Failed to construct typing event payload", http.StatusInternalServerError)
@@ -330,7 +367,7 @@ func (s *Server) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId 
 		http.Error(w, "Failed to serialize typing event", http.StatusInternalServerError)
 		return
 	}
-	s.sseHub.BroadcastToRoomExcept(memberIDs, tempSenderId, string(jsonData))
+	s.sseHub.BroadcastToRoomExcept(memberIDs, senderId, string(jsonData))
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -387,4 +424,116 @@ func (s *Server) UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatI
 
 	s.sseHub.BroadcastToRoomExcept(memberIDs, userId, string(jsonData))
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) SendMessageRequest(w http.ResponseWriter, r *http.Request, receiverId int) {
+	ctx := r.Context()
+
+	senderId, ok := r.Context().Value(userIDKey).(int)
+	if !ok {
+		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
+		return
+	}
+
+	var body api.SendMessageRequestJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	tx, err := s.db.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback()
+
+	qtx := s.db.GetQueries().WithTx(tx)
+
+	existing, err := qtx.GetFriendship(ctx, database.GetFriendshipParams{
+		RequesterID: int32(senderId),
+		AddresseeID: int32(receiverId),
+	})
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Create friendship with "requested" status and is_chat_allowed = false
+			_, err = qtx.CreateMessageRequestFriendship(ctx, database.CreateMessageRequestFriendshipParams{
+				RequesterID:      int32(senderId),
+				AddresseeID:      int32(receiverId),
+				LastActionUserID: int32(senderId),
+			})
+			if err != nil {
+				if strings.Contains(err.Error(), "friendship_id_order") {
+					http.Error(w, "Cannot friend yourself", http.StatusBadRequest)
+					return
+				}
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		// If chat already allowed, must use standard /message/{chatId}
+		if existing.IsChatAllowed.Valid && existing.IsChatAllowed.Bool {
+			http.Error(w, "Chat already allowed, use SendMessage", http.StatusBadRequest)
+			return
+		}
+
+		// Prevent multiple requests if one is already sent/pending
+		if existing.Status.Valid && (existing.Status.ChatServiceFriendStatus == database.ChatServiceFriendStatusRequested ||
+			existing.Status.ChatServiceFriendStatus == database.ChatServiceFriendStatusPending) {
+			http.Error(w, "Message request already pending", http.StatusForbidden)
+			return
+		} else {
+			http.Error(w, "Friendship already exists", http.StatusConflict)
+			return
+		}
+	}
+
+	// Create chat room
+	chatId, err := qtx.CreateDirectRoomWithMembers(ctx, database.CreateDirectRoomWithMembersParams{
+		UserID:   int32(senderId),
+		UserID_2: int32(receiverId),
+	})
+	if err != nil {
+		http.Error(w, "Failed to initialize chat room", http.StatusInternalServerError)
+		return
+	}
+
+	// Create the 1 allowed message
+	savedMsg, err := qtx.CreateMessage(ctx, database.CreateMessageParams{
+		ChatID:   chatId,
+		SenderID: int32(senderId),
+		Content:  body.Content,
+	})
+	if err != nil {
+		http.Error(w, "Failed to save message", http.StatusInternalServerError)
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
+		return
+	}
+
+	// Push SSE
+	memberIDs := []int32{int32(senderId), int32(receiverId)}
+	data := api.StreamEvent{
+		Type: api.NEWMESSAGE,
+	}
+	data.Payload.FromChatMessage(api.ChatMessage{
+		ChatId:    chatId,
+		Content:   savedMsg.Content,
+		CreatedAt: savedMsg.CreatedAt.Time,
+		Id:        int(savedMsg.ID),
+		SenderId:  senderId,
+	})
+
+	jsonData, _ := json.Marshal(data)
+	s.sseHub.BroadcastToRoomExcept(memberIDs, senderId, string(jsonData))
+
+	w.WriteHeader(http.StatusCreated)
 }

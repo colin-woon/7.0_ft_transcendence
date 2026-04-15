@@ -44,15 +44,24 @@ func (e ChatRoomType) Valid() bool {
 	}
 }
 
-// Defines values for PendingFriendRequestStatus.
+// Defines values for FriendshipStatus.
 const (
-	PendingFriendRequestStatusPending PendingFriendRequestStatus = "pending"
+	Accepted  FriendshipStatus = "accepted"
+	Blocked   FriendshipStatus = "blocked"
+	Pending   FriendshipStatus = "pending"
+	Requested FriendshipStatus = "requested"
 )
 
-// Valid indicates whether the value is a known member of the PendingFriendRequestStatus enum.
-func (e PendingFriendRequestStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the FriendshipStatus enum.
+func (e FriendshipStatus) Valid() bool {
 	switch e {
-	case PendingFriendRequestStatusPending:
+	case Accepted:
+		return true
+	case Blocked:
+		return true
+	case Pending:
+		return true
+	case Requested:
 		return true
 	default:
 		return false
@@ -77,33 +86,6 @@ func (e StreamEventType) Valid() bool {
 	case USERSTATUS:
 		return true
 	case USERTYPING:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for UpdateFriendshipStatusParamsStatus.
-const (
-	UpdateFriendshipStatusParamsStatusAccepted UpdateFriendshipStatusParamsStatus = "accepted"
-	UpdateFriendshipStatusParamsStatusBlocked  UpdateFriendshipStatusParamsStatus = "blocked"
-	UpdateFriendshipStatusParamsStatusDeclined UpdateFriendshipStatusParamsStatus = "declined"
-	UpdateFriendshipStatusParamsStatusNone     UpdateFriendshipStatusParamsStatus = "none"
-	UpdateFriendshipStatusParamsStatusPending  UpdateFriendshipStatusParamsStatus = "pending"
-)
-
-// Valid indicates whether the value is a known member of the UpdateFriendshipStatusParamsStatus enum.
-func (e UpdateFriendshipStatusParamsStatus) Valid() bool {
-	switch e {
-	case UpdateFriendshipStatusParamsStatusAccepted:
-		return true
-	case UpdateFriendshipStatusParamsStatusBlocked:
-		return true
-	case UpdateFriendshipStatusParamsStatusDeclined:
-		return true
-	case UpdateFriendshipStatusParamsStatusNone:
-		return true
-	case UpdateFriendshipStatusParamsStatusPending:
 		return true
 	default:
 		return false
@@ -146,18 +128,15 @@ type FriendList = []struct {
 	IsOnline *bool `json:"isOnline,omitempty"`
 }
 
+// FriendshipStatus defines model for FriendshipStatus.
+type FriendshipStatus string
+
 // PendingFriendRequest defines model for PendingFriendRequest.
 type PendingFriendRequest struct {
-	// AddresseeId User who received the friend request
-	AddresseeId int `json:"addresseeId"`
-
-	// RequesterId User who sent the friend request
-	RequesterId int                        `json:"requesterId"`
-	Status      PendingFriendRequestStatus `json:"status"`
+	AddresseeId int              `json:"addresseeId"`
+	RequesterId int              `json:"requesterId"`
+	Status      FriendshipStatus `json:"status"`
 }
-
-// PendingFriendRequestStatus defines model for PendingFriendRequest.Status.
-type PendingFriendRequestStatus string
 
 // PendingFriendRequestList defines model for PendingFriendRequestList.
 type PendingFriendRequestList = []PendingFriendRequest
@@ -203,11 +182,8 @@ type UserStatus struct {
 
 // UpdateFriendshipStatusParams defines parameters for UpdateFriendshipStatus.
 type UpdateFriendshipStatusParams struct {
-	Status UpdateFriendshipStatusParamsStatus `form:"status" json:"status"`
+	Status FriendshipStatus `form:"status" json:"status"`
 }
-
-// UpdateFriendshipStatusParamsStatus defines parameters for UpdateFriendshipStatus.
-type UpdateFriendshipStatusParamsStatus string
 
 // CreateGroupChatJSONBody defines parameters for CreateGroupChat.
 type CreateGroupChatJSONBody struct {
@@ -223,6 +199,11 @@ type UpdateReadReceiptJSONBody struct {
 	MessageId int `json:"messageId"`
 }
 
+// SendMessageRequestJSONBody defines parameters for SendMessageRequest.
+type SendMessageRequestJSONBody struct {
+	Content string `json:"content"`
+}
+
 // SendMessageJSONBody defines parameters for SendMessage.
 type SendMessageJSONBody struct {
 	Content string `json:"content"`
@@ -233,6 +214,9 @@ type CreateGroupChatJSONRequestBody CreateGroupChatJSONBody
 
 // UpdateReadReceiptJSONRequestBody defines body for UpdateReadReceipt for application/json ContentType.
 type UpdateReadReceiptJSONRequestBody UpdateReadReceiptJSONBody
+
+// SendMessageRequestJSONRequestBody defines body for SendMessageRequest for application/json ContentType.
+type SendMessageRequestJSONRequestBody SendMessageRequestJSONBody
 
 // SendMessageJSONRequestBody defines body for SendMessage for application/json ContentType.
 type SendMessageJSONRequestBody SendMessageJSONBody
@@ -363,8 +347,8 @@ type ServerInterface interface {
 	// (POST /friendship/{receiverId})
 	SendFriendRequest(w http.ResponseWriter, r *http.Request, receiverId int)
 	// Update friendship status
-	// (PATCH /friendship/{receiverId}/update)
-	UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, receiverId int, params UpdateFriendshipStatusParams)
+	// (PATCH /friendship/{targetUserId})
+	UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, targetUserId int, params UpdateFriendshipStatusParams)
 	// Create a new group chat
 	// (POST /message/group/create)
 	CreateGroupChat(w http.ResponseWriter, r *http.Request)
@@ -377,6 +361,12 @@ type ServerInterface interface {
 	// Update the last read message for a user in a chat
 	// (PATCH /message/read/{chatId})
 	UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID)
+	// Send initial message request (creates room, friendship, sends 1 msg)
+	// (POST /message/request/{receiverId})
+	SendMessageRequest(w http.ResponseWriter, r *http.Request, receiverId int)
+	// Accept initial message request
+	// (PATCH /message/request/{requesterId}/accept)
+	AcceptMessageRequest(w http.ResponseWriter, r *http.Request, requesterId int)
 	// Opens an SSE connection for real-time functionalities
 	// (GET /message/stream)
 	GetMessageStream(w http.ResponseWriter, r *http.Request)
@@ -411,8 +401,8 @@ func (_ Unimplemented) SendFriendRequest(w http.ResponseWriter, r *http.Request,
 }
 
 // Update friendship status
-// (PATCH /friendship/{receiverId}/update)
-func (_ Unimplemented) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, receiverId int, params UpdateFriendshipStatusParams) {
+// (PATCH /friendship/{targetUserId})
+func (_ Unimplemented) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, targetUserId int, params UpdateFriendshipStatusParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -437,6 +427,18 @@ func (_ Unimplemented) GetUserInbox(w http.ResponseWriter, r *http.Request) {
 // Update the last read message for a user in a chat
 // (PATCH /message/read/{chatId})
 func (_ Unimplemented) UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Send initial message request (creates room, friendship, sends 1 msg)
+// (POST /message/request/{receiverId})
+func (_ Unimplemented) SendMessageRequest(w http.ResponseWriter, r *http.Request, receiverId int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Accept initial message request
+// (PATCH /message/request/{requesterId}/accept)
+func (_ Unimplemented) AcceptMessageRequest(w http.ResponseWriter, r *http.Request, requesterId int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -543,12 +545,12 @@ func (siw *ServerInterfaceWrapper) UpdateFriendshipStatus(w http.ResponseWriter,
 
 	var err error
 
-	// ------------- Path parameter "receiverId" -------------
-	var receiverId int
+	// ------------- Path parameter "targetUserId" -------------
+	var targetUserId int
 
-	err = runtime.BindStyledParameterWithOptions("simple", "receiverId", chi.URLParam(r, "receiverId"), &receiverId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "targetUserId", chi.URLParam(r, "targetUserId"), &targetUserId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "receiverId", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "targetUserId", Err: err})
 		return
 	}
 
@@ -577,7 +579,7 @@ func (siw *ServerInterfaceWrapper) UpdateFriendshipStatus(w http.ResponseWriter,
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateFriendshipStatus(w, r, receiverId, params)
+		siw.Handler.UpdateFriendshipStatus(w, r, targetUserId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -680,6 +682,68 @@ func (siw *ServerInterfaceWrapper) UpdateReadReceipt(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateReadReceipt(w, r, chatId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SendMessageRequest operation middleware
+func (siw *ServerInterfaceWrapper) SendMessageRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "receiverId" -------------
+	var receiverId int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "receiverId", chi.URLParam(r, "receiverId"), &receiverId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "receiverId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SendMessageRequest(w, r, receiverId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AcceptMessageRequest operation middleware
+func (siw *ServerInterfaceWrapper) AcceptMessageRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "requesterId" -------------
+	var requesterId int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requesterId", chi.URLParam(r, "requesterId"), &requesterId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requesterId", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, GatewayUserHeaderScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AcceptMessageRequest(w, r, requesterId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -894,7 +958,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/friendship/{receiverId}", wrapper.SendFriendRequest)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/friendship/{receiverId}/update", wrapper.UpdateFriendshipStatus)
+		r.Patch(options.BaseURL+"/friendship/{targetUserId}", wrapper.UpdateFriendshipStatus)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/message/group/create", wrapper.CreateGroupChat)
@@ -907,6 +971,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Patch(options.BaseURL+"/message/read/{chatId}", wrapper.UpdateReadReceipt)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/message/request/{receiverId}", wrapper.SendMessageRequest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/message/request/{requesterId}/accept", wrapper.AcceptMessageRequest)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/message/stream", wrapper.GetMessageStream)
@@ -924,39 +994,41 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

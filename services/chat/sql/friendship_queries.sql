@@ -1,12 +1,20 @@
 -- name: CreateFriendship :one
-INSERT INTO chat_service.friendships (requester_id, addressee_id, status)
-VALUES ($1, $2, 'pending')
+INSERT INTO chat_service.friendships (requester_id, addressee_id, last_action_user_id, status)
+VALUES ($1, $2, $3, 'pending')
 RETURNING *;
 
--- name: UpdateFriendshipStatus :exec
+-- name: UpdateFriendshipStatus :one
 UPDATE chat_service.friendships
-SET status = $3, updated_at = CURRENT_TIMESTAMP
-WHERE requester_id = $1 AND addressee_id = $2;
+SET status = $3, last_action_user_id = $4, is_chat_allowed = $5, updated_at = CURRENT_TIMESTAMP
+WHERE (requester_id = $1 AND addressee_id = $2)
+   OR (requester_id = $2 AND addressee_id = $1)
+RETURNING *;
+
+-- name: GetFriendship :one
+SELECT * FROM chat_service.friendships
+WHERE (requester_id = $1 AND addressee_id = $2)
+   OR (requester_id = $2 AND addressee_id = $1)
+LIMIT 1;
 
 -- name: CreateDirectRoomWithMembers :one
 WITH existing_room AS (
@@ -68,3 +76,29 @@ FROM chat_service.friendships
 WHERE addressee_id = $1
     AND status = 'pending'
 ORDER BY requester_id ASC;
+
+-- name: CreateMessageRequestFriendship :one
+INSERT INTO chat_service.friendships (requester_id, addressee_id, last_action_user_id, status, is_chat_allowed)
+VALUES ($1, $2, $3, 'requested', false)
+RETURNING *;
+
+-- name: CheckChatPermissions :one
+SELECT
+    r.type AS room_type,
+    f.is_chat_allowed
+FROM chat_service.rooms r
+JOIN chat_service.room_members me ON r.id = me.chat_id
+-- Only attempt to find the "other" person if it's a direct chat
+LEFT JOIN chat_service.room_members other
+    ON r.id = other.chat_id
+    AND me.user_id != other.user_id
+    AND r.type = 'direct'
+-- Only attempt to join friendships if it's a direct chat
+LEFT JOIN chat_service.friendships f
+    ON r.type = 'direct' AND (
+        (f.requester_id = me.user_id AND f.addressee_id = other.user_id) OR
+        (f.requester_id = other.user_id AND f.addressee_id = me.user_id)
+    )
+WHERE r.id = $1
+  AND me.user_id = $2
+LIMIT 1;

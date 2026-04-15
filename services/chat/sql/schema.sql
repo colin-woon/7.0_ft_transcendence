@@ -1,16 +1,19 @@
 CREATE SCHEMA IF NOT EXISTS chat_service;
 
-CREATE TYPE chat_service.friend_status AS ENUM ('pending', 'accepted', 'blocked', 'declined', 'none');
+CREATE TYPE chat_service.friend_status AS ENUM ('requested', 'pending', 'blocked', 'accepted');
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE chat_service.friendships (
     requester_id INTEGER NOT NULL,
     addressee_id INTEGER NOT NULL,
-    status chat_service.friend_status DEFAULT 'none',
+    last_action_user_id INTEGER NOT NULL,
+    is_chat_allowed BOOLEAN DEFAULT FALSE,
+    status chat_service.friend_status DEFAULT 'requested',
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (requester_id, addressee_id)
+    PRIMARY KEY (requester_id, addressee_id),
+    CONSTRAINT friendship_id_order CHECK (requester_id != addressee_id)
 );
 
 -- UNIFIED ROOM (room identify [direct/group])
