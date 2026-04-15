@@ -7,6 +7,7 @@ const dev = process.env.NODE_ENV !== 'production';
 const hostname = '0.0.0.0';
 const port = parseInt(process.env.PORT || '3000', 10);
 const logNextCache = process.env.WEB_LOG_NEXT_CACHE === '1';
+const debugWeb = process.env.WEB_DEBUG === '1';
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
@@ -23,6 +24,13 @@ app.prepare().then(() => {
 	};
 
 	createServer(httpsOptions, async (req, res) => {
+		if (debugWeb) {
+			console.log(`[web] -> ${req.method} ${req.url}`);
+			res.on('finish', () => {
+				console.log(`[web] <- ${req.method} ${req.url} ${res.statusCode}`);
+			});
+		}
+
 		try {
 			const parsedUrl = parse(req.url, true);
 			await handle(req, res, parsedUrl);
@@ -52,6 +60,9 @@ app.prepare().then(() => {
 				}`
 			);
 			console.log('> mTLS enabled - client certificate required');
+			if (debugWeb) {
+				console.log('> Request debug logging enabled (WEB_DEBUG=1)');
+			}
 			if (logNextCache) {
 				console.log('> Next cache status logging enabled (WEB_LOG_NEXT_CACHE=1)');
 			}
