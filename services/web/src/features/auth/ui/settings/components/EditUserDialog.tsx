@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 export interface EditUserDraft {
   username: string;
   fullName: string;
@@ -14,6 +16,7 @@ export interface EditUserDialogProps {
   saving?: boolean;
   error?: string | null;
   avatarFileName?: string | null;
+  extraActions?: ReactNode;
   onChange: (next: Partial<EditUserDraft>) => void;
   onAvatarFileChange?: (file: File | null) => void;
   onClose: () => void;
@@ -31,6 +34,7 @@ export default function EditUserDialog({
   saving = false,
   error,
   avatarFileName,
+  extraActions,
   onChange,
   onAvatarFileChange,
   onClose,
@@ -67,11 +71,15 @@ export default function EditUserDialog({
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(event) => onAvatarFileChange?.(event.target.files?.[0] ?? null)}
+                  onChange={(event) =>
+                    onAvatarFileChange?.(event.target.files?.[0] ?? null)
+                  }
                 />
               </label>
               {avatarFileName && (
-                <p className="text-xs text-base-content/60">Selected avatar: {avatarFileName}</p>
+                <p className="text-xs text-base-content/60">
+                  Selected avatar: {avatarFileName}
+                </p>
               )}
             </div>
           )}
@@ -82,6 +90,9 @@ export default function EditUserDialog({
             onChange={(event) => onChange({ bio: event.target.value })}
           />
           {error && <p className="text-xs text-error">{error}</p>}
+          {extraActions ? (
+            <div className="pt-2 border-t border-base-200">{extraActions}</div>
+          ) : null}
           <div className="modal-action">
             <button
               type="button"

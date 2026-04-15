@@ -8,7 +8,6 @@ import {
   LogOut,
   RefreshCcw,
   Trash2,
-  Upload,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -25,11 +24,14 @@ import { useProfileEdit } from "@/features/auth/hooks/useProfileEdit";
 import { useSessions } from "@/features/auth/hooks/useSessions";
 import { useUserProfile } from "@/features/auth/hooks/useUserProfile";
 import { useAuth } from "@/features/auth/models/AuthContext";
-import { fileToDataUrl } from "@/features/auth/utils/avatarFile";
 import ConfirmActionDialog from "@/features/auth/ui/settings/components/ConfirmActionDialog";
 import EditUserDialog, {
   type EditUserDraft,
 } from "@/features/auth/ui/settings/components/EditUserDialog";
+import {
+  fileToDataUrl,
+  validateAvatarFile,
+} from "@/features/auth/utils/avatarFile";
 import {
   type PasswordChangeFormValues,
   passwordChangeSchema,
@@ -282,10 +284,25 @@ export default function SettingsPage({
     actionError ??
     adminHookError;
 
+  const updateNewUserForm = <K extends keyof CreateUserPayload>(
+    key: K,
+    value: CreateUserPayload[K],
+  ) => {
+    setNewUserForm((prev) => ({ ...prev, [key]: value }));
+  };
+
   /**
    * Persists profile edits for the currently authenticated user.
    */
   const handleSaveOwnProfile = async () => {
+    if (pendingAvatarFile) {
+      const validationError = validateAvatarFile(pendingAvatarFile);
+      if (validationError) {
+        setAdminActionError(validationError);
+        return;
+      }
+    }
+
     let avatarFilePayload: string | undefined;
     if (pendingAvatarFile) {
       avatarFilePayload = await fileToDataUrl(pendingAvatarFile);
@@ -389,38 +406,6 @@ export default function SettingsPage({
   };
 
   /**
-   * Uploads avatar image through PATCH /me JSON payload.
-   */
-  const handleAvatarUpload = async () => {
-    if (!pendingAvatarFile) {
-      setAdminActionError("Select an image before uploading.");
-      return;
-    }
-
-    if (!pendingAvatarFile.type.startsWith("image/")) {
-      setAdminActionError("Only image files are allowed.");
-      return;
-    }
-
-    const maxBytes = 2 * 1024 * 1024;
-    if (pendingAvatarFile.size > maxBytes) {
-      setAdminActionError("Avatar must be 2MB or smaller.");
-      return;
-    }
-
-    setAdminActionError(null);
-    setAdminActionSuccess(null);
-
-    const avatarFile = await fileToDataUrl(pendingAvatarFile);
-    const updated = await saveProfile({ avatarFile });
-    if (!updated) return;
-
-    setPendingAvatarFile(null);
-    setAdminActionSuccess("Avatar uploaded successfully.");
-    await refetch();
-  };
-
-  /**
    * Creates a user as admin using the fuller UserInfoDTO-aligned fields.
    */
   const handleAdminCreateUser = async (
@@ -430,10 +415,19 @@ export default function SettingsPage({
     setAdminActionError(null);
     setAdminActionSuccess(null);
 
+    const username = newUserForm.username.trim();
+    const fullName = newUserForm.fullName.trim();
+    const email = newUserForm.email.trim();
+
+    if (!username || !fullName || !email) {
+      setAdminActionError("Username, full name, and email are required.");
+      return;
+    }
+
     const created = await adminCreateUser({
-      username: newUserForm.username.trim(),
-      fullName: newUserForm.fullName.trim(),
-      email: newUserForm.email.trim(),
+      username,
+      fullName,
+      email,
       bio: newUserForm.bio?.trim() || undefined,
       role: newUserForm.role,
       isBanned: newUserForm.isBanned,
@@ -608,50 +602,21 @@ export default function SettingsPage({
                 >
                   Edit profile
                 </button>
-                <label className="btn btn-sm btn-outline">
-                  Choose avatar
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0] ?? null;
-                      setPendingAvatarFile(file);
-                      setAdminActionError(null);
-                    }}
-                  />
-                </label>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline"
-                  onClick={handleAvatarUpload}
-                  disabled={!pendingAvatarFile || profileSaving}
-                >
-                  <Upload
-                    size={14}
-                    className={profileSaving ? "animate-pulse" : ""}
-                  />
-                  {profileSaving ? "Uploading..." : "Upload avatar"}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-ghost"
-                  onClick={handleReload42}
-                  disabled={reloadingIntra}
-                >
-                  <RefreshCcw
-                    size={14}
-                    className={reloadingIntra ? "animate-spin" : ""}
-                  />
-                  {reloadingIntra ? "Reloading..." : "Reload 42 data"}
-                </button>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-ghost"
+                    onClick={handleReload42}
+                    disabled={reloadingIntra}
+                  >
+                    <RefreshCcw
+                      size={14}
+                      className={reloadingIntra ? "animate-spin" : ""}
+                    />
+                    {reloadingIntra ? "Reloading..." : "Reload 42 data"}
+                  </button>
+                )}
               </div>
-
-              {pendingAvatarFile && (
-                <p className="text-xs text-base-content/60 mt-2">
-                  Selected avatar: {pendingAvatarFile.name}
-                </p>
-              )}
 
               <h2 className="text-base font-bold text-base-content mt-8">
                 Account Connections
@@ -928,107 +893,119 @@ export default function SettingsPage({
           )}
 
           {activeTab === "admin" && isAdmin && (
-            <>
-              <h2 className="text-base font-bold text-base-content">
-                Create User
-              </h2>
-              <p className="text-sm text-base-content/60 mt-1">
-                Create a local account with role, profile details, and initial
-                ban state.
-              </p>
+            <div className="rounded-2xl border border-base-200 bg-base-100 p-4 md:p-5">
+              <div className="mb-4">
+                <h2 className="text-base font-bold text-base-content">
+                  Create User
+                </h2>
+                <p className="text-sm text-base-content/60 mt-1">
+                  Create a local account with role, profile details, and initial
+                  status.
+                </p>
+              </div>
 
-              <form
-                className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4"
-                onSubmit={handleAdminCreateUser}
-              >
-                <input
-                  className="input input-bordered"
-                  placeholder="Username"
-                  value={newUserForm.username}
-                  onChange={(event) =>
-                    setNewUserForm((prev) => ({
-                      ...prev,
-                      username: event.target.value,
-                    }))
-                  }
-                  required
-                />
-                <input
-                  className="input input-bordered"
-                  placeholder="Full name"
-                  value={newUserForm.fullName}
-                  onChange={(event) =>
-                    setNewUserForm((prev) => ({
-                      ...prev,
-                      fullName: event.target.value,
-                    }))
-                  }
-                  required
-                />
-                <input
-                  className="input input-bordered md:col-span-2"
-                  placeholder="Email"
-                  type="email"
-                  value={newUserForm.email}
-                  onChange={(event) =>
-                    setNewUserForm((prev) => ({
-                      ...prev,
-                      email: event.target.value,
-                    }))
-                  }
-                  required
-                />
-                <textarea
-                  className="textarea textarea-bordered md:col-span-2"
-                  placeholder="Bio (optional)"
-                  value={newUserForm.bio ?? ""}
-                  onChange={(event) =>
-                    setNewUserForm((prev) => ({
-                      ...prev,
-                      bio: event.target.value,
-                    }))
-                  }
-                />
+              <form className="space-y-4" onSubmit={handleAdminCreateUser}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <label className="form-control">
+                    <span className="label-text text-xs text-base-content/60 mb-1">
+                      Username
+                    </span>
+                    <input
+                      className="input input-bordered"
+                      placeholder="jdoe"
+                      value={newUserForm.username}
+                      onChange={(event) =>
+                        updateNewUserForm("username", event.target.value)
+                      }
+                      required
+                    />
+                  </label>
 
-                <label className="form-control">
-                  <span className="label-text text-xs text-base-content/60">
-                    Role
-                  </span>
-                  <select
-                    className="select select-bordered"
-                    value={newUserForm.role}
-                    onChange={(event) =>
-                      setNewUserForm((prev) => ({
-                        ...prev,
-                        role: event.target.value as "STUDENT" | "ADMIN",
-                      }))
-                    }
-                  >
-                    <option value="STUDENT">STUDENT</option>
-                    <option value="ADMIN">ADMIN</option>
-                  </select>
-                </label>
+                  <label className="form-control">
+                    <span className="label-text text-xs text-base-content/60 mb-1">
+                      Full name
+                    </span>
+                    <input
+                      className="input input-bordered"
+                      placeholder="Jane Doe"
+                      value={newUserForm.fullName}
+                      onChange={(event) =>
+                        updateNewUserForm("fullName", event.target.value)
+                      }
+                      required
+                    />
+                  </label>
 
-                <label className="form-control">
-                  <span className="label-text text-xs text-base-content/60">
-                    Initial status
-                  </span>
-                  <select
-                    className="select select-bordered"
-                    value={newUserForm.isBanned ? "banned" : "active"}
-                    onChange={(event) =>
-                      setNewUserForm((prev) => ({
-                        ...prev,
-                        isBanned: event.target.value === "banned",
-                      }))
-                    }
-                  >
-                    <option value="active">Active</option>
-                    <option value="banned">Banned</option>
-                  </select>
-                </label>
+                  <label className="form-control md:col-span-2">
+                    <span className="label-text text-xs text-base-content/60 mb-1">
+                      Email
+                    </span>
+                    <input
+                      className="input input-bordered"
+                      placeholder="jane@example.com"
+                      type="email"
+                      value={newUserForm.email}
+                      onChange={(event) =>
+                        updateNewUserForm("email", event.target.value)
+                      }
+                      required
+                    />
+                  </label>
 
-                <div className="md:col-span-2 mt-1">
+                  <label className="form-control md:col-span-2">
+                    <span className="label-text text-xs text-base-content/60 mb-1">
+                      Bio (optional)
+                    </span>
+                    <textarea
+                      className="textarea textarea-bordered min-h-24"
+                      placeholder="Short profile bio"
+                      value={newUserForm.bio ?? ""}
+                      onChange={(event) =>
+                        updateNewUserForm("bio", event.target.value)
+                      }
+                    />
+                  </label>
+
+                  <label className="form-control">
+                    <span className="label-text text-xs text-base-content/60 mb-1">
+                      Role
+                    </span>
+                    <select
+                      className="select select-bordered"
+                      value={newUserForm.role}
+                      onChange={(event) =>
+                        updateNewUserForm(
+                          "role",
+                          event.target.value as "STUDENT" | "ADMIN",
+                        )
+                      }
+                    >
+                      <option value="STUDENT">STUDENT</option>
+                      <option value="ADMIN">ADMIN</option>
+                    </select>
+                  </label>
+
+                  <label className="form-control">
+                    <span className="label-text text-xs text-base-content/60 mb-1">
+                      Initial status
+                    </span>
+                    <select
+                      className="select select-bordered"
+                      value={newUserForm.isBanned ? "banned" : "active"}
+                      onChange={(event) =>
+                        updateNewUserForm(
+                          "isBanned",
+                          event.target.value === "banned",
+                        )
+                      }
+                    >
+                      <option value="active">Active</option>
+                      <option value="banned">Banned</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-1">
                   <button
                     className="btn btn-primary"
                     type="submit"
@@ -1038,7 +1015,7 @@ export default function SettingsPage({
                   </button>
                 </div>
               </form>
-            </>
+            </div>
           )}
         </div>
       </div>
@@ -1047,9 +1024,12 @@ export default function SettingsPage({
         open={editModalOpen}
         title="Edit Profile"
         draft={editDraft}
+        showAvatarUpload={true}
         saving={profileSaving}
         error={profileEditError}
+        avatarFileName={pendingAvatarFile?.name ?? null}
         onChange={(next) => setEditDraft((prev) => ({ ...prev, ...next }))}
+        onAvatarFileChange={setPendingAvatarFile}
         onClose={() => setEditModalOpen(false)}
         onSubmit={handleSaveOwnProfile}
       />
