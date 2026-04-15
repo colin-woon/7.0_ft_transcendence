@@ -15,7 +15,9 @@ export interface User {
   username: string
   fullName: string
   email: string
-  avatarUrl: string | null
+  avatarImage?: string | null
+  // Deprecated compatibility field for legacy temporary UI modules.
+  avatarUrl?: string | null
   bio: string | null
   role: 'STUDENT' | 'ADMIN'
   isBanned: boolean
@@ -75,7 +77,9 @@ export interface UserSummary {
   id: number
   username: string
   fullName: string
-  avatarUrl: string | null
+  avatarImage?: string | null
+  // Deprecated compatibility field for legacy temporary UI modules.
+  avatarUrl?: string | null
 }
 
 export interface SessionInfo {
@@ -92,7 +96,7 @@ export interface SessionInfo {
 export interface UserUpdatePayload {
   username?: string
   fullName?: string
-  avatarUrl?: string
+  avatarFile?: string
   bio?: string
 }
 
@@ -105,7 +109,7 @@ export interface CreateUserPayload {
   username: string
   fullName: string
   email: string
-  avatarUrl?: string
+  avatarFile?: string
   bio?: string
   role?: 'STUDENT' | 'ADMIN'
   isBanned?: boolean
@@ -120,7 +124,7 @@ export interface PasswordRegisterPayload {
   email: string
   username: string
   fullName: string
-  avatarUrl?: string
+  avatarFile?: string
   bio?: string
   password: string
   confirmPassword: string
