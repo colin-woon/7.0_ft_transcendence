@@ -1,8 +1,8 @@
 package org.acme.dto;
 
-import org.acme.model.UserRole;
-
 import java.util.Optional;
+
+import org.acme.model.UserRole;
 
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -18,9 +18,8 @@ public class AdminUpdateDTO {
 			String> fullName = Optional.empty();
 
 	public Optional<
-			@Pattern(regexp = "^(https?://)?.*", message = "Avatar URL must be a valid URL")
-			@Size(max = 500, message = "Avatar URL must not exceed 500 characters")
-			String> avatarUrl = Optional.empty();
+			@Size(max = 3000000, message = "Avatar file payload is too large")
+			String> avatarFile = Optional.empty();
 
 	public Optional<
 			@Size(max = 500, message = "Bio must not exceed 500 characters")

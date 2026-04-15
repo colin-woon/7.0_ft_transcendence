@@ -11,21 +11,23 @@ function getApiUrl(path: string): string {
 }
 
 export interface User {
-	id: number;
-	username: string;
-	fullName: string;
-	email: string;
-	avatarUrl: string | null;
-	bio: string | null;
-	role: 'STUDENT' | 'ADMIN';
-	isBanned: boolean;
-	lastSeenAt: string | null;
-	createdAt: string;
-	linkedWithGoogle: boolean;
-	linkedWithIntra: boolean;
-	hasPassword: boolean;
-	updatedAt?: string;
-	intraInfo?: IntraInfo | null;
+  id: number
+  username: string
+  fullName: string
+  email: string
+  avatarImage?: string | null
+  // Deprecated compatibility field for legacy temporary UI modules.
+  avatarUrl?: string | null
+  bio: string | null
+  role: 'STUDENT' | 'ADMIN'
+  isBanned: boolean
+  lastSeenAt: string | null
+  createdAt: string
+  linkedWithGoogle: boolean
+  linkedWithIntra: boolean
+  hasPassword: boolean
+  updatedAt?: string
+  intraInfo?: IntraInfo | null
 }
 
 export interface IntraImage {
@@ -72,10 +74,12 @@ export interface AuthResponse {
 }
 
 export interface UserSummary {
-	id: number;
-	username: string;
-	fullName: string;
-	avatarUrl: string | null;
+  id: number
+  username: string
+  fullName: string
+  avatarImage?: string | null
+  // Deprecated compatibility field for legacy temporary UI modules.
+  avatarUrl?: string | null
 }
 
 export interface SessionInfo {
@@ -90,10 +94,10 @@ export interface SessionInfo {
 }
 
 export interface UserUpdatePayload {
-	username?: string;
-	fullName?: string;
-	avatarUrl?: string;
-	bio?: string;
+  username?: string
+  fullName?: string
+  avatarFile?: string
+  bio?: string
 }
 
 export interface AdminUpdatePayload extends UserUpdatePayload {
@@ -102,13 +106,13 @@ export interface AdminUpdatePayload extends UserUpdatePayload {
 }
 
 export interface CreateUserPayload {
-	username: string;
-	fullName: string;
-	email: string;
-	avatarUrl?: string;
-	bio?: string;
-	role?: 'STUDENT' | 'ADMIN';
-	isBanned?: boolean;
+  username: string
+  fullName: string
+  email: string
+  avatarFile?: string
+  bio?: string
+  role?: 'STUDENT' | 'ADMIN'
+  isBanned?: boolean
 }
 
 export interface PasswordLoginPayload {
@@ -117,13 +121,13 @@ export interface PasswordLoginPayload {
 }
 
 export interface PasswordRegisterPayload {
-	email: string;
-	username: string;
-	fullName: string;
-	avatarUrl?: string;
-	bio?: string;
-	password: string;
-	confirmPassword: string;
+  email: string
+  username: string
+  fullName: string
+  avatarFile?: string
+  bio?: string
+  password: string
+  confirmPassword: string
 }
 
 export interface PasswordChangePayload {
