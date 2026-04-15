@@ -156,34 +156,6 @@ export default function ProfilePage({
         initials={initials}
       />
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">
-          Account Management
-        </p>
-        <p className="text-sm text-slate-600">
-          Profile editing, password changes, sessions, and admin controls are
-          now managed in settings.
-        </p>
-        <div className="mt-3 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => router.push("/settings/profile")}
-            className="px-3 py-2 text-sm font-medium rounded-xl bg-slate-900 hover:bg-slate-800 text-white"
-          >
-            Open Settings
-          </button>
-          {!viewingOwnProfile && (
-            <button
-              type="button"
-              onClick={() => router.push("/profile")}
-              className="px-3 py-2 text-sm font-medium rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50"
-            >
-              Back to my profile
-            </button>
-          )}
-        </div>
-      </div>
-
       {!viewingOwnProfile && profileError && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-sm text-slate-600">
           <p>Failed to refresh this profile.</p>
