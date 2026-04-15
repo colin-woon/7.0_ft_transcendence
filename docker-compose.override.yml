@@ -15,6 +15,7 @@ services:
             - '${AUTH_PORT}:8080'
         volumes:
             - ./services/auth:/app
+            - ./shared/uploads/auth/avatars:/var/lib/auth/avatars
         healthcheck:
             test: ['CMD', 'curl', '-f', 'http://localhost:9000/q/health']
             interval: 10s
