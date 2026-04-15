@@ -6,6 +6,7 @@ import org.acme.model.User;
 import org.acme.model.UserRole;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class UserInfoDTO {
 	// All the information about the user that we want to expose to the frontend.
@@ -15,7 +16,7 @@ public class UserInfoDTO {
 	public String avatarImage;
 	@JsonIgnore
 	public String avatarPath;
-	@JsonIgnore
+	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	public String avatarFile;
 	public String bio;
 	public String email;

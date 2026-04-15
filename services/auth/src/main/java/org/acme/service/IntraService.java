@@ -39,7 +39,6 @@ public class IntraService {
 	@Inject
 	AvatarStorageService avatarStorageService;
 
-	@Inject
 	public IntraDTO parseUserInfo(UserInfo userinfo) {
 		try {
 			JsonObject jsonObject = userinfo.getJsonObject();

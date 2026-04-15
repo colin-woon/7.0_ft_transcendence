@@ -7,6 +7,7 @@ import type { User } from "@/features/auth/api/authService";
 import { useUserProfile } from "@/features/auth/hooks/useUserProfile";
 import { useAuth } from "@/features/auth/models/AuthContext";
 import { extractIntraSummary } from "@/features/auth/utils/intraDataParser";
+import { getUserInitials } from "@/features/auth/utils/userInitials";
 import ProfileCard from "./ProfileCard";
 
 interface ProfilePageProps {
@@ -51,13 +52,7 @@ export default function ProfilePage({
   const activeProfile = profile ?? (viewingOwnProfile ? user : null);
 
   const initials = useMemo(() => {
-    if (!activeProfile) return "??";
-    return activeProfile.fullName
-      .split(" ")
-      .map((name) => name[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase();
+    return getUserInitials(activeProfile?.fullName);
   }, [activeProfile]);
 
   const intraSummary = activeProfile?.intraInfo
@@ -90,7 +85,7 @@ export default function ProfilePage({
     );
   }
 
-  if (!user || !activeProfile) {
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="inline-flex items-center gap-2 text-sm text-slate-600">
@@ -136,6 +131,37 @@ export default function ProfilePage({
           >
             Back to my profile
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!activeProfile) {
+    return (
+      <div className="max-w-3xl mx-auto p-4">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
+          <h2 className="text-xl font-bold text-slate-900">
+            Profile unavailable
+          </h2>
+          <p className="text-sm text-slate-500 mt-2">
+            We could not load this profile right now.
+          </p>
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="px-4 py-2 text-sm font-medium rounded-xl bg-slate-900 text-white hover:bg-slate-800"
+            >
+              Retry
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/profile")}
+              className="px-4 py-2 text-sm font-medium rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
+              Back to my profile
+            </button>
+          </div>
         </div>
       </div>
     );

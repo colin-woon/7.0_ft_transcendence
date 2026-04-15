@@ -181,12 +181,14 @@ export default function SettingsPage({
     saving: profileSaving,
     deleting: profileDeleting,
     error: profileEditError,
+    clearError: clearProfileEditError,
   } = useProfileEdit();
 
   const {
     createUser: adminCreateUser,
     loading: adminLoading,
     error: adminHookError,
+    clearError: clearAdminHookError,
   } = useAdminUsers();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -234,7 +236,12 @@ export default function SettingsPage({
 
   const isAdmin = hasRole("ADMIN");
   const activeProfile = profile ?? user;
-  const activeTab = pathname?.split("/")[2] ?? "profile";
+  const requestedTab = pathname?.split("/")[2] ?? "profile";
+  const activeTab = useMemo(() => {
+    const candidate = requestedTab as SettingsTab["key"];
+    const isKnown = SETTINGS_TABS.some((tab) => tab.key === candidate);
+    return isKnown ? candidate : "profile";
+  }, [requestedTab]);
   const lastTabRef = useRef<string | null>(null);
 
   const visibleTabs = useMemo(
@@ -252,10 +259,17 @@ export default function SettingsPage({
   }, [activeProfile]);
 
   useEffect(() => {
+    if (authLoading || !user) return;
+
+    if (requestedTab !== activeTab) {
+      router.replace(`/settings/${activeTab}`);
+      return;
+    }
+
     if (activeTab === "admin" && !isAdmin) {
       router.replace("/settings/profile");
     }
-  }, [activeTab, isAdmin, router]);
+  }, [activeTab, authLoading, isAdmin, requestedTab, router, user]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -279,6 +293,7 @@ export default function SettingsPage({
   const pageError =
     authError ??
     profileError ??
+    profileEditError ??
     sessionsError ??
     adminActionError ??
     actionError ??
@@ -483,8 +498,10 @@ export default function SettingsPage({
   const clearAllErrors = () => {
     clearError();
     clearProfileError();
+    clearProfileEditError();
     clearSessionsError();
     clearActionError();
+    clearAdminHookError();
     setAdminActionError(null);
   };
 

@@ -25,6 +25,7 @@ import {
   fileToDataUrl,
   validateAvatarFile,
 } from "@/features/auth/utils/avatarFile";
+import { getUserInitials } from "@/features/auth/utils/userInitials";
 
 interface UsersSearchPageProps {
   initialQuery?: string;
@@ -32,7 +33,13 @@ interface UsersSearchPageProps {
 
 type UserConfirmAction =
   | { kind: "logout"; userId: number; username: string }
-  | { kind: "delete"; userId: number; username: string };
+  | { kind: "delete"; userId: number; username: string }
+  | {
+      kind: "role";
+      userId: number;
+      username: string;
+      nextRole: "STUDENT" | "ADMIN";
+    };
 
 const RESULTS_PAGE_SIZE = 5;
 
@@ -45,12 +52,7 @@ function SearchAvatar({
   avatarImage?: string | null;
   sizeClass?: string;
 }) {
-  const initials = fullName
-    .split(" ")
-    .map((name) => name[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const initials = fullName ? getUserInitials(fullName) : "??";
 
   if (avatarImage) {
     return (
@@ -282,6 +284,26 @@ export default function UsersSearchPage({
           await Promise.all([searchDropdownNow(), searchResultsNow()]);
         }
       }
+      if (confirmAction.kind === "role") {
+        const updated = await updateUser(confirmAction.userId, {
+          role: confirmAction.nextRole,
+        });
+        if (!updated) {
+          setQuickActionError(
+            `Failed to change role for @${confirmAction.username}`,
+          );
+        } else {
+          setEditRole(updated.role);
+          setEditUsername(updated.username);
+          setEditDraft((prev) => ({
+            ...prev,
+            username: updated.username,
+            fullName: updated.fullName,
+            bio: updated.bio ?? "",
+          }));
+          await Promise.all([searchDropdownNow(), searchResultsNow()]);
+        }
+      }
     } finally {
       setConfirmLoading(false);
       setConfirmAction(null);
@@ -322,13 +344,25 @@ export default function UsersSearchPage({
         title:
           confirmAction.kind === "delete"
             ? `Delete @${confirmAction.username}`
-            : `Force logout @${confirmAction.username}`,
+            : confirmAction.kind === "logout"
+              ? `Force logout @${confirmAction.username}`
+              : `${confirmAction.nextRole === "ADMIN" ? "Make" : "Demote"} @${confirmAction.username}`,
         message:
           confirmAction.kind === "delete"
             ? "This permanently deletes the user account."
-            : "This revokes all active sessions for the user.",
+            : confirmAction.kind === "logout"
+              ? "This revokes all active sessions for the user."
+              : confirmAction.nextRole === "ADMIN"
+                ? "This grants administrator privileges to this user."
+                : "This removes administrator privileges from this user.",
         confirmLabel:
-          confirmAction.kind === "delete" ? "Delete" : "Force logout",
+          confirmAction.kind === "delete"
+            ? "Delete"
+            : confirmAction.kind === "logout"
+              ? "Force logout"
+              : confirmAction.nextRole === "ADMIN"
+                ? "Make admin"
+                : "Make student",
         tone: (confirmAction.kind === "delete" ? "danger" : "warning") as
           | "warning"
           | "danger",
@@ -458,9 +492,9 @@ export default function UsersSearchPage({
         )}
       </div>
 
-      {(error || adminError) && (
+      {(quickActionError || error || adminError) && (
         <div className="alert alert-error mb-3 text-sm">
-          {error ?? adminError}
+          {quickActionError ?? error ?? adminError}
         </div>
       )}
 
@@ -577,7 +611,7 @@ export default function UsersSearchPage({
         title="Edit user profile"
         draft={editDraft}
         saving={adminLoading}
-        error={adminError}
+        error={quickActionError ?? adminError}
         onChange={(next) => setEditDraft((prev) => ({ ...prev, ...next }))}
         showAvatarUpload
         avatarFileName={pendingAvatarFile?.name ?? null}
@@ -588,11 +622,15 @@ export default function UsersSearchPage({
               <button
                 type="button"
                 className="btn btn-xs btn-outline"
-                onClick={() =>
-                  void applyUserAdminPatch({
-                    role: editRole === "ADMIN" ? "STUDENT" : "ADMIN",
-                  })
-                }
+                onClick={() => {
+                  if (!editUserId) return;
+                  setConfirmAction({
+                    kind: "role",
+                    userId: editUserId,
+                    username: editUsername || editDraft.username,
+                    nextRole: editRole === "ADMIN" ? "STUDENT" : "ADMIN",
+                  });
+                }}
                 disabled={adminLoading}
               >
                 <Shield size={12} />
