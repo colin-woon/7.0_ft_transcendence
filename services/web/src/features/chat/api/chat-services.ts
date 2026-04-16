@@ -16,7 +16,7 @@ export async function sendFriendRequest(receiverId: FriendId): Promise<void> {
 }
 
 export async function updateFriendshipStatus(receiverId: FriendId, status: FriendStatus): Promise<void> {
-  return apiClient.patch<void>(`${CHAT_API_BASE_PREFIX}/friendship/${receiverId}/update?status=${status}`);
+  return apiClient.patch<void>(`${CHAT_API_BASE_PREFIX}/friendship/${receiverId}?status=${status}`);
 }
 
 export async function sendMessage(chatId: ChatId, message: SendMessageRequest): Promise<void> {
@@ -38,7 +38,8 @@ export async function getMessageHistory(chatId: ChatId): Promise<ChatMessage[]> 
 export function getMessageStream(
   onStreamChunkReceived: (event: StreamEvent) => void
 ): EventSource {
-  const sse = new EventSource(`${CHAT_API_BASE_PREFIX}/message/stream`, { withCredentials: true });
+  const sse = new EventSource(`/api/stream${CHAT_API_BASE_PREFIX}/message/stream`, { withCredentials: true });
+  // const sse = new EventSource(`http://localhost:8003/message/stream`, { withCredentials: true });
 
   sse.onmessage = (streamResponse) => {
     try {
@@ -70,4 +71,12 @@ export async function sendTypingEvent(chatId: ChatId): Promise<void> {
 
 export async function updateReadReceipt(chatId: ChatId, messageId: number): Promise<void> {
   return apiClient.patch<void>(`${CHAT_API_BASE_PREFIX}/message/read/${chatId}`, { messageId });
+}
+
+export async function sendMessageRequest(receiverId: FriendId, message: SendMessageRequest): Promise<void> {
+  return apiClient.post<void>(`${CHAT_API_BASE_PREFIX}/message/request/${receiverId}`, message);
+}
+
+export async function acceptMessageRequest(requesterId: FriendId): Promise<void> {
+  return apiClient.patch<void>(`${CHAT_API_BASE_PREFIX}/message/request/${requesterId}/accept`);
 }

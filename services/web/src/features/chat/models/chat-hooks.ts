@@ -29,6 +29,7 @@ export const useChatActions = () => {
         setTypingStatus: useStore(store, (s) => s.setTypingStatus),
         updateReadReceipt: useStore(store, (s) => s.updateReadReceipt),
         sendReadReceipt: useStore(store, (s) => s.sendReadReceipt),
+        updateChatPermission: useStore(store, (s) => s.updateChatPermission),
     };
 }
 
@@ -61,6 +62,10 @@ export const useCurrentChatSession = () => {
         readReceipts: useStore(store, (s) => {
             if (!s.currentChatSessionId) return EMPTY_READ_RECEIPTS;
             return s.readReceipts[s.currentChatSessionId] || EMPTY_READ_RECEIPTS;
+        }),
+        isAllowedChat: useStore(store, (s) => {
+            if (!s.currentChatSessionId) return false;
+            return s.allChatSessions[s.currentChatSessionId]?.isAllowedChat === true;
         }),
     };
 };

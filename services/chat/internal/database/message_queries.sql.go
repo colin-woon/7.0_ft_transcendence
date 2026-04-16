@@ -162,12 +162,24 @@ SELECT
     c.id AS chat_id,
     c.type,
     c.name,
-    -- Aggregates all member IDs into a Postgres array
-    array_agg(rm.user_id)::integer[] AS member_ids
+    array_agg(rm.user_id)::integer[] AS member_ids,
+    CASE
+        WHEN c.type = 'group' THEN true
+        ELSE COALESCE(
+            (SELECT f.is_chat_allowed
+             FROM chat_service.room_members rm_other
+             JOIN chat_service.friendships f
+               ON (f.requester_id = $1 AND f.addressee_id = rm_other.user_id)
+               OR (f.requester_id = rm_other.user_id AND f.addressee_id = $1)
+             WHERE rm_other.chat_id = c.id
+               AND rm_other.user_id != $1
+             LIMIT 1),
+            false
+        )
+    END::boolean AS is_allowed_chat
 FROM chat_service.rooms c
 JOIN chat_service.room_members rm ON c.id = rm.chat_id
 WHERE c.id IN (
-    -- Subquery: Find all chats the requested user is a part of
     SELECT rm_sub.chat_id
     FROM chat_service.room_members rm_sub
     WHERE rm_sub.user_id = $1
@@ -188,14 +200,15 @@ GROUP BY c.id, c.type, c.name
 `
 
 type GetUserInboxRow struct {
-	ChatID    uuid.UUID      `json:"chatId"`
-	Type      string         `json:"type"`
-	Name      sql.NullString `json:"name"`
-	MemberIds []int32        `json:"memberIds"`
+	ChatID        uuid.UUID      `json:"chatId"`
+	Type          string         `json:"type"`
+	Name          sql.NullString `json:"name"`
+	MemberIds     []int32        `json:"memberIds"`
+	IsAllowedChat bool           `json:"isAllowedChat"`
 }
 
-func (q *Queries) GetUserInbox(ctx context.Context, userID int32) ([]GetUserInboxRow, error) {
-	rows, err := q.db.QueryContext(ctx, getUserInbox, userID)
+func (q *Queries) GetUserInbox(ctx context.Context, requesterID int32) ([]GetUserInboxRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUserInbox, requesterID)
 	if err != nil {
 		return nil, err
 	}
@@ -208,6 +221,7 @@ func (q *Queries) GetUserInbox(ctx context.Context, userID int32) ([]GetUserInbo
 			&i.Type,
 			&i.Name,
 			pq.Array(&i.MemberIds),
+			&i.IsAllowedChat,
 		); err != nil {
 			return nil, err
 		}

@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useChatActions, useCurrentChatSession } from '../../models';
-import { useMessageVisibility } from '../../models';
+import { useChatActions, useCurrentChatSession, useMessageVisibility, useIsAllowedChat } from '@/features/chat/models';
+import { useAuth } from '@/features/auth/models/AuthContext';
 
 // Step 1: Define a color array using DaisyUI chat bubble classes
 const BUBBLE_COLORS = [
@@ -15,8 +15,11 @@ const BUBBLE_COLORS = [
 
 export function MessageArea() {
   const { fetchChatHistory, sendReadReceipt } = useChatActions();
-  const { chatId, currentUserId, messages, typingUsers, readReceipts } = useCurrentChatSession();
-  
+  const { chatId, messages, typingUsers, readReceipts } = useCurrentChatSession();
+  const isAllowedChat = useIsAllowedChat(chatId);
+  const { user } = useAuth();
+  const currentUserId = user?.id;
+    
   // Refs for message elements to attach Intersection Observer
   const messageRefs = useRef<Map<number | string, HTMLDivElement>>(new Map());
 
@@ -24,8 +27,8 @@ export function MessageArea() {
   const { observeElement } = useMessageVisibility({
     chatId,
     messages: messages || [],
-    userId: currentUserId,
-    onReadReceipt: sendReadReceipt,
+    userId: currentUserId || 0,
+    onReadReceipt: isAllowedChat ? sendReadReceipt : async () => {},
   });
 
   useEffect(() => {
@@ -48,16 +51,15 @@ export function MessageArea() {
     return <div className="p-4 text-center">Select a friend to start chatting</div>;
   }
 
-  // Find users currently typing (excluding ourself)
-  const activeTypingUserIds = Object.keys(typingUsers || {}).filter(
-    (userIdStr) => Number(userIdStr) !== currentUserId
-  );
+  const activeTypingUserIds = isAllowedChat
+    ? Object.keys(typingUsers || {}).filter((userIdStr) => Number(userIdStr) !== currentUserId)
+    : [];
 
   // Pre-calculate which message ID should display the "Read by [User]" tag for each user.
   // We only show it on the *latest* message sent by the current user that the other user has read.
   const latestReadByMessageId: Record<number, number[]> = {};
   
-  if (currentUserId) {
+  if (currentUserId && isAllowedChat) {
     Object.entries(readReceipts || {}).forEach(([uid, lastReadId]) => {
       const userId = Number(uid);
       if (userId === currentUserId) return;

@@ -3,8 +3,9 @@
 import type { StoreApi } from 'zustand/vanilla';
 import type { ChatStore } from './chat-store';
 import type { AllChatSessions } from './chat-types';
-import { createContext, ReactNode, useRef } from 'react';
+import { createContext, ReactNode, useRef, useEffect } from 'react';
 import { createChatStore } from './chat-store';
+import { useAuth } from '@/features/auth/models/AuthContext';
 
 
 // Context holds the store INSTANCE, not the state itself
@@ -23,10 +24,17 @@ export const ChatStoreProvider = ({
   initialSessions = {} 
 }: ChatStoreProviderProps) => {
   const storeRef = useRef<StoreApi<ChatStore> | undefined>(undefined);
+  const { user } = useAuth();
   
   if (!storeRef.current) {
     storeRef.current = createChatStore(initialSessions);
   }
+
+  useEffect(() => {
+    if (user?.id && storeRef.current) {
+      storeRef.current.getState().fetchAllFriendships();
+    }
+  }, [user?.id]);
 
   return (
     <ChatStoreContext.Provider value={storeRef.current}>

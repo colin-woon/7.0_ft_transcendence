@@ -22,7 +22,7 @@ components:
   schemas:
     ChatRoom:
       type: object
-      required: [chatId, type]
+      required: [chatId, type, isAllowedChat]
       properties:
         chatId:
           type: string
@@ -39,6 +39,11 @@ components:
           items:
             type: integer
           description: "List of all user IDs in this chat. Frontend uses this to fetch avatars/names."
+          example: [123, 456]
+        isAllowedChat:
+          type: boolean
+          default: true
+          description: "Always true for 'group'. For 'direct', reflects the friendship is_chat_allowed status."
     ChatMessage:
       type: object
       required: [id, chatId, senderId, content, createdAt]
@@ -96,7 +101,7 @@ components:
         requesterId: { type: integer }
         addresseeId: { type: integer }
         status:
-          $ref: '#/components/schemas/FriendshipStatus'
+          $ref: "#/components/schemas/FriendshipStatus"
     PendingFriendRequestList:
       type: array
       items:
@@ -175,7 +180,7 @@ paths:
           in: query
           required: true
           schema:
-            $ref: '#/components/schemas/FriendshipStatus'
+            $ref: "#/components/schemas/FriendshipStatus"
       responses:
         "200":
           description: Status updated successfully
@@ -189,7 +194,7 @@ paths:
   /message/request/{requesterId}/accept:
     patch:
       tags:
-        - Friendship
+        - Message
       summary: Accept initial message request
       operationId: acceptMessageRequest
       parameters:

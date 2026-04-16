@@ -213,8 +213,9 @@ func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request) {
 	inbox := make([]api.ChatRoom, 0, len(rows))
 	for _, row := range rows {
 		chat := api.ChatRoom{
-			ChatId: row.ChatID,
-			Type:   api.ChatRoomType(row.Type),
+			ChatId:        row.ChatID,
+			Type:          api.ChatRoomType(row.Type),
+			IsAllowedChat: row.IsAllowedChat,
 		}
 
 		if row.Name.Valid {

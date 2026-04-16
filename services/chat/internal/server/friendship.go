@@ -149,6 +149,17 @@ func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
+	if dbStatus == database.ChatServiceFriendStatusAccepted {
+		_, err = qtx.CreateDirectRoomWithMembers(ctx, database.CreateDirectRoomWithMembersParams{
+			UserID:   int32(callerId),
+			UserID_2: int32(targetUserId),
+		})
+		if err != nil {
+			http.Error(w, "Failed to ensure chat room exists", http.StatusInternalServerError)
+			return
+		}
+	}
+
 	if err := tx.Commit(); err != nil {
 		http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
 		return
