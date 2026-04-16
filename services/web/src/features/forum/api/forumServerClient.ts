@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { serverMtlsFetch } from "@/lib/serverMtlsFetch";
+import { serverMtlsFetch } from "../../../lib/serverMtlsFetch";
 
 type ForumFetchInit = RequestInit;
 

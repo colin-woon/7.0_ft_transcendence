@@ -52,27 +52,7 @@ function getTlsMaterial(): TlsMaterial | null {
   return cachedTlsMaterial;
 }
 
-function toHeaderRecord(
-  headersInit: HeadersInit | undefined,
-  body: Buffer | undefined,
-): Record<string, string> {
-  const headers = new Headers(headersInit);
-
-  if (body && !headers.has("content-length")) {
-    headers.set("content-length", String(body.length));
-  }
-
-  const record: Record<string, string> = {};
-  headers.forEach((value, key) => {
-    record[key] = value;
-  });
-
-  return record;
-}
-
-async function toBuffer(
-  body: BodyInit | null | undefined,
-): Promise<Buffer | undefined> {
+function toBuffer(body: BodyInit | null | undefined): Buffer | undefined {
   if (body == null) {
     return undefined;
   }
@@ -93,12 +73,25 @@ async function toBuffer(
     return Buffer.from(body.buffer, body.byteOffset, body.byteLength);
   }
 
-  if (body instanceof Blob) {
-    const arrayBuffer = await body.arrayBuffer();
-    return Buffer.from(arrayBuffer);
+  throw new Error("Unsupported request body type for mTLS server fetch");
+}
+
+function toHeaderRecord(
+  headersInit: HeadersInit | undefined,
+  body: Buffer | undefined,
+): Record<string, string> {
+  const headers = new Headers(headersInit);
+
+  if (body && !headers.has("content-length")) {
+    headers.set("content-length", String(body.length));
   }
 
-  throw new Error("Unsupported request body type for mTLS server fetch");
+  const record: Record<string, string> = {};
+  headers.forEach((value, key) => {
+    record[key] = value;
+  });
+
+  return record;
 }
 
 function isHttpsUrl(input: string): boolean {
@@ -129,7 +122,7 @@ export async function serverMtlsFetch(
   }
 
   const parsedUrl = new URL(urlString);
-  const body = await toBuffer(init.body as BodyInit | null | undefined);
+  const body = toBuffer(init.body as BodyInit | null | undefined);
   const headers = toHeaderRecord(init.headers, body);
   const method = init.method ?? (body ? "POST" : "GET");
 
@@ -178,32 +171,7 @@ export async function serverMtlsFetch(
       },
     );
 
-    const abortHandler = () => {
-      request.destroy(new Error("Request aborted"));
-    };
-
-    if (init.signal) {
-      if (init.signal.aborted) {
-        abortHandler();
-        reject(new Error("Request aborted"));
-        return;
-      }
-
-      init.signal.addEventListener("abort", abortHandler, { once: true });
-    }
-
-    request.on("error", (error) => {
-      if (init.signal) {
-        init.signal.removeEventListener("abort", abortHandler);
-      }
-      reject(error);
-    });
-
-    request.on("close", () => {
-      if (init.signal) {
-        init.signal.removeEventListener("abort", abortHandler);
-      }
-    });
+    request.on("error", reject);
 
     if (body && body.length > 0) {
       request.write(body);
