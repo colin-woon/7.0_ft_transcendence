@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { AlertCircle, Send } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { AlertCircle, Send } from "lucide-react";
 
-import { createProjectPost } from '@/features/forum/api/post';
-import ForumTrailButtons from '@/features/forum/ui/shared/ForumTrailButtons';
+import { createProjectPost } from "@/features/forum/api/post";
+import ForumTrailButtons from "@/features/forum/ui/shared/ForumTrailButtons";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 const RULES = [
-  'Be respectful and constructive.',
-  'No spam or self-promotion.',
-  'Use descriptive titles.',
-  'Posts created here belong to this project.',
-  'Include error output when asking for help.',
+  "Be respectful and constructive.",
+  "No spam or self-promotion.",
+  "Use descriptive titles.",
+  "Posts created here belong to this project.",
+  "Include error output when asking for help.",
 ];
 
 // ── Page ───────────────────────────────────────────────────────────────────────
@@ -45,11 +45,11 @@ function BlinkingText({
 
   return (
     <div
-      className={`inline-block whitespace-pre-wrap tracking-tight ${className ?? ''}`}
+      className={`inline-block whitespace-pre-wrap tracking-tight ${className ?? ""}`}
     >
       <span className="inline">{text}</span>
       <span
-        className={`ml-1 inline-block ${showCursor ? 'opacity-100' : 'opacity-0'}`}
+        className={`ml-1 inline-block ${showCursor ? "opacity-100" : "opacity-0"}`}
       >
         _
       </span>
@@ -64,8 +64,8 @@ export default function CreatePage({
   projectDescription,
 }: CreatePageProps) {
   const router = useRouter();
-  const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const TITLE_MAX = 300;
@@ -87,8 +87,8 @@ export default function CreatePage({
       const newPost = await createProjectPost(projectId, payload);
       router.push(`posts/${newPost.id}`);
     } catch (error) {
-      console.error('Error creating post:', error);
-      alert(error instanceof Error ? error.message : 'Something went wrong');
+      console.error("Error creating post:", error);
+      alert(error instanceof Error ? error.message : "Something went wrong");
     } finally {
       setIsSubmitting(false);
     }
@@ -111,7 +111,7 @@ export default function CreatePage({
                     className="text-xs sm:text-base leading-snug font-interface break-words line-clamp-2 sm:line-clamp-none"
                     text={
                       projectDescription ||
-                      'Share a question, project, or idea with the 42 community.'
+                      "Share a question, project, or idea with the 42 community."
                     }
                   />
                 </div>
@@ -135,9 +135,9 @@ export default function CreatePage({
         <ForumTrailButtons
           className="mb-0"
           items={[
-            { label: 'Projects', href: '/projects' },
+            { label: "Projects", href: "/projects" },
             { label: projectSlug, href: `/projects/${projectId}` },
-            { label: 'Create post' },
+            { label: "Create post" },
           ]}
         />
       </div>
@@ -160,7 +160,7 @@ export default function CreatePage({
                     Title <span className="text-red-400">*</span>
                   </label>
                   <span
-                    className={`text-xs ${title.length > TITLE_MAX * 0.9 ? 'text-orange-400' : 'text-slate-300'}`}
+                    className={`text-xs ${title.length > TITLE_MAX * 0.9 ? "text-orange-400" : "text-slate-300"}`}
                   >
                     {title.length}/{TITLE_MAX}
                   </span>
@@ -199,8 +199,8 @@ export default function CreatePage({
                   disabled={!canSubmit}
                   className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs sm:gap-2 sm:px-6 sm:py-2.5 sm:text-sm font-bold transition ${
                     canSubmit
-                      ? 'bg-[#0f6f6b] text-white hover:bg-[#0a5a56] shadow-md shadow-[#0f6f6b]/25 active:scale-[0.98]'
-                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      ? "bg-[#0f6f6b] text-white hover:bg-[#0a5a56] shadow-md shadow-[#0f6f6b]/25 active:scale-[0.98]"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
                   }`}
                 >
                   {isSubmitting ? (
@@ -208,7 +208,7 @@ export default function CreatePage({
                   ) : (
                     <Send className="h-3.5 w-3.5 sm:h-[15px] sm:w-[15px]" />
                   )}
-                  {isSubmitting ? 'Publishing...' : 'Publish post'}
+                  {isSubmitting ? "Publishing..." : "Publish post"}
                 </button>
               </div>
             </div>

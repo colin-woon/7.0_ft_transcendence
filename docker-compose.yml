@@ -202,7 +202,7 @@ services:
             - --ssl-cert-reqs
             - '2'
             - --timeout-keep-alive
-            - '30'
+            - '75'
         volumes:
             - ./certs/runtime/forum/forum.key:/certs/forum.key:ro
             - ./certs/runtime/forum/forum.crt:/certs/forum.crt:ro
@@ -264,7 +264,7 @@ services:
                 ]
             interval: 10s
             timeout: 5s
-            start_period: 60s
+            start_period: 150s
             retries: 3
         depends_on:
             # update to auth_service, now just temporary dev test
