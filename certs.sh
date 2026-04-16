@@ -50,7 +50,7 @@ ensure_dirs() {
 
 clean_all() {
 	echo "Cleaning generated certificates and JWT keys..."
-	rm -rf certs/runtime certs/ca
+	rm -rf certs
 	rm -f "$AUTH_PRIVATE_KEY" "$AUTH_PUBLIC_KEY" "$GATEWAY_PUBLIC_KEY"
 	echo "✔ Clean complete."
 }
