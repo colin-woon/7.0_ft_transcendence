@@ -13,33 +13,33 @@ import jakarta.ws.rs.core.Response;
 @ApplicationScoped
 public class AuthService {
 
-	@Inject
-	@RestClient
-	AuthClient authClient;
+    @Inject
+    @RestClient
+    AuthClient authClient;
 
-	@Inject
-	FaultToleranceServiceCallExecutor ex;
+    @Inject
+    FaultToleranceServiceCallExecutor ex;
 
-	@Inject
-	ServiceCallExecutor sce;
+    @Inject
+    ServiceCallExecutor sce;
 
-	public Response proxyGet(String path) {
-		return ex.execute(() -> authClient.proxyGet(path));
-	}
+    public Response proxyGet(String path) {
+        return ex.authExecute(() -> authClient.proxyGet(path));
+    }
 
-	public Response proxyPost(String path, byte[] body) {
-		return sce.execute(() -> authClient.proxyPost(path, body));
-	}
+    public Response proxyPost(String path, byte[] body) {
+        return sce.execute(() -> authClient.proxyPost(path, body));
+    }
 
-	public Response proxyDelete(String path) {
-		return sce.execute(() -> authClient.proxyDelete(path));
-	}
+    public Response proxyDelete(String path) {
+        return sce.execute(() -> authClient.proxyDelete(path));
+    }
 
-	public Response proxyPut(String path, byte[] body) {
-		return sce.execute(() -> authClient.proxyPut(path, body));
-	}
+    public Response proxyPut(String path, byte[] body) {
+        return sce.execute(() -> authClient.proxyPut(path, body));
+    }
 
-	public Response proxyPatch(String path, byte[] body) {
-		return sce.execute(() -> authClient.proxyPatch(path, body));
-	}
+    public Response proxyPatch(String path, byte[] body) {
+        return sce.execute(() -> authClient.proxyPatch(path, body));
+    }
 }

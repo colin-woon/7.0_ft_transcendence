@@ -39,13 +39,20 @@ public class RequestPreAuthFilter implements ContainerRequestFilter {
     @Override
     public void filter(ContainerRequestContext request) {
 
-        populateAuth();
+        boolean isInvalidAuth = populateAuth();
 
         boolean isPublicPath = gac.getPublicPaths().stream().anyMatch(grc.getPath()::startsWith);
         grc.setPublic(isPublicPath);
 
         if ((grc.isInternal() && grc.getAuthLevel() == AuthLevel.SERVICE) || isPublicPath || !gac.required()) {
             return;
+        }
+
+        if (isInvalidAuth) {
+            throw new GatewayException(
+                    Response.Status.UNAUTHORIZED,
+                    GatewayErrorCode.AUTH_INVALID,
+                    "Invalid authentication token");
         }
 
         if (!grc.getAuthLevel().equals(AuthLevel.USER) && !grc.getAuthLevel().equals(AuthLevel.ADMIN)) {
@@ -63,34 +70,25 @@ public class RequestPreAuthFilter implements ContainerRequestFilter {
         // jwt.getClaim("upn") T (Generic) upn (The email)
     }
 
-    private void populateAuth() {
-        if (populateAuthFromCookie()) {
-            return;
+    private boolean populateAuth() {
+        String cookieHeader = grc.getHeaders().getFirst(HttpHeaders.COOKIE);
+        String accessToken = extractCookie(cookieHeader, "accessToken");
+
+        if (accessToken != null && !accessToken.isBlank()) {
+            try {
+                JsonWebToken jwt = jwtParser.parse(accessToken);
+                populateJwtClaims(jwt);
+                return false;
+            } catch (Exception e) {
+                return true;
+            }
         }
 
         if (si.getPrincipal() instanceof X500Principal) {
             grc.setAuthLevel(AuthLevel.SERVICE);
         }
-    }
 
-    private boolean populateAuthFromCookie() {
-        String cookieHeader = grc.getHeaders().getFirst(HttpHeaders.COOKIE);
-        if (cookieHeader == null || cookieHeader.isBlank()) {
-            return false;
-        }
-
-        String accessToken = extractCookie(cookieHeader, "accessToken");
-        if (accessToken == null || accessToken.isBlank()) {
-            return false;
-        }
-
-        try {
-            JsonWebToken jwt = jwtParser.parse(accessToken);
-            populateJwtClaims(jwt);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        return false;
     }
 
     private String extractCookie(String cookieHeader, String cookieName) {
