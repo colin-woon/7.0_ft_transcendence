@@ -94,6 +94,10 @@ public class RequestPreAuthFilter implements ContainerRequestFilter {
     private String extractCookie(String cookieHeader, String cookieName) {
         String prefix = cookieName + "=";
 
+        if (cookieHeader == null || cookieHeader.trim().isEmpty()) {
+            return null;
+        }
+
         for (String cookie : cookieHeader.split(";")) {
             String trimmed = cookie.trim();
             if (trimmed.startsWith(prefix)) {
