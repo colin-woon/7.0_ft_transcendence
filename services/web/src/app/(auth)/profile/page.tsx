@@ -1,7 +1,7 @@
 import ProfilePage from '@/features/auth/ui/profile/ProfilePage'
 import { getServerCurrentUser } from '@/features/auth/api/serverAuthData'
 
-export const dynamic = 'force-dynamic'
+// export const dynamic = 'force-dynamic'
 
 export default async function ProfileRoute() {
   const profileResult = await getServerCurrentUser()
