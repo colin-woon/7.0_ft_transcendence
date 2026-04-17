@@ -2,7 +2,6 @@ import { z } from 'zod'
 
 const usernamePattern = /^[a-zA-Z0-9_-]+$/
 const strongPasswordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,128}$/
-
 export const passwordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters')
@@ -29,11 +28,10 @@ export const registerWithPasswordSchema = z
       .max(30, 'Username must be between 3 and 30 characters')
       .regex(usernamePattern, 'Username can only contain letters, numbers, underscores, and hyphens'),
     fullName: z.string().trim().min(1, 'Full name is required').max(100, 'Full name must be between 1 and 100 characters'),
-    avatarUrl: z
+    avatarFile: z
       .string()
       .trim()
-      .max(500, 'Avatar URL must not exceed 500 characters')
-      .refine((value) => value.length === 0 || /^https?:\/\//.test(value), 'Avatar URL must start with http:// or https://')
+      .max(3000000, 'Avatar file payload is too large')
       .optional()
       .or(z.literal('')),
     bio: z.string().trim().max(500, 'Bio must not exceed 500 characters').optional().or(z.literal('')),

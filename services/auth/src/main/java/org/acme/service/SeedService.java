@@ -139,7 +139,7 @@ public class SeedService {
 				adminUser = new User();
 				adminUser.email = resolvedAdminEmail;
 				adminUser.username = loginToUse;
-				adminUser.fullName = "Seed Admin";
+				adminUser.fullName = "Admin";
 				adminUser.role = UserRole.ADMIN;
 				adminUser.isBanned = false;
 				adminUser.passwordHash = passwordService.hash(resolvedAdminPassword);

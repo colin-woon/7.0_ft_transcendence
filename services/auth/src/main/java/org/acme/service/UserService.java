@@ -32,6 +32,9 @@ public class UserService {
 	@Inject
 	PasswordService passwordService;
 
+	@Inject
+	AvatarStorageService avatarStorageService;
+
 	@Transactional
 	public User syncUser(UserInfo info, String tenantId) {
 		LOG.debug("Syncing user from OIDC tenant");
@@ -69,7 +72,9 @@ public class UserService {
 		user.email = normalizedEmail;
 		user.username = normalizedUsername;
 		user.fullName = dto.fullName.trim();
-		user.avatarUrl = sanitizeOptional(dto.avatarUrl);
+		if (dto.avatarFile != null && !dto.avatarFile.isBlank()) {
+			user.avatarUrl = avatarStorageService.storeBase64Avatar(dto.avatarFile, null);
+		}
 		user.bio = sanitizeOptional(dto.bio);
 		user.role = UserRole.STUDENT;
 		user.passwordHash = hashPassword(dto.password);
@@ -207,7 +212,9 @@ public class UserService {
 		user.username = intraDTO.login != null && !intraDTO.login.isBlank()
 		? intraDTO.login : generateUsername(intraDTO.usualFullName);
 		user.role = intraDTO.isStaff ? UserRole.ADMIN : UserRole.STUDENT;
-		user.avatarUrl = intraDTO.image != null ? intraDTO.image.link : null;
+		user.avatarUrl = intraDTO.image != null
+			? avatarStorageService.mirrorRemoteAvatar(intraDTO.image.link, null)
+			: null;
 
 		userRepository.persist(user);
 		LOG.debug("User created successfully (provider: 42)");

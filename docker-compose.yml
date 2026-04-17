@@ -103,6 +103,7 @@ services:
         volumes:
             - ./certs/runtime/auth/auth-keystore.p12:/certs/auth-keystore.p12:ro
             - ./certs/runtime/truststore/shared-truststore.p12:/certs/shared-truststore.p12:ro
+            - auth_avatars:/var/lib/auth/avatars
 
     chat-service:
         build:
@@ -200,6 +201,8 @@ services:
             - /certs/internal-ca.crt
             - --ssl-cert-reqs
             - '2'
+            - --timeout-keep-alive
+            - '75'
         volumes:
             - ./certs/runtime/forum/forum.key:/certs/forum.key:ro
             - ./certs/runtime/forum/forum.crt:/certs/forum.crt:ro
@@ -261,7 +264,7 @@ services:
                 ]
             interval: 10s
             timeout: 5s
-            start_period: 60s
+            start_period: 150s
             retries: 3
         depends_on:
             # update to auth_service, now just temporary dev test
@@ -403,3 +406,4 @@ volumes:
     postgres_data:
     prometheus_data:
     grafana_data:
+    auth_avatars:

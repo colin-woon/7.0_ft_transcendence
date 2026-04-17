@@ -34,9 +34,9 @@ export default function ProfileCard({ user, profile, initials }: ProfileCardProp
     <Card className="overflow-visible">
       <div className="h-15 bg-gradient-to-r from-[#0f6f6b] via-[#1a9e99] to-[#8EE7E3] relative rounded-t-2xl">
         <div className="absolute -bottom-10 left-6">
-          {user?.avatarUrl ? (
+          {user?.avatarImage ? (
             <img
-              src={user.avatarUrl}
+              src={user.avatarImage}
               alt={`${user.fullName} avatar`}
               className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-md"
             />
