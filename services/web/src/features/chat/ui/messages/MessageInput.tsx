@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { sendMessage, sendTypingEvent, acceptMessageRequest } from '@/features/chat/api';
-import { useCurrentChatSession, useChatActions, useIsAllowedChat } from '@/features/chat/models';
+import { useCurrentChatSession, useChatActions } from '@/features/chat/models';
 
 export function MessageInput() {
   const { currentUserId, chatId, friendIds = [], isAllowedChat } = useCurrentChatSession();

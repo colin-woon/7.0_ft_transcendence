@@ -7,7 +7,7 @@ import debounce from 'lodash.debounce';
 export interface ChatState {
   currentChatSessionId: ChatId | null;
   allChatSessions: AllChatSessions;
-  allFriendships: FriendList;
+  allAcceptedFriends: FriendList;
   pendingRequests: PendingFriendRequest[];
   isLoadingFriends: boolean;
   friendsError: string | null;
@@ -19,9 +19,9 @@ export interface ChatActions {
   setUserStatus: (userId: FriendId, isOnline: boolean) => void;
   setChatSession: (chatId: ChatId, type: ChatRoomType, name: string | null, friendIds: FriendId[], messages: ChatMessage[] | null, isAllowedChat: boolean) => void;
   addMessage: (msg: ChatMessage) => void;
-  setAllFriendships: (friendList: FriendList) => void;
+  setAllAcceptedFriends: (friendList: FriendList) => void;
   setCurrentChatSessionId: (chatId: ChatId | null) => void;
-  fetchAllFriendships: () => Promise<void>;
+  fetchAllAcceptedFriends: () => Promise<void>;
   fetchPendingFriendships: () => Promise<void>;
   fetchAllChatSessions: () => Promise<void>;
   fetchChatHistory: (chatId: ChatId) => Promise<void>;
@@ -52,7 +52,7 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
   return createStore<ChatStore>()(
     immer((set, get) => ({
       allChatSessions: initialSessions,
-      allFriendships: [],
+      allAcceptedFriends: [],
       pendingRequests: [],
       currentChatSessionId: null,
       isLoadingFriends: false,
@@ -63,7 +63,7 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
       setUserStatus: (userId: FriendId, isOnline: boolean) =>
         set((state) => {
           // Find the actual friend object by matching the ID
-          const friend = state.allFriendships.find(f => f.friendId === userId);
+          const friend = state.allAcceptedFriends.find(f => f.friendId === userId);
           
           if (friend) {
             friend.isOnline = isOnline;
@@ -96,15 +96,15 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
           }
         }),
         
-      setAllFriendships: (friendList: FriendList) =>
+      setAllAcceptedFriends: (friendList: FriendList) =>
         set((state) => {
-          state.allFriendships = friendList;
+          state.allAcceptedFriends = friendList;
         }),
 
-      fetchAllFriendships: async () => {
+      fetchAllAcceptedFriends: async () => {
         const friendList = await getFriendList();
         set((state) => {
-          state.allFriendships = friendList;
+          state.allAcceptedFriends = friendList;
         });
       },
 

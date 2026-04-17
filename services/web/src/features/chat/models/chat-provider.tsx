@@ -32,7 +32,7 @@ export const ChatStoreProvider = ({
 
   useEffect(() => {
     if (user?.id && storeRef.current) {
-      storeRef.current.getState().fetchAllFriendships();
+      storeRef.current.getState().fetchAllAcceptedFriends();
     }
   }, [user?.id]);
 

@@ -22,7 +22,7 @@ export const useChatActions = () => {
         setChatSession: useStore(store, (s) => s.setChatSession),
         addMessage: useStore(store, (s) => s.addMessage),
         setCurrentChatSessionId: useStore(store, (s) => s.setCurrentChatSessionId),
-        fetchAllFriendships: useStore(store, (s) => s.fetchAllFriendships),
+        fetchAllAcceptedFriends: useStore(store, (s) => s.fetchAllAcceptedFriends),
         fetchPendingFriendships: useStore(store, (s) => s.fetchPendingFriendships),
         fetchAllChatSessions: useStore(store, (s) => s.fetchAllChatSessions),
         fetchChatHistory: useStore(store, (s) => s.fetchChatHistory),
@@ -88,7 +88,7 @@ export const useFriendList = () => {
     if (!store) throw new Error('ChatStoreContext not found');
     return {
         currentUserId: user?.id || null,
-        allFriendships: useStore(store, (s) => s.allFriendships),
+        allAcceptedFriends: useStore(store, (s) => s.allAcceptedFriends),
         pendingRequests: useStore(store, (s) => s.pendingRequests),
         isLoading: useStore(store, (s) => s.isLoadingFriends), 
         error: useStore(store, (s) => s.friendsError),
@@ -96,7 +96,7 @@ export const useFriendList = () => {
 };
 
 export const useCreateGroupChatAction = () => {
-    const { allFriendships, currentUserId } = useFriendList();
+    const { allAcceptedFriends, currentUserId } = useFriendList();
     
     const [groupName, setGroupName] = useState('');
     const [selectedFriendIds, setSelectedFriendIds] = useState<FriendId[]>([]);
@@ -141,7 +141,7 @@ export const useCreateGroupChatAction = () => {
         isSubmitting,
         submitGroupChat,
         resetForm,
-        allFriendships
+        allAcceptedFriends
     };
 };
 
@@ -291,7 +291,7 @@ export const useUserStatus = (userId: FriendId) => {
     const store = useContext(ChatStoreContext);
     if (!store) throw new Error('useUserOnlineStatus must be used within ChatStoreProvider');
     return useStore(store, (s) => {
-        const friend = s.allFriendships.find((f: any) => f.friendId === userId);
+        const friend = s.allAcceptedFriends.find((f: any) => f.friendId === userId);
         return friend?.isOnline || false;
     });};
 
@@ -316,4 +316,24 @@ export const useHasUnreadMessages = (chatId: ChatId | null) => {
         
         return Math.floor(latestIdNum) > myReadReceipt;
     });
+};
+
+export const useIsAcceptedFriend = (friendId: FriendId | null) => {
+  const store = useContext(ChatStoreContext);
+  if (!store) throw new Error('useIsAcceptedFriend must be used within ChatStoreProvider');
+
+  return useStore(store, (s) => {
+    if (!friendId) return false;
+    return s.allAcceptedFriends.some((f) => f.friendId === friendId);
+  });
+};
+
+export const useIsAllowedChat = (chatId: ChatId | null) => {
+  const store = useContext(ChatStoreContext);
+  if (!store) throw new Error('useIsAllowedChat must be used within ChatStoreProvider');
+
+  return useStore(store, (s) => {
+    if (!chatId) return false;
+    return s.allChatSessions[chatId]?.isAllowedChat === true;
+  });
 };
