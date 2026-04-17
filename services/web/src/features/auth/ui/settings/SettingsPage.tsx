@@ -1,5 +1,8 @@
 "use client";
 
+import Image from "next/image";
+import intraIcon from "@/components/ui/imgs/42_icon.png";
+
 import {
   AlertCircle,
   Calendar,
@@ -7,6 +10,7 @@ import {
   Loader2,
   LogOut,
   RefreshCcw,
+  SquarePen,
   Trash2,
   Users,
 } from "lucide-react";
@@ -583,10 +587,40 @@ export default function SettingsPage({
         <div className="card-body">
           {activeTab === "profile" && (
             <>
-              <h2 className="text-base font-bold text-base-content">
-                Public Profile
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-bold text-base-content">
+                  Public Profile
+                </h2>
+                
+                {/* Actions moved to top right */}
+                <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-ghost"
+                      onClick={handleReload42}
+                      disabled={reloadingIntra}
+                      title="Reload 42 data"
+                    >
+                      <RefreshCcw
+                        size={14}
+                        className={reloadingIntra ? "animate-spin" : ""}
+                      />
+                      {reloadingIntra ? "Reloading..." : "Reload 42 info"}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-ghost btn-square"
+                    onClick={() => setEditModalOpen(true)}
+                    title="Edit profile"
+                  >
+                    <SquarePen size={20} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                 <div className="rounded-xl border border-base-200 p-3">
                   <div className="text-xs text-base-content/60 mb-1">
                     Username
@@ -611,67 +645,58 @@ export default function SettingsPage({
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className="btn btn-sm btn-neutral"
-                  onClick={() => setEditModalOpen(true)}
-                >
-                  Edit profile
-                </button>
-                {isAdmin && (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-ghost"
-                    onClick={handleReload42}
-                    disabled={reloadingIntra}
-                  >
-                    <RefreshCcw
-                      size={14}
-                      className={reloadingIntra ? "animate-spin" : ""}
-                    />
-                    {reloadingIntra ? "Reloading..." : "Reload 42 data"}
-                  </button>
-                )}
-              </div>
-
               <h2 className="text-base font-bold text-base-content mt-8">
                 Account Connections
               </h2>
-              <div className="space-y-2 mt-2">
-                <div className="flex items-center justify-between p-3 rounded-xl border border-base-200">
-                  <div className="flex items-center gap-2 text-sm">
-                    <LinkIcon size={14} className="text-base-content/50" />
-                    Google
+              <div className="mt-2 divide-y divide-base-200 rounded-xl border border-base-200 overflow-hidden">
+              
+                {/* Google */}
+                <div className="flex items-center justify-between px-4 py-3.5 gap-4">
+                  <div className="flex items-center gap-3">
+                    <svg className="size-5 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    <div>
+                      <p className="text-sm font-medium text-base-content">Google</p>
+                      <p className="text-xs text-base-content/50">Connect to log in with your Google account</p>
+                    </div>
                   </div>
                   <button
                     type="button"
-                    className={`btn btn-xs rounded-full ${activeProfile.linkedWithGoogle ? "btn-outline" : "btn-neutral"}`}
-                    onClick={() =>
-                      !activeProfile.linkedWithGoogle && loginWith("google")
-                    }
+                    className={`btn btn-sm rounded-full px-4 font-semibold normal-case shrink-0 ${activeProfile.linkedWithGoogle ? "btn-outline" : "btn-neutral"}`}
+                    onClick={() => !activeProfile.linkedWithGoogle && loginWith("google")}
                     disabled={activeProfile.linkedWithGoogle}
                   >
-                    {activeProfile.linkedWithGoogle ? "Linked" : "Link"}
+                    {activeProfile.linkedWithGoogle ? "Linked" : "Connect"}
                   </button>
                 </div>
-
-                <div className="flex items-center justify-between p-3 rounded-xl border border-base-200">
-                  <div className="flex items-center gap-2 text-sm">
-                    <LinkIcon size={14} className="text-base-content/50" />
-                    42 Intra
+              
+                {/* 42 Intra */}
+                <div className="flex items-center justify-between px-4 py-3.5 gap-4">
+                  <div className="flex items-center gap-3">
+                    <Image 
+                      src={intraIcon} 
+                      alt="42 Intra" 
+                      className="size-5 shrink-0 object-contain" 
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-base-content">42 Intra</p>
+                      <p className="text-xs text-base-content/50">Connect to log in with your 42 account</p>
+                    </div>
                   </div>
                   <button
                     type="button"
-                    className={`btn btn-xs rounded-full ${activeProfile.linkedWithIntra ? "btn-outline" : "btn-neutral"}`}
-                    onClick={() =>
-                      !activeProfile.linkedWithIntra && loginWith("42")
-                    }
+                    className={`btn btn-sm rounded-full px-4 font-semibold normal-case shrink-0 ${activeProfile.linkedWithIntra ? "btn-outline" : "btn-neutral"}`}
+                    onClick={() => !activeProfile.linkedWithIntra && loginWith("42")}
                     disabled={activeProfile.linkedWithIntra}
                   >
-                    {activeProfile.linkedWithIntra ? "Linked" : "Link"}
+                    {activeProfile.linkedWithIntra ? "Linked" : "Connect"}
                   </button>
                 </div>
+              
               </div>
             </>
           )}
@@ -910,121 +935,115 @@ export default function SettingsPage({
           )}
 
           {activeTab === "admin" && isAdmin && (
-            <div className="rounded-2xl border border-base-200 bg-base-100 p-4 md:p-5">
-              <div className="mb-4">
-                <h2 className="text-base font-bold text-base-content">
-                  Create User
-                </h2>
-                <p className="text-sm text-base-content/60 mt-1">
-                  Create a local account with role, profile details, and initial
-                  status.
-                </p>
+            <div className="rounded-lg border border-base-200 bg-base-100">
+          
+              {/* Header */}
+              <div className="flex items-center gap-3 px-5 py-4 border-b border-base-200">
+                <div>
+                  <h2 className="text-base font-bold text-base-content">
+                    Create user
+                  </h2>
+                  <p className="text-sm text-base-content/60 mt-1">
+                    Create a local account with role, profile details, and initial status.
+                  </p>
+                </div>
               </div>
-
-              <form className="space-y-4" onSubmit={handleAdminCreateUser}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <label className="form-control">
-                    <span className="label-text text-xs text-base-content/60 mb-1">
-                      Username
-                    </span>
+          
+              {/* Form */}
+              <form className="px-5 py-5" onSubmit={handleAdminCreateUser}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-5">
+          
+                  <label className="flex flex-col gap-1.5 w-full">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/50">Username</span>
                     <input
-                      className="input input-bordered"
-                      placeholder="jdoe"
+                      className="input h-10 w-full rounded-md text-sm bg-base-100 shadow-sm border border-base-200 focus:outline-none focus:border-base-300 focus:ring-2 focus:ring-base-300/50 transition-all"
+                      placeholder="jothomas"
                       value={newUserForm.username}
-                      onChange={(event) =>
-                        updateNewUserForm("username", event.target.value)
-                      }
+                      onChange={(e) => updateNewUserForm("username", e.target.value)}
                       required
                     />
                   </label>
-
-                  <label className="form-control">
-                    <span className="label-text text-xs text-base-content/60 mb-1">
-                      Full name
-                    </span>
+          
+                  <label className="flex flex-col gap-1.5 w-full">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/50">Full name</span>
                     <input
-                      className="input input-bordered"
-                      placeholder="Jane Doe"
+                      className="input h-10 w-full rounded-md text-sm bg-base-100 shadow-sm border border-base-200 focus:outline-none focus:border-base-300 focus:ring-2 focus:ring-base-300/50 transition-all"
+                      placeholder="Joshua Thomas"
                       value={newUserForm.fullName}
-                      onChange={(event) =>
-                        updateNewUserForm("fullName", event.target.value)
-                      }
+                      onChange={(e) => updateNewUserForm("fullName", e.target.value)}
                       required
                     />
                   </label>
-
-                  <label className="form-control md:col-span-2">
-                    <span className="label-text text-xs text-base-content/60 mb-1">
-                      Email
-                    </span>
+          
+                  <label className="flex flex-col gap-1.5 md:col-span-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/50">Email</span>
                     <input
-                      className="input input-bordered"
-                      placeholder="jane@example.com"
+                      className="input h-10 rounded-md text-sm bg-base-100 shadow-sm border border-base-200 focus:outline-none focus:border-base-300 focus:ring-2 focus:ring-base-300/50 transition-all w-full"
+                      placeholder="42overflow@example.com"
                       type="email"
                       value={newUserForm.email}
-                      onChange={(event) =>
-                        updateNewUserForm("email", event.target.value)
-                      }
+                      onChange={(e) => updateNewUserForm("email", e.target.value)}
                       required
                     />
                   </label>
-
-                  <label className="form-control md:col-span-2">
-                    <span className="label-text text-xs text-base-content/60 mb-1">
-                      Bio (optional)
+          
+                  <label className="flex flex-col gap-1.5 md:col-span-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/50">
+                      Bio <span className="normal-case font-normal tracking-normal text-base-content/40">(optional)</span>
                     </span>
                     <textarea
-                      className="textarea textarea-bordered min-h-24"
-                      placeholder="Short profile bio"
+                      className="textarea rounded-md text-sm bg-base-100 min-h-24 resize-none leading-relaxed shadow-sm py-3 w-full border border-base-200 focus:outline-none focus:border-base-300 focus:ring-2 focus:ring-base-300/50 transition-all"
+                      placeholder="Short profile bio..."
                       value={newUserForm.bio ?? ""}
-                      onChange={(event) =>
-                        updateNewUserForm("bio", event.target.value)
-                      }
+                      onChange={(e) => updateNewUserForm("bio", e.target.value)}
                     />
                   </label>
-
-                  <label className="form-control">
-                    <span className="label-text text-xs text-base-content/60 mb-1">
-                      Role
-                    </span>
-                    <select
-                      className="select select-bordered"
-                      value={newUserForm.role}
-                      onChange={(event) =>
-                        updateNewUserForm(
-                          "role",
-                          event.target.value as "STUDENT" | "ADMIN",
-                        )
-                      }
-                    >
-                      <option value="STUDENT">STUDENT</option>
-                      <option value="ADMIN">ADMIN</option>
-                    </select>
+          
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/50">Role</span>
+                    <div className="relative w-full">
+                      <select
+                        className="appearance-none w-full h-10 min-h-0 px-4 rounded-md text-sm bg-base-100 shadow-sm border border-base-300 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 transition-all cursor-pointer"
+                        value={newUserForm.role}
+                        onChange={(e) => updateNewUserForm("role", e.target.value as "STUDENT" | "ADMIN")}
+                      >
+                        <option value="STUDENT">Student</option>
+                        <option value="ADMIN">Admin</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-base-content/50">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
                   </label>
-
-                  <label className="form-control">
-                    <span className="label-text text-xs text-base-content/60 mb-1">
-                      Initial status
-                    </span>
-                    <select
-                      className="select select-bordered"
-                      value={newUserForm.isBanned ? "banned" : "active"}
-                      onChange={(event) =>
-                        updateNewUserForm(
-                          "isBanned",
-                          event.target.value === "banned",
-                        )
-                      }
-                    >
-                      <option value="active">Active</option>
-                      <option value="banned">Banned</option>
-                    </select>
+          
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/50">Initial status</span>
+                    <div className="relative w-full">
+                      <select
+                        className="appearance-none w-full h-10 min-h-0 px-4 rounded-md text-sm bg-base-100 shadow-sm border border-base-300 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 transition-all cursor-pointer"
+                        value={newUserForm.isBanned ? "banned" : "active"}
+                        onChange={(e) => updateNewUserForm("isBanned", e.target.value === "banned")}
+                      >
+                        <option value="active">Active</option>
+                        <option value="banned">Banned</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-base-content/50">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
                   </label>
+          
                 </div>
-
-                <div className="flex items-center justify-end gap-2 pt-1">
+          
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-6 mt-6 border-t border-base-200">
+                  <span className="text-xs text-base-content/40">All fields required unless marked optional.</span>
                   <button
-                    className="btn btn-primary"
+                    className="btn btn-primary btn-sm rounded-md px-6 normal-case font-semibold h-9"
                     type="submit"
                     disabled={adminLoading}
                   >
@@ -1032,6 +1051,7 @@ export default function SettingsPage({
                   </button>
                 </div>
               </form>
+          
             </div>
           )}
         </div>
