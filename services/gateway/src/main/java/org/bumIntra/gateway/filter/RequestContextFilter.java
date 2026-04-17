@@ -72,7 +72,7 @@ public class RequestContextFilter implements ContainerRequestFilter {
                 grc.setClientIp(grc.getForwardedFor().split(",")[0].trim());
             } else {
                 grc.setClientIp("unknown");
-                grc.setInternal(true);
+                grc.setInternal("true".equalsIgnoreCase(request.getHeaderString(IdentityHeaders.INTERNAL_REQUEST)));
             }
         } else {
             grc.setClientIp(grc.getRealIp().trim());
