@@ -2,7 +2,7 @@ import ProfilePage from '@/features/auth/ui/profile/ProfilePage'
 import { getServerUserById } from '@/features/auth/api/serverAuthData'
 import { notFound } from 'next/navigation'
 
-export const dynamic = 'force-dynamic'
+// export const dynamic = 'force-dynamic'
 
 interface UserProfileRouteProps {
   params: Promise<{ id: string }>

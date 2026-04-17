@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useCurrentChatSession, useChatActions } from '../models';
-import { getMessageStream } from '../api/chat-services';
+import { useCurrentChatSession, useChatActions } from '@/features/chat/models';
+import { getMessageStream } from '@/features/chat/api';
 
 export function SSEStreamController() {
   const { addMessage, setTypingStatus, updateReadReceipt, setUserStatus } = useChatActions();

@@ -4,9 +4,9 @@ import (
 	"app/internal/api"
 	"app/internal/database"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -24,13 +24,18 @@ func (s *Server) SendFriendRequest(w http.ResponseWriter, r *http.Request, recei
 	}
 
 	_, err := s.db.GetQueries().CreateFriendship(ctx, database.CreateFriendshipParams{
-		RequesterID: int32(requesterId),
-		AddresseeID: int32(receiverId),
+		RequesterID:      int32(requesterId),
+		AddresseeID:      int32(receiverId),
+		LastActionUserID: int32(requesterId),
 	})
 
 	if err != nil {
 		if strings.Contains(err.Error(), "unique_violation") || strings.Contains(err.Error(), "duplicate key") {
 			http.Error(w, "Friendship already exists", http.StatusConflict)
+			return
+		}
+		if strings.Contains(err.Error(), "friendship_id_order") {
+			http.Error(w, "Cannot friend yourself", http.StatusBadRequest)
 			return
 		}
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -39,10 +44,10 @@ func (s *Server) SendFriendRequest(w http.ResponseWriter, r *http.Request, recei
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, receiverId int, params api.UpdateFriendshipStatusParams) {
+func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, targetUserId int, params api.UpdateFriendshipStatusParams) {
 	ctx := r.Context()
 
-	requesterId, ok := r.Context().Value(userIDKey).(int)
+	callerId, ok := r.Context().Value(userIDKey).(int)
 	if !ok {
 		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
 		return
@@ -55,39 +60,87 @@ func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, 
 
 	var dbStatus database.ChatServiceFriendStatus
 	switch params.Status {
-	case api.UpdateFriendshipStatusParamsStatusAccepted:
+	case api.Accepted:
 		dbStatus = database.ChatServiceFriendStatusAccepted
-	case api.UpdateFriendshipStatusParamsStatusDeclined:
-		dbStatus = database.ChatServiceFriendStatusDeclined
-	case api.UpdateFriendshipStatusParamsStatusBlocked:
+	case api.Blocked:
 		dbStatus = database.ChatServiceFriendStatusBlocked
-	case api.UpdateFriendshipStatusParamsStatusNone:
-		dbStatus = database.ChatServiceFriendStatusNone
+	case api.Pending:
+		dbStatus = database.ChatServiceFriendStatusPending
+	case api.Requested:
+		dbStatus = database.ChatServiceFriendStatusRequested
 	default:
-		http.Error(w, "Invalid status value", http.StatusBadRequest)
+		http.Error(w, "Unsupported status value", http.StatusBadRequest)
 		return
 	}
 
-	// 1. Start the Database Transaction
-	// Note: s.db should be your *sql.DB connection pool
 	tx, err := s.db.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	defer tx.Rollback() // Automatically rolls back if we exit before Commit()
+	defer tx.Rollback()
 
-	// 2. Bind the transaction to your sqlc Queries
 	qtx := s.db.GetQueries().WithTx(tx)
 
-	log.Printf("updating status")
-	// 3. Update the Friendship Status
-	err = qtx.UpdateFriendshipStatus(ctx, database.UpdateFriendshipStatusParams{
-		RequesterID: int32(requesterId),
-		AddresseeID: int32(receiverId),
+	// Get current friend state to check validation
+	currentFriendship, err := qtx.GetFriendship(ctx, database.GetFriendshipParams{
+		RequesterID: int32(targetUserId),
+		AddresseeID: int32(callerId),
+	})
+	if err != nil {
+		http.Error(w, "Friendship not found", http.StatusNotFound)
+		return
+	}
+
+	// 3. State Machine & Authorization Logic (The "Caveman Full" rewrite)
+	isChatAllowed := currentFriendship.IsChatAllowed.Bool
+	if currentFriendship.Status.Valid {
+		currStatus := currentFriendship.Status.ChatServiceFriendStatus
+		lastActor := currentFriendship.LastActionUserID
+
+		// Rule A: NO ONE can manually revert a relationship back to 'pending'
+		if dbStatus == database.ChatServiceFriendStatusPending {
+			http.Error(w, "Cannot revert status to pending", http.StatusBadRequest)
+			return
+		}
+
+		// Rule B: If currently BLOCKED, ONLY the person who initiated the block can change it
+		if currStatus == database.ChatServiceFriendStatusBlocked {
+			if int32(callerId) != lastActor {
+				http.Error(w, "You cannot unblock yourself", http.StatusForbidden)
+				return
+			}
+		}
+
+		// Rule C: If currently PENDING, ONLY the receiver can accept it
+		if currStatus == database.ChatServiceFriendStatusPending {
+			if int32(callerId) == lastActor && dbStatus == database.ChatServiceFriendStatusAccepted {
+				http.Error(w, "You cannot accept your own request", http.StatusForbidden)
+				return
+			}
+		}
+	}
+
+	switch dbStatus {
+	case database.ChatServiceFriendStatusAccepted:
+		// Accepted side effect: allow chat
+		isChatAllowed = true
+	case database.ChatServiceFriendStatusBlocked:
+		// Blocked/Requested side effect: disallow chat
+		isChatAllowed = false
+	}
+
+	_, err = qtx.UpdateFriendshipStatus(ctx, database.UpdateFriendshipStatusParams{
+		RequesterID: int32(targetUserId),
+		AddresseeID: int32(callerId),
 		Status: database.NullChatServiceFriendStatus{
 			ChatServiceFriendStatus: dbStatus,
 			Valid:                   true,
+		},
+		LastActionUserID: int32(callerId),
+		IsChatAllowed: sql.NullBool{
+			Bool:  isChatAllowed,
+			Valid: true,
 		},
 	})
 
@@ -96,25 +149,57 @@ func (s *Server) UpdateFriendshipStatus(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	// 4. The Side Effect: Create Room if Accepted
 	if dbStatus == database.ChatServiceFriendStatusAccepted {
 		_, err = qtx.CreateDirectRoomWithMembers(ctx, database.CreateDirectRoomWithMembersParams{
-			UserID:   int32(requesterId),
-			UserID_2: int32(receiverId), // sqlc numbers identical parameters
+			UserID:   int32(callerId),
+			UserID_2: int32(targetUserId),
 		})
 		if err != nil {
-			http.Error(w, "Failed to initialize chat room", http.StatusInternalServerError)
+			http.Error(w, "Failed to ensure chat room exists", http.StatusInternalServerError)
 			return
 		}
 	}
 
-	// 5. Explicitly Commit the Transaction
 	if err := tx.Commit(); err != nil {
 		http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
 		return
 	}
 
+	prevStatus := currentFriendship.Status.ChatServiceFriendStatus
+	isValidPrev := currentFriendship.Status.Valid
+
+	// Scenario 1: Unfriending or Blocking (Accepted -> Blocked/Requested)
+	// 1. Cutoff live status for both directions so neither sees typing/online
+	if isValidPrev && prevStatus == database.ChatServiceFriendStatusAccepted {
+		if dbStatus == database.ChatServiceFriendStatusBlocked || dbStatus == database.ChatServiceFriendStatusRequested {
+			s.sendIsOnlineStatusEvent(targetUserId, callerId, false)
+			s.sendIsOnlineStatusEvent(callerId, targetUserId, false)
+		}
+	}
+
+	// Scenario 2: Becoming Friends (Pending/Requested -> Accepted)
+	// 1. Instantly cross-pollinate online statuses if they are currently connected
+	if dbStatus == database.ChatServiceFriendStatusAccepted && (!isValidPrev || prevStatus != database.ChatServiceFriendStatusAccepted) {
+		if s.sseHub.IsUserOnline(targetUserId) {
+			s.sendIsOnlineStatusEvent(callerId, targetUserId, true)
+		}
+		if s.sseHub.IsUserOnline(callerId) {
+			s.sendIsOnlineStatusEvent(targetUserId, callerId, true)
+		}
+	}
+
 	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) sendIsOnlineStatusEvent(targetId int, userId int, isOnline bool) {
+	payload := api.StreamEvent{Type: api.USERSTATUS}
+	err := payload.Payload.FromUserStatus(api.UserStatus{UserId: userId, IsOnline: isOnline})
+	if err == nil {
+		jsonData, err := json.Marshal(payload)
+		if err == nil {
+			s.sseHub.BroadcastToUsers([]int{targetId}, string(jsonData))
+		}
+	}
 }
 
 // getOnlineFriends queries the database for accepted friends and filters to those currently online
@@ -242,9 +327,9 @@ func (s *Server) GetPendingFriendRequests(w http.ResponseWriter, r *http.Request
 
 	response := make(api.PendingFriendRequestList, 0, len(rows))
 	for _, row := range rows {
-		status := api.PendingFriendRequestStatusPending
+		status := api.Pending // Default to pending if status is null, though ideally it should never be null for pending requests
 		if row.Status.Valid {
-			status = api.PendingFriendRequestStatus(row.Status.ChatServiceFriendStatus)
+			status = api.FriendshipStatus(row.Status.ChatServiceFriendStatus)
 		}
 
 		response = append(response, api.PendingFriendRequest{
@@ -259,4 +344,52 @@ func (s *Server) GetPendingFriendRequests(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Failed to encode pending friend requests", http.StatusInternalServerError)
 		return
 	}
+}
+
+func (s *Server) AcceptMessageRequest(w http.ResponseWriter, r *http.Request, requesterId int) {
+	ctx := r.Context()
+
+	receiverId, ok := r.Context().Value(userIDKey).(int)
+	if !ok {
+		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
+		return
+	}
+
+	qtx := s.db.GetQueries()
+
+	// Get current friend state
+	currentFriendship, err := qtx.GetFriendship(ctx, database.GetFriendshipParams{
+		RequesterID: int32(requesterId),
+		AddresseeID: int32(receiverId),
+	})
+	if err != nil {
+		http.Error(w, "Friendship not found", http.StatusNotFound)
+		return
+	}
+
+	if !currentFriendship.Status.Valid || currentFriendship.Status.ChatServiceFriendStatus != database.ChatServiceFriendStatusRequested {
+		http.Error(w, "Friendship is not in requested state", http.StatusBadRequest)
+		return
+	}
+
+	// Accept message request sets is_chat_allowed to true, status unchanged
+	_, err = qtx.UpdateFriendshipStatus(ctx, database.UpdateFriendshipStatusParams{
+		RequesterID: int32(requesterId),
+		AddresseeID: int32(receiverId),
+		Status: database.NullChatServiceFriendStatus{
+			ChatServiceFriendStatus: currentFriendship.Status.ChatServiceFriendStatus,
+			Valid:                   true,
+		},
+		LastActionUserID: int32(receiverId),
+		IsChatAllowed: sql.NullBool{
+			Bool:  true,
+			Valid: true,
+		},
+	})
+	if err != nil {
+		http.Error(w, "Failed to accept message request", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useHasUnreadMessages, useUserStatus } from '@/features/chat/models';
+import { useHasUnreadMessages, useUserStatus, useIsAcceptedFriend } from '@/features/chat/models';
 import type { FriendId, ChatId } from '@/features/chat/models';
 
 interface AvatarWithStatusProps {
@@ -35,6 +35,7 @@ export function AvatarWithStatus({
   status,
   isGroup = false
 }: AvatarWithStatusProps & { status?: string }) {
+  const isAcceptedFriend = useIsAcceptedFriend(userId ?? null);
   const isOnline = useUserStatus(userId ?? -1); 
   const hasUnread = useHasUnreadMessages(chatId ?? null);
   
@@ -48,7 +49,7 @@ export function AvatarWithStatus({
       )}
       
       {/* Status Dot (Bottom Right) */}
-      {!isGroup && (
+      {!isGroup && isAcceptedFriend && (
         <span className={`indicator-item indicator-bottom indicator-end status status-lg z-10 transform -translate-x-1 border-base-100 border-2 ${getStatusColorClass(status, isOnline)}`} />
       )}
 

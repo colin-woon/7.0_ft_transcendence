@@ -2,7 +2,7 @@ import RegisterPage from '@/features/auth/ui/login/RegisterPage'
 import { getServerCurrentUser } from '@/features/auth/api/serverAuthData'
 import { redirect } from 'next/navigation'
 
-export const dynamic = 'force-dynamic'
+// export const dynamic = 'force-dynamic'
 
 interface RegisterRouteProps {
   searchParams: Promise<{ email?: string | string[] }>

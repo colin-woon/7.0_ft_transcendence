@@ -3,12 +3,11 @@ import { immer } from 'zustand/middleware/immer';
 import type { AllChatSessions, FriendId, ChatMessage, ChatId, FriendList, ChatRoomType, PendingFriendRequest } from './chat-types';
 import { getFriendList, getUserInbox, getMessageHistory, updateReadReceipt as apiUpdateReadReceipt, getPendingFriendRequests } from '../api';
 import debounce from 'lodash.debounce';
-import { useAuth } from '@/features/auth/models/AuthContext';
 
 export interface ChatState {
   currentChatSessionId: ChatId | null;
   allChatSessions: AllChatSessions;
-  allFriendships: FriendList;
+  allAcceptedFriends: FriendList;
   pendingRequests: PendingFriendRequest[];
   isLoadingFriends: boolean;
   friendsError: string | null;
@@ -18,17 +17,18 @@ export interface ChatState {
 
 export interface ChatActions {
   setUserStatus: (userId: FriendId, isOnline: boolean) => void;
-  setChatSession: (chatId: ChatId, type: ChatRoomType, name: string | null, friendIds: FriendId[], messages: ChatMessage[] | null) => void;
+  setChatSession: (chatId: ChatId, type: ChatRoomType, name: string | null, friendIds: FriendId[], messages: ChatMessage[] | null, isAllowedChat: boolean) => void;
   addMessage: (msg: ChatMessage) => void;
-  setAllFriendships: (friendList: FriendList) => void;
+  setAllAcceptedFriends: (friendList: FriendList) => void;
   setCurrentChatSessionId: (chatId: ChatId | null) => void;
-  fetchAllFriendships: () => Promise<void>;
+  fetchAllAcceptedFriends: () => Promise<void>;
   fetchPendingFriendships: () => Promise<void>;
   fetchAllChatSessions: () => Promise<void>;
   fetchChatHistory: (chatId: ChatId) => Promise<void>;
   setTypingStatus: (chatId: ChatId, senderId: FriendId) => void;
   updateReadReceipt: (chatId: ChatId, userId: FriendId, messageId: number) => void;
   sendReadReceipt: (chatId: ChatId, userId: FriendId, messageId: number) => Promise<void>;
+  updateChatPermission: (chatId: string | null, allowed: boolean) => void;
 }
 
 export type ChatStore = ChatState & ChatActions;
@@ -48,12 +48,11 @@ const clearTypingStatus = debounce(
 
 // Factory pattern: creates a new store instance per Provider
 export const createChatStore = (initialSessions: AllChatSessions = {}) => {
-  const { user } = useAuth();
 
   return createStore<ChatStore>()(
     immer((set, get) => ({
       allChatSessions: initialSessions,
-      allFriendships: [],
+      allAcceptedFriends: [],
       pendingRequests: [],
       currentChatSessionId: null,
       isLoadingFriends: false,
@@ -64,17 +63,17 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
       setUserStatus: (userId: FriendId, isOnline: boolean) =>
         set((state) => {
           // Find the actual friend object by matching the ID
-          const friend = state.allFriendships.find(f => f.friendId === userId);
+          const friend = state.allAcceptedFriends.find(f => f.friendId === userId);
           
           if (friend) {
             friend.isOnline = isOnline;
           }
         }),
-      setChatSession: (chatId: ChatId, type: ChatRoomType, name: string | null, friendIds: FriendId[], messages: ChatMessage[] | null) => 
-        set((state) => {
+      setChatSession: (chatId: ChatId, type: ChatRoomType, name: string | null, friendIds: FriendId[], messages: ChatMessage[] | null, isAllowedChat: boolean = false) => 
+        set((state) => {  
           state.currentChatSessionId = chatId;
            if (!state.allChatSessions[chatId]) {
-            state.allChatSessions[chatId] = { chatId: chatId, type: type, name: name, memberIds: friendIds, messages: [] };
+            state.allChatSessions[chatId] = { chatId: chatId, type: type, name: name, memberIds: friendIds, messages: [], isAllowedChat: isAllowedChat};
           }
           state.allChatSessions[chatId].messages = messages; // Directly set the array
         }),
@@ -97,15 +96,15 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
           }
         }),
         
-      setAllFriendships: (friendList: FriendList) =>
+      setAllAcceptedFriends: (friendList: FriendList) =>
         set((state) => {
-          state.allFriendships = friendList;
+          state.allAcceptedFriends = friendList;
         }),
 
-      fetchAllFriendships: async () => {
+      fetchAllAcceptedFriends: async () => {
         const friendList = await getFriendList();
         set((state) => {
-          state.allFriendships = friendList;
+          state.allAcceptedFriends = friendList;
         });
       },
 
@@ -127,6 +126,7 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
                 type: session.type,
                 memberIds: session.memberIds,
                 name: session.name || null,
+                isAllowedChat: session.isAllowedChat || false,
                 messages: [],
               };
             });
@@ -202,6 +202,14 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
           // In a production app, you might want to rollback the optimistic update here
         }
       },
+
+      updateChatPermission: (chatId: string | null, allowed: boolean) => {
+        set((state) => {
+          if (chatId) {
+            state.allChatSessions[chatId].isAllowedChat = allowed;
+          }
+        });
+      }
     }))
   );
 };

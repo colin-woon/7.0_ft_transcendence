@@ -53,12 +53,13 @@ export interface ChatRoom {
     chatId: string;
     type: ChatRoomType;
     name: string | null;
+    isAllowedChat: boolean; // For direct chats, reflects if the users are friends. Always true for group chats.
     memberIds: FriendId[];
     messages: ChatMessage[] | null;
     readReceipts?: Record<FriendId, number>; // Maps userId to lastReadMessageId
 }
 
-export type FriendStatus = 'pending' | 'accepted' | 'blocked' | 'declined' | 'none';
+export type FriendStatus = 'pending' | 'blocked' | 'accepted' | 'requested';
 
 export interface SendMessageRequest {
   content: string;

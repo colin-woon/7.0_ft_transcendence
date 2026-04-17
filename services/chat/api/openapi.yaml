@@ -22,7 +22,7 @@ components:
   schemas:
     ChatRoom:
       type: object
-      required: [chatId, type]
+      required: [chatId, type, isAllowedChat]
       properties:
         chatId:
           type: string
@@ -39,6 +39,11 @@ components:
           items:
             type: integer
           description: "List of all user IDs in this chat. Frontend uses this to fetch avatars/names."
+          example: [123, 456]
+        isAllowedChat:
+          type: boolean
+          default: true
+          description: "Always true for 'group'. For 'direct', reflects the friendship is_chat_allowed status."
     ChatMessage:
       type: object
       required: [id, chatId, senderId, content, createdAt]
@@ -86,6 +91,21 @@ components:
         isOnline:
           type: boolean
           description: Whether the user is now online or offline
+    FriendshipStatus:
+      type: string
+      enum: [requested, accepted, blocked, pending]
+    PendingFriendRequest:
+      type: object
+      required: [requesterId, addresseeId, status]
+      properties:
+        requesterId: { type: integer }
+        addresseeId: { type: integer }
+        status:
+          $ref: "#/components/schemas/FriendshipStatus"
+    PendingFriendRequestList:
+      type: array
+      items:
+        $ref: "#/components/schemas/PendingFriendRequest"
     FriendList:
       type: array
       items:
@@ -105,23 +125,6 @@ components:
         friendId: 123
         chatId: "550e8400-e29b-41d4-a716"
         isOnline: true
-    PendingFriendRequest:
-      type: object
-      required: [requesterId, addresseeId, status]
-      properties:
-        requesterId:
-          type: integer
-          description: User who sent the friend request
-        addresseeId:
-          type: integer
-          description: User who received the friend request
-        status:
-          type: string
-          enum: [pending]
-    PendingFriendRequestList:
-      type: array
-      items:
-        $ref: "#/components/schemas/PendingFriendRequest"
     StreamEvent:
       type: object
       required: [type, payload]
@@ -161,14 +164,14 @@ paths:
         "404":
           description: User not found
 
-  /friendship/{receiverId}/update:
+  /friendship/{targetUserId}:
     patch:
       tags:
         - Friendship
       summary: Update friendship status
       operationId: updateFriendshipStatus
       parameters:
-        - name: receiverId
+        - name: targetUserId
           in: path
           required: true
           schema:
@@ -177,8 +180,7 @@ paths:
           in: query
           required: true
           schema:
-            type: string
-            enum: [pending, accepted, declined, blocked, none]
+            $ref: "#/components/schemas/FriendshipStatus"
       responses:
         "200":
           description: Status updated successfully
@@ -188,6 +190,57 @@ paths:
           description: Request not found
         "500":
           description: Internal Server Error
+
+  /message/request/{requesterId}/accept:
+    patch:
+      tags:
+        - Message
+      summary: Accept initial message request
+      operationId: acceptMessageRequest
+      parameters:
+        - name: requesterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Accepted
+        "404":
+          description: Request not found
+        "500":
+          description: Internal error
+
+  /message/request/{receiverId}:
+    post:
+      tags:
+        - Message
+      summary: Send initial message request (creates room, friendship, sends 1 msg)
+      operationId: sendMessageRequest
+      parameters:
+        - name: receiverId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+      responses:
+        "201":
+          description: Message sent, room created
+        "403":
+          description: Not allowed
+        "500":
+          description: Internal error
 
   /friendship:
     get:

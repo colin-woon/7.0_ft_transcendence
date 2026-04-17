@@ -18,7 +18,7 @@ export function CreateGroupChatButton() {
         isSubmitting,
         submitGroupChat,
         resetForm,
-        allFriendships
+        allAcceptedFriends
     } = useCreateGroupChatAction();
 
     // Ensure we only render the portal on the client-side
@@ -72,10 +72,10 @@ export function CreateGroupChatButton() {
                                 <span className="label-text font-medium">Select Friends</span>
                             </div>
                             <div className="bg-base-200 border-base-300 rounded-box border p-4 max-h-64 overflow-y-auto flex flex-col gap-2">
-                                {!allFriendships || allFriendships.length === 0 ? (
+                                {!allAcceptedFriends || allAcceptedFriends.length === 0 ? (
                                     <p className="text-sm opacity-70">No friends available.</p>
                                 ) : (
-                                    allFriendships.map(friend => (
+                                    allAcceptedFriends.map(friend => (
                                         <div key={friend.friendId} className="flex justify-between items-center p-2 rounded hover:bg-base-500/50 ">
                                             <div className="flex items-center gap-3">
                                                 <div className="avatar">

@@ -5,7 +5,20 @@ import Link from 'next/link';
 
 export default function MessagesLandingPage() {
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full bg-base-100 text-base-content/60">
+    <>
+      <style>{`
+        @media (max-width: 767px) {
+          #chat-sidebar {
+            display: flex !important;
+          }
+          #chat-main {
+            display: none !important;
+          }
+        }
+      `}</style>
+
+    
+    <div className="hidden md:flex flex-col items-center justify-center h-full w-full bg-base-100 text-base-content/60">
       
       {/* Discord-style Empty State Illustration */}
       <div className="bg-base-200 mask mask-hexagon w-32 h-32 flex items-center justify-center mb-6 shadow-sm">
@@ -24,5 +37,6 @@ export default function MessagesLandingPage() {
         Go to Friends
       </Link>
     </div>
+    </>
   );
 }

@@ -2,6 +2,7 @@
 
 @plugin "daisyui" {
   themes: emerald --default;
+  exclude: properties;
 }
 
 @plugin "daisyui/theme" {

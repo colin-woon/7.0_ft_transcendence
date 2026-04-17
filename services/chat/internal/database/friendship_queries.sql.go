@@ -7,9 +7,49 @@ package database
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
+
+const checkChatPermissions = `-- name: CheckChatPermissions :one
+SELECT
+    r.type AS room_type,
+    f.is_chat_allowed
+FROM chat_service.rooms r
+JOIN chat_service.room_members me ON r.id = me.chat_id
+LEFT JOIN chat_service.room_members other
+    ON r.id = other.chat_id
+    AND me.user_id != other.user_id
+    AND r.type = 'direct'
+LEFT JOIN chat_service.friendships f
+    ON r.type = 'direct' AND (
+        (f.requester_id = me.user_id AND f.addressee_id = other.user_id) OR
+        (f.requester_id = other.user_id AND f.addressee_id = me.user_id)
+    )
+WHERE r.id = $1
+  AND me.user_id = $2
+LIMIT 1
+`
+
+type CheckChatPermissionsParams struct {
+	ID     uuid.UUID `json:"id"`
+	UserID int32     `json:"userId"`
+}
+
+type CheckChatPermissionsRow struct {
+	RoomType      string       `json:"roomType"`
+	IsChatAllowed sql.NullBool `json:"isChatAllowed"`
+}
+
+// Only attempt to find the "other" person if it's a direct chat
+// Only attempt to join friendships if it's a direct chat
+func (q *Queries) CheckChatPermissions(ctx context.Context, arg CheckChatPermissionsParams) (CheckChatPermissionsRow, error) {
+	row := q.db.QueryRowContext(ctx, checkChatPermissions, arg.ID, arg.UserID)
+	var i CheckChatPermissionsRow
+	err := row.Scan(&i.RoomType, &i.IsChatAllowed)
+	return i, err
+}
 
 const createDirectRoomWithMembers = `-- name: CreateDirectRoomWithMembers :one
 WITH existing_room AS (
@@ -54,22 +94,52 @@ func (q *Queries) CreateDirectRoomWithMembers(ctx context.Context, arg CreateDir
 }
 
 const createFriendship = `-- name: CreateFriendship :one
-INSERT INTO chat_service.friendships (requester_id, addressee_id, status)
-VALUES ($1, $2, 'pending')
-RETURNING requester_id, addressee_id, status, created_at, updated_at
+INSERT INTO chat_service.friendships (requester_id, addressee_id, last_action_user_id, status)
+VALUES ($1, $2, $3, 'pending')
+RETURNING requester_id, addressee_id, last_action_user_id, is_chat_allowed, status, created_at, updated_at
 `
 
 type CreateFriendshipParams struct {
-	RequesterID int32 `json:"requesterId"`
-	AddresseeID int32 `json:"addresseeId"`
+	RequesterID      int32 `json:"requesterId"`
+	AddresseeID      int32 `json:"addresseeId"`
+	LastActionUserID int32 `json:"lastActionUserId"`
 }
 
 func (q *Queries) CreateFriendship(ctx context.Context, arg CreateFriendshipParams) (ChatServiceFriendship, error) {
-	row := q.db.QueryRowContext(ctx, createFriendship, arg.RequesterID, arg.AddresseeID)
+	row := q.db.QueryRowContext(ctx, createFriendship, arg.RequesterID, arg.AddresseeID, arg.LastActionUserID)
 	var i ChatServiceFriendship
 	err := row.Scan(
 		&i.RequesterID,
 		&i.AddresseeID,
+		&i.LastActionUserID,
+		&i.IsChatAllowed,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createMessageRequestFriendship = `-- name: CreateMessageRequestFriendship :one
+INSERT INTO chat_service.friendships (requester_id, addressee_id, last_action_user_id, status, is_chat_allowed)
+VALUES ($1, $2, $3, 'requested', false)
+RETURNING requester_id, addressee_id, last_action_user_id, is_chat_allowed, status, created_at, updated_at
+`
+
+type CreateMessageRequestFriendshipParams struct {
+	RequesterID      int32 `json:"requesterId"`
+	AddresseeID      int32 `json:"addresseeId"`
+	LastActionUserID int32 `json:"lastActionUserId"`
+}
+
+func (q *Queries) CreateMessageRequestFriendship(ctx context.Context, arg CreateMessageRequestFriendshipParams) (ChatServiceFriendship, error) {
+	row := q.db.QueryRowContext(ctx, createMessageRequestFriendship, arg.RequesterID, arg.AddresseeID, arg.LastActionUserID)
+	var i ChatServiceFriendship
+	err := row.Scan(
+		&i.RequesterID,
+		&i.AddresseeID,
+		&i.LastActionUserID,
+		&i.IsChatAllowed,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -131,6 +201,33 @@ func (q *Queries) GetFriendListWithChatIds(ctx context.Context, userID int32) ([
 	return items, nil
 }
 
+const getFriendship = `-- name: GetFriendship :one
+SELECT requester_id, addressee_id, last_action_user_id, is_chat_allowed, status, created_at, updated_at FROM chat_service.friendships
+WHERE (requester_id = $1 AND addressee_id = $2)
+   OR (requester_id = $2 AND addressee_id = $1)
+LIMIT 1
+`
+
+type GetFriendshipParams struct {
+	RequesterID int32 `json:"requesterId"`
+	AddresseeID int32 `json:"addresseeId"`
+}
+
+func (q *Queries) GetFriendship(ctx context.Context, arg GetFriendshipParams) (ChatServiceFriendship, error) {
+	row := q.db.QueryRowContext(ctx, getFriendship, arg.RequesterID, arg.AddresseeID)
+	var i ChatServiceFriendship
+	err := row.Scan(
+		&i.RequesterID,
+		&i.AddresseeID,
+		&i.LastActionUserID,
+		&i.IsChatAllowed,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getPendingFriendRequests = `-- name: GetPendingFriendRequests :many
 SELECT requester_id, addressee_id, status
 FROM chat_service.friendships
@@ -168,19 +265,39 @@ func (q *Queries) GetPendingFriendRequests(ctx context.Context, addresseeID int3
 	return items, nil
 }
 
-const updateFriendshipStatus = `-- name: UpdateFriendshipStatus :exec
+const updateFriendshipStatus = `-- name: UpdateFriendshipStatus :one
 UPDATE chat_service.friendships
-SET status = $3, updated_at = CURRENT_TIMESTAMP
-WHERE requester_id = $1 AND addressee_id = $2
+SET status = $3, last_action_user_id = $4, is_chat_allowed = $5, updated_at = CURRENT_TIMESTAMP
+WHERE (requester_id = $1 AND addressee_id = $2)
+   OR (requester_id = $2 AND addressee_id = $1)
+RETURNING requester_id, addressee_id, last_action_user_id, is_chat_allowed, status, created_at, updated_at
 `
 
 type UpdateFriendshipStatusParams struct {
-	RequesterID int32                       `json:"requesterId"`
-	AddresseeID int32                       `json:"addresseeId"`
-	Status      NullChatServiceFriendStatus `json:"status"`
+	RequesterID      int32                       `json:"requesterId"`
+	AddresseeID      int32                       `json:"addresseeId"`
+	Status           NullChatServiceFriendStatus `json:"status"`
+	LastActionUserID int32                       `json:"lastActionUserId"`
+	IsChatAllowed    sql.NullBool                `json:"isChatAllowed"`
 }
 
-func (q *Queries) UpdateFriendshipStatus(ctx context.Context, arg UpdateFriendshipStatusParams) error {
-	_, err := q.db.ExecContext(ctx, updateFriendshipStatus, arg.RequesterID, arg.AddresseeID, arg.Status)
-	return err
+func (q *Queries) UpdateFriendshipStatus(ctx context.Context, arg UpdateFriendshipStatusParams) (ChatServiceFriendship, error) {
+	row := q.db.QueryRowContext(ctx, updateFriendshipStatus,
+		arg.RequesterID,
+		arg.AddresseeID,
+		arg.Status,
+		arg.LastActionUserID,
+		arg.IsChatAllowed,
+	)
+	var i ChatServiceFriendship
+	err := row.Scan(
+		&i.RequesterID,
+		&i.AddresseeID,
+		&i.LastActionUserID,
+		&i.IsChatAllowed,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
