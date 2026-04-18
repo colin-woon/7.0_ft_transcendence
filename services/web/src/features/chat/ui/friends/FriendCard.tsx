@@ -1,6 +1,5 @@
 import React from 'react';
-import Link from 'next/link';
-import { AvatarWithStatus } from '@/features/chat/ui';
+import { AvatarWithStatus, DirectMessageButton } from '@/features/chat/ui';
 import { Friendship } from '@/features/chat/models';
 
 export interface FriendCardProps {
@@ -54,15 +53,7 @@ export function FriendCard({ friend, isPending, onAccept, onDecline }: FriendCar
         ) : (
           <>
             {/* Message Quick Action (Links to their DM) */}
-            <Link 
-              href={`/messages/${friend.chatId}`} 
-              className="btn btn-circle btn-sm btn-ghost bg-base-200 border border-base-300 text-base-content hover:bg-base-300 tooltip"
-              data-tip="Message"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75c-1.63 0-3.17-.393-4.54-1.09l-4.14 1.38 1.38-4.14a9.712 9.712 0 0 1-1.09-4.54Z" />
-              </svg>
-            </Link>
+            <DirectMessageButton chatId={friend.chatId} />
 
             {/* More Options Dropdown */}
             <div className="dropdown dropdown-end">
