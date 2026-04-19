@@ -19,8 +19,11 @@ public class ChatService {
     @Inject
     ServiceCallExecutor sce;
 
+    @Inject
+    FaultToleranceExceptionMapper ftm;
+
     public Response proxyGet(String path) {
-        return ex.chatExecute(() -> chatClient.proxyGet(path));
+        return ftm.execute(() -> ex.chatExecute(() -> chatClient.proxyGet(path)));
     }
 
     public Response proxyPost(String path, byte[] body) {

@@ -23,8 +23,11 @@ public class AuthService {
     @Inject
     ServiceCallExecutor sce;
 
+    @Inject
+    FaultToleranceExceptionMapper ftm;
+
     public Response proxyGet(String path) {
-        return ex.authExecute(() -> authClient.proxyGet(path));
+        return ftm.execute(() -> ex.authExecute(() -> authClient.proxyGet(path)));
     }
 
     public Response proxyPost(String path, byte[] body) {

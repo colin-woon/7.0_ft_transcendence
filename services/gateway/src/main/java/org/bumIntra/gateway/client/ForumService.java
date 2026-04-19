@@ -19,8 +19,11 @@ public class ForumService {
     @Inject
     ServiceCallExecutor sce;
 
+    @Inject
+    FaultToleranceExceptionMapper ftm;
+
     public Response proxyGet(String path) {
-        return ex.forumExecute(() -> forumClient.proxyGet(path));
+        return ftm.execute(() -> ex.forumExecute(() -> forumClient.proxyGet(path)));
     }
 
     public Response proxyPost(String path, byte[] body) {
