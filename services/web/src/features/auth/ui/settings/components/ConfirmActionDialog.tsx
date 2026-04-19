@@ -55,11 +55,7 @@ export default function ConfirmActionDialog({
           </button>
         </div>
       </div>
-      <form method="dialog" className="modal-backdrop">
-        <button type="button" onClick={onClose}>
-          close
-        </button>
-      </form>
+      <div className="modal-backdrop" onClick={onClose} />
     </dialog>
   );
 }

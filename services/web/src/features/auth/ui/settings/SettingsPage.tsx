@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import intraIcon from "@/components/ui/imgs/42_icon.png";
+import PasswordForm from "@/features/auth/ui/settings/components/DropdownPassword";
 
 import {
   AlertCircle,
@@ -199,6 +200,11 @@ export default function SettingsPage({
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(
     null,
   );
+  const lastConfirmAction = useRef<ConfirmAction | null>(null);
+
+  if (confirmAction) {
+  lastConfirmAction.current = confirmAction;
+  }
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [adminActionError, setAdminActionError] = useState<string | null>(null);
   const [adminActionSuccess, setAdminActionSuccess] = useState<string | null>(
@@ -226,6 +232,7 @@ export default function SettingsPage({
     null,
   );
   const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const [reloadingIntra, setReloadingIntra] = useState(false);
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
 
@@ -531,7 +538,7 @@ export default function SettingsPage({
     );
   }
 
-  const confirmConfig = getConfirmConfig(confirmAction);
+  const confirmConfig = getConfirmConfig(confirmAction || lastConfirmAction.current);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -592,7 +599,7 @@ export default function SettingsPage({
                   Public Profile
                 </h2>
                 
-                {/* Actions moved to top right */}
+                {/* edit button and refresh button*/}
                 <div className="flex items-center gap-2">
                   {isAdmin && (
                     <button
@@ -703,109 +710,63 @@ export default function SettingsPage({
 
           {activeTab === "security" && (
             <>
-              <h2 className="text-base font-bold text-base-content">
-                Password
-              </h2>
-              <form className="space-y-3 mt-2" onSubmit={handlePasswordUpdate}>
-                {activeProfile.hasPassword && (
-                  <input
-                    type="password"
-                    autoComplete="current-password"
-                    placeholder="Current password"
-                    className="input input-bordered w-full"
-                    value={passwordForm.currentPassword ?? ""}
-                    onChange={(event) =>
-                      setPasswordForm((prev) => ({
-                        ...prev,
-                        currentPassword: event.target.value,
-                      }))
-                    }
-                  />
-                )}
-                {passwordErrors.currentPassword && (
-                  <p className="text-xs text-error">
-                    {passwordErrors.currentPassword}
-                  </p>
-                )}
+              {/* Password */}
+              <div className="flex items-end justify-between">
+                  <div className="flex flex-col justify-end">
+                    <h2 className="text-base font-bold text-base-content">Password</h2>
+                    <div className="mt-2 text-sm text-base-content/60">
+                      {activeProfile.hasPassword
+                        ? "Change your existing password"
+                        : "Set a password to log in with email and password"}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className={`btn btn-sm rounded-full px-4 font-semibold normal-case shrink-0 ${
+                      passwordOpen ? "btn-outline" : "btn-neutral"
+                    }`}
+                    onClick={() => setPasswordOpen(prev => !prev)}
+                  >
+                    {activeProfile.hasPassword ? "Change password" : "Set password"}
+                  </button>
+                </div>
 
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder={
-                    activeProfile.hasPassword
-                      ? "New password"
-                      : "Create password"
-                  }
-                  className="input input-bordered w-full"
-                  value={passwordForm.newPassword}
-                  onChange={(event) =>
-                    setPasswordForm((prev) => ({
-                      ...prev,
-                      newPassword: event.target.value,
-                    }))
-                  }
+              
+
+              {/* Expandable password form */}
+              {passwordOpen && (
+                <PasswordForm
+                  passwordOpen={passwordOpen}
+                  setPasswordOpen={setPasswordOpen}
+                  passwordForm={passwordForm}
+                  setPasswordForm={setPasswordForm}
+                  passwordErrors={passwordErrors}
+                  passwordFormError={passwordFormError}
+                  passwordFormSuccess={passwordFormSuccess}
+                  passwordSaving={passwordSaving}
+                  handlePasswordUpdate={handlePasswordUpdate}
+                  activeProfile={activeProfile}
                 />
-                {passwordErrors.newPassword && (
-                  <p className="text-xs text-error">
-                    {passwordErrors.newPassword}
-                  </p>
-                )}
-
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="Confirm password"
-                  className="input input-bordered w-full"
-                  value={passwordForm.confirmPassword}
-                  onChange={(event) =>
-                    setPasswordForm((prev) => ({
-                      ...prev,
-                      confirmPassword: event.target.value,
-                    }))
-                  }
-                />
-                {passwordErrors.confirmPassword && (
-                  <p className="text-xs text-error">
-                    {passwordErrors.confirmPassword}
-                  </p>
-                )}
-
-                <button
-                  type="submit"
-                  className="btn btn-sm btn-neutral"
-                  disabled={passwordSaving}
-                >
-                  {passwordSaving
-                    ? "Saving..."
-                    : activeProfile.hasPassword
-                      ? "Change password"
-                      : "Create password"}
-                </button>
-              </form>
-
-              {passwordFormError && (
-                <p className="text-xs text-error mt-2">{passwordFormError}</p>
-              )}
-              {passwordFormSuccess && (
-                <p className="text-xs text-success mt-2">
-                  {passwordFormSuccess}
-                </p>
               )}
 
-              <h2 className="text-base font-bold text-base-content mt-8">
-                Delete Account
-              </h2>
-              <p className="text-sm text-base-content/60 mt-1">
-                This action is irreversible and removes your account data.
-              </p>
-              <button
-                type="button"
-                className="btn btn-sm btn-error mt-3"
-                onClick={() => setConfirmAction({ kind: "delete-account" })}
-              >
-                <Trash2 size={14} />
-                Delete account
-              </button>
+              {/* Danger zone */}
+              <h2 className="text-base font-bold text-base-content mt-8">Danger Zone</h2>
+<div className="mt-2 divide-y divide-base-200 rounded-xl border border-base-200 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3.5 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-base-content">Delete account</p>
+                    <p className="text-xs text-base-content/50">Permanently removes your profile and all account data</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-error rounded-full px-4 font-semibold normal-case shrink-0"
+                    onClick={() => setConfirmAction({ kind: "delete-account" })}
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+                </div>
+              </div>
             </>
           )}
 
@@ -933,7 +894,7 @@ export default function SettingsPage({
               </div>
             </>
           )}
-
+          {/* admin tab */}
           {activeTab === "admin" && isAdmin && (
             <div className="rounded-lg border border-base-200 bg-base-100">
           
