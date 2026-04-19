@@ -23,47 +23,256 @@
 	"panels": [
 		{
 			"datasource": {
+				"uid": "prometheus"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"mappings": [
+						{
+							"options": {
+								"0": {
+									"color": "red",
+									"index": 1,
+									"text": "DOWN"
+								},
+								"1": {
+									"color": "green",
+									"index": 0,
+									"text": "UP"
+								}
+							},
+							"type": "value"
+						}
+					],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "yellow",
+								"value": 0
+							},
+							{
+								"color": "red",
+								"value": 0
+							},
+							{
+								"color": "green",
+								"value": 1
+							}
+						]
+					}
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 3,
+				"w": 3,
+				"x": 0,
+				"y": 0
+			},
+			"id": 3,
+			"options": {
+				"colorMode": "value",
+				"graphMode": "area",
+				"justifyMode": "auto",
+				"orientation": "auto",
+				"percentChangeColorMode": "standard",
+				"reduceOptions": {
+					"calcs": ["lastNotNull"],
+					"fields": "",
+					"values": false
+				},
+				"showPercentChange": false,
+				"textMode": "auto",
+				"wideLayout": true
+			},
+			"pluginVersion": "12.4.1",
+			"targets": [
+				{
+					"editorMode": "builder",
+					"expr": "up{job=\"auth\"}",
+					"legendFormat": "__auto",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Auth Status",
+			"type": "stat"
+		},
+		{
+			"datasource": {
+				"uid": "prometheus"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"mappings": [
+						{
+							"options": {
+								"0": {
+									"color": "red",
+									"index": 1,
+									"text": "DOWN"
+								},
+								"1": {
+									"color": "green",
+									"index": 0,
+									"text": "UP"
+								}
+							},
+							"type": "value"
+						}
+					],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "yellow",
+								"value": 0
+							},
+							{
+								"color": "red",
+								"value": 0
+							},
+							{
+								"color": "green",
+								"value": 1
+							}
+						]
+					}
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 3,
+				"w": 3,
+				"x": 3,
+				"y": 0
+			},
+			"id": 5,
+			"options": {
+				"colorMode": "value",
+				"graphMode": "area",
+				"justifyMode": "auto",
+				"orientation": "auto",
+				"percentChangeColorMode": "standard",
+				"reduceOptions": {
+					"calcs": ["lastNotNull"],
+					"fields": "",
+					"values": false
+				},
+				"showPercentChange": false,
+				"textMode": "auto",
+				"wideLayout": true
+			},
+			"pluginVersion": "12.4.1",
+			"targets": [
+				{
+					"editorMode": "builder",
+					"expr": "up{job=\"chat\"}",
+					"legendFormat": "__auto",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Chat Status",
+			"type": "stat"
+		},
+		{
+			"datasource": {
+				"uid": "prometheus"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"mappings": [
+						{
+							"options": {
+								"0": {
+									"color": "red",
+									"index": 1,
+									"text": "DOWN"
+								},
+								"1": {
+									"color": "green",
+									"index": 0,
+									"text": "UP"
+								}
+							},
+							"type": "value"
+						}
+					],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "yellow",
+								"value": 0
+							},
+							{
+								"color": "red",
+								"value": 0
+							},
+							{
+								"color": "green",
+								"value": 1
+							}
+						]
+					}
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 3,
+				"w": 3,
+				"x": 6,
+				"y": 0
+			},
+			"id": 4,
+			"options": {
+				"colorMode": "value",
+				"graphMode": "area",
+				"justifyMode": "auto",
+				"orientation": "auto",
+				"percentChangeColorMode": "standard",
+				"reduceOptions": {
+					"calcs": ["lastNotNull"],
+					"fields": "",
+					"values": false
+				},
+				"showPercentChange": false,
+				"textMode": "auto",
+				"wideLayout": true
+			},
+			"pluginVersion": "12.4.1",
+			"targets": [
+				{
+					"editorMode": "builder",
+					"expr": "up{job=\"gateway\"}",
+					"legendFormat": "__auto",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Gateway Status",
+			"type": "stat"
+		},
+		{
+			"datasource": {
 				"type": "prometheus",
 				"uid": "prometheus"
 			},
 			"fieldConfig": {
 				"defaults": {
 					"color": {
-						"mode": "palette-classic"
-					},
-					"custom": {
-						"axisBorderShow": false,
-						"axisCenteredZero": false,
-						"axisColorMode": "text",
-						"axisLabel": "",
-						"axisPlacement": "auto",
-						"barAlignment": 0,
-						"barWidthFactor": 0.6,
-						"drawStyle": "line",
-						"fillOpacity": 0,
-						"gradientMode": "none",
-						"hideFrom": {
-							"legend": false,
-							"tooltip": false,
-							"viz": false
-						},
-						"insertNulls": false,
-						"lineInterpolation": "linear",
-						"lineWidth": 1,
-						"pointSize": 5,
-						"scaleDistribution": {
-							"type": "linear"
-						},
-						"showPoints": "auto",
-						"showValues": false,
-						"spanNulls": false,
-						"stacking": {
-							"group": "A",
-							"mode": "none"
-						},
-						"thresholdsStyle": {
-							"mode": "off"
-						}
+						"mode": "thresholds"
 					},
 					"mappings": [],
 					"thresholds": {
@@ -75,7 +284,7 @@
 							},
 							{
 								"color": "red",
-								"value": 80
+								"value": 1
 							}
 						]
 					}
@@ -83,41 +292,398 @@
 				"overrides": []
 			},
 			"gridPos": {
-				"h": 8,
-				"w": 12,
-				"x": 0,
+				"h": 6,
+				"w": 4,
+				"x": 9,
 				"y": 0
 			},
-			"id": 1,
+			"id": 16,
 			"options": {
-				"legend": {
-					"calcs": [],
-					"displayMode": "list",
-					"placement": "bottom",
-					"showLegend": true
+				"colorMode": "value",
+				"graphMode": "area",
+				"justifyMode": "auto",
+				"orientation": "auto",
+				"percentChangeColorMode": "standard",
+				"reduceOptions": {
+					"calcs": ["lastNotNull"],
+					"fields": "",
+					"values": false
 				},
-				"tooltip": {
-					"hideZeros": false,
-					"mode": "single",
-					"sort": "none"
-				}
+				"showPercentChange": false,
+				"textMode": "auto",
+				"wideLayout": true
 			},
 			"pluginVersion": "12.4.1",
 			"targets": [
 				{
-					"datasource": {
-						"type": "prometheus",
-						"uid": "prometheus"
-					},
 					"editorMode": "builder",
-					"expr": "gateway_http_requests_total",
+					"expr": "sum(up{job=~\"auth|chat|forum|gateway|postgres|web\"} == bool 0)",
 					"legendFormat": "__auto",
 					"range": true,
 					"refId": "A"
 				}
 			],
-			"title": "Gateway Http Total",
-			"type": "timeseries"
+			"title": "Services Down Total",
+			"type": "stat"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "prometheus"
+			},
+			"description": "Current active alerts for service down",
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"custom": {
+						"align": "center",
+						"cellOptions": {
+							"type": "auto"
+						},
+						"filterable": true,
+						"footer": {
+							"reducers": []
+						},
+						"inspect": false,
+						"minWidth": 150,
+						"wrapHeaderText": false,
+						"wrapText": false
+					},
+					"mappings": [
+						{
+							"options": {
+								"critical": {
+									"color": "red",
+									"index": 0
+								}
+							},
+							"type": "value"
+						}
+					],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": 0
+							},
+							{
+								"color": "red",
+								"value": 1
+							}
+						]
+					}
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 6,
+				"w": 11,
+				"x": 13,
+				"y": 0
+			},
+			"id": 22,
+			"options": {
+				"cellHeight": "sm",
+				"enablePagination": false,
+				"frameIndex": 0,
+				"showHeader": true
+			},
+			"pluginVersion": "12.4.1",
+			"targets": [
+				{
+					"editorMode": "builder",
+					"exemplar": false,
+					"expr": "ALERTS",
+					"instant": true,
+					"legendFormat": "__auto",
+					"range": false,
+					"refId": "A"
+				}
+			],
+			"title": "Active Alerts",
+			"transformations": [
+				{
+					"id": "labelsToFields",
+					"options": {
+						"keepLabels": ["alertname", "severity", "alertstate"],
+						"mode": "columns"
+					}
+				},
+				{
+					"id": "merge",
+					"options": {}
+				},
+				{
+					"id": "organize",
+					"options": {
+						"excludeByName": {
+							"ALERTS": true,
+							"Time": false,
+							"Value": false,
+							"alertname": false,
+							"alertstate": false,
+							"{__name__=\"ALERTS\", alertname=\"ForumServiceDown\", alertstate=\"firing\", category=\"availability\", env=\"production\", instance=\"forum-service:8443\", job=\"forum\", severity=\"critical\"}": true
+						},
+						"includeByName": {},
+						"indexByName": {},
+						"orderBy": [
+							{
+								"desc": false,
+								"type": "name"
+							}
+						],
+						"orderByMode": "auto",
+						"renameByName": {}
+					}
+				}
+			],
+			"type": "table"
+		},
+		{
+			"datasource": {
+				"uid": "prometheus"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"mappings": [
+						{
+							"options": {
+								"0": {
+									"color": "red",
+									"index": 1,
+									"text": "DOWN"
+								},
+								"1": {
+									"color": "green",
+									"index": 0,
+									"text": "UP"
+								}
+							},
+							"type": "value"
+						}
+					],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "yellow",
+								"value": 0
+							},
+							{
+								"color": "red",
+								"value": 0
+							},
+							{
+								"color": "green",
+								"value": 1
+							}
+						]
+					}
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 3,
+				"w": 3,
+				"x": 0,
+				"y": 3
+			},
+			"id": 6,
+			"options": {
+				"colorMode": "value",
+				"graphMode": "area",
+				"justifyMode": "auto",
+				"orientation": "auto",
+				"percentChangeColorMode": "standard",
+				"reduceOptions": {
+					"calcs": ["lastNotNull"],
+					"fields": "",
+					"values": false
+				},
+				"showPercentChange": false,
+				"textMode": "auto",
+				"wideLayout": true
+			},
+			"pluginVersion": "12.4.1",
+			"targets": [
+				{
+					"editorMode": "builder",
+					"expr": "up{job=\"forum\"}",
+					"legendFormat": "__auto",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Forum Status",
+			"type": "stat"
+		},
+		{
+			"datasource": {
+				"uid": "prometheus"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"mappings": [
+						{
+							"options": {
+								"0": {
+									"color": "red",
+									"index": 1,
+									"text": "DOWN"
+								},
+								"1": {
+									"color": "green",
+									"index": 0,
+									"text": "UP"
+								}
+							},
+							"type": "value"
+						}
+					],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "yellow",
+								"value": 0
+							},
+							{
+								"color": "red",
+								"value": 0
+							},
+							{
+								"color": "green",
+								"value": 1
+							}
+						]
+					}
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 3,
+				"w": 3,
+				"x": 3,
+				"y": 3
+			},
+			"id": 7,
+			"options": {
+				"colorMode": "value",
+				"graphMode": "area",
+				"justifyMode": "auto",
+				"orientation": "auto",
+				"percentChangeColorMode": "standard",
+				"reduceOptions": {
+					"calcs": ["lastNotNull"],
+					"fields": "",
+					"values": false
+				},
+				"showPercentChange": false,
+				"textMode": "auto",
+				"wideLayout": true
+			},
+			"pluginVersion": "12.4.1",
+			"targets": [
+				{
+					"editorMode": "builder",
+					"expr": "up{job=\"postgres\"}",
+					"legendFormat": "__auto",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "DB Status",
+			"type": "stat"
+		},
+		{
+			"datasource": {
+				"uid": "prometheus"
+			},
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"mappings": [
+						{
+							"options": {
+								"0": {
+									"color": "red",
+									"index": 1,
+									"text": "DOWN"
+								},
+								"1": {
+									"color": "green",
+									"index": 0,
+									"text": "UP"
+								}
+							},
+							"type": "value"
+						}
+					],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "yellow",
+								"value": 0
+							},
+							{
+								"color": "red",
+								"value": 0
+							},
+							{
+								"color": "green",
+								"value": 1
+							}
+						]
+					}
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 3,
+				"w": 3,
+				"x": 6,
+				"y": 3
+			},
+			"id": 8,
+			"options": {
+				"colorMode": "value",
+				"graphMode": "area",
+				"justifyMode": "auto",
+				"orientation": "auto",
+				"percentChangeColorMode": "standard",
+				"reduceOptions": {
+					"calcs": ["lastNotNull"],
+					"fields": "",
+					"values": false
+				},
+				"showPercentChange": false,
+				"textMode": "auto",
+				"wideLayout": true
+			},
+			"pluginVersion": "12.4.1",
+			"targets": [
+				{
+					"editorMode": "builder",
+					"expr": "up{job=\"web\"}",
+					"legendFormat": "__auto",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Web Status",
+			"type": "stat"
 		},
 		{
 			"datasource": {
@@ -127,40 +693,63 @@
 			"fieldConfig": {
 				"defaults": {
 					"color": {
-						"mode": "palette-classic"
+						"mode": "thresholds"
 					},
 					"custom": {
+						"axisPlacement": "auto",
+						"fillOpacity": 70,
 						"hideFrom": {
 							"legend": false,
 							"tooltip": false,
 							"viz": false
-						}
+						},
+						"lineWidth": 1
 					},
-					"fieldMinMax": false,
-					"mappings": []
+					"mappings": [
+						{
+							"options": {
+								"0": {
+									"color": "red",
+									"index": 1,
+									"text": "DOWN"
+								},
+								"1": {
+									"color": "green",
+									"index": 0,
+									"text": "UP"
+								}
+							},
+							"type": "value"
+						}
+					],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": 0
+							}
+						]
+					}
 				},
 				"overrides": []
 			},
 			"gridPos": {
-				"h": 8,
-				"w": 12,
-				"x": 12,
-				"y": 0
+				"h": 7,
+				"w": 24,
+				"x": 0,
+				"y": 6
 			},
-			"id": 2,
+			"id": 15,
 			"options": {
+				"colWidth": 0.9,
 				"legend": {
 					"displayMode": "list",
 					"placement": "bottom",
 					"showLegend": true
 				},
-				"pieType": "pie",
-				"reduceOptions": {
-					"calcs": ["lastNotNull"],
-					"fields": "",
-					"values": false
-				},
-				"sort": "desc",
+				"rowHeight": 0.9,
+				"showValue": "auto",
 				"tooltip": {
 					"hideZeros": false,
 					"mode": "single",
@@ -171,30 +760,385 @@
 			"targets": [
 				{
 					"editorMode": "builder",
-					"expr": "gateway_http_errors_total",
+					"exemplar": false,
+					"expr": "up{job=~\"auth|forum|chat|gateway|postgres|web\"}",
+					"interval": "30s",
+					"legendFormat": "{{job}}",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Services History",
+			"type": "status-history"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "prometheus"
+			},
+			"description": "Total request of last 5min",
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"decimals": 0,
+					"fieldMinMax": false,
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": 0
+							}
+						]
+					}
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 3,
+				"w": 6,
+				"x": 0,
+				"y": 13
+			},
+			"id": 17,
+			"options": {
+				"colorMode": "value",
+				"graphMode": "area",
+				"justifyMode": "auto",
+				"orientation": "auto",
+				"percentChangeColorMode": "standard",
+				"reduceOptions": {
+					"calcs": ["lastNotNull"],
+					"fields": "",
+					"values": false
+				},
+				"showPercentChange": false,
+				"textMode": "auto",
+				"wideLayout": true
+			},
+			"pluginVersion": "12.4.1",
+			"targets": [
+				{
+					"editorMode": "builder",
+					"expr": "sum(increase(gateway_http_requests_total[5m]))",
 					"legendFormat": "__auto",
 					"range": true,
 					"refId": "A"
 				}
 			],
-			"title": "Gateway Http Errors Total",
-			"type": "piechart"
+			"title": "Gateway Total Request (5min)",
+			"type": "stat"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "prometheus"
+			},
+			"description": "Total Success request of last 5min",
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"decimals": 0,
+					"fieldMinMax": false,
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": 0
+							}
+						]
+					}
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 3,
+				"w": 6,
+				"x": 6,
+				"y": 13
+			},
+			"id": 24,
+			"options": {
+				"colorMode": "value",
+				"graphMode": "area",
+				"justifyMode": "auto",
+				"orientation": "auto",
+				"percentChangeColorMode": "standard",
+				"reduceOptions": {
+					"calcs": ["lastNotNull"],
+					"fields": "",
+					"values": false
+				},
+				"showPercentChange": false,
+				"textMode": "auto",
+				"wideLayout": true
+			},
+			"pluginVersion": "12.4.1",
+			"targets": [
+				{
+					"editorMode": "builder",
+					"expr": "sum(increase(gateway_http_requests_total{result=\"success\"}[5m]))",
+					"legendFormat": "__auto",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Gateway Total Success Request (5min)",
+			"type": "stat"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "prometheus"
+			},
+			"description": "Total failed request of last 5min",
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"decimals": 0,
+					"fieldMinMax": false,
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": 0
+							},
+							{
+								"color": "red",
+								"value": 1
+							}
+						]
+					}
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 3,
+				"w": 6,
+				"x": 12,
+				"y": 13
+			},
+			"id": 23,
+			"options": {
+				"colorMode": "value",
+				"graphMode": "area",
+				"justifyMode": "auto",
+				"orientation": "auto",
+				"percentChangeColorMode": "standard",
+				"reduceOptions": {
+					"calcs": ["lastNotNull"],
+					"fields": "",
+					"values": false
+				},
+				"showPercentChange": false,
+				"textMode": "auto",
+				"wideLayout": true
+			},
+			"pluginVersion": "12.4.1",
+			"targets": [
+				{
+					"editorMode": "builder",
+					"expr": "sum(increase(gateway_http_errors_total[5m]))",
+					"legendFormat": "__auto",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Gateway Total Failed Request (5min)",
+			"type": "stat"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "prometheus"
+			},
+			"description": "Result based on last 5min",
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"decimals": 0,
+					"fieldMinMax": false,
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": 0
+							},
+							{
+								"color": "red",
+								"value": 1
+							}
+						]
+					}
+				},
+				"overrides": []
+			},
+			"gridPos": {
+				"h": 5,
+				"w": 13,
+				"x": 0,
+				"y": 16
+			},
+			"id": 20,
+			"options": {
+				"displayMode": "basic",
+				"legend": {
+					"calcs": [],
+					"displayMode": "list",
+					"placement": "right",
+					"showLegend": false
+				},
+				"maxVizHeight": 300,
+				"minVizHeight": 16,
+				"minVizWidth": 8,
+				"namePlacement": "left",
+				"orientation": "horizontal",
+				"reduceOptions": {
+					"calcs": ["lastNotNull"],
+					"fields": "",
+					"values": false
+				},
+				"showUnfilled": false,
+				"sizing": "auto",
+				"text": {},
+				"valueMode": "color"
+			},
+			"pluginVersion": "12.4.1",
+			"targets": [
+				{
+					"editorMode": "builder",
+					"exemplar": false,
+					"expr": "sum by(error_code) (increase(gateway_http_errors_total[5m]))",
+					"format": "time_series",
+					"instant": false,
+					"legendFormat": "__auto",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Errors by Code (5min)",
+			"type": "bargauge"
+		},
+		{
+			"datasource": {
+				"type": "prometheus",
+				"uid": "prometheus"
+			},
+			"description": "Result based on last 5min",
+			"fieldConfig": {
+				"defaults": {
+					"color": {
+						"mode": "thresholds"
+					},
+					"decimals": 0,
+					"fieldMinMax": false,
+					"mappings": [],
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{
+								"color": "green",
+								"value": 0
+							},
+							{
+								"color": "red",
+								"value": 1
+							}
+						]
+					}
+				},
+				"overrides": [
+					{
+						"matcher": {
+							"id": "byName",
+							"options": "ping"
+						},
+						"properties": [
+							{
+								"id": "displayName",
+								"value": "gateway"
+							}
+						]
+					}
+				]
+			},
+			"gridPos": {
+				"h": 5,
+				"w": 11,
+				"x": 13,
+				"y": 16
+			},
+			"id": 21,
+			"options": {
+				"displayMode": "basic",
+				"legend": {
+					"calcs": [],
+					"displayMode": "list",
+					"placement": "right",
+					"showLegend": false
+				},
+				"maxVizHeight": 300,
+				"minVizHeight": 16,
+				"minVizWidth": 8,
+				"namePlacement": "left",
+				"orientation": "auto",
+				"reduceOptions": {
+					"calcs": ["lastNotNull"],
+					"fields": "",
+					"values": false
+				},
+				"showUnfilled": false,
+				"sizing": "auto",
+				"text": {},
+				"valueMode": "color"
+			},
+			"pluginVersion": "12.4.1",
+			"targets": [
+				{
+					"editorMode": "builder",
+					"exemplar": false,
+					"expr": "sum by(service) (increase(gateway_http_errors_total[5m]))",
+					"format": "time_series",
+					"instant": false,
+					"legendFormat": "__auto",
+					"range": true,
+					"refId": "A"
+				}
+			],
+			"title": "Errors by Services (5min)",
+			"type": "bargauge"
 		}
 	],
 	"preload": false,
+	"refresh": "5s",
 	"schemaVersion": 42,
 	"tags": [],
 	"templating": {
 		"list": []
 	},
 	"time": {
-		"from": "now-6h",
+		"from": "now-3h",
 		"to": "now"
 	},
 	"timepicker": {},
 	"timezone": "browser",
 	"title": "42Overflow",
 	"uid": "ad7f5wx",
-	"version": 8,
+	"version": 61,
 	"weekStart": ""
 }
