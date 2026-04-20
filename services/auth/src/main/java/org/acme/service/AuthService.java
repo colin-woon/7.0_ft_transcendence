@@ -1,7 +1,6 @@
 package org.acme.service;
 
 import java.time.Instant;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,19 +45,10 @@ public class AuthService {
 	HttpServerRequest request;
 
 	@Inject
+	CookieService cookieService;
+
+	@Inject
 	AvatarStorageService avatarStorageService;
-
-	@ConfigProperty(name = "app.domain.name", defaultValue = "localhost")
-	String domain;
-
-	@ConfigProperty(name = "refresh.expiry", defaultValue = "86400")
-	Long refreshExpiry;
-
-	@ConfigProperty(name = "access.expiry", defaultValue = "600")
-	Long accessExpiry;
-
-	@ConfigProperty(name = "secure.cookies", defaultValue = "false")
-	Boolean secureCookies;
 
 	@ConfigProperty(name = "max.sessions.per.user", defaultValue = "5")
 	Integer maxSessionsPerUser;
@@ -88,7 +78,7 @@ public class AuthService {
 				.sign();
 
 		IntraInfoDTO intrainfo = user.intra != null ? new IntraInfoDTO(user.intra) : null;
-		return new UserResponseDTO(accessToken, Instant.now().plusSeconds(accessExpiry),
+		return new UserResponseDTO(accessToken, Instant.now().plus(cookieService.accessTokenLifetime()),
 			avatarStorageService.toUserInfoDTO(user, intrainfo));
 	}
 
@@ -97,7 +87,7 @@ public class AuthService {
 		User user = identity.getAttribute("user");
 		return createSessionCookieForUser(user);
 	}
-
+	
 	@Transactional
 	public NewCookie createSessionCookieForUser(User user) {
 		if (user == null) {
@@ -108,7 +98,7 @@ public class AuthService {
 			LOG.warn("Banned user attempted to create session");
 			throw new WebApplicationException("User is banned", 403);
 		}
-		Instant expiry = Instant.now().plusSeconds(refreshExpiry);
+		Instant expiry = Instant.now().plus(cookieService.sessionLifetime());
 
 		String sessionId = UUID.randomUUID().toString();
 		Session newSession = new Session();
@@ -129,61 +119,7 @@ public class AuthService {
 		sessionRepository.persist(newSession);
 		LOG.debug("Created new session");
 
-		NewCookie cookie = new NewCookie.Builder("sessionId")
-			.value(sessionId)
-			.path("/")
-			.domain(domain)
-			.expiry(Date.from(expiry))
-			.maxAge(refreshExpiry.intValue())
-			.sameSite(NewCookie.SameSite.LAX)
-			.secure(secureCookies)
-			.httpOnly(true)
-			.comment("The session id that should be sent to refresh the access token")
-			.build();
-
-		return cookie;
-	}
-
-	public NewCookie[] clearOIDCCookies() {
-		NewCookie clearDefault = new NewCookie.Builder("q_session")
-			.value("")
-			.path("/")
-			.domain(domain)
-			.maxAge(0)
-			.secure(secureCookies)
-			.httpOnly(true)
-			.build();
-		NewCookie clearGoogle = new NewCookie.Builder("q_session_google")
-			.value("")
-			.path("/")
-			.domain(domain)
-			.maxAge(0)
-			.secure(secureCookies)
-			.httpOnly(true)
-			.build();
-		NewCookie clear42 = new NewCookie.Builder("q_session_42")
-			.value("")
-			.path("/")
-			.domain(domain)
-			.maxAge(0)
-			.secure(secureCookies)
-			.httpOnly(true)
-			.build();
-		return new NewCookie[] { clearDefault, clearGoogle, clear42 };
-	}
-
-	public NewCookie createAccessTokenCookie(String accessToken) {
-		return new NewCookie.Builder("accessToken")
-			.value(accessToken)
-			.path("/")
-			.domain(domain)
-			.expiry(Date.from(Instant.now().plusSeconds(accessExpiry)))
-			.maxAge(accessExpiry.intValue())
-			.sameSite(NewCookie.SameSite.LAX)
-			.secure(secureCookies)
-			.httpOnly(true)
-			.comment("The access token for websocket and SSE use")
-			.build();
+		return cookieService.createSessionCookie(sessionId, expiry);
 	}
 
 	@Transactional
@@ -223,12 +159,12 @@ public class AuthService {
 				.sign();
 
 		IntraInfoDTO intrainfo = user.intra != null ? new IntraInfoDTO(user.intra) : null;
-		return new UserResponseDTO(accessToken, Instant.now().plusSeconds(accessExpiry),
+		return new UserResponseDTO(accessToken, Instant.now().plus(cookieService.accessTokenLifetime()),
 			avatarStorageService.toUserInfoDTO(user, intrainfo));
 	}
 
 	@Transactional
-	public NewCookie deleteSession(String targetSessionId, String cookieSessionId, Long userId) {
+	public NewCookie[] deleteSession(String targetSessionId, String cookieSessionId, Long userId) {
 		String sessionToDelete = (targetSessionId != null && !targetSessionId.isEmpty())
 			? targetSessionId : cookieSessionId;
 
@@ -252,20 +188,13 @@ public class AuthService {
 		LOG.debug("Session deleted during logout");
 
 		if (sessionToDelete.equals(cookieSessionId)) {
-			return new NewCookie.Builder("sessionId")
-				.value("")
-				.path("/")
-				.domain(domain)
-				.maxAge(0)
-				.secure(secureCookies)
-				.httpOnly(true)
-				.build();
+			return cookieService.clearAuthCookies();
 		}
-		return null;
+		return new NewCookie[0];
 	}
 
 	@Transactional
-	public NewCookie deleteAllSessions(Long userId) {
+	public NewCookie[] deleteAllSessions(Long userId) {
 		User user = userRepository.findById(userId);
 		if (user == null) {
 			LOG.warn("User not found for global logout");
@@ -274,15 +203,19 @@ public class AuthService {
 
 		sessionRepository.deleteByUserId(userId);
 		LOG.debug("Deleted all user sessions");
-		return new NewCookie.Builder("sessionId")
-			.value("")
-			.path("/")
-			.domain(domain)
-			.maxAge(0)
-			.secure(secureCookies)
-			.httpOnly(true)
-			.comment("The session id to replace the old one, effectively logging out the user")
-			.build();
+		return cookieService.clearAuthCookies();
+	}
+
+	public NewCookie createAccessTokenCookie(String accessToken) {
+		return cookieService.createAccessTokenCookie(accessToken);
+	}
+
+	public NewCookie[] clearAccessTokenCookies() {
+		return cookieService.clearAccessTokenCookies();
+	}
+
+	public NewCookie[] clearOIDCCookies() {
+		return cookieService.clearOIDCCookies();
 	}
 
 	public List<@NonNull SessionDTO> listSessions(Long userId, String currentSessionId) {
@@ -309,7 +242,7 @@ public class AuthService {
 			long userCount = userRepository.count();
 			health.put("database", Map.of("status", "ok", "userCount", userCount));
 		} catch (Exception e) {
-			health.put("database", Map.of("status", "error", "message", e.getMessage()));
+			health.put("database", Map.of("status", "error", "message", "Database unavailable"));
 			health.put("status", "degraded");
 		}
 
@@ -318,7 +251,7 @@ public class AuthService {
 			long activeSessionCount = sessionRepository.count();
 			health.put("sessions", Map.of("status", "ok", "activeCount", activeSessionCount));
 		} catch (Exception e) {
-			health.put("sessions", Map.of("status", "error", "message", e.getMessage()));
+			health.put("sessions", Map.of("status", "error", "message", "Session store unavailable"));
 			health.put("status", "degraded");
 		}
 
@@ -327,7 +260,7 @@ public class AuthService {
 			Jwt.subject("healthcheck").sign();
 			health.put("jwt", Map.of("status", "ok"));
 		} catch (Exception e) {
-			health.put("jwt", Map.of("status", "error", "message", e.getMessage()));
+			health.put("jwt", Map.of("status", "error", "message", "JWT signing unavailable"));
 			health.put("status", "degraded");
 		}
 
