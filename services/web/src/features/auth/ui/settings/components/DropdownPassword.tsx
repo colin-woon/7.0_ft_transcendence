@@ -45,14 +45,14 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
           {activeProfile.hasPassword && (
             <div className="pb-4 border-b border-base-200/60">
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold uppercase tracking-wider text-base-content/60">
+                <span className="text-xs font-semibold uppercase tracking-wider text-base-content/100">
                   Current password
                 </span>
                 <input
                   type="password"
                   autoComplete="current-password"
                   placeholder="Enter current password"
-                  className="input h-10 w-full rounded-md text-sm bg-base-100 shadow-sm border border-base-200 focus:outline-none focus:border-base-300 focus:ring-2 focus:ring-base-300/50 transition-all"
+                  className="input h-10 w-full rounded-md text-sm bg-base-100 border-neutral/70 border-2 focus:border-neutral focus:ring-1 focus:ring-neutral/30 focus:outline-none transition-all placeholder:text-base-content/40"
                   value={passwordForm.currentPassword ?? ""}
                   onChange={(event) =>
                     setPasswordForm((prev: any) => ({
@@ -72,7 +72,7 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
 
           <div className="space-y-4">
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-base-content/60">
+              <span className="text-xs font-semibold uppercase tracking-wider text-base-content/100">
                 {activeProfile.hasPassword ? "New password" : "Create password"}
               </span>
               <input
@@ -83,7 +83,7 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
                     ? "Enter new password"
                     : "Create a password"
                 }
-                className="input h-10 w-full rounded-md text-sm bg-base-100 shadow-sm border border-base-200 focus:outline-none focus:border-base-300 focus:ring-2 focus:ring-base-300/50 transition-all"
+                className="input h-10 w-full rounded-md text-sm bg-base-100 border-neutral/70 border-2 focus:border-neutral focus:ring-1 focus:ring-neutral/30 focus:outline-none transition-all placeholder:text-base-content/40"
                 value={passwordForm.newPassword}
                 onChange={(event) =>
                   setPasswordForm((prev: any) => ({
@@ -100,14 +100,14 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
             </label>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-base-content/60">
+              <span className="text-xs font-semibold uppercase tracking-wider text-base-content/100">
                 Confirm password
               </span>
               <input
                 type="password"
                 autoComplete="new-password"
                 placeholder="Confirm your password"
-                className="input h-10 w-full rounded-md text-sm bg-base-100 shadow-sm border border-base-200 focus:outline-none focus:border-base-300 focus:ring-2 focus:ring-base-300/50 transition-all"
+                className="input h-10 w-full rounded-md text-sm bg-base-100 border-neutral/70 border-2 focus:border-neutral focus:ring-1 focus:ring-neutral/30 focus:outline-none transition-all placeholder:text-base-content/40"
                 value={passwordForm.confirmPassword}
                 onChange={(event) =>
                   setPasswordForm((prev: any) => ({
