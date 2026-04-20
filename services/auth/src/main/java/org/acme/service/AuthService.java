@@ -1,5 +1,6 @@
 package org.acme.service;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +50,9 @@ public class AuthService {
 
 	@Inject
 	AvatarStorageService avatarStorageService;
+
+	@ConfigProperty(name = "app.public.url", defaultValue = "https://localhost")
+	String appPublicUrl;
 
 	@ConfigProperty(name = "max.sessions.per.user", defaultValue = "5")
 	Integer maxSessionsPerUser;
@@ -132,7 +136,7 @@ public class AuthService {
 		Session session = sessionRepository.findBySessionId(sessionId)
 				.orElseThrow(() -> {
 					LOG.debug("Refresh attempted with invalid session ID");
-					return new WebApplicationException("Session not found", 404);
+					return new WebApplicationException("Invalid session", 401);
 				});
 
 		if (session.expiresAt.isBefore(Instant.now())) {
@@ -176,7 +180,7 @@ public class AuthService {
 		Session session = sessionRepository.findBySessionId(sessionToDelete)
 				.orElseThrow(() -> {
 					LOG.debug("Logout attempted with invalid session ID");
-					return new WebApplicationException("Session not found", 404);
+					return new WebApplicationException("Invalid session", 401);
 				});
 
 		if (!session.userId.equals(userId)) {
@@ -216,6 +220,19 @@ public class AuthService {
 
 	public NewCookie[] clearOIDCCookies() {
 		return cookieService.clearOIDCCookies();
+	}
+
+	public URI resolvePostLoginRedirect() {
+		String base = appPublicUrl == null ? "" : appPublicUrl.trim();
+		if (base.isBlank()) {
+			base = "https://localhost";
+		}
+
+		if (base.endsWith("/")) {
+			base = base.substring(0, base.length() - 1);
+		}
+
+		return URI.create(base + "/profile");
 	}
 
 	public List<@NonNull SessionDTO> listSessions(Long userId, String currentSessionId) {

@@ -364,7 +364,7 @@ public class Session {
 
 ### DTOs
 
-**UserInfoDTO**: Complete user information (for /auth/me, /auth/users/{id})
+**UserInfoDTO**: Complete user information (for /api/auth/me, /api/auth/users/{id})
 
 **UserSummaryDTO**: Brief info for lists/searches (id, username, fullName, avatarUrl)
 
@@ -380,7 +380,7 @@ public class Session {
 
 ```
 1. User clicks "Login with Google"
-   → Frontend redirects to: GET /auth/login/google
+   → Frontend redirects to: GET /api/public/auth/login/google
 
 2. UserSyncAugmentor intercepts authentication
    → Extracts UserInfo from Google
@@ -394,7 +394,7 @@ public class Session {
 
 4. UserSyncAugmentor adds User to SecurityIdentity
 
-5. AuthResource.login() executes
+5. PublicAuthResource.login() executes
    → Calls AuthService.createToken() → generates JWT
    → Calls AuthService.createSessionCookie() → creates session in DB
    → Returns access token + session cookie
@@ -419,7 +419,7 @@ public class Session {
 ### 3. Token Refresh Flow
 
 ```
-1. Client sends POST /auth/refresh with sessionId cookie
+1. Client sends POST /api/public/auth/refresh with sessionId cookie
 
 2. AuthService.refreshToken()
    → Validate sessionId exists in database

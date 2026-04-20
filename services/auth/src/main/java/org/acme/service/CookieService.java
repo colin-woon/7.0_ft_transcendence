@@ -28,7 +28,7 @@ public class CookieService {
 	@ConfigProperty(name = "access.expiry", defaultValue = "600")
 	Long accessExpiry;
 
-	@ConfigProperty(name = "secure.cookies", defaultValue = "false")
+	@ConfigProperty(name = "secure.cookies", defaultValue = "true")
 	Boolean secureCookies;
 
 	public Duration accessTokenLifetime() {

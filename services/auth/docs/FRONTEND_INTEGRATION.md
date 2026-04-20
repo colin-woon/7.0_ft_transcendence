@@ -19,7 +19,7 @@ The Auth Service provides OAuth-based authentication with JWT access tokens and 
 ```typescript
 // src/services/authService.ts
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost';
 
 interface User {
   id: number;
@@ -51,7 +51,7 @@ class AuthService {
    */
   loginWithProvider(provider: 'google' | '42') {
     // Redirect to auth service OAuth endpoint
-    window.location.href = `${API_BASE_URL}/auth/login/${provider}`;
+    window.location.href = `${API_BASE_URL}/api/public/auth/login/${provider}`;
   }
 
   /**
@@ -75,7 +75,7 @@ class AuthService {
    * Refresh access token using refresh cookie
    */
   async refreshAccessToken(): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    const response = await fetch(`${API_BASE_URL}/api/public/auth/refresh`, {
       method: 'POST',
       credentials: 'include', // Important: sends cookies
     });
@@ -162,7 +162,7 @@ class AuthService {
    * Get current user profile
    */
   async getCurrentUser(): Promise<User> {
-    const response = await this.authenticatedFetch(`${API_BASE_URL}/auth/me`);
+    const response = await this.authenticatedFetch(`${API_BASE_URL}/api/auth/me`);
     
     if (!response.ok) {
       throw new Error('Failed to fetch user profile');
@@ -180,7 +180,7 @@ class AuthService {
     avatarUrl?: string;
     bio?: string;
   }): Promise<User> {
-    const response = await this.authenticatedFetch(`${API_BASE_URL}/auth/me`, {
+    const response = await this.authenticatedFetch(`${API_BASE_URL}/api/auth/me`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
@@ -204,7 +204,7 @@ class AuthService {
       size: size.toString(),
     });
 
-    const response = await fetch(`${API_BASE_URL}/auth/users?${params}`);
+    const response = await fetch(`${API_BASE_URL}/api/auth/users?${params}`);
     
     if (!response.ok) {
       throw new Error('Failed to search users');
@@ -217,7 +217,7 @@ class AuthService {
    * Get user by ID
    */
   async getUserById(userId: number): Promise<User> {
-    const response = await fetch(`${API_BASE_URL}/auth/users/${userId}`);
+    const response = await fetch(`${API_BASE_URL}/api/auth/users/${userId}`);
     
     if (!response.ok) {
       throw new Error('User not found');
@@ -231,7 +231,7 @@ class AuthService {
    */
   async logout(): Promise<void> {
     try {
-      await this.authenticatedFetch(`${API_BASE_URL}/auth/logout`, {
+      await this.authenticatedFetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
       });
     } catch (error) {
@@ -251,7 +251,7 @@ class AuthService {
    * Delete user account
    */
   async deleteAccount(): Promise<void> {
-    await this.authenticatedFetch(`${API_BASE_URL}/auth/delete`, {
+    await this.authenticatedFetch(`${API_BASE_URL}/api/auth/delete`, {
       method: 'DELETE',
     });
     
