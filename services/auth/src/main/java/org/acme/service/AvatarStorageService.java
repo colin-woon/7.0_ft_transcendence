@@ -12,7 +12,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -21,7 +23,9 @@ import javax.imageio.ImageIO;
 import org.acme.dto.IntraInfoDTO;
 import org.acme.dto.UserInfoDTO;
 import org.acme.dto.UserSummaryDTO;
+import org.acme.model.Intra;
 import org.acme.model.User;
+import org.acme.repository.UserRepository;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -44,6 +48,9 @@ public class AvatarStorageService {
 
     @ConfigProperty(name = "app.avatar.max-bytes", defaultValue = "2097152")
     long maxAvatarBytes;
+
+    @jakarta.inject.Inject
+    UserRepository userRepository;
 
     private Path storagePath;
 
@@ -152,15 +159,73 @@ public class AvatarStorageService {
 
     public UserInfoDTO toUserInfoDTO(User user, IntraInfoDTO intraInfo) {
         UserInfoDTO dto = new UserInfoDTO(user, intraInfo);
-        dto.avatarImage = toImageDataUrl(user.avatarUrl);
+        String managedImage = toImageDataUrl(user.avatarUrl);
+        String fallbackRemote = extractIntraImageLink(intraInfo);
+        dto.avatarImage = managedImage != null
+            ? managedImage
+            : firstNonBlank(user.avatarUrl, fallbackRemote);
         return dto;
     }
 
     public List<UserSummaryDTO> toUserSummaryDTOs(List<UserSummaryDTO> summaries) {
+        Map<Long, String> fallbackByUserId = loadIntraFallbacksForSummaries(summaries);
         for (UserSummaryDTO summary : summaries) {
-            summary.avatarImage = toImageDataUrl(summary.avatarPath);
+            String managedImage = toImageDataUrl(summary.avatarPath);
+            String remoteFallback = fallbackByUserId.get(summary.id);
+            summary.avatarImage = managedImage != null
+                ? managedImage
+                : firstNonBlank(summary.avatarPath, remoteFallback);
         }
         return summaries;
+    }
+
+    private String firstNonBlank(String primary, String fallback) {
+        if (primary != null && !primary.isBlank()) {
+            return primary;
+        }
+        if (fallback != null && !fallback.isBlank()) {
+            return fallback;
+        }
+        return null;
+    }
+
+    private String extractIntraImageLink(IntraInfoDTO intraInfo) {
+        if (intraInfo == null || intraInfo.image == null) {
+            return null;
+        }
+        String link = intraInfo.image.link;
+        if (link == null || link.isBlank()) {
+            return null;
+        }
+        return link;
+    }
+
+    private Map<Long, String> loadIntraFallbacksForSummaries(List<UserSummaryDTO> summaries) {
+        if (summaries == null || summaries.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Long> unresolvedUserIds = summaries.stream()
+            .filter(summary -> summary.avatarPath == null || summary.avatarPath.isBlank())
+            .map(summary -> summary.id)
+            .toList();
+
+        if (unresolvedUserIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, String> fallbackByUserId = new HashMap<>();
+        for (User user : userRepository.findByIdsWithIntra(unresolvedUserIds)) {
+            Intra intra = user.intra;
+            if (intra == null || intra.image == null) {
+                continue;
+            }
+            String link = intra.image.link;
+            if (link != null && !link.isBlank()) {
+                fallbackByUserId.put(user.id, link);
+            }
+        }
+        return fallbackByUserId;
     }
 
     private String writeAsPng(BufferedImage image) {

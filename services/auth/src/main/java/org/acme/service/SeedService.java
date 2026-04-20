@@ -29,6 +29,7 @@ import jakarta.inject.Inject;
 @ApplicationScoped
 public class SeedService {
 	private static final Logger LOG = Logger.getLogger(SeedService.class);
+	private static final String UNSET_SENTINEL = "__unset__";
 	private static final Pattern STRONG_PASSWORD_PATTERN = Pattern.compile(
 		"^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,128}$");
 
@@ -89,10 +90,10 @@ public class SeedService {
 			return;
 		}
 
-		String adminEmail = seedAdminEmail == null ? "" : seedAdminEmail.trim().toLowerCase(Locale.ROOT);
-		String adminLogin = seedAdminLogin == null ? "" : seedAdminLogin.trim();
+		String adminEmail = normalizeSeedValue(seedAdminEmail).toLowerCase(Locale.ROOT);
+		String adminLogin = normalizeSeedValue(seedAdminLogin);
 		boolean loginExplicitlyConfigured = !adminLogin.isBlank();
-		String adminPassword = seedAdminPassword == null ? "" : seedAdminPassword;
+		String adminPassword = normalizeSeedValue(seedAdminPassword);
 
 		if (adminEmail.isBlank() || adminPassword.isBlank()) {
 			LOG.warn("seed.admin.enabled=true but seed.admin.email or seed.admin.password is blank; skipping admin bootstrap");
@@ -173,6 +174,19 @@ public class SeedService {
 		}
 
 		return candidate;
+	}
+
+	private String normalizeSeedValue(String value) {
+		if (value == null) {
+			return "";
+		}
+
+		String trimmed = value.trim();
+		if (trimmed.isBlank() || UNSET_SENTINEL.equalsIgnoreCase(trimmed)) {
+			return "";
+		}
+
+		return trimmed;
 	}
 
 	public void loadSeedFile() {

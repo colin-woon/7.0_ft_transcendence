@@ -4,6 +4,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import de.mkammerer.argon2.Argon2;
 import de.mkammerer.argon2.Argon2Factory;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
@@ -20,8 +21,17 @@ public class PasswordService {
 	@ConfigProperty(name = "auth.password.argon2.parallelism", defaultValue = "1")
 	int parallelism;
 
+	private String dummyHash;
+
 	public PasswordService() {
 		this.argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id);
+	}
+
+	@PostConstruct
+	@SuppressWarnings("unused")
+	void init() {
+		// Used to normalize verification timing for unknown users or non-password accounts.
+		dummyHash = hash("bumintra-dummy-password");
 	}
 
 	public String hash(String password) {
@@ -40,5 +50,11 @@ public class PasswordService {
 		} finally {
 			argon2.wipeArray(passwordChars);
 		}
+	}
+
+	public boolean verifyWithFallback(String rawPassword, String storedHash) {
+		String hashToVerify = (storedHash == null || storedHash.isBlank()) ? dummyHash : storedHash;
+		boolean matches = verify(rawPassword, hashToVerify);
+		return storedHash != null && !storedHash.isBlank() && matches;
 	}
 }
