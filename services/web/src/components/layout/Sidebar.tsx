@@ -1,31 +1,45 @@
 "use client";
+import {
+  FileText,
+  Home,
+  MessageCircle,
+  Search,
+  Settings,
+  Shield,
+  X,
+} from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
-import { Home, MessageCircle, Shield, FileText, LogOut, X, Laugh, Search, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/features/auth/models/AuthContext";
-import { useRouter } from "next/navigation";
 import { useAppShell } from "@/components/ui/ComponentLogic/Appshell/context/AppShellContext";
+import { useAuth } from "@/features/auth/models/AuthContext";
 // import PrivacyPolicy from "@/components/legal/PrivacyPolicy";
 // import TermsCondition from "@/components/legal/TermsCondition";
 
 export default function Sidebar() {
-  const { user, logout } = useAuth();
-  const router = useRouter();
+  const { user } = useAuth();
   const { isSidebarOpen: isOpen, closeSidebar: onClose } = useAppShell();
   const [isPolicyOpen, setIsPolicyOpen] = useState(false);
   const [policyTab, setPolicyTab] = useState<"privacy" | "terms">("privacy");
 
   const initials = user
-    ? user.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
-    : 'G';
+    ? user.fullName
+        .split(" ")
+        .map((n: string) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "G";
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -50,30 +64,45 @@ export default function Sidebar() {
   return (
     <>
       {isOpen && (
-        <div
+        <button
+          type="button"
           className="fixed inset-0 bg-black/40 z-40"
+          aria-label="Close sidebar overlay"
           onClick={onClose}
         />
       )}
 
-      <aside className={`absolute md:relative h-full flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out z-60 ${
-        isOpen ? 'w-64 md:w-72 lg:w-60' : 'w-0'
-      }`}>
+      <aside
+        className={`absolute md:relative h-full flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out z-60 ${
+          isOpen ? "w-64 md:w-72 lg:w-60" : "w-0"
+        }`}
+      >
         <div className="h-full flex flex-col bg-white border-r border-gray-200">
-
           {/* User Profile Block */}
           <Link
             href="/profile"
             onClick={onClose}
             className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 hover:bg-gray-50 transition"
           >
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-              {initials}
+            <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+              {user?.avatarImage ? (
+                <Image
+                  src={user.avatarImage}
+                  alt={`${user.fullName} avatar`}
+                  width={36}
+                  height={36}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                initials
+              )}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-slate-800 truncate">{user?.fullName ?? 'Guest'}</p>
+              <p className="text-sm font-medium text-slate-800 truncate">
+                {user?.fullName ?? "Guest"}
+              </p>
               <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-500">
-                {user?.role ?? 'STUDENT'}
+                {user?.role ?? "STUDENT"}
               </span>
             </div>
           </Link>
@@ -81,20 +110,48 @@ export default function Sidebar() {
           {/* Main Nav */}
           <div className="p-3 border-b border-gray-200">
             <nav className="space-y-1">
-              <Link onClick={onClose} href="/projects" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group">
-                <Home size={20} className="text-slate-600 group-hover:text-[#0f6f6b]" />
+              <Link
+                onClick={onClose}
+                href="/projects"
+                className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group"
+              >
+                <Home
+                  size={20}
+                  className="text-slate-600 group-hover:text-[#0f6f6b]"
+                />
                 <span className="group-hover:text-[#0f6f6b]">Home</span>
               </Link>
-              <Link onClick={onClose} href="/messages" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group">
-                <MessageCircle size={20} className="text-slate-600 group-hover:text-[#0f6f6b]" />
+              <Link
+                onClick={onClose}
+                href="/messages"
+                className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group"
+              >
+                <MessageCircle
+                  size={20}
+                  className="text-slate-600 group-hover:text-[#0f6f6b]"
+                />
                 <span className="group-hover:text-[#0f6f6b]">Chat</span>
               </Link>
-              <Link onClick={onClose} href="/search" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group">
-                <Search size={20} className="text-slate-600 group-hover:text-[#0f6f6b]" />
+              <Link
+                onClick={onClose}
+                href="/search"
+                className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group"
+              >
+                <Search
+                  size={20}
+                  className="text-slate-600 group-hover:text-[#0f6f6b]"
+                />
                 <span className="group-hover:text-[#0f6f6b]">Search</span>
               </Link>
-              <Link onClick={onClose} href="/settings" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group">
-                <Settings size={20} className="text-slate-600 group-hover:text-[#0f6f6b]" />
+              <Link
+                onClick={onClose}
+                href="/settings"
+                className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group"
+              >
+                <Settings
+                  size={20}
+                  className="text-slate-600 group-hover:text-[#0f6f6b]"
+                />
                 <span className="group-hover:text-[#0f6f6b]">Settings</span>
               </Link>
             </nav>
@@ -102,7 +159,9 @@ export default function Sidebar() {
 
           {/* Resources Section */}
           <div className="p-3">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 mb-2">Resources</h3>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 mb-2">
+              Resources
+            </h3>
             <div className="space-y-1">
               <button
                 type="button"
@@ -120,7 +179,7 @@ export default function Sidebar() {
                 <FileText size={18} className="text-slate-600" />
                 <span className="text-xs">Terms & Conditions</span>
               </button>
-              </div>
+            </div>
           </div>
 
           {/* Spacer */}
@@ -149,24 +208,32 @@ export default function Sidebar() {
               <p className="text-gray-400">42 overflow, Inc. © 2026</p>
             </div>
           </div>
-
         </div>
       </aside>
 
       {isPolicyOpen && (
-        <div
-          className="fixed inset-0 z-[120] bg-slate-900/55 backdrop-blur-sm p-4 sm:p-6"
-          onClick={() => setIsPolicyOpen(false)}
-        >
+        <div className="fixed inset-0 z-[120] bg-slate-900/55 backdrop-blur-sm p-4 sm:p-6">
+          <button
+            type="button"
+            aria-label="Close policy modal"
+            className="absolute inset-0"
+            onClick={() => setIsPolicyOpen(false)}
+          />
           <div
-            className="mx-auto flex h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(2,6,23,0.35)]"
-            onClick={(event) => event.stopPropagation()}
+            className="relative mx-auto flex h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(2,6,23,0.35)]"
+            role="dialog"
+            tabIndex={-1}
+            aria-modal="true"
           >
             <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 sm:px-5">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Legal</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+                  Legal
+                </p>
                 <h2 className="text-sm font-semibold text-slate-900">
-                  {policyTab === "privacy" ? "Privacy Policy" : "Terms & Conditions"}
+                  {policyTab === "privacy"
+                    ? "Privacy Policy"
+                    : "Terms & Conditions"}
                 </h2>
               </div>
 
