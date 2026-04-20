@@ -1,5 +1,7 @@
+'use client'
+
 import React from 'react';
-import { AvatarWithStatus, DirectMessageButton } from '@/features/chat/ui';
+import { FriendOptionsDropdown, AvatarWithStatus, DirectMessageButton } from '@/features/chat/ui';
 import { Friendship } from '@/features/chat/models';
 
 export interface FriendCardProps {
@@ -7,9 +9,10 @@ export interface FriendCardProps {
   isPending?: boolean;
   onAccept?: () => void;
   onDecline?: () => void;
+  onActionComplete?: () => void;
 }
 
-export function FriendCard({ friend, isPending, onAccept, onDecline }: FriendCardProps) {
+export function FriendCard({ friend, isPending, onAccept, onDecline, onActionComplete }: FriendCardProps) {
   return (
     <div className="group flex items-center justify-between p-2 rounded-lg hover:bg-base-200 transition-colors border-t border-transparent hover:border-base-300/50">
       {/* Left Side: Avatar & Info */}
@@ -18,7 +21,7 @@ export function FriendCard({ friend, isPending, onAccept, onDecline }: FriendCar
           userId={friend.friendId}
           chatId={friend.chatId}
           name={`Friend #${friend.friendId}`}
-          color="bg-primary" // Placeholder color
+          color="bg-primary"
         />
         <div className="flex flex-col truncate">
           <span className="font-semibold text-base-content truncate">Friend #{friend.friendId}</span>
@@ -28,7 +31,6 @@ export function FriendCard({ friend, isPending, onAccept, onDecline }: FriendCar
 
       {/* Right Side: Quick Actions & Dropdown */}
       <div className="flex items-center gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
-        
         {isPending ? (
           <>
             <button 
@@ -52,30 +54,10 @@ export function FriendCard({ friend, isPending, onAccept, onDecline }: FriendCar
           </>
         ) : (
           <>
-            {/* Message Quick Action (Links to their DM) */}
             <DirectMessageButton chatId={friend.chatId} />
-
-            {/* More Options Dropdown */}
-            <div className="dropdown dropdown-end">
-              <label 
-                tabIndex={0} 
-                className="btn btn-circle btn-sm btn-ghost bg-base-200 border border-base-300 text-base-content hover:bg-base-300 tooltip"
-                data-tip="More"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" />
-                </svg>
-              </label>
-              <ul tabIndex={0} className="dropdown-content z-50 menu p-2 shadow-lg bg-base-200 rounded-box w-48 mt-1 border border-base-300">
-                <li><a>View Profile</a></li>
-                <div className="divider my-0"></div>
-                <li><a className="text-error hover:bg-error/20 hover:text-error">Remove Friend</a></li>
-                <li><a className="text-error hover:bg-error/20 hover:text-error">Block User</a></li>
-              </ul>
-            </div>
+            <FriendOptionsDropdown friendId={friend.friendId} onActionComplete={onActionComplete} />
           </>
         )}
-
       </div>
     </div>
   );
