@@ -14,26 +14,73 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-func (s *Server) SendFriendRequest(w http.ResponseWriter, r *http.Request, receiverId int) {
+func (s *Server) SendFriendRequest(w http.ResponseWriter, r *http.Request, targetUserId int) {
 	ctx := r.Context()
 
-	requesterId, ok := r.Context().Value(userIDKey).(int)
+	callerId, ok := r.Context().Value(userIDKey).(int)
 	if !ok {
 		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
 		return
 	}
 
-	_, err := s.db.GetQueries().CreateFriendship(ctx, database.CreateFriendshipParams{
-		RequesterID:      int32(requesterId),
-		AddresseeID:      int32(receiverId),
-		LastActionUserID: int32(requesterId),
+	// 1. Check existing state (symmetric lookup)
+	existing, err := s.db.GetQueries().GetFriendship(ctx, database.GetFriendshipParams{
+		RequesterID: int32(callerId),
+		AddresseeID: int32(targetUserId),
+	})
+
+	if err == nil {
+		if !existing.Status.Valid {
+			http.Error(w, "Internal Server Error: Invalid status", http.StatusInternalServerError)
+			return
+		}
+		status := existing.Status.ChatServiceFriendStatus
+		switch status {
+		case database.ChatServiceFriendStatusAccepted:
+			http.Error(w, "Already friends", http.StatusConflict)
+			return
+		case database.ChatServiceFriendStatusBlocked:
+			if int32(callerId) != existing.LastActionUserID {
+				http.Error(w, "Blocked", http.StatusForbidden)
+				return
+			}
+			// If we are the one who blocked, allow "re-requesting" (effectively unblocking + pending)
+		case database.ChatServiceFriendStatusPending:
+			// If already pending, idempotent success if we were requester,
+			// or auto-accept if they were requester (but here we just return OK)
+			w.WriteHeader(http.StatusOK)
+			return
+		case database.ChatServiceFriendStatusRequested:
+			// Allowed to upgrade to pending
+		}
+
+		// Update existing row instead of creating new one
+		_, err = s.db.GetQueries().UpdateFriendshipStatus(ctx, database.UpdateFriendshipStatusParams{
+			RequesterID:      int32(callerId),
+			AddresseeID:      int32(targetUserId),
+			Status:           database.NullChatServiceFriendStatus{ChatServiceFriendStatus: database.ChatServiceFriendStatusPending, Valid: true},
+			LastActionUserID: int32(callerId),
+			IsChatAllowed:    existing.IsChatAllowed,
+		})
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		return
+	} else if !strings.Contains(err.Error(), "no rows") {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// 2. Insert if no record exists
+	_, err = s.db.GetQueries().CreateFriendship(ctx, database.CreateFriendshipParams{
+		RequesterID:      int32(callerId),
+		AddresseeID:      int32(targetUserId),
+		LastActionUserID: int32(callerId),
 	})
 
 	if err != nil {
-		if strings.Contains(err.Error(), "unique_violation") || strings.Contains(err.Error(), "duplicate key") {
-			http.Error(w, "Friendship already exists", http.StatusConflict)
-			return
-		}
 		if strings.Contains(err.Error(), "friendship_id_order") {
 			http.Error(w, "Cannot friend yourself", http.StatusBadRequest)
 			return

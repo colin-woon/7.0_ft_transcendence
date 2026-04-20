@@ -1,8 +1,9 @@
-
 'use client'
 
 import { Mail, MapPin, Calendar, Shield } from 'lucide-react'
 import { User } from '@/features/auth/api/authService'
+import { useAuth } from '@/features/auth/models/AuthContext'
+import { AddFriendButton, DirectMessageButton } from '@/features/chat/ui'
 
 interface ProfileCardProps {
   user: User | null
@@ -25,11 +26,11 @@ function Card({ children, className = '' }: { children: React.ReactNode; classNa
     </div>
   )
 }
-        // <span className="absolute top-3 right-4 text-xs font-semibold bg-white/20 text-white backdrop-blur-sm px-3 py-1 rounded-full border border-white/30">
-        //   {/* {profile.coalition} */}
-        // </span>
 
 export default function ProfileCard({ user, profile, initials }: ProfileCardProps) {
+  const { user: loggedInUser } = useAuth();
+  const loggedInUserId = loggedInUser?.id;
+
   return (
     <Card className="overflow-visible">
       <div className="h-15 bg-gradient-to-r from-[#0f6f6b] via-[#1a9e99] to-[#8EE7E3] relative rounded-t-2xl">
@@ -63,7 +64,17 @@ export default function ProfileCard({ user, profile, initials }: ProfileCardProp
               {profile.location ? <span className="flex items-center gap-1"><MapPin size={11} />{profile.location}</span> : null}
               <span className="flex items-center gap-1"><Calendar size={11} />Since {profile.since}</span>
             </div>
+            
+            <div className="mt-4 flex flex-wrap gap-2">
+              {user?.id !== loggedInUserId && (
+                <>
+                  <AddFriendButton targetUserId={user!.id} />
+                  <DirectMessageButton targetUserId={user!.id} />
+                </>
+              )}
+            </div>
           </div>
+          
           <div className="sm:min-w-[180px] space-y-1.5">
             <div className="flex justify-between text-xs font-medium text-slate-600">
               <span>Level {profile.level}</span>
