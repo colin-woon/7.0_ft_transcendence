@@ -1,7 +1,6 @@
 package org.bumIntra.gateway.filter;
 
 import java.util.List;
-import java.util.Set;
 
 import org.bumIntra.gateway.config.GatewayRequestHeaderConfig;
 
@@ -16,35 +15,35 @@ import jakarta.ws.rs.ext.Provider;
 @Priority(Priorities.AUTHENTICATION - 80)
 public class RequestHeaderAllowFilter implements ContainerRequestFilter {
 
-	@Inject
-	GatewayRequestHeaderConfig grhc;
+    @Inject
+    GatewayRequestHeaderConfig grhc;
 
-	@Override
-	public void filter(ContainerRequestContext request) {
+    @Override
+    public void filter(ContainerRequestContext request) {
 
-		// final Set<String> allowList = grhc.inboundAllowlistLower();
-		final List<String> denyPrefixes = grhc.inboundDenyPrefixesLower();
+        // final Set<String> allowList = grhc.inboundAllowlistLower();
+        final List<String> denyPrefixes = grhc.inboundDenyPrefixesLower();
 
-		var headers = request.getHeaders();
+        var headers = request.getHeaders();
 
-		headers.keySet().stream()
-				.filter(ks -> {
-					if (ks == null)
-						return false;
-					String lower = ks.toLowerCase();
-					return startsWithAny(lower, denyPrefixes);
-				})
-				.toList()
-				.forEach(headers::remove);
+        headers.keySet().stream()
+                .filter(ks -> {
+                    if (ks == null)
+                        return false;
+                    String lower = ks.toLowerCase();
+                    return startsWithAny(lower, denyPrefixes);
+                })
+                .toList()
+                .forEach(headers::remove);
 
-	}
+    }
 
-	private static boolean startsWithAny(String str, List<String> prefixes) {
-		for (var prefix : prefixes) {
-			if (!prefix.isBlank() && str.startsWith(prefix)) {
-				return true;
-			}
-		}
-		return false;
-	}
+    private static boolean startsWithAny(String str, List<String> prefixes) {
+        for (var prefix : prefixes) {
+            if (!prefix.isBlank() && str.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
