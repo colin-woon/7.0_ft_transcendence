@@ -60,6 +60,9 @@ public class AvatarStorageService {
         try {
             storagePath = Path.of(storagePathValue).normalize();
             Files.createDirectories(storagePath);
+            if (!Files.isWritable(storagePath)) {
+                throw new IllegalStateException("Avatar storage path is not writable: " + storagePath);
+            }
         } catch (IOException e) {
             throw new IllegalStateException("Failed to initialize avatar storage directory", e);
         }
