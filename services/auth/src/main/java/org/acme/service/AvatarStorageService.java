@@ -120,7 +120,7 @@ public class AvatarStorageService {
             Thread.currentThread().interrupt();
             LOG.warnf("Avatar mirror interrupted for %s", trimmedUrl);
             return trimmedUrl;
-        } catch (IOException | IllegalArgumentException e) {
+        } catch (IOException | IllegalArgumentException | WebApplicationException e) {
             LOG.warnf("Avatar mirror failed for %s: %s", trimmedUrl, e.getMessage());
             return trimmedUrl;
         } finally {
