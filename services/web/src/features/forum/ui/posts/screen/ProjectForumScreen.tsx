@@ -1,19 +1,16 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { MessageCircle, Search, Users, Zap } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Zap, MessageCircle, Users, Search } from "lucide-react";
-import type { Project } from "../../../models/projects";
-import PostVoteButtons from "../components/PostVoteButtons";
-import ProjectInfoCard from "../../projects/components/ProjectHeaderDetails";
-import { deleteForumPost } from "@/features/forum/api/moderation";
-import { PostModerationControls } from "@/features/forum/ui/moderation";
+import { useEffect, useMemo, useState } from "react";
 import TextType from "@/components/react-bits/TextType";
+import { deleteForumPost } from "@/features/forum/api/moderation";
+import { useAuthorNames } from "@/features/forum/hooks/useAuthorNames";
 import SubscriptionButton from "@/features/forum/ui/projects/components/SubscriptionButton";
-import CreatePostButton from "../../create/component/CreatePostButton";
-import { AnimatedPostsGrid } from "../../animations/AnimatedPostsGrid";
-import { PaginationControls } from "../../shared/PaginationControls";
 import ForumTrailButtons from "@/features/forum/ui/shared/ForumTrailButtons";
+import type { Project } from "../../../models/projects";
+import { AnimatedPostsGrid } from "../../animations/AnimatedPostsGrid";
+import CreatePostButton from "../../create/component/CreatePostButton";
+import { PaginationControls } from "../../shared/PaginationControls";
 
 const sortOptions = ["New", "Top"];
 
@@ -27,11 +24,17 @@ export default function ProjectForumPage({ project }: { project: Project }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [projectPosts, setProjectPosts] = useState(project.posts);
   const [isBusy, setIsBusy] = useState(false);
+  const authorIds = useMemo(
+    () => projectPosts.map((post) => post.authorId),
+    [projectPosts],
+  );
+  const resolveAuthorName = useAuthorNames(authorIds);
   const displayTags = project.tags?.length
     ? project.tags.slice(0, 4)
     : ["No Tag"];
 
   const handleSortChange = (sort: string) => {
+    setCurrentPage(1);
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.set("sort", sort);
     router.replace(`${pathname}?${nextParams.toString()}`);
@@ -39,6 +42,7 @@ export default function ProjectForumPage({ project }: { project: Project }) {
 
   useEffect(() => {
     setProjectPosts(project.posts);
+    setCurrentPage(1);
   }, [project.posts]);
 
   const filteredPosts = useMemo(() => {
@@ -63,7 +67,7 @@ export default function ProjectForumPage({ project }: { project: Project }) {
       filteredPosts.map((post) => ({
         id: post.id,
         title: post.title,
-        author: post.author,
+        author: resolveAuthorName(post.authorId),
         authorId: post.authorId,
         avatar: post.avatar,
         comments: post.replies,
@@ -74,7 +78,7 @@ export default function ProjectForumPage({ project }: { project: Project }) {
         timestamp: post.timestamp,
         isPinned: post.isPinned,
       })),
-    [filteredPosts],
+    [filteredPosts, resolveAuthorName],
   );
 
   const totalPages = Math.max(1, Math.ceil(rowPosts.length / PAGE_SIZE));
@@ -89,10 +93,6 @@ export default function ProjectForumPage({ project }: { project: Project }) {
     postSearch.trim().toLowerCase(),
     String(currentPage),
   ].join("|");
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeSort, postSearch, projectPosts]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -165,7 +165,10 @@ export default function ProjectForumPage({ project }: { project: Project }) {
                       type="text"
                       placeholder="Search posts..."
                       value={postSearch}
-                      onChange={(e) => setPostSearch(e.target.value)}
+                      onChange={(e) => {
+                        setCurrentPage(1);
+                        setPostSearch(e.target.value);
+                      }}
                       className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#8EE7E3] bg-gray-50 hover:border-[#8EE7E3] hover:shadow"
                     />
                   </div>
