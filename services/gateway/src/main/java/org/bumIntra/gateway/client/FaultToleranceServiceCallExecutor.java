@@ -23,6 +23,8 @@ public class FaultToleranceServiceCallExecutor {
     @CircuitBreaker(requestVolumeThreshold = 10,
             failureRatio = 0.6,
             delay = 4000,
+            failOn = RetryableServiceException.class,
+            skipOn = NonRetryableServiceException.class,
             successThreshold = 2
     )
     public <T> T authExecute(Supplier<T> serviceCall) {
@@ -43,6 +45,8 @@ public class FaultToleranceServiceCallExecutor {
     @CircuitBreaker(requestVolumeThreshold = 12,
             failureRatio = 0.7,
             delay = 5000,
+            failOn = RetryableServiceException.class,
+            skipOn = NonRetryableServiceException.class,
             successThreshold = 2
     )
     public <T> T forumExecute(Supplier<T> serviceCall) {
@@ -63,6 +67,8 @@ public class FaultToleranceServiceCallExecutor {
     @CircuitBreaker(requestVolumeThreshold = 12,
             failureRatio = 0.6,
             delay = 4000,
+            failOn = RetryableServiceException.class,
+            skipOn = NonRetryableServiceException.class,
             successThreshold = 2
     )
     public <T> T chatExecute(Supplier<T> serviceCall) {
@@ -81,10 +87,8 @@ public class FaultToleranceServiceCallExecutor {
     <T> T executeInner(Supplier<T> serviceCall) {
         try {
             return sce.execute(serviceCall);
-        } catch (RetryableServiceException rse) {
-            throw (GatewayException) rse.getCause();
-        } catch (NonRetryableServiceException nrse) {
-            throw (GatewayException) nrse.getCause();
+        } catch (RetryableServiceException | NonRetryableServiceException e) {
+            throw (GatewayException) e.getCause();
         } catch (GatewayException ge) {
             if (isRetryable(ge.getCode())) {
                 throw new RetryableServiceException(ge);
