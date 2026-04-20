@@ -3,10 +3,21 @@
 import { AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { User } from "@/features/auth/api/authService";
+import { useAdminUsers } from "@/features/auth/hooks/useAdminUsers";
+import { useUserLookup } from "@/features/auth/hooks/useUserLookup";
 import { useUserProfile } from "@/features/auth/hooks/useUserProfile";
 import { useAuth } from "@/features/auth/models/AuthContext";
+import ConfirmActionDialog from "@/features/auth/ui/settings/components/ConfirmActionDialog";
+import EditUserDialog, {
+  type EditUserDraft,
+} from "@/features/auth/ui/settings/components/EditUserDialog";
+import UserAdminActionButtons from "@/features/auth/ui/shared/UserAdminActionButtons";
+import {
+  fileToDataUrl,
+  validateAvatarFile,
+} from "@/features/auth/utils/avatarFile";
 import {
   extractAchievements,
   extractIntraSummary,
@@ -55,8 +66,27 @@ export default function ProfilePage({
   initialProfileErrorStatus,
 }: ProfilePageProps) {
   const router = useRouter();
-  const { user, isLoading: authLoading, error: authError } = useAuth();
+  const { user, isLoading: authLoading, error: authError, hasRole } = useAuth();
+  const isAdmin = hasRole("ADMIN");
   const viewingOwnProfile = !viewedUserId || viewedUserId === user?.id;
+  const {
+    updateUser,
+    logoutUser,
+    loading: adminLoading,
+    error: adminError,
+  } = useAdminUsers();
+  const { lookup } = useUserLookup({ cacheTtlMs: 5_000 });
+
+  const [quickActionError, setQuickActionError] = useState<string | null>(null);
+  const [confirmForceLogoutOpen, setConfirmForceLogoutOpen] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [editDraft, setEditDraft] = useState<EditUserDraft>({
+    username: "",
+    fullName: "",
+    bio: "",
+  });
 
   const {
     profile,
@@ -148,13 +178,105 @@ export default function ProfilePage({
     ? activeProfile.intraInfo.patroning.length
     : 0;
 
+  const viewedSubscribedProjectNames = useMemo(
+    () =>
+      !viewingOwnProfile && activeProfile?.intraInfo
+        ? collectNames(activeProfile.intraInfo.projectsUsers, (entry) => {
+            const project = readProperty(entry, "project");
+            const nameCandidate =
+              typeof project === "object"
+                ? readProperty(project, "name")
+                : readProperty(entry, "name");
+            return typeof nameCandidate === "string" ? nameCandidate : null;
+          })
+        : [],
+    [activeProfile?.intraInfo, viewingOwnProfile],
+  );
+
   const {
     subscribedProjects,
     suggestedProjects,
     loading: projectsLoading,
     error: projectsError,
     refetch: refetchProjects,
-  } = useProfileProjects(viewingOwnProfile && Boolean(user));
+  } = useProfileProjects({
+    enabled: Boolean(user),
+    subscribedProjectNames: viewedSubscribedProjectNames,
+    useProvidedSubscriptions: !viewingOwnProfile,
+  });
+
+  const openAdminEditDialog = async () => {
+    if (
+      !activeProfile?.id ||
+      !isAdmin ||
+      (user && activeProfile.id === user.id)
+    ) {
+      return;
+    }
+
+    const detailed = await lookup(activeProfile.id, true);
+    if (!detailed) return;
+
+    setEditDraft({
+      username: detailed.username,
+      fullName: detailed.fullName,
+      bio: detailed.bio ?? "",
+    });
+    setPendingAvatarFile(null);
+    setQuickActionError(null);
+    setEditOpen(true);
+  };
+
+  const saveAdminEdit = async () => {
+    if (!activeProfile?.id) return;
+
+    if (pendingAvatarFile) {
+      const validationError = validateAvatarFile(pendingAvatarFile);
+      if (validationError) {
+        setQuickActionError(validationError);
+        return;
+      }
+    }
+
+    const avatarFile = pendingAvatarFile
+      ? await fileToDataUrl(pendingAvatarFile)
+      : undefined;
+
+    const updated = await updateUser(activeProfile.id, {
+      username: editDraft.username.trim() || undefined,
+      fullName: editDraft.fullName.trim() || undefined,
+      bio: editDraft.bio.trim() || undefined,
+      avatarFile,
+    });
+
+    if (!updated) {
+      setQuickActionError(`Failed to update @${activeProfile.username}`);
+      return;
+    }
+
+    setPendingAvatarFile(null);
+    setEditOpen(false);
+    setQuickActionError(null);
+    await refetch();
+  };
+
+  const runForceLogout = async () => {
+    if (!activeProfile?.id) return;
+
+    setConfirmLoading(true);
+    setQuickActionError(null);
+    try {
+      const ok = await logoutUser(activeProfile.id);
+      if (!ok) {
+        setQuickActionError(
+          `Failed to force logout @${activeProfile.username}`,
+        );
+      }
+    } finally {
+      setConfirmLoading(false);
+      setConfirmForceLogoutOpen(false);
+    }
+  };
 
   const profileCardData = {
     level: intraSummary?.level ?? 0,
@@ -266,10 +388,12 @@ export default function ProfilePage({
 
   return (
     <div className="max-w-6xl mx-auto space-y-5 p-4">
-      {(authError || profileError) && (
+      {(authError || profileError || quickActionError || adminError) && (
         <div className="bg-red-50 text-red-700 rounded-2xl border border-red-200 p-4 text-sm inline-flex items-start gap-2 w-full">
           <AlertCircle size={16} className="mt-0.5" />
-          <span>{authError ?? profileError}</span>
+          <span>
+            {quickActionError ?? adminError ?? authError ?? profileError}
+          </span>
         </div>
       )}
 
@@ -277,6 +401,15 @@ export default function ProfilePage({
         user={activeProfile}
         profile={profileCardData}
         initials={initials}
+        adminActions={
+          isAdmin && user && activeProfile.id !== user.id ? (
+            <UserAdminActionButtons
+              disabled={adminLoading}
+              onEdit={() => void openAdminEditDialog()}
+              onForceLogout={() => setConfirmForceLogoutOpen(true)}
+            />
+          ) : undefined
+        }
       />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
@@ -458,22 +591,16 @@ export default function ProfilePage({
                 Current subscriptions and suggested forum projects.
               </p>
             </div>
-            {viewingOwnProfile ? (
-              <button
-                type="button"
-                onClick={() => void refetchProjects()}
-                className="btn btn-xs btn-ghost"
-              >
-                Refresh
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={() => void refetchProjects()}
+              className="btn btn-xs btn-ghost"
+            >
+              Refresh
+            </button>
           </div>
 
-          {!viewingOwnProfile ? (
-            <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-600">
-              Project subscriptions are only shown on your own profile.
-            </div>
-          ) : projectsLoading ? (
+          {projectsLoading ? (
             <div className="mt-4 inline-flex items-center gap-2 text-sm text-slate-600">
               <Loader2 size={14} className="animate-spin" />
               Loading project data...
@@ -492,7 +619,9 @@ export default function ProfilePage({
                 </h3>
                 {subscribedProjects.length === 0 ? (
                   <p className="text-sm text-slate-500">
-                    You are not subscribed to any projects yet.
+                    {viewingOwnProfile
+                      ? "You are not subscribed to any projects yet."
+                      : "No subscribed projects were detected for this user."}
                   </p>
                 ) : (
                   <ul className="space-y-2">
@@ -576,6 +705,35 @@ export default function ProfilePage({
           </button>
         </div>
       )}
+
+      <EditUserDialog
+        open={editOpen}
+        title="Edit Profile"
+        draft={editDraft}
+        saving={adminLoading}
+        error={quickActionError ?? adminError}
+        showAvatarUpload
+        avatarFileName={pendingAvatarFile?.name ?? null}
+        onAvatarFileChange={setPendingAvatarFile}
+        onChange={(next) => setEditDraft((prev) => ({ ...prev, ...next }))}
+        onClose={() => setEditOpen(false)}
+        onSubmit={saveAdminEdit}
+      />
+
+      <ConfirmActionDialog
+        open={confirmForceLogoutOpen}
+        title={
+          activeProfile
+            ? `Force logout @${activeProfile.username}`
+            : "Force logout"
+        }
+        message="This revokes all active sessions for the user."
+        confirmLabel="Force logout"
+        tone="warning"
+        loading={confirmLoading || adminLoading}
+        onClose={() => setConfirmForceLogoutOpen(false)}
+        onConfirm={runForceLogout}
+      />
     </div>
   );
 }

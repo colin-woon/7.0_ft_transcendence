@@ -16,6 +16,12 @@ interface UseProfileProjectsResult {
   refetch: () => Promise<void>;
 }
 
+interface UseProfileProjectsOptions {
+  enabled: boolean;
+  subscribedProjectNames?: string[];
+  useProvidedSubscriptions?: boolean;
+}
+
 function mapDifficulty(value: unknown): string {
   if (typeof value === "string" && value.trim().length > 0) {
     return value;
@@ -69,6 +75,10 @@ function toProject(raw: unknown): Project {
   };
 }
 
+function normalizeProjectName(value: string): string {
+  return value.trim().toLowerCase();
+}
+
 async function fetchProjectsPage(
   page: number,
   pageSize = 100,
@@ -102,7 +112,11 @@ async function fetchProjectsPage(
 /**
  * Loads forum projects for profile widgets and derives subscribed/suggested slices.
  */
-export function useProfileProjects(enabled: boolean): UseProfileProjectsResult {
+export function useProfileProjects({
+  enabled,
+  subscribedProjectNames = [],
+  useProvidedSubscriptions = false,
+}: UseProfileProjectsOptions): UseProfileProjectsResult {
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [subscribedIds, setSubscribedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
@@ -121,25 +135,7 @@ export function useProfileProjects(enabled: boolean): UseProfileProjectsResult {
     setError(null);
 
     try {
-      const [firstPage, subscriptionsResponse] = await Promise.all([
-        fetchProjectsPage(1),
-        fetch("/api/forum/projects/me/subscriptions", {
-          method: "GET",
-          cache: "no-store",
-        }),
-      ]);
-
-      if (!subscriptionsResponse.ok) {
-        throw new Error("Failed to fetch subscribed projects");
-      }
-
-      const subscriptionData = (await subscriptionsResponse.json()) as Array<{
-        id?: number;
-        project_id?: number;
-      }>;
-      const nextSubscribedIds = subscriptionData
-        .map((entry) => Number(entry.id ?? entry.project_id ?? 0))
-        .filter((id) => Number.isFinite(id) && id > 0);
+      const firstPage = await fetchProjectsPage(1);
 
       const totalPages = Math.max(1, Number(firstPage.total_pages ?? 1));
       let items = [...firstPage.items];
@@ -155,7 +151,42 @@ export function useProfileProjects(enabled: boolean): UseProfileProjectsResult {
         }
       }
 
-      setAllProjects(items.map((project) => toProject(project)));
+      const mappedProjects = items.map((project) => toProject(project));
+      const normalizedSubscribedNames = subscribedProjectNames
+        .map((name) => normalizeProjectName(name))
+        .filter((name) => name.length > 0);
+
+      let nextSubscribedIds: number[] = [];
+      if (useProvidedSubscriptions) {
+        const subscribedNameSet = new Set(normalizedSubscribedNames);
+        nextSubscribedIds = mappedProjects
+          .filter((project) =>
+            subscribedNameSet.has(normalizeProjectName(project.name)),
+          )
+          .map((project) => project.id);
+      } else {
+        const subscriptionsResponse = await fetch(
+          "/api/forum/projects/me/subscriptions",
+          {
+            method: "GET",
+            cache: "no-store",
+          },
+        );
+
+        if (!subscriptionsResponse.ok) {
+          throw new Error("Failed to fetch subscribed projects");
+        }
+
+        const subscriptionData = (await subscriptionsResponse.json()) as Array<{
+          id?: number;
+          project_id?: number;
+        }>;
+        nextSubscribedIds = subscriptionData
+          .map((entry) => Number(entry.id ?? entry.project_id ?? 0))
+          .filter((id) => Number.isFinite(id) && id > 0);
+      }
+
+      setAllProjects(mappedProjects);
       setSubscribedIds(nextSubscribedIds);
     } catch (err) {
       const message =
@@ -166,7 +197,7 @@ export function useProfileProjects(enabled: boolean): UseProfileProjectsResult {
     } finally {
       setLoading(false);
     }
-  }, [enabled]);
+  }, [enabled, subscribedProjectNames, useProvidedSubscriptions]);
 
   useEffect(() => {
     void load();

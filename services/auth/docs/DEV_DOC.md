@@ -419,7 +419,7 @@ public class Session {
 ### 3. Token Refresh Flow
 
 ```
-1. Client sends POST /api/public/auth/refresh with sessionId cookie
+1. Client sends POST /auth/refresh with sessionId cookie
 
 2. AuthService.refreshToken()
    → Validate sessionId exists in database

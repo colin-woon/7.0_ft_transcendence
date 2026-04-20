@@ -99,9 +99,6 @@ public class IntraService {
 		user.fullName = dto.usualFullName != null ? dto.usualFullName : dto.displayName;
 		if (dto.image != null && dto.image.link != null && !dto.image.link.isBlank()) {
 			user.avatarUrl = avatarStorageService.mirrorRemoteAvatar(dto.image.link, user.avatarUrl);
-		} else {
-			avatarStorageService.deleteManagedAvatar(user.avatarUrl);
-			user.avatarUrl = null;
 		}
 		userRepository.persist(user);
 	}

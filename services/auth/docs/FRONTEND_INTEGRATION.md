@@ -19,7 +19,7 @@ The Auth Service provides OAuth-based authentication with JWT access tokens and 
 ```typescript
 // src/services/authService.ts
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
 
 interface User {
   id: number;
@@ -75,7 +75,7 @@ class AuthService {
    * Refresh access token using refresh cookie
    */
   async refreshAccessToken(): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/public/auth/refresh`, {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: 'POST',
       credentials: 'include', // Important: sends cookies
     });

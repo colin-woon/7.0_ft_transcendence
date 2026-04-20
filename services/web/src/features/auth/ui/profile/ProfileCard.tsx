@@ -1,46 +1,70 @@
-'use client'
+"use client";
 
-import { Mail, MapPin, Calendar, Shield } from 'lucide-react'
-import { User } from '@/features/auth/api/authService'
-import { useAuth } from '@/features/auth/models/AuthContext'
-import { AddFriendButton, DirectMessageButton } from '@/features/chat/ui'
+import { Calendar, Mail, MapPin, Shield } from "lucide-react";
+import Image from "next/image";
+import type { User } from "@/features/auth/api/authService";
+import { useAuth } from "@/features/auth/models/AuthContext";
+import { AddFriendButton, DirectMessageButton } from "@/features/chat/ui";
 
 interface ProfileCardProps {
-  user: User | null
+  user: User | null;
   profile: {
-    level: number
-    levelProgress: number
-    cursus: string
-    coalition: string
-    email: string
-    location: string
-    since: string
-  }
-  initials: string
+    level: number;
+    levelProgress: number;
+    cursus: string;
+    coalition: string;
+    email: string;
+    location: string;
+    since: string;
+  };
+  initials: string;
+  adminActions?: React.ReactNode;
 }
 
-function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+function Card({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm mx-auto max-w-6xl ${className}`}>
+    <div
+      className={`bg-white rounded-2xl border border-gray-100 shadow-sm mx-auto max-w-6xl ${className}`}
+    >
       {children}
     </div>
-  )
+  );
 }
 
-export default function ProfileCard({ user, profile, initials }: ProfileCardProps) {
+export default function ProfileCard({
+  user,
+  profile,
+  initials,
+  adminActions,
+}: ProfileCardProps) {
   const { user: loggedInUser } = useAuth();
   const loggedInUserId = loggedInUser?.id;
+  const canShowPeerActions =
+    loggedInUserId !== undefined &&
+    typeof user?.id === "number" &&
+    user.id !== loggedInUserId;
 
   return (
     <Card className="overflow-visible">
       <div className="h-15 bg-gradient-to-r from-[#0f6f6b] via-[#1a9e99] to-[#8EE7E3] relative rounded-t-2xl">
         <div className="absolute -bottom-10 left-6">
           {user?.avatarImage ? (
-            <img
-              src={user.avatarImage}
-              alt={`${user.fullName} avatar`}
-              className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-md"
-            />
+            <div className="w-20 h-20 relative rounded-2xl overflow-hidden ring-4 ring-white shadow-md">
+              <Image
+                src={user.avatarImage}
+                alt={`${user.fullName} avatar`}
+                fill
+                sizes="80px"
+                className="object-cover"
+                unoptimized
+              />
+            </div>
           ) : (
             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-2xl font-bold ring-4 ring-white shadow-md">
               {initials}
@@ -53,28 +77,35 @@ export default function ProfileCard({ user, profile, initials }: ProfileCardProp
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-0.5">
-              <h1 className="text-xl font-bold text-slate-900">{user?.fullName ?? 'Jane Doe'}</h1>
+              <h1 className="text-xl font-bold text-slate-900">
+                {user?.fullName ?? "Jane Doe"}
+              </h1>
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0f6f6b] bg-[#8EE7E3]/20 px-2 py-0.5 rounded-full">
-                <Shield size={11} />{user?.role ?? 'STUDENT'}
+                <Shield size={11} />
+                {user?.role ?? "STUDENT"}
               </span>
             </div>
-            <p className="text-sm text-slate-500">@{user?.username ?? 'jdoe'} · {profile.cursus}</p>
+            <p className="text-sm text-slate-500">
+              @{user?.username ?? "jdoe"} · {profile.cursus}
+            </p>
             <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
-              <span className="flex items-center gap-1"><Mail size={11} />{user?.email ?? profile.email}</span>
-              {profile.location ? <span className="flex items-center gap-1"><MapPin size={11} />{profile.location}</span> : null}
-              <span className="flex items-center gap-1"><Calendar size={11} />Since {profile.since}</span>
-            </div>
-            
-            <div className="mt-4 flex flex-wrap gap-2">
-              {user?.id !== loggedInUserId && (
-                <>
-                  <AddFriendButton targetUserId={user!.id} />
-                  <DirectMessageButton targetUserId={user!.id} />
-                </>
-              )}
+              <span className="flex items-center gap-1">
+                <Mail size={11} />
+                {user?.email ?? profile.email}
+              </span>
+              {profile.location ? (
+                <span className="flex items-center gap-1">
+                  <MapPin size={11} />
+                  {profile.location}
+                </span>
+              ) : null}
+              <span className="flex items-center gap-1">
+                <Calendar size={11} />
+                Since {profile.since}
+              </span>
             </div>
           </div>
-          
+
           <div className="sm:min-w-[180px] space-y-1.5">
             <div className="flex justify-between text-xs font-medium text-slate-600">
               <span>Level {profile.level}</span>
@@ -86,10 +117,24 @@ export default function ProfileCard({ user, profile, initials }: ProfileCardProp
                 style={{ width: `${profile.levelProgress}%` }}
               />
             </div>
-            <p className="text-[10px] text-slate-400 text-right">{profile.levelProgress} / 100 XP</p>
+            <p className="text-[10px] text-slate-400 text-right">
+              {profile.levelProgress} / 100 XP
+            </p>
+
+            {canShowPeerActions || adminActions ? (
+              <div className="mt-3 flex flex-wrap justify-end gap-2">
+                {canShowPeerActions ? (
+                  <>
+                    <AddFriendButton targetUserId={user.id} />
+                    <DirectMessageButton targetUserId={user.id} />
+                  </>
+                ) : null}
+                {adminActions}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
     </Card>
-  )
+  );
 }
