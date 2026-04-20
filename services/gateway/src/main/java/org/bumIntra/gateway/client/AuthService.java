@@ -45,4 +45,8 @@ public class AuthService {
     public Response proxyPatch(String path, byte[] body) {
         return sce.execute(() -> authClient.proxyPatch(path, body));
     }
+
+    public Response proxyPublicGet(String path) {
+        return sce.execute(() -> authClient.proxyGet(path));
+    }
 }

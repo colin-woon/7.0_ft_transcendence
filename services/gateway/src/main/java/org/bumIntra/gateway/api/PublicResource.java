@@ -13,59 +13,59 @@ import jakarta.ws.rs.core.Response;
 @Path("/api/public")
 public class PublicResource {
 
-	@Inject
-	AuthService authService;
+    @Inject
+    AuthService authService;
 
-	// Temporary endpoint for testing public access
-	@GET
-	@Path("/ping")
-	public Response ping() {
-		return Response.ok("pong from public endpoint").build();
-	}
+    // Temporary endpoint for testing public access
+    @GET
+    @Path("/ping")
+    public Response ping() {
+        return Response.ok("pong from public endpoint").build();
+    }
 
-	@GET
-	@Path("/auth/login/{provider: .*}")
-	public Response proxyPublicLogin(@PathParam("provider") String provider) {
-		if (provider.contains("/") || provider.isBlank() || provider.equals(".") || provider.equals("..")) {
-			return Response.status(Response.Status.NOT_FOUND).build();
-		}
-		return authService.proxyGet("api/public/auth/login/" + provider);
-	}
+    @GET
+    @Path("/auth/login/{provider: .*}")
+    public Response proxyPublicLogin(@PathParam("provider") String provider) {
+        if (provider.contains("/") || provider.isBlank() || provider.equals(".") || provider.equals("..")) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return authService.proxyPublicGet("api/public/auth/login/" + provider);
+    }
 
-	@GET
-	@Path("/auth/callback/{provider: .*}")
-	public Response proxyPublicCallback(@PathParam("provider") String provider) {
-		if (provider.contains("/") || provider.isBlank() || provider.equals(".") || provider.equals("..")) {
-			return Response.status(Response.Status.NOT_FOUND).build();
-		}
-		return authService.proxyGet("api/public/auth/callback/" + provider);
-	}
+    @GET
+    @Path("/auth/callback/{provider: .*}")
+    public Response proxyPublicCallback(@PathParam("provider") String provider) {
+        if (provider.contains("/") || provider.isBlank() || provider.equals(".") || provider.equals("..")) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return authService.proxyPublicGet("api/public/auth/callback/" + provider);
+    }
 
-	@POST
-	@Path("/{service}/{subpath: .*}")
-	public Response proxyPublicPost(@PathParam("service") String service, @PathParam("subpath") String subpath,
-			byte[] body) {
-		if ("auth".equals(service) && isAllowedAuthPublicPost(subpath)) {
-			return authService.proxyPost(buildUrl(service, subpath), body);
-		}
-		return Response.status(Response.Status.NOT_FOUND).build();
-	}
+    @POST
+    @Path("/{service}/{subpath: .*}")
+    public Response proxyPublicPost(@PathParam("service") String service, @PathParam("subpath") String subpath,
+            byte[] body) {
+        if ("auth".equals(service) && isAllowedAuthPublicPost(subpath)) {
+            return authService.proxyPost(buildUrl(service, subpath), body);
+        }
+        return Response.status(Response.Status.NOT_FOUND).build();
+    }
 
-	private boolean isAllowedAuthPublicPost(String subpath) {
-		return "refresh".equals(subpath)
-			|| "password/login".equals(subpath)
-			|| "password/register".equals(subpath);
-	}
+    private boolean isAllowedAuthPublicPost(String subpath) {
+        return "refresh".equals(subpath)
+                || "password/login".equals(subpath)
+                || "password/register".equals(subpath);
+    }
 
-	private String buildUrl(String service, String subpath) {
-		// for strict auth callback path OIDC
-		if (service.equals("auth") && (subpath.startsWith("callback/") || subpath.startsWith("login/"))) {
-			return "api/public/" + service + "/" + subpath;
-		}
+    private String buildUrl(String service, String subpath) {
+        // for strict auth callback path OIDC
+        if (service.equals("auth") && (subpath.startsWith("callback/") || subpath.startsWith("login/"))) {
+            return "api/public/" + service + "/" + subpath;
+        }
 
-		if (service.equals("auth")) {
-			return service + "/" + subpath;
-		}
-		return subpath;
-	}
+        if (service.equals("auth")) {
+            return service + "/" + subpath;
+        }
+        return subpath;
+    }
 }
