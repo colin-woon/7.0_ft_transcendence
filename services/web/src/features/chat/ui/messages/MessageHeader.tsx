@@ -72,7 +72,9 @@ export function MessageHeader() {
         </div>
       </div>
 
-      <FriendOptionsDropdown friendId={otherUserId!} />
+      {!isGroup &&
+        <FriendOptionsDropdown friendId={otherUserId!} />
+      }
     </div>
   );
 }

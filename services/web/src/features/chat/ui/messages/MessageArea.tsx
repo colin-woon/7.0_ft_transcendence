@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useChatActions, useCurrentChatSession, useMessageVisibility, useIsAllowedChat } from '@/features/chat/models';
 import { useAuth } from '@/features/auth/models/AuthContext';
+import { useRouter } from 'next/navigation';
 
 // Step 1: Define a color array using DaisyUI chat bubble classes
 const BUBBLE_COLORS = [
@@ -19,6 +20,7 @@ export function MessageArea() {
   const isAllowedChat = useIsAllowedChat(chatId);
   const { user } = useAuth();
   const currentUserId = user?.id;
+  const router = useRouter();
     
   // Refs for message elements to attach Intersection Observer
   const messageRefs = useRef<Map<number | string, HTMLDivElement>>(new Map());
@@ -127,7 +129,7 @@ export function MessageArea() {
           >
             {/* Step 3: Add the chat-header for sender label if it's not the current user */}
             {!isMe && (
-              <div className="chat-header pb-1 text-xs opacity-70">
+              <div className="chat-header pb-1 text-xs opacity-70 hover:underline cursor-pointer" onClick={() => router.push(`/users/${msg.senderId}`)}>
                 User #{msg.senderId}
               </div>
             )}

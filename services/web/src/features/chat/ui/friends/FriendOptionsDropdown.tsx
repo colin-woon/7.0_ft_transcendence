@@ -3,15 +3,17 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { updateFriendshipStatus } from '@/features/chat/api';
-import { Friendship } from '@/features/chat/models';
+import { useIsAcceptedFriend } from '@/features/chat/models/chat-hooks';
 
 interface FriendOptionsDropdownProps {
   friendId: number;
   onActionComplete?: () => void;
+  isProfilePage?: boolean;
 }
 
-export function FriendOptionsDropdown({ friendId, onActionComplete }: FriendOptionsDropdownProps) {
+export function FriendOptionsDropdown({ friendId, onActionComplete, isProfilePage = false }: FriendOptionsDropdownProps) {
   const router = useRouter();
+  const isFriend = useIsAcceptedFriend(friendId);
 
   const handleRemoveFriend = async () => {
     try {
@@ -31,6 +33,10 @@ export function FriendOptionsDropdown({ friendId, onActionComplete }: FriendOpti
     }
   };
 
+  if (!isFriend && isProfilePage) {
+    return null;
+  }
+
   return (
     <div className="dropdown dropdown-end">
       <label 
@@ -43,10 +49,16 @@ export function FriendOptionsDropdown({ friendId, onActionComplete }: FriendOpti
         </svg>
       </label>
       <ul tabIndex={0} className="dropdown-content z-50 menu p-2 shadow-lg bg-base-200 rounded-box w-48 mt-1 border border-base-300">
-        <li><a onClick={() => router.push(`/users/${friendId}`)}>View Profile</a></li>
-        <div className="divider my-0"></div>
-        <li><a onClick={handleRemoveFriend} className="text-error hover:bg-error/20 hover:text-error">Remove Friend</a></li>
-        <li><a onClick={handleBlockFriend} className="text-error hover:bg-error/20 hover:text-error">Block User</a></li>
+        {!isProfilePage && (
+          <li><a onClick={() => router.push(`/users/${friendId}`)}>View Profile</a></li>
+        )}
+        {isFriend && (
+          <>
+            <div className="divider my-0"></div>
+            <li><a onClick={handleRemoveFriend} className="text-error hover:bg-error/20 hover:text-error">Remove Friend</a></li>
+            <li><a onClick={handleBlockFriend} className="text-error hover:bg-error/20 hover:text-error">Block User</a></li>
+          </>
+        )}
       </ul>
     </div>
   );
