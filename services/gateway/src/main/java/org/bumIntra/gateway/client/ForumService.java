@@ -20,10 +20,10 @@ public class ForumService {
     ServiceCallExecutor sce;
 
     @Inject
-    FaultToleranceExceptionMapper ftm;
+    FaultToleranceCallWrapper ftw;
 
     public Response proxyGet(String path) {
-        return ftm.execute(() -> ex.forumExecute(() -> forumClient.proxyGet(path)));
+        return ftw.execute(() -> ex.forumExecute(() -> forumClient.proxyGet(path)));
     }
 
     public Response proxyPost(String path, byte[] body) {

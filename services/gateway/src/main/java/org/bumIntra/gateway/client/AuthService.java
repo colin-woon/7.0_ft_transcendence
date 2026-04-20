@@ -24,10 +24,10 @@ public class AuthService {
     ServiceCallExecutor sce;
 
     @Inject
-    FaultToleranceExceptionMapper ftm;
+    FaultToleranceCallWrapper ftw;
 
     public Response proxyGet(String path) {
-        return ftm.execute(() -> ex.authExecute(() -> authClient.proxyGet(path)));
+        return ftw.execute(() -> ex.authExecute(() -> authClient.proxyGet(path)));
     }
 
     public Response proxyPost(String path, byte[] body) {

@@ -10,7 +10,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.Response;
 
 @ApplicationScoped
-public class FaultToleranceExceptionMapper {
+public class FaultToleranceCallWrapper {
 
     public <T> T execute(Supplier<T> call) {
         try {
