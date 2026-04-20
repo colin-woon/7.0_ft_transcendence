@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { AuthApiError } from "@/features/auth/api/authService";
 import { useAuth } from "@/features/auth/models/AuthContext";
 import { BackgroundBlobs } from "@/features/auth/ui/login/BackgroundBlobs";
 import { GlassCard } from "@/features/auth/ui/login/GlassCard";
@@ -72,10 +71,6 @@ export default function LoginPage() {
       await loginWithPassword(parsed.data);
       router.push("/profile");
     } catch (error) {
-      if (error instanceof AuthApiError && error.status === 404) {
-        router.push(`/register?email=${encodeURIComponent(parsed.data.email)}`);
-        return;
-      }
       setFormError(error instanceof Error ? error.message : "Login failed");
     } finally {
       setIsSubmitting(false);

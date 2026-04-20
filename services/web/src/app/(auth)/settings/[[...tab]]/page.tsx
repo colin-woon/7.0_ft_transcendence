@@ -16,12 +16,16 @@ export default async function SettingsRoute(_props: SettingsRouteProps) {
     getServerSessions(),
   ]);
 
+  const shouldExposeInitialProfileError =
+    !profileResult.ok &&
+    profileResult.status !== 401 &&
+    profileResult.status < 500;
+
   const initialProfile = profileResult.ok ? profileResult.data : null;
-  const initialProfileErrorStatus =
-    profileResult.ok || profileResult.status === 401
-      ? null
-      : profileResult.status;
-  const initialProfileError = initialProfileErrorStatus
+  const initialProfileErrorStatus = shouldExposeInitialProfileError
+    ? profileResult.status
+    : null;
+  const initialProfileError = shouldExposeInitialProfileError
     ? profileResult.error
     : null;
 

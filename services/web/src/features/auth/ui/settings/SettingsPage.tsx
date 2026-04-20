@@ -294,10 +294,10 @@ export default function SettingsPage({
     authError ??
     profileError ??
     profileEditError ??
-    sessionsError ??
+    (activeTab === "sessions" ? sessionsError : null) ??
     adminActionError ??
     actionError ??
-    adminHookError;
+    (activeTab === "admin" ? adminHookError : null);
 
   const updateNewUserForm = <K extends keyof CreateUserPayload>(
     key: K,
