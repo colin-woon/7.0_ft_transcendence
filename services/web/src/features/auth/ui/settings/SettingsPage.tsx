@@ -720,15 +720,15 @@ export default function SettingsPage({
                         : "Set a password to log in with email and password"}
                     </div>
                   </div>
+                  {!passwordOpen && (
                   <button
                     type="button"
-                    className={`btn btn-sm rounded-full px-4 font-semibold normal-case shrink-0 ${
-                      passwordOpen ? "btn-outline" : "btn-neutral"
-                    }`}
-                    onClick={() => setPasswordOpen(prev => !prev)}
+                    className="btn btn-sm rounded-full px-4 font-semibold normal-case shrink-0 btn-neutral"
+                    onClick={() => setPasswordOpen(true)}
                   >
                     {activeProfile.hasPassword ? "Change password" : "Set password"}
                   </button>
+                )}
                 </div>
 
               
