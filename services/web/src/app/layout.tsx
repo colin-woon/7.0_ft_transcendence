@@ -8,6 +8,10 @@ import { AppShell } from '@/components/ui/ComponentLogic/Appshell/Appshell';
 export const metadata: Metadata = {
 	title: '42 Overflow',
 	description: 'A Q&A platform for 42 projects',
+  icons: {
+    icon: '/assets/meta-42overflow.png',
+    shortcut: '/assets/meta-42overflow.png',
+  },
 };
 
 export default function RootLayout({
