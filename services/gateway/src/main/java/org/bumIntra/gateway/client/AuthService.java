@@ -23,8 +23,11 @@ public class AuthService {
     @Inject
     ServiceCallExecutor sce;
 
+    @Inject
+    FaultToleranceCallWrapper ftw;
+
     public Response proxyGet(String path) {
-        return ex.authExecute(() -> authClient.proxyGet(path));
+        return ftw.execute(() -> ex.authExecute(() -> authClient.proxyGet(path)));
     }
 
     public Response proxyPost(String path, byte[] body) {
@@ -41,5 +44,9 @@ public class AuthService {
 
     public Response proxyPatch(String path, byte[] body) {
         return sce.execute(() -> authClient.proxyPatch(path, body));
+    }
+
+    public Response proxyPublicGet(String path) {
+        return sce.execute(() -> authClient.proxyGet(path));
     }
 }

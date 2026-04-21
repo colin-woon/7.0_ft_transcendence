@@ -58,7 +58,7 @@ services:
         command:
             - --web.config.file=/etc/postgres-exporter/web.yml
         environment:
-            - DATA_SOURCE_NAME=postgresql://dev_user:dev_password@db-service:5432/postgres_db?sslmode=disable
+            - DATA_SOURCE_NAME=postgresql://${DB_USER:-dev_user}:${DB_PASSWORD}@db-service:5432/postgres_db?sslmode=disable
         volumes:
             - ./infra/obs/postgres-exporter/web.prod.yml:/etc/postgres-exporter/web.yml:ro
             - ./certs/runtime/postgres_exporter/postgres_exporter.crt:/certs/postgres-exporter.crt:ro
@@ -90,7 +90,7 @@ services:
                     '--cert-type',
                     'P12',
                     '--cert',
-                    '/certs/auth-keystore.p12:bumintra',
+                    '/certs/auth-keystore.p12:${KEYSTORE_PASSWORD}',
                     'https://localhost:9000/q/health',
                 ]
             interval: 10s
@@ -259,7 +259,7 @@ services:
                     '--cert-type',
                     'P12',
                     '--cert',
-                    '/certs/gateway-keystore.p12:bumintra',
+                    '/certs/gateway-keystore.p12:${KEYSTORE_PASSWORD}',
                     'https://localhost:8180/q/health',
                 ]
             interval: 10s

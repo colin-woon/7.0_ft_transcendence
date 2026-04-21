@@ -25,30 +25,30 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 @RegisterProvider(ServiceClientContextFilter.class)
 public interface AuthClient {
 
-	@GET
-	@Path("/{path: .*}")
-	Response proxyGet(@Encoded @PathParam("path") String path);
+    @GET
+    @Path("/{path: .*}")
+    Response proxyGet(@Encoded @PathParam("path") String path);
 
-	@POST
-	@Path("/{path: .*}")
-	// @Consumes(MediaType.APPLICATION_JSON)
-	// @Produces(MediaType.APPLICATION_JSON)
-	Response proxyPost(@Encoded @PathParam("path") String path, byte[] body);
+    @POST
+    @Path("/{path: .*}")
+    // @Consumes(MediaType.APPLICATION_JSON)
+    // @Produces(MediaType.APPLICATION_JSON)
+    Response proxyPost(@Encoded @PathParam("path") String path, byte[] body);
 
-	@DELETE
-	@Path("/{path: .*}")
-	Response proxyDelete(@Encoded @PathParam("path") String path);
+    @DELETE
+    @Path("/{path: .*}")
+    Response proxyDelete(@Encoded @PathParam("path") String path);
 
-	@PUT
-	@Path("/{path: .*}")
-	// @Consumes(MediaType.APPLICATION_JSON)
-	// @Produces(MediaType.APPLICATION_JSON)
-	Response proxyPut(@Encoded @PathParam("path") String path, byte[] body);
+    @PUT
+    @Path("/{path: .*}")
+    // @Consumes(MediaType.APPLICATION_JSON)
+    // @Produces(MediaType.APPLICATION_JSON)
+    Response proxyPut(@Encoded @PathParam("path") String path, byte[] body);
 
-	@PATCH
-	@Path("/{path: .*}")
-	// @Consumes(MediaType.APPLICATION_JSON)
-	// @Produces(MediaType.APPLICATION_JSON)
-	Response proxyPatch(@Encoded @PathParam("path") String path, byte[] body);
+    @PATCH
+    @Path("/{path: .*}")
+    // @Consumes(MediaType.APPLICATION_JSON)
+    // @Produces(MediaType.APPLICATION_JSON)
+    Response proxyPatch(@Encoded @PathParam("path") String path, byte[] body);
 
 }

@@ -12,29 +12,27 @@ import io.smallrye.config.WithDefault;
 @ConfigMapping(prefix = "gateway.config.headers")
 public interface GatewayRequestHeaderConfig {
 
-	// Remove default value to force explicit configuration, as this is a critical
-	// security setting.
-	// @WithDefault("accept, accept-language, content-type, authorization,
-	// user-agent, x-request-id")
-	List<String> requestAllowList();
+    // @WithDefault("accept, accept-language, content-type, authorization,
+    // user-agent, x-request-id")
+    List<String> requestAllowList();
 
-	// @WithDefault("x-internal-, x-auth-, x-user-, x-service-, x-bumintra-,
-	// x-envoy-, x-forwarded-")
-	List<String> requestDenyPrefixes();
+    // @WithDefault("x-internal-, x-auth-, x-user-, x-service-, x-bumintra-,
+    // x-envoy-, x-forwarded-")
+    List<String> requestDenyPrefixes();
 
-	default Set<String> inboundAllowlistLower() {
-		return requestAllowList()
-				.stream()
-				.filter(s -> s != null && !s.isBlank())
-				.map(s -> s.trim().toLowerCase())
-				.collect(Collectors.toUnmodifiableSet());
-	}
+    default Set<String> inboundAllowlistLower() {
+        return requestAllowList()
+                .stream()
+                .filter(s -> s != null && !s.isBlank())
+                .map(s -> s.trim().toLowerCase())
+                .collect(Collectors.toUnmodifiableSet());
+    }
 
-	default List<String> inboundDenyPrefixesLower() {
-		return requestDenyPrefixes()
-				.stream()
-				.filter(s -> s != null && !s.isBlank())
-				.map(s -> s.trim().toLowerCase())
-				.toList();
-	}
+    default List<String> inboundDenyPrefixesLower() {
+        return requestDenyPrefixes()
+                .stream()
+                .filter(s -> s != null && !s.isBlank())
+                .map(s -> s.trim().toLowerCase())
+                .toList();
+    }
 }
