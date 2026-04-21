@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/features/auth/models/AuthContext";
 import { useRouter } from "next/navigation";
 import { useAppShell } from "@/components/ui/ComponentLogic/Appshell/context/AppShellContext";
-// import PrivacyPolicy from "@/components/legal/PrivacyPolicy";
-// import TermsCondition from "@/components/legal/TermsCondition";
+import PrivacyPolicy from "@/components/ui/legal/PrivacyPolicy";
+import TermsCondition from "@/components/ui/legal/TermsCondition";
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
@@ -181,7 +181,7 @@ export default function Sidebar() {
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
-              {/* {policyTab === "privacy" ? <PrivacyPolicy /> : <TermsCondition />} */}
+              {policyTab === "privacy" ? <PrivacyPolicy /> : <TermsCondition />}
             </div>
           </div>
         </div>
