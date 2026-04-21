@@ -6,9 +6,18 @@ import { getServerCurrentUser } from '@/features/auth/api/serverAuthData'
 export default async function ProfileRoute() {
   const profileResult = await getServerCurrentUser()
 
+  const shouldExposeInitialProfileError =
+    !profileResult.ok &&
+    profileResult.status !== 401 &&
+    profileResult.status < 500
+
   const initialProfile = profileResult.ok ? profileResult.data : null
-  const initialProfileErrorStatus = profileResult.ok || profileResult.status === 401 ? null : profileResult.status
-  const initialProfileError = initialProfileErrorStatus ? profileResult.error : null
+  const initialProfileErrorStatus = shouldExposeInitialProfileError
+    ? profileResult.status
+    : null
+  const initialProfileError = shouldExposeInitialProfileError
+    ? profileResult.error
+    : null
 
   return (
     <ProfilePage

@@ -50,4 +50,13 @@ public class UserRepository implements PanacheRepository<User> {
                 .project(UserSummaryDTO.class)
                 .page(pageIndex, pageSize)
                 .list();
-    }}
+    }
+
+    public List<@NonNull User> findByIdsWithIntra(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
+        }
+
+        return find("from User u left join fetch u.intra where u.id in ?1", userIds).list();
+    }
+}

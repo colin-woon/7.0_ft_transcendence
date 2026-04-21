@@ -26,6 +26,7 @@ import jakarta.inject.Inject;
 @ApplicationScoped
 public class IntraClientService {
 	private static final Logger LOG = Logger.getLogger(IntraClientService.class);
+	private static final String UNSET_SENTINEL = "__unset__";
 
 	private static final String FT_TOKEN_URL = "https://api.intra.42.fr/oauth/token";
 	private static final String FT_USER_URL = "https://api.intra.42.fr/v2/users/";
@@ -56,7 +57,7 @@ public class IntraClientService {
 				.build();
 
 	public String fetchClientToken() {
-		if (ftClientId == null || ftClientId.isBlank() || ftClientSecret == null || ftClientSecret.isBlank()) {
+		if (isUnset(ftClientId) || isUnset(ftClientSecret)) {
 			LOG.error("42 API credentials are missing. Set FT_CLIENT_ID and FT_CLIENT_SECRET.");
 			return null;
 		}
@@ -349,4 +350,14 @@ public class IntraClientService {
 			return false;
 		}
 	}
+
+	private boolean isUnset(String value) {
+		if (value == null) {
+			return true;
+		}
+
+		String normalized = value.trim();
+		return normalized.isBlank() || UNSET_SENTINEL.equalsIgnoreCase(normalized);
+	}
+
 }

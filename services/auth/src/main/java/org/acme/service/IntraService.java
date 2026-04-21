@@ -45,7 +45,7 @@ public class IntraService {
 			return objectMapper.readValue(jsonObject.toString(), IntraDTO.class);
 		} catch (JsonProcessingException e) {
 			LOG.error("Failed to parse userinfo JSON", e);
-			throw new WebApplicationException("Failed to parse userinfo JSON", 401);
+			throw new WebApplicationException("Failed to process authentication payload", 500);
 		}
 	}
 
@@ -97,16 +97,23 @@ public class IntraService {
 	@Transactional
 	public void syncUserData(User user, IntraDTO dto) {
 		user.fullName = dto.usualFullName != null ? dto.usualFullName : dto.displayName;
-		user.avatarUrl = dto.image != null
-			? avatarStorageService.mirrorRemoteAvatar(dto.image.link, user.avatarUrl)
-			: null;
+		if (dto.image != null && dto.image.link != null && !dto.image.link.isBlank()) {
+			user.avatarUrl = avatarStorageService.mirrorRemoteAvatar(dto.image.link, user.avatarUrl);
+		}
 		userRepository.persist(user);
 	}
 
 	@Transactional
 	public UserInfoDTO reloadFrom42(String userId, Long userIdFromToken) {
 		String targetUserId = userId != null ? userId : String.valueOf(userIdFromToken);
-		User user = userRepository.findById(Long.valueOf(targetUserId));
+		Long parsedTargetUserId;
+		try {
+			parsedTargetUserId = Long.valueOf(targetUserId);
+		} catch (NumberFormatException e) {
+			throw new WebApplicationException("Invalid user id", 400);
+		}
+
+		User user = userRepository.findById(parsedTargetUserId);
 		if (user == null) {
 			LOG.error("User Not Found to Reload" + targetUserId);
 			throw new WebApplicationException("User not found", 404);
@@ -120,7 +127,7 @@ public class IntraService {
 		String token = intraClientService.fetchClientToken();
 		if (token == null) {
 			LOG.error("Unable To access 42 token");
-			throw new WebApplicationException("42 Not available", 404);
+			throw new WebApplicationException("External identity provider unavailable", 503);
 		}
 
 		IntraDTO dto = intraClientService.fetchUser(token, user.intraId);
