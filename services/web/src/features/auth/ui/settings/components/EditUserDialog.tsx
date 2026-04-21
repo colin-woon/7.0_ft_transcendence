@@ -42,11 +42,11 @@ export default function EditUserDialog({
 }: EditUserDialogProps) {
   return (
     <dialog className={`modal ${open ? "modal-open" : ""}`}>
-      <div className="modal-box bg-base-100 border border-base-200 p-0 flex flex-col">
+      <div className="modal-box bg-base-100 border border-base-200 p-0 flex flex-col rounded-2xl max-w-lg">
 
         {/* Header */}
         <div className="px-5 py-4 border-b border-base-200 shrink-0">
-          <h3 className="font-bold text-lg">{title}</h3>
+          <h3 className="font-bold text-base text-base-content">{title}</h3>
         </div>
 
         {/* Body */}
@@ -122,13 +122,17 @@ export default function EditUserDialog({
           <div className="px-5 py-4 border-t border-base-200 flex items-center justify-end gap-2 shrink-0">
             <button
               type="button"
-              className="btn btn-ghost btn-sm"
+              className="btn btn-ghost btn-sm normal-case"
               onClick={onClose}
               disabled={saving}
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>
+            <button
+              type="submit"
+              className="btn btn-sm rounded-full px-4 font-semibold normal-case shrink-0 btn-outline hover:btn-neutral"
+              disabled={saving}
+            >
               {saving ? "Saving..." : "Save"}
             </button>
           </div>

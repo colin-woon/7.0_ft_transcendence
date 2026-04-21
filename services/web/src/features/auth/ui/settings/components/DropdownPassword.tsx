@@ -37,7 +37,7 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
         initial={{ height: 0, opacity: 0 }}
         animate={{ height: "auto", opacity: 1 }}
         exit={{ height: 0, opacity: 0 }}
-        transition={{ duration: 10, ease: "easeInOut" }}
+        transition={{ duration: 0.25, ease: "easeInOut" }}
         style={{ overflow: "hidden" }}
         onSubmit={handlePasswordUpdate}
       >
@@ -52,7 +52,7 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
                   type="password"
                   autoComplete="current-password"
                   placeholder="Enter current password"
-                  className="input h-10 w-full rounded-md text-sm bg-base-100 border-neutral/70 border-2 focus:border-neutral focus:ring-1 focus:ring-neutral/30 focus:outline-none transition-all placeholder:text-base-content/40"
+                  className="input h-10 w-full rounded-md text-sm bg-base-200/60 border border-base-200 focus:!bg-base-100 focus:border-base-300 focus:ring-2 focus:ring-base-300/40 ..."
                   value={passwordForm.currentPassword ?? ""}
                   onChange={(event) =>
                     setPasswordForm((prev: any) => ({
@@ -83,8 +83,7 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
                     ? "Enter new password"
                     : "Create a password"
                 }
-                className="input h-10 w-full rounded-md text-sm bg-base-100 border-neutral/70 border-2 focus:border-neutral focus:ring-1 focus:ring-neutral/30 focus:outline-none transition-all placeholder:text-base-content/40"
-                value={passwordForm.newPassword}
+                className="input h-10 w-full rounded-md text-sm bg-base-200/60 border border-base-200 focus:!bg-base-100 focus:border-base-300 focus:ring-2 focus:ring-base-300/40 ..."                value={passwordForm.newPassword}
                 onChange={(event) =>
                   setPasswordForm((prev: any) => ({
                     ...prev,
@@ -107,7 +106,7 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
                 type="password"
                 autoComplete="new-password"
                 placeholder="Confirm your password"
-                className="input h-10 w-full rounded-md text-sm bg-base-100 border-neutral/70 border-2 focus:border-neutral focus:ring-1 focus:ring-neutral/30 focus:outline-none transition-all placeholder:text-base-content/40"
+                className="input h-10 w-full rounded-md text-sm bg-base-200/60 border border-base-200 focus:!bg-base-100 focus:border-base-300 focus:ring-2 focus:ring-base-300/40 ..."
                 value={passwordForm.confirmPassword}
                 onChange={(event) =>
                   setPasswordForm((prev: any) => ({
@@ -142,7 +141,7 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
           </button>
           <button
             type="submit"
-            className="btn btn-primary btn-sm rounded-md px-5 normal-case font-semibold"
+            className="btn btn-sm rounded-full px-4 font-semibold normal-case shrink-0 btn-outline hover:btn-neutral"
             disabled={passwordSaving}
           >
             {passwordSaving

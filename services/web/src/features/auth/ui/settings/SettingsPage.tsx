@@ -3,6 +3,7 @@
 import Image from "next/image";
 import intraIcon from "@/components/ui/imgs/42_icon.png";
 import PasswordForm from "@/features/auth/ui/settings/components/DropdownPassword";
+import CreateUserDialog from "@/features/auth/ui/settings/components/CreateUserDialog";
 
 import {
   AlertCircle,
@@ -210,6 +211,7 @@ export default function SettingsPage({
   const [adminActionSuccess, setAdminActionSuccess] = useState<string | null>(
     null,
   );
+  const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
 
   const [editDraft, setEditDraft] = useState<EditUserDraft>({
     username: "",
@@ -310,10 +312,7 @@ export default function SettingsPage({
     actionError ??
     adminHookError;
 
-  const updateNewUserForm = <K extends keyof CreateUserPayload>(
-    key: K,
-    value: CreateUserPayload[K],
-  ) => {
+  const updateNewUserForm = (key: string, value: any) => {
     setNewUserForm((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -710,17 +709,20 @@ export default function SettingsPage({
 
           {activeTab === "security" && (
             <>
+              <h2 className="text-base font-bold text-base-content mt-2">Account security</h2>
               {/* Password */}
-              <div className="flex items-end justify-between">
-                  <div className="flex flex-col justify-end">
-                    <h2 className="text-base font-bold text-base-content">Password</h2>
-                    <div className="mt-2 text-sm text-base-content/60">
-                      {activeProfile.hasPassword
-                        ? "Change your existing password"
-                        : "Set a password to log in with email and password"}
-                    </div>
-                  </div>
-                  {!passwordOpen && (
+              <div className="rounded-xl border border-base-200 overflow-hidden">
+              {/* Header row — always visible */}
+              <div className="flex items-center justify-between px-4 py-3.5 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-base-content">Password</p>
+                  <p className="text-xs text-base-content/50">
+                    {activeProfile.hasPassword
+                      ? "Change your existing password"
+                      : "Set a password to log in"}
+                  </p>
+                </div>
+                {!passwordOpen && (
                   <button
                     type="button"
                     className="btn btn-sm rounded-full px-4 font-semibold normal-case shrink-0 btn-neutral"
@@ -729,25 +731,22 @@ export default function SettingsPage({
                     {activeProfile.hasPassword ? "Change password" : "Set password"}
                   </button>
                 )}
-                </div>
+              </div>
 
-              
-
-              {/* Expandable password form */}
-              {passwordOpen && (
-                <PasswordForm
-                  passwordOpen={passwordOpen}
-                  setPasswordOpen={setPasswordOpen}
-                  passwordForm={passwordForm}
-                  setPasswordForm={setPasswordForm}
-                  passwordErrors={passwordErrors}
-                  passwordFormError={passwordFormError}
-                  passwordFormSuccess={passwordFormSuccess}
-                  passwordSaving={passwordSaving}
-                  handlePasswordUpdate={handlePasswordUpdate}
-                  activeProfile={activeProfile}
-                />
-              )}
+              {/* Animated form — drops down inside the card */}
+              <PasswordForm
+                passwordOpen={passwordOpen}
+                setPasswordOpen={setPasswordOpen}
+                passwordForm={passwordForm}
+                setPasswordForm={setPasswordForm}
+                passwordErrors={passwordErrors}
+                passwordFormError={passwordFormError}
+                passwordFormSuccess={passwordFormSuccess}
+                passwordSaving={passwordSaving}
+                handlePasswordUpdate={handlePasswordUpdate}
+                activeProfile={activeProfile}
+              />
+            </div>
 
               {/* Danger zone */}
               <h2 className="text-base font-bold text-base-content mt-8">Danger Zone</h2>
@@ -896,123 +895,24 @@ export default function SettingsPage({
           )}
           {/* admin tab */}
           {activeTab === "admin" && isAdmin && (
-            <div className="rounded-lg border border-base-200 bg-base-100">
-          
-              {/* Header */}
-              <div className="flex items-center gap-3 px-5 py-4 border-b border-base-200">
+            <div>
+              <div className="flex items-center gap-3 my-4">
                 <div>
                   <h2 className="text-base font-bold text-base-content">
-                    Create user
+                    Admin Controls
                   </h2>
                   <p className="text-sm text-base-content/60 mt-1">
                     Create a local account with role, profile details, and initial status.
                   </p>
                 </div>
+                <button
+                  className="btn btn-neutral btn-sm ml-auto"
+                  onClick={() => setCreateUserModalOpen(true)}
+                >
+                  Create user
+                </button>
               </div>
-          
-              {/* Form */}
-              <form className="px-5 py-5" onSubmit={handleAdminCreateUser}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-5">
-          
-                  <label className="flex flex-col gap-1.5 w-full">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/50">Username</span>
-                    <input
-                      className="input h-10 w-full rounded-md text-sm bg-base-100 shadow-sm border border-base-200 focus:outline-none focus:border-base-300 focus:ring-2 focus:ring-base-300/50 transition-all"
-                      placeholder="jothomas"
-                      value={newUserForm.username}
-                      onChange={(e) => updateNewUserForm("username", e.target.value)}
-                      required
-                    />
-                  </label>
-          
-                  <label className="flex flex-col gap-1.5 w-full">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/50">Full name</span>
-                    <input
-                      className="input h-10 w-full rounded-md text-sm bg-base-100 shadow-sm border border-base-200 focus:outline-none focus:border-base-300 focus:ring-2 focus:ring-base-300/50 transition-all"
-                      placeholder="Joshua Thomas"
-                      value={newUserForm.fullName}
-                      onChange={(e) => updateNewUserForm("fullName", e.target.value)}
-                      required
-                    />
-                  </label>
-          
-                  <label className="flex flex-col gap-1.5 md:col-span-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/50">Email</span>
-                    <input
-                      className="input h-10 rounded-md text-sm bg-base-100 shadow-sm border border-base-200 focus:outline-none focus:border-base-300 focus:ring-2 focus:ring-base-300/50 transition-all w-full"
-                      placeholder="42overflow@example.com"
-                      type="email"
-                      value={newUserForm.email}
-                      onChange={(e) => updateNewUserForm("email", e.target.value)}
-                      required
-                    />
-                  </label>
-          
-                  <label className="flex flex-col gap-1.5 md:col-span-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/50">
-                      Bio <span className="normal-case font-normal tracking-normal text-base-content/40">(optional)</span>
-                    </span>
-                    <textarea
-                      className="textarea rounded-md text-sm bg-base-100 min-h-24 resize-none leading-relaxed shadow-sm py-3 w-full border border-base-200 focus:outline-none focus:border-base-300 focus:ring-2 focus:ring-base-300/50 transition-all"
-                      placeholder="Short profile bio..."
-                      value={newUserForm.bio ?? ""}
-                      onChange={(e) => updateNewUserForm("bio", e.target.value)}
-                    />
-                  </label>
-          
-                  <label className="flex flex-col gap-1.5">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/50">Role</span>
-                    <div className="relative w-full">
-                      <select
-                        className="appearance-none w-full h-10 min-h-0 px-4 rounded-md text-sm bg-base-100 shadow-sm border border-base-300 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 transition-all cursor-pointer"
-                        value={newUserForm.role}
-                        onChange={(e) => updateNewUserForm("role", e.target.value as "STUDENT" | "ADMIN")}
-                      >
-                        <option value="STUDENT">Student</option>
-                        <option value="ADMIN">Admin</option>
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-base-content/50">
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </label>
-          
-                  <label className="flex flex-col gap-1.5">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/50">Initial status</span>
-                    <div className="relative w-full">
-                      <select
-                        className="appearance-none w-full h-10 min-h-0 px-4 rounded-md text-sm bg-base-100 shadow-sm border border-base-300 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 transition-all cursor-pointer"
-                        value={newUserForm.isBanned ? "banned" : "active"}
-                        onChange={(e) => updateNewUserForm("isBanned", e.target.value === "banned")}
-                      >
-                        <option value="active">Active</option>
-                        <option value="banned">Banned</option>
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-base-content/50">
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </label>
-          
-                </div>
-          
-                {/* Footer */}
-                <div className="flex items-center justify-between pt-6 mt-6 border-t border-base-200">
-                  <span className="text-xs text-base-content/40">All fields required unless marked optional.</span>
-                  <button
-                    className="btn btn-primary btn-sm rounded-md px-6 normal-case font-semibold h-9"
-                    type="submit"
-                    disabled={adminLoading}
-                  >
-                    {adminLoading ? "Creating..." : "Create user"}
-                  </button>
-                </div>
-              </form>
-          
+              {/* You can add other admin content here if needed */}
             </div>
           )}
         </div>
@@ -1041,6 +941,20 @@ export default function SettingsPage({
         loading={confirmLoading || profileDeleting}
         onClose={() => setConfirmAction(null)}
         onConfirm={runConfirmedAction}
+      />
+
+      <CreateUserDialog
+        open={createUserModalOpen}
+        onClose={() => setCreateUserModalOpen(false)}
+        onSubmit={handleAdminCreateUser}
+        draft={{
+          ...newUserForm,
+          role: newUserForm.role ?? "STUDENT",
+          isBanned: newUserForm.isBanned ?? false, // ensure boolean
+        }}
+        onChange={updateNewUserForm}
+        loading={adminLoading}
+        error={adminActionError}
       />
     </div>
   );
