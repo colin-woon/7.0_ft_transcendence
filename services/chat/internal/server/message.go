@@ -192,10 +192,6 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// 2. Map DB Rows to API Models
-// Handle sql.NullString -> *string
-// Handle []int32 -> *[]int
-// 3. Encode the mapped slice
 func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -207,9 +203,11 @@ func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := s.db.GetQueries().GetUserInbox(ctx, int32(userId))
 	if err != nil {
+		log.Printf("Error fetching user inbox: %v", err)
 		http.Error(w, "Failed to retrieve user chats", http.StatusInternalServerError)
 		return
 	}
+
 	inbox := make([]api.ChatRoom, 0, len(rows))
 	for _, row := range rows {
 		chat := api.ChatRoom{
@@ -229,6 +227,17 @@ func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request) {
 				ids[i] = int(v)
 			}
 			chat.MemberIds = &ids
+		}
+
+		// NEW: Map the requested_by field
+		if row.RequestedBy != 0 {
+			reqId := int(row.RequestedBy)
+			chat.RequestedBy = &reqId
+		}
+
+		if row.FriendshipStatus.Valid {
+			status := api.FriendshipStatus(row.FriendshipStatus.ChatServiceFriendStatus)
+			chat.FriendshipStatus = &status
 		}
 
 		inbox = append(inbox, chat)
