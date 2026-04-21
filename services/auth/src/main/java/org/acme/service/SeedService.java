@@ -2,6 +2,7 @@ package org.acme.service;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -29,6 +30,8 @@ import jakarta.inject.Inject;
 @ApplicationScoped
 public class SeedService {
 	private static final Logger LOG = Logger.getLogger(SeedService.class);
+	private static final String CLASSPATH_PREFIX = "classpath:";
+	private static final String UNSET_SENTINEL = "__unset__";
 	private static final Pattern STRONG_PASSWORD_PATTERN = Pattern.compile(
 		"^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,128}$");
 
@@ -53,7 +56,7 @@ public class SeedService {
 	@ConfigProperty(name = "seed.mode", defaultValue = "off")
 	SeedMode seedMode;
 
-	@ConfigProperty(name = "seed.file", defaultValue = "src/main/resources/seed_data.json")
+	@ConfigProperty(name = "seed.file", defaultValue = "classpath:seed_data.json")
 	String seedFilePath;
 
 	@ConfigProperty(name = "seed.logins")
@@ -80,7 +83,7 @@ public class SeedService {
 		switch (seedMode) {
 			case OFF -> {}
 			case FILE -> loadSeedFile();
-			default -> seedFromApi(seedMode);
+			case LOGINS, CAMPUS -> seedFromApi(seedMode);
 		}
 	}
 
@@ -89,10 +92,10 @@ public class SeedService {
 			return;
 		}
 
-		String adminEmail = seedAdminEmail == null ? "" : seedAdminEmail.trim().toLowerCase(Locale.ROOT);
-		String adminLogin = seedAdminLogin == null ? "" : seedAdminLogin.trim();
+		String adminEmail = normalizeSeedValue(seedAdminEmail).toLowerCase(Locale.ROOT);
+		String adminLogin = normalizeSeedValue(seedAdminLogin);
 		boolean loginExplicitlyConfigured = !adminLogin.isBlank();
-		String adminPassword = seedAdminPassword == null ? "" : seedAdminPassword;
+		String adminPassword = normalizeSeedValue(seedAdminPassword);
 
 		if (adminEmail.isBlank() || adminPassword.isBlank()) {
 			LOG.warn("seed.admin.enabled=true but seed.admin.email or seed.admin.password is blank; skipping admin bootstrap");
@@ -175,7 +178,25 @@ public class SeedService {
 		return candidate;
 	}
 
+	private String normalizeSeedValue(String value) {
+		if (value == null) {
+			return "";
+		}
+
+		String trimmed = value.trim();
+		if (trimmed.isBlank() || UNSET_SENTINEL.equalsIgnoreCase(trimmed)) {
+			return "";
+		}
+
+		return trimmed;
+	}
+
 	public void loadSeedFile() {
+		if (isClasspathSeedPath()) {
+			loadSeedFileFromClasspath();
+			return;
+		}
+
 		File file = new File(seedFilePath);
 		if (!file.exists()) {
 			LOG.error("No seed file found at: " + seedFilePath);
@@ -187,18 +208,42 @@ public class SeedService {
 		}
 		try {
 			IntraDTO[] data = objectMapper.readValue(file, IntraDTO[].class);
-			if (data == null) {
-				LOG.error("Seed file unavailable. Continuing startup without seeding.");
-				return;
-			}
-
-			for (IntraDTO dto : data) {
-				persistSeedUser(dto);
-			}
-			LOG.info("Seeded " + data.length + " users from file");
+			seedFromData(data);
 		} catch (IOException e) {
 			LOG.error("Failed to read/parse seed file", e);
 		}
+	}
+
+	private void loadSeedFileFromClasspath() {
+		String resourcePath = resolveClasspathResourcePath();
+		try (InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourcePath)) {
+			if (input == null) {
+				LOG.error("No seed classpath resource found at: " + resourcePath);
+				return;
+			}
+
+			IntraDTO[] data = objectMapper.readValue(input, IntraDTO[].class);
+			seedFromData(data);
+		} catch (IOException e) {
+			LOG.error("Failed to read/parse seed classpath resource", e);
+		}
+	}
+
+	private void seedFromData(IntraDTO[] data) {
+		if (data == null) {
+			LOG.error("Seed file unavailable. Continuing startup without seeding.");
+			return;
+		}
+
+		Map<String, IntraDTO> deduplicated = deduplicateUsers(Arrays.asList(data));
+		if (deduplicated.size() != data.length) {
+			LOG.info("Deduplicated seed file users from " + data.length + " to " + deduplicated.size());
+		}
+
+		for (IntraDTO dto : deduplicated.values()) {
+			persistSeedUser(dto);
+		}
+		LOG.info("Seeded " + deduplicated.size() + " users from file");
 	}
 
 	public void seedFromApi(SeedMode mode) {
@@ -260,7 +305,7 @@ public class SeedService {
 		for (IntraDTO dto : deduplicated.values()) {
 			persistSeedUser(dto);
 		}
-		saveSeedFile(new ArrayList<>(deduplicated.values()));
+		saveSeedFileMerged(new ArrayList<>(deduplicated.values()));
 		LOG.info("Seeded " + deduplicated.size() + " users from 42 API");
 	}
 
@@ -269,14 +314,71 @@ public class SeedService {
 	}
 
 	public void saveSeedFile(List<IntraDTO> data) {
+		if (isClasspathSeedPath()) {
+			LOG.warn("Skipping seed file write for classpath seed path: " + seedFilePath);
+			return;
+		}
+
 		try {
 			File file = new File(seedFilePath);
-			file.getParentFile().mkdirs();
+			File parent = file.getParentFile();
+			if (parent != null) {
+				parent.mkdirs();
+			}
 			objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, data);
 			LOG.debug("Saved seed data file");
 		} catch (IOException e) {
 			LOG.error("Failed to save seed file", e);
 		}
+	}
+
+	public void saveSeedFileMerged(List<IntraDTO> newData) {
+		List<IntraDTO> existingData = readSeedFileData();
+		List<IntraDTO> combinedData = new ArrayList<>(existingData.size() + newData.size());
+		combinedData.addAll(existingData);
+		combinedData.addAll(newData);
+
+		Map<String, IntraDTO> deduplicated = deduplicateUsers(combinedData);
+		if (deduplicated.size() != combinedData.size()) {
+			LOG.info("Deduplicated merged seed file users from " + combinedData.size() + " to " + deduplicated.size());
+		}
+
+		saveSeedFile(new ArrayList<>(deduplicated.values()));
+	}
+
+	private List<IntraDTO> readSeedFileData() {
+		if (isClasspathSeedPath()) {
+			LOG.debug("Skipping seed file merge read for classpath seed path: " + seedFilePath);
+			return List.of();
+		}
+
+		File file = new File(seedFilePath);
+		if (!file.exists() || !file.isFile() || file.length() == 0) {
+			return List.of();
+		}
+
+		try {
+			IntraDTO[] existingData = objectMapper.readValue(file, IntraDTO[].class);
+			if (existingData == null || existingData.length == 0) {
+				return List.of();
+			}
+			return Arrays.asList(existingData);
+		} catch (IOException e) {
+			LOG.warn("Failed to read existing seed file before merge; writing with new data only", e);
+			return List.of();
+		}
+	}
+
+	private boolean isClasspathSeedPath() {
+		return seedFilePath != null && seedFilePath.startsWith(CLASSPATH_PREFIX);
+	}
+
+	private String resolveClasspathResourcePath() {
+		String resourcePath = seedFilePath.substring(CLASSPATH_PREFIX.length());
+		while (resourcePath.startsWith("/")) {
+			resourcePath = resourcePath.substring(1);
+		}
+		return resourcePath;
 	}
 
 	private Map<String, IntraDTO> deduplicateUsers(List<IntraDTO> users) {
