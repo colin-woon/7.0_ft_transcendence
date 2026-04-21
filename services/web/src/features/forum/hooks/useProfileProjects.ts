@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Project } from "@/features/forum/models/projects";
 
 interface ForumProjectListPage {
@@ -18,8 +18,7 @@ interface UseProfileProjectsResult {
 
 interface UseProfileProjectsOptions {
   enabled: boolean;
-  subscribedProjectNames?: string[];
-  useProvidedSubscriptions?: boolean;
+  subscriptionUserId?: number | null;
 }
 
 function mapDifficulty(value: unknown): string {
@@ -51,6 +50,11 @@ function toProject(raw: unknown): Project {
   }
 
   const xp = Number(source.xp ?? 0);
+  const studentsValue = Number(source.subscriber_count ?? source.students ?? 0);
+  const postCountValue = Number(
+    source.post_count ??
+      (Array.isArray(source.posts) ? source.posts.length : 0),
+  );
   const objectiveTags = Array.isArray(source.objectives)
     ? source.objectives.map((tag: unknown) => String(tag))
     : ["42"];
@@ -65,18 +69,11 @@ function toProject(raw: unknown): Project {
     duration: String(source.estimate_time ?? "~1 week"),
     teamSize: source.solo ? "Solo" : "Team",
     tags: objectiveTags,
-    students: Number(source.subscriber_count ?? source.students ?? 0),
-    postCount: Number(
-      source.post_count ??
-        (Array.isArray(source.posts) ? source.posts.length : 0),
-    ),
+    students: Number.isFinite(studentsValue) ? studentsValue : 0,
+    postCount: Number.isFinite(postCountValue) ? postCountValue : 0,
     color: String(source.color ?? "from-blue-400 to-blue-600"),
     posts: Array.isArray(source.posts) ? source.posts : [],
   };
-}
-
-function normalizeProjectName(value: string): string {
-  return value.trim().toLowerCase();
 }
 
 async function fetchProjectsPage(
@@ -114,25 +111,31 @@ async function fetchProjectsPage(
  */
 export function useProfileProjects({
   enabled,
-  subscribedProjectNames = [],
-  useProvidedSubscriptions = false,
+  subscriptionUserId = null,
 }: UseProfileProjectsOptions): UseProfileProjectsResult {
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [subscribedIds, setSubscribedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
 
   const load = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
+
     if (!enabled) {
-      setAllProjects([]);
-      setSubscribedIds([]);
-      setError(null);
-      setLoading(false);
+      if (requestId === requestIdRef.current) {
+        setAllProjects([]);
+        setSubscribedIds([]);
+        setError(null);
+        setLoading(false);
+      }
       return;
     }
 
-    setLoading(true);
-    setError(null);
+    if (requestId === requestIdRef.current) {
+      setLoading(true);
+      setError(null);
+    }
 
     try {
       const firstPage = await fetchProjectsPage(1);
@@ -152,52 +155,46 @@ export function useProfileProjects({
       }
 
       const mappedProjects = items.map((project) => toProject(project));
-      const normalizedSubscribedNames = subscribedProjectNames
-        .map((name) => normalizeProjectName(name))
-        .filter((name) => name.length > 0);
+      const subscriptionsPath =
+        typeof subscriptionUserId === "number" && subscriptionUserId > 0
+          ? `/api/forum/projects/users/${subscriptionUserId}/subscriptions`
+          : "/api/forum/projects/me/subscriptions";
 
-      let nextSubscribedIds: number[] = [];
-      if (useProvidedSubscriptions) {
-        const subscribedNameSet = new Set(normalizedSubscribedNames);
-        nextSubscribedIds = mappedProjects
-          .filter((project) =>
-            subscribedNameSet.has(normalizeProjectName(project.name)),
-          )
-          .map((project) => project.id);
-      } else {
-        const subscriptionsResponse = await fetch(
-          "/api/forum/projects/me/subscriptions",
-          {
-            method: "GET",
-            cache: "no-store",
-          },
-        );
+      const subscriptionsResponse = await fetch(subscriptionsPath, {
+        method: "GET",
+        cache: "no-store",
+      });
 
-        if (!subscriptionsResponse.ok) {
-          throw new Error("Failed to fetch subscribed projects");
-        }
-
-        const subscriptionData = (await subscriptionsResponse.json()) as Array<{
-          id?: number;
-          project_id?: number;
-        }>;
-        nextSubscribedIds = subscriptionData
-          .map((entry) => Number(entry.id ?? entry.project_id ?? 0))
-          .filter((id) => Number.isFinite(id) && id > 0);
+      if (!subscriptionsResponse.ok) {
+        throw new Error("Failed to fetch subscribed projects");
       }
 
-      setAllProjects(mappedProjects);
-      setSubscribedIds(nextSubscribedIds);
+      const subscriptionData = (await subscriptionsResponse.json()) as Array<{
+        id?: number;
+        project_id?: number;
+      }>;
+      const nextSubscribedIds = subscriptionData
+        .map((entry) => Number(entry.id ?? entry.project_id ?? 0))
+        .filter((id) => Number.isFinite(id) && id > 0);
+
+      if (requestId === requestIdRef.current) {
+        setAllProjects(mappedProjects);
+        setSubscribedIds(nextSubscribedIds);
+      }
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to load project data";
-      setError(message);
-      setAllProjects([]);
-      setSubscribedIds([]);
+      if (requestId === requestIdRef.current) {
+        setError(message);
+        setAllProjects([]);
+        setSubscribedIds([]);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
-  }, [enabled, subscribedProjectNames, useProvidedSubscriptions]);
+  }, [enabled, subscriptionUserId]);
 
   useEffect(() => {
     void load();

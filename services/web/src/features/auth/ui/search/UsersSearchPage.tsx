@@ -113,6 +113,7 @@ export default function UsersSearchPage({
     minChars: 1,
     pageSize: 8,
     debounceMs: 300,
+    excludeUserId: user?.id,
   });
 
   const {
@@ -121,12 +122,14 @@ export default function UsersSearchPage({
     loading,
     error,
     page,
+    hasMore,
     setPage,
     searchNow: searchResultsNow,
   } = useUserSearch({
     minChars: 1,
     pageSize: RESULTS_PAGE_SIZE,
     debounceMs: 300,
+    excludeUserId: user?.id,
   });
 
   const [confirmAction, setConfirmAction] = useState<UserConfirmAction | null>(
@@ -377,12 +380,10 @@ export default function UsersSearchPage({
 
   const trimmedQuery = typedQuery.trim();
   const hasCommittedQuery = committedQuery.trim().length > 0;
-  const filteredDropdownResults = dropdownResults.filter(
-    (result) => result.id !== user.id,
-  );
-  const filteredResults = results.filter((result) => result.id !== user.id);
+  const filteredDropdownResults = dropdownResults;
+  const filteredResults = results;
   const canGoPrev = page > 0 && !loading;
-  const canGoNext = !loading && results.length === RESULTS_PAGE_SIZE;
+  const canGoNext = !loading && hasMore;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -556,6 +557,8 @@ export default function UsersSearchPage({
                     <UserAdminActionButtons
                       compact
                       disabled={adminLoading}
+                      editAriaLabel={`Edit profile ${result.username}`}
+                      forceLogoutAriaLabel={`Force logout ${result.username}`}
                       onEdit={() => void openEditDialog(result.id)}
                       onForceLogout={() =>
                         setConfirmAction({

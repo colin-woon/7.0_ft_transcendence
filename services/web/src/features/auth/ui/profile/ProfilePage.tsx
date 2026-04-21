@@ -72,6 +72,7 @@ export default function ProfilePage({
   const {
     updateUser,
     logoutUser,
+    deleteUser,
     loading: adminLoading,
     error: adminError,
   } = useAdminUsers();
@@ -79,9 +80,16 @@ export default function ProfilePage({
 
   const [quickActionError, setQuickActionError] = useState<string | null>(null);
   const [confirmForceLogoutOpen, setConfirmForceLogoutOpen] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [confirmRoleOpen, setConfirmRoleOpen] = useState(false);
+  const [pendingRole, setPendingRole] = useState<"STUDENT" | "ADMIN">(
+    "STUDENT",
+  );
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [editRole, setEditRole] = useState<"STUDENT" | "ADMIN">("STUDENT");
+  const [editBanned, setEditBanned] = useState(false);
   const [editDraft, setEditDraft] = useState<EditUserDraft>({
     username: "",
     fullName: "",
@@ -171,28 +179,6 @@ export default function ProfilePage({
   )
     ? activeProfile.intraInfo.partnerships.length
     : 0;
-  const patronedCount = Array.isArray(activeProfile?.intraInfo?.patroned)
-    ? activeProfile.intraInfo.patroned.length
-    : 0;
-  const patroningCount = Array.isArray(activeProfile?.intraInfo?.patroning)
-    ? activeProfile.intraInfo.patroning.length
-    : 0;
-
-  const viewedSubscribedProjectNames = useMemo(
-    () =>
-      !viewingOwnProfile && activeProfile?.intraInfo
-        ? collectNames(activeProfile.intraInfo.projectsUsers, (entry) => {
-            const project = readProperty(entry, "project");
-            const nameCandidate =
-              typeof project === "object"
-                ? readProperty(project, "name")
-                : readProperty(entry, "name");
-            return typeof nameCandidate === "string" ? nameCandidate : null;
-          })
-        : [],
-    [activeProfile?.intraInfo, viewingOwnProfile],
-  );
-
   const {
     subscribedProjects,
     suggestedProjects,
@@ -201,8 +187,7 @@ export default function ProfilePage({
     refetch: refetchProjects,
   } = useProfileProjects({
     enabled: Boolean(user),
-    subscribedProjectNames: viewedSubscribedProjectNames,
-    useProvidedSubscriptions: !viewingOwnProfile,
+    subscriptionUserId: viewingOwnProfile ? null : (activeProfile?.id ?? null),
   });
 
   const openAdminEditDialog = async () => {
@@ -222,6 +207,8 @@ export default function ProfilePage({
       fullName: detailed.fullName,
       bio: detailed.bio ?? "",
     });
+    setEditRole(detailed.role);
+    setEditBanned(detailed.isBanned);
     setPendingAvatarFile(null);
     setQuickActionError(null);
     setEditOpen(true);
@@ -245,7 +232,7 @@ export default function ProfilePage({
     const updated = await updateUser(activeProfile.id, {
       username: editDraft.username.trim() || undefined,
       fullName: editDraft.fullName.trim() || undefined,
-      bio: editDraft.bio.trim() || undefined,
+      bio: editDraft.bio.trim(),
       avatarFile,
     });
 
@@ -255,9 +242,82 @@ export default function ProfilePage({
     }
 
     setPendingAvatarFile(null);
+    setEditRole(updated.role);
+    setEditBanned(updated.isBanned);
     setEditOpen(false);
     setQuickActionError(null);
     await refetch();
+  };
+
+  const applyUserAdminPatch = async (patch: {
+    role?: "STUDENT" | "ADMIN";
+    isBanned?: boolean;
+  }) => {
+    if (!activeProfile?.id) return;
+
+    const updated = await updateUser(activeProfile.id, patch);
+    if (!updated) return;
+
+    setEditRole(updated.role);
+    setEditBanned(updated.isBanned);
+    setEditDraft((prev) => ({
+      ...prev,
+      username: updated.username,
+      fullName: updated.fullName,
+      bio: updated.bio ?? "",
+    }));
+    await refetch();
+  };
+
+  const runDeleteUser = async () => {
+    if (!activeProfile?.id) return;
+
+    setConfirmLoading(true);
+    setQuickActionError(null);
+    try {
+      const ok = await deleteUser(activeProfile.id);
+      if (!ok) {
+        setQuickActionError(`Failed to delete @${activeProfile.username}`);
+      } else {
+        setEditOpen(false);
+        router.push("/search");
+      }
+    } finally {
+      setConfirmLoading(false);
+      setConfirmDeleteOpen(false);
+    }
+  };
+
+  const runRoleChange = async () => {
+    if (!activeProfile?.id) return;
+
+    setConfirmLoading(true);
+    setQuickActionError(null);
+    try {
+      const updated = await updateUser(activeProfile.id, {
+        role: pendingRole,
+      });
+
+      if (!updated) {
+        setQuickActionError(
+          `Failed to change role for @${activeProfile.username}`,
+        );
+        return;
+      }
+
+      setEditRole(updated.role);
+      setEditBanned(updated.isBanned);
+      setEditDraft((prev) => ({
+        ...prev,
+        username: updated.username,
+        fullName: updated.fullName,
+        bio: updated.bio ?? "",
+      }));
+      await refetch();
+    } finally {
+      setConfirmLoading(false);
+      setConfirmRoleOpen(false);
+    }
   };
 
   const runForceLogout = async () => {
@@ -405,6 +465,8 @@ export default function ProfilePage({
           isAdmin && user && activeProfile.id !== user.id ? (
             <UserAdminActionButtons
               disabled={adminLoading}
+              editAriaLabel={`Edit profile ${activeProfile.username}`}
+              forceLogoutAriaLabel={`Force logout ${activeProfile.username}`}
               onEdit={() => void openAdminEditDialog()}
               onForceLogout={() => setConfirmForceLogoutOpen(true)}
             />
@@ -446,9 +508,9 @@ export default function ProfilePage({
                   </div>
                 </div>
                 <div className="rounded-xl border border-slate-200 p-3">
-                  <div className="text-slate-500">Active</div>
+                  <div className="text-slate-500">Partnerships</div>
                   <div className="text-sm font-semibold text-slate-900">
-                    {intraSummary?.isActive ? "Yes" : "No"}
+                    {partnershipsCount}
                   </div>
                 </div>
                 <div className="rounded-xl border border-slate-200 p-3">
@@ -467,36 +529,9 @@ export default function ProfilePage({
                   </div>
                 </div>
                 <div className="rounded-xl border border-slate-200 p-3">
-                  <div className="text-slate-500">Phone</div>
-                  <div className="text-sm font-semibold text-slate-900 truncate">
-                    {intraSummary?.phone ?? "N/A"}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-xl border border-slate-200 p-3">
                   <div className="text-slate-500">Groups</div>
-                  <div className="text-sm font-semibold text-slate-900">
+                  <div className="text-sm font-semibold text-slate-900 truncate">
                     {groupsCount}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-slate-200 p-3">
-                  <div className="text-slate-500">Partnerships</div>
-                  <div className="text-sm font-semibold text-slate-900">
-                    {partnershipsCount}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-slate-200 p-3">
-                  <div className="text-slate-500">Patroned</div>
-                  <div className="text-sm font-semibold text-slate-900">
-                    {patronedCount}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-slate-200 p-3">
-                  <div className="text-slate-500">Patroning</div>
-                  <div className="text-sm font-semibold text-slate-900">
-                    {patroningCount}
                   </div>
                 </div>
               </div>
@@ -508,15 +543,17 @@ export default function ProfilePage({
                 {titleNames.length === 0 ? (
                   <p className="text-sm text-slate-500">No titles available.</p>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {titleNames.map((title) => (
-                      <span
-                        key={title}
-                        className="text-xs px-2 py-1 rounded-full bg-[#8EE7E3]/20 text-[#0f6f6b]"
-                      >
-                        {title}
-                      </span>
-                    ))}
+                  <div className="max-h-24 overflow-y-auto pr-1">
+                    <div className="flex flex-wrap gap-2">
+                      {titleNames.map((title) => (
+                        <span
+                          key={title}
+                          className="text-xs px-2 py-1 rounded-full bg-[#8EE7E3]/20 text-[#0f6f6b]"
+                        >
+                          {title}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -530,23 +567,25 @@ export default function ProfilePage({
                     No achievements available.
                   </p>
                 ) : (
-                  <ul className="space-y-2">
-                    {achievements.map((achievement) => (
-                      <li
-                        key={achievement.id}
-                        className="rounded-xl border border-slate-200 p-2"
-                      >
-                        <div className="text-sm font-semibold text-slate-900">
-                          {achievement.name}
-                        </div>
-                        {achievement.description ? (
-                          <p className="text-xs text-slate-500 mt-1">
-                            {achievement.description}
-                          </p>
-                        ) : null}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="max-h-44 overflow-y-auto pr-1">
+                    <ul className="space-y-2">
+                      {achievements.map((achievement) => (
+                        <li
+                          key={achievement.id}
+                          className="rounded-xl border border-slate-200 p-2"
+                        >
+                          <div className="text-sm font-semibold text-slate-900">
+                            {achievement.name}
+                          </div>
+                          {achievement.description ? (
+                            <p className="text-xs text-slate-500 mt-1">
+                              {achievement.description}
+                            </p>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
 
@@ -554,29 +593,33 @@ export default function ProfilePage({
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
                   Skills & Languages
                 </h3>
-                <div className="flex flex-wrap gap-2">
-                  {skills.map((skill) => (
-                    <span
-                      key={skill.id}
-                      className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700"
-                    >
-                      {skill.name} ({skill.level.toFixed(2)})
-                    </span>
-                  ))}
-                  {languageNames.map((language) => (
-                    <span
-                      key={language}
-                      className="text-xs px-2 py-1 rounded-full bg-indigo-50 text-indigo-600"
-                    >
-                      {language}
-                    </span>
-                  ))}
-                  {skills.length === 0 && languageNames.length === 0 ? (
-                    <span className="text-sm text-slate-500">
-                      No skills or languages available.
-                    </span>
-                  ) : null}
-                </div>
+                {skills.length > 0 || languageNames.length > 0 ? (
+                  <div className="max-h-24 overflow-y-auto pr-1">
+                    <div className="flex flex-wrap gap-2">
+                      {skills.map((skill) => (
+                        <span
+                          key={skill.id}
+                          className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700"
+                        >
+                          {skill.name} ({skill.level.toFixed(2)})
+                        </span>
+                      ))}
+                      {languageNames.map((language) => (
+                        <span
+                          key={language}
+                          className="text-xs px-2 py-1 rounded-full bg-indigo-50 text-indigo-600"
+                        >
+                          {language}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                {skills.length === 0 && languageNames.length === 0 ? (
+                  <span className="text-sm text-slate-500">
+                    No skills or languages available.
+                  </span>
+                ) : null}
               </div>
             </div>
           )}
@@ -708,13 +751,52 @@ export default function ProfilePage({
 
       <EditUserDialog
         open={editOpen}
-        title="Edit Profile"
+        title="Edit user profile"
         draft={editDraft}
         saving={adminLoading}
         error={quickActionError ?? adminError}
         showAvatarUpload
         avatarFileName={pendingAvatarFile?.name ?? null}
         onAvatarFileChange={setPendingAvatarFile}
+        extraActions={
+          isAdmin && activeProfile?.id ? (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn btn-xs btn-outline"
+                onClick={() => {
+                  setPendingRole(editRole === "ADMIN" ? "STUDENT" : "ADMIN");
+                  setConfirmRoleOpen(true);
+                }}
+                disabled={adminLoading}
+              >
+                {editRole === "ADMIN" ? "Make student" : "Make admin"}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-xs btn-warning"
+                onClick={() =>
+                  void applyUserAdminPatch({
+                    isBanned: !editBanned,
+                  })
+                }
+                disabled={adminLoading}
+              >
+                {editBanned ? "Unban" : "Ban"}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-xs btn-error"
+                onClick={() => setConfirmDeleteOpen(true)}
+                disabled={adminLoading}
+              >
+                Delete user
+              </button>
+            </div>
+          ) : null
+        }
         onChange={(next) => setEditDraft((prev) => ({ ...prev, ...next }))}
         onClose={() => setEditOpen(false)}
         onSubmit={saveAdminEdit}
@@ -733,6 +815,38 @@ export default function ProfilePage({
         loading={confirmLoading || adminLoading}
         onClose={() => setConfirmForceLogoutOpen(false)}
         onConfirm={runForceLogout}
+      />
+
+      <ConfirmActionDialog
+        open={confirmDeleteOpen}
+        title={
+          activeProfile ? `Delete @${activeProfile.username}` : "Delete user"
+        }
+        message="This permanently deletes the user account."
+        confirmLabel="Delete"
+        tone="danger"
+        loading={confirmLoading || adminLoading}
+        onClose={() => setConfirmDeleteOpen(false)}
+        onConfirm={runDeleteUser}
+      />
+
+      <ConfirmActionDialog
+        open={confirmRoleOpen}
+        title={
+          activeProfile
+            ? `${pendingRole === "ADMIN" ? "Make" : "Demote"} @${activeProfile.username}`
+            : "Confirm role change"
+        }
+        message={
+          pendingRole === "ADMIN"
+            ? "This grants administrator privileges to this user."
+            : "This removes administrator privileges from this user."
+        }
+        confirmLabel={pendingRole === "ADMIN" ? "Make admin" : "Make student"}
+        tone="warning"
+        loading={confirmLoading || adminLoading}
+        onClose={() => setConfirmRoleOpen(false)}
+        onConfirm={runRoleChange}
       />
     </div>
   );

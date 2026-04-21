@@ -104,6 +104,13 @@ export default function ProfileCard({
                 Since {profile.since}
               </span>
             </div>
+
+            {canShowPeerActions ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <AddFriendButton targetUserId={user.id} />
+                <DirectMessageButton targetUserId={user.id} />
+              </div>
+            ) : null}
           </div>
 
           <div className="sm:min-w-[180px] space-y-1.5">
@@ -121,14 +128,8 @@ export default function ProfileCard({
               {profile.levelProgress} / 100 XP
             </p>
 
-            {canShowPeerActions || adminActions ? (
+            {adminActions ? (
               <div className="mt-3 flex flex-wrap justify-end gap-2">
-                {canShowPeerActions ? (
-                  <>
-                    <AddFriendButton targetUserId={user.id} />
-                    <DirectMessageButton targetUserId={user.id} />
-                  </>
-                ) : null}
                 {adminActions}
               </div>
             ) : null}

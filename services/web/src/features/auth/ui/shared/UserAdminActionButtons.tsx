@@ -7,6 +7,8 @@ interface UserAdminActionButtonsProps {
   onForceLogout: () => void;
   disabled?: boolean;
   compact?: boolean;
+  editAriaLabel?: string;
+  forceLogoutAriaLabel?: string;
 }
 
 /**
@@ -17,6 +19,8 @@ export default function UserAdminActionButtons({
   onForceLogout,
   disabled = false,
   compact = false,
+  editAriaLabel,
+  forceLogoutAriaLabel,
 }: UserAdminActionButtonsProps) {
   return (
     <>
@@ -27,6 +31,7 @@ export default function UserAdminActionButtons({
         }
         onClick={onEdit}
         disabled={disabled}
+        aria-label={editAriaLabel}
       >
         Edit profile
       </button>
@@ -38,6 +43,7 @@ export default function UserAdminActionButtons({
         }
         onClick={onForceLogout}
         disabled={disabled}
+        aria-label={forceLogoutAriaLabel}
       >
         <UserX size={12} />
         Force logout

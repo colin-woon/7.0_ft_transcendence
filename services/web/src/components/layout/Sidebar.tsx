@@ -23,12 +23,12 @@ export default function Sidebar() {
   const [policyTab, setPolicyTab] = useState<"privacy" | "terms">("privacy");
 
   const initials = user
-    ? user.fullName
+    ? (user.fullName ?? "")
         .split(" ")
         .map((n: string) => n[0])
         .join("")
         .slice(0, 2)
-        .toUpperCase()
+        .toUpperCase() || "G"
     : "G";
 
   useEffect(() => {
