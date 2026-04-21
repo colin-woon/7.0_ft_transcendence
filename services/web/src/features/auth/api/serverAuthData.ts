@@ -76,6 +76,24 @@ interface ServerFetchResult<T> {
   error: string | null;
 }
 
+function defaultErrorMessage(status: number): string {
+  return status === 400
+    ? "Bad request"
+    : status === 401
+      ? "Authentication required"
+      : status === 403
+        ? "Forbidden"
+        : status === 404
+          ? "Not found"
+          : status === 409
+            ? "Conflict"
+            : status === 429
+              ? "Too many requests"
+              : status >= 500
+                ? "Service unavailable"
+                : `Request failed: ${status}`;
+}
+
 function getGatewayBaseUrl(): string {
   const raw = process.env.GATEWAY_URL?.trim() || "";
   if (!raw) return "";
@@ -118,16 +136,7 @@ async function fetchAuthJson<T>(path: string): Promise<ServerFetchResult<T>> {
     });
 
     if (!response.ok) {
-      const fallback = `Request failed: ${response.status}`;
-      let errorMessage = fallback;
-      try {
-        const errorText = await response.text();
-        if (errorText.trim()) {
-          errorMessage = errorText;
-        }
-      } catch {
-        errorMessage = fallback;
-      }
+      const errorMessage = defaultErrorMessage(response.status);
 
       return {
         ok: false,

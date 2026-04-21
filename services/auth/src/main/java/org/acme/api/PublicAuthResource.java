@@ -1,7 +1,5 @@
 package org.acme.api;
 
-import java.net.URI;
-
 import org.acme.dto.UserResponseDTO;
 import org.acme.service.AuthService;
 
@@ -43,7 +41,7 @@ public class PublicAuthResource {
 						@QueryParam("isCookie") @DefaultValue("true") Boolean isCookie) throws java.net.URISyntaxException {
 		UserResponseDTO userResponse = authService.createToken(identity);
 		Response.ResponseBuilder responseBuilder = Response
-			.seeOther(new URI("https://localhost/profile"))
+			.seeOther(authService.resolvePostLoginRedirect())
 			.entity(userResponse)
 			.cookie(authService.createSessionCookie(identity))
 			.cookie(authService.clearOIDCCookies());
@@ -73,4 +71,5 @@ public class PublicAuthResource {
 		// Return OK - OIDC will handle the redirect back to login path
 		return Response.ok("{\"status\": \"callback received\"}").build();
 	}
+
 }

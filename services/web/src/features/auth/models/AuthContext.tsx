@@ -1,9 +1,18 @@
-'use client'
+"use client";
 
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
+import type React from "react";
 import {
-  authService,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
   type AdminUpdatePayload,
+  AuthApiError,
+  authService,
   type CreateUserPayload,
   type PasswordChangePayload,
   type PasswordLoginPayload,
@@ -12,245 +21,290 @@ import {
   type User,
   type UserSummary,
   type UserUpdatePayload,
-} from '@/features/auth/api/authService'
+} from "@/features/auth/api/authService";
 
 interface AuthState {
-  user: User | null
-  accessToken: string | null
-  isLoading: boolean
-  isAuthenticated: boolean
-  error: string | null
-  login: (provider: 'google' | '42') => void
-  loginWithPassword: (payload: PasswordLoginPayload) => Promise<User>
-  registerWithPassword: (payload: PasswordRegisterPayload) => Promise<User>
-  updatePassword: (payload: PasswordChangePayload) => Promise<User>
-  handleOAuthCallback: () => Promise<User | null>
-  logout: () => Promise<void>
-  terminateSession: (sessionId: string) => Promise<boolean>
-  logoutAll: () => Promise<void>
-  refresh: () => Promise<boolean>
-  clearError: () => void
-  hasRole: (role: User['role']) => boolean
-  updateProfile: (payload: UserUpdatePayload) => Promise<User>
-  deleteAccount: () => Promise<void>
-  reloadIntraData: () => Promise<User | null>
-  listSessions: () => Promise<SessionInfo[]>
-  searchUsers: (query: string, page?: number, size?: number) => Promise<UserSummary[]>
-  adminUpdateUser: (userId: number, payload: AdminUpdatePayload) => Promise<User>
-  adminLogoutUser: (userId: number) => Promise<void>
-  adminCreateUser: (payload: CreateUserPayload) => Promise<User>
-  adminDeleteUser: (userId: number) => Promise<void>
+  user: User | null;
+  accessToken: string | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  error: string | null;
+  login: (provider: "google" | "42") => void;
+  loginWithPassword: (payload: PasswordLoginPayload) => Promise<User>;
+  registerWithPassword: (payload: PasswordRegisterPayload) => Promise<User>;
+  updatePassword: (payload: PasswordChangePayload) => Promise<User>;
+  handleOAuthCallback: () => Promise<User | null>;
+  logout: () => Promise<void>;
+  terminateSession: (sessionId: string) => Promise<boolean>;
+  logoutAll: () => Promise<void>;
+  refresh: () => Promise<boolean>;
+  clearError: () => void;
+  hasRole: (role: User["role"]) => boolean;
+  updateProfile: (payload: UserUpdatePayload) => Promise<User>;
+  deleteAccount: () => Promise<void>;
+  reloadIntraData: () => Promise<User | null>;
+  listSessions: () => Promise<SessionInfo[]>;
+  searchUsers: (
+    query: string,
+    page?: number,
+    size?: number,
+  ) => Promise<UserSummary[]>;
+  adminUpdateUser: (
+    userId: number,
+    payload: AdminUpdatePayload,
+  ) => Promise<User>;
+  adminLogoutUser: (userId: number) => Promise<void>;
+  adminCreateUser: (payload: CreateUserPayload) => Promise<User>;
+  adminDeleteUser: (userId: number) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthState | null>(null)
+const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [accessToken, setAccessToken] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const restoreRequestRef = useRef(0)
+  const [user, setUser] = useState<User | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const restoreRequestRef = useRef(0);
 
-  const updateAuthState = (nextUser: User | null, token: string | null) => {
-    setUser(nextUser)
-    setAccessToken(token)
-  }
+  const updateAuthState = useCallback(
+    (nextUser: User | null, token: string | null) => {
+      setUser(nextUser);
+      setAccessToken(token);
+    },
+    [],
+  );
 
   useEffect(() => {
     const restoreSession = async () => {
-      const restoreRequestId = ++restoreRequestRef.current
+      const restoreRequestId = ++restoreRequestRef.current;
       try {
-        const response = await authService.refreshAccessToken()
+        const response = await authService.refreshAccessToken();
         if (restoreRequestRef.current === restoreRequestId) {
-          updateAuthState(response.user, response.accessToken)
-          setError(null)
+          updateAuthState(response.user, response.accessToken);
+          setError(null);
         }
       } catch (err) {
         if (restoreRequestRef.current === restoreRequestId) {
-          const msg = err instanceof Error ? err.message : 'Failed to restore session'
-          updateAuthState(null, null)
-          setError(msg)
+          updateAuthState(null, null);
+          if (
+            err instanceof AuthApiError &&
+            (err.status === 401 || err.status === 404)
+          ) {
+            // A missing/expired session on initial boot is an expected anonymous state.
+            setError(null);
+          } else {
+            const msg =
+              err instanceof Error ? err.message : "Failed to restore session";
+            setError(msg);
+          }
         }
       } finally {
         if (restoreRequestRef.current === restoreRequestId) {
-          setIsLoading(false)
+          setIsLoading(false);
         }
       }
-    }
+    };
 
-    restoreSession()
-  }, [])
+    restoreSession();
+  }, [updateAuthState]);
 
-  const login = (provider: 'google' | '42') => {
-    setError(null)
-    authService.loginWithProvider(provider)
-  }
+  const login = (provider: "google" | "42") => {
+    setError(null);
+    authService.loginWithProvider(provider);
+  };
 
-  const loginWithPassword = async (payload: PasswordLoginPayload): Promise<User> => {
-    const response = await authService.loginWithPassword(payload)
-    restoreRequestRef.current += 1
-    updateAuthState(response.user, response.accessToken)
-    setIsLoading(false)
-    setError(null)
-    return response.user
-  }
+  const loginWithPassword = async (
+    payload: PasswordLoginPayload,
+  ): Promise<User> => {
+    const response = await authService.loginWithPassword(payload);
+    restoreRequestRef.current += 1;
+    updateAuthState(response.user, response.accessToken);
+    setIsLoading(false);
+    setError(null);
+    return response.user;
+  };
 
-  const registerWithPassword = async (payload: PasswordRegisterPayload): Promise<User> => {
-    const response = await authService.registerWithPassword(payload)
-    restoreRequestRef.current += 1
-    updateAuthState(response.user, response.accessToken)
-    setIsLoading(false)
-    setError(null)
-    return response.user
-  }
+  const registerWithPassword = async (
+    payload: PasswordRegisterPayload,
+  ): Promise<User> => {
+    const response = await authService.registerWithPassword(payload);
+    restoreRequestRef.current += 1;
+    updateAuthState(response.user, response.accessToken);
+    setIsLoading(false);
+    setError(null);
+    return response.user;
+  };
 
-  const updatePassword = async (payload: PasswordChangePayload): Promise<User> => {
-    const updated = await authService.updatePassword(payload)
+  const updatePassword = async (
+    payload: PasswordChangePayload,
+  ): Promise<User> => {
+    const updated = await authService.updatePassword(payload);
     if (user?.id === updated.id) {
-      setUser(updated)
+      setUser(updated);
     }
-    setError(null)
-    return updated
-  }
+    setError(null);
+    return updated;
+  };
 
   const handleOAuthCallback = async (): Promise<User | null> => {
     try {
-      const userData = await authService.handleOAuthCallback()
+      const userData = await authService.handleOAuthCallback();
       if (userData) {
-        updateAuthState(userData, authService.getAccessToken())
-        setError(null)
+        updateAuthState(userData, authService.getAccessToken());
+        setError(null);
       }
-      return userData
+      return userData;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'OAuth callback failed'
-      setError(msg)
-      return null
+      const msg = err instanceof Error ? err.message : "OAuth callback failed";
+      setError(msg);
+      return null;
     }
-  }
+  };
 
   const logout = async () => {
     try {
-      await authService.logout()
-      setError(null)
-      updateAuthState(null, null)
+      await authService.logout();
+      setError(null);
+      updateAuthState(null, null);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Logout failed'
-      setError(msg)
-      throw err
+      const msg = err instanceof Error ? err.message : "Logout failed";
+      setError(msg);
+      throw err;
     }
-  }
+  };
 
   const terminateSession = async (sessionId: string): Promise<boolean> => {
     try {
-      await authService.logoutSession(sessionId)
-      setError(null)
-      return true
+      await authService.logoutSession(sessionId);
+      setError(null);
+      return true;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to terminate session'
-      setError(msg)
-      return false
+      const msg =
+        err instanceof Error ? err.message : "Failed to terminate session";
+      setError(msg);
+      return false;
     }
-  }
+  };
 
   const logoutAll = async () => {
     try {
-      await authService.logoutAll()
-      setError(null)
-      updateAuthState(null, null)
+      await authService.logoutAll();
+      setError(null);
+      updateAuthState(null, null);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to logout all sessions'
-      setError(msg)
-      throw err
+      const msg =
+        err instanceof Error ? err.message : "Failed to logout all sessions";
+      setError(msg);
+      throw err;
     }
-  }
+  };
 
   const refresh = async (): Promise<boolean> => {
     try {
-      const response = await authService.refreshAccessToken()
-      updateAuthState(response.user, response.accessToken)
-      setError(null)
-      return true
+      const response = await authService.refreshAccessToken();
+      updateAuthState(response.user, response.accessToken);
+      setError(null);
+      return true;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Refresh failed'
-      updateAuthState(null, null)
-      setError(msg)
-      return false
+      const msg = err instanceof Error ? err.message : "Refresh failed";
+      updateAuthState(null, null);
+      setError(msg);
+      return false;
     }
-  }
+  };
 
   const updateProfile = async (payload: UserUpdatePayload): Promise<User> => {
-    const updated = await authService.updateCurrentUserProfile(payload)
-    setUser(updated)
-    return updated
-  }
+    const updated = await authService.updateCurrentUserProfile(payload);
+    setUser(updated);
+    return updated;
+  };
 
   const deleteAccount = async (): Promise<void> => {
     try {
-      await authService.deleteCurrentUser()
-      setError(null)
-      updateAuthState(null, null)
+      await authService.deleteCurrentUser();
+      setError(null);
+      updateAuthState(null, null);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to delete account'
-      setError(msg)
-      throw err
+      const msg =
+        err instanceof Error ? err.message : "Failed to delete account";
+      setError(msg);
+      throw err;
     }
-  }
+  };
 
   const reloadIntraData = async (): Promise<User | null> => {
-    if (!user) return null
+    if (!user) return null;
     try {
-      const updated = await authService.reloadIntraData(user.id)
-      setUser(updated)
-      setError(null)
-      return updated
+      const updated = await authService.reloadIntraData(user.id);
+      setUser(updated);
+      setError(null);
+      return updated;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to reload 42 data'
-      setError(msg)
-      return null
+      const msg =
+        err instanceof Error ? err.message : "Failed to reload 42 data";
+      setError(msg);
+      return null;
     }
-  }
+  };
 
   const listSessions = async (): Promise<SessionInfo[]> => {
     try {
-      return await authService.listSessions()
+      const sessions = await authService.listSessions();
+      setError(null);
+      return sessions;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to fetch sessions'
-      setError(msg)
-      throw err
+      const msg =
+        err instanceof Error ? err.message : "Failed to fetch sessions";
+      setError(msg);
+      throw err;
     }
-  }
+  };
 
-  const searchUsers = async (query: string, page = 0, size = 20): Promise<UserSummary[]> => {
+  const searchUsers = async (
+    query: string,
+    page = 0,
+    size = 20,
+  ): Promise<UserSummary[]> => {
     try {
-      return await authService.searchUsers(query, page, size)
+      return await authService.searchUsers(query, page, size);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Search failed'
-      setError(msg)
-      throw err
+      const msg = err instanceof Error ? err.message : "Search failed";
+      setError(msg);
+      throw err;
     }
-  }
+  };
 
-  const adminUpdateUser = async (userId: number, payload: AdminUpdatePayload): Promise<User> => {
-    return authService.adminUpdateUser(userId, payload)
-  }
+  const adminUpdateUser = async (
+    userId: number,
+    payload: AdminUpdatePayload,
+  ): Promise<User> => {
+    const updated = await authService.adminUpdateUser(userId, payload);
+    setError(null);
+    return updated;
+  };
 
   const adminLogoutUser = async (userId: number): Promise<void> => {
-    await authService.adminLogoutUser(userId)
-  }
+    await authService.adminLogoutUser(userId);
+    setError(null);
+  };
 
   const adminCreateUser = async (payload: CreateUserPayload): Promise<User> => {
-    return authService.adminCreateUser(payload)
-  }
+    const created = await authService.adminCreateUser(payload);
+    setError(null);
+    return created;
+  };
 
   const adminDeleteUser = async (userId: number): Promise<void> => {
-    await authService.adminDeleteUser(userId)
-  }
+    await authService.adminDeleteUser(userId);
+    setError(null);
+  };
 
   const clearError = () => {
-    setError(null)
-  }
+    setError(null);
+  };
 
-  const hasRole = (role: User['role']) => user?.role === role
+  const hasRole = (role: User["role"]) => user?.role === role;
 
   return (
     <AuthContext.Provider
@@ -284,11 +338,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     >
       {children}
     </AuthContext.Provider>
-  )
+  );
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used inside AuthProvider')
-  return ctx
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
+  return ctx;
 }

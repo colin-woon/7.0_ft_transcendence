@@ -58,10 +58,8 @@ public class FaultToleranceServiceCallExecutor {
     <T> T executeInner(Supplier<T> serviceCall) {
         try {
             return sce.execute(serviceCall);
-        } catch (RetryableServiceException rse) {
-            throw (GatewayException) rse.getCause();
-        } catch (NonRetryableServiceException nrse) {
-            throw (GatewayException) nrse.getCause();
+        } catch (RetryableServiceException | NonRetryableServiceException e) {
+            throw (GatewayException) e.getCause();
         } catch (GatewayException ge) {
             if (isRetryable(ge.getCode())) {
                 throw new RetryableServiceException(ge);

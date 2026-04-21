@@ -23,11 +23,17 @@ RUN ./mvnw package -DskipTests
 # --- Stage 3.1: Production Run (Quarkus Optimized) ---
 FROM registry.access.redhat.com/ubi9/openjdk-21:1.23 AS production
 WORKDIR /deployments
+USER root
 # Assuming you ran a build stage or build locally
 COPY --from=builder --chown=185 /app/target/quarkus-app/lib/ /deployments/lib/
 COPY --from=builder --chown=185 /app/target/quarkus-app/*.jar /deployments/
 COPY --from=builder --chown=185 /app/target/quarkus-app/app/ /deployments/app/
 COPY --from=builder --chown=185 /app/target/quarkus-app/quarkus/ /deployments/quarkus/
+
+# Runtime writable path for persisted auth avatars
+RUN mkdir -p /var/lib/auth/avatars \
+	&& chown -R 185:0 /var/lib/auth \
+	&& chmod -R g+rwX /var/lib/auth
 
 EXPOSE 8080
 USER 185

@@ -138,7 +138,7 @@ services/auth/
 #### 1. Login
 
 ```http
-GET /auth/login/{provider}
+GET /api/public/auth/login/{provider}
 ```
 
 **Parameters:**
@@ -177,7 +177,7 @@ GET /auth/login/{provider}
 #### 2. Refresh Token
 
 ```http
-POST /auth/refresh
+POST /api/public/auth/refresh
 ```
 
 **Authentication:** Cookie (`sessionId`)
@@ -194,7 +194,7 @@ POST /auth/refresh
 #### 3. Logout
 
 ```http
-POST /auth/logout
+POST /api/auth/logout
 ```
 
 **Authentication:** Required (JWT) + Cookie (`sessionId`)
@@ -214,7 +214,7 @@ POST /auth/logout
 #### 4. Delete Account
 
 ```http
-DELETE /auth/delete
+DELETE /api/auth/delete
 ```
 
 **Authentication:** Required (JWT)
@@ -230,7 +230,7 @@ DELETE /auth/delete
 #### 5. Get My Profile
 
 ```http
-GET /auth/me
+GET /api/auth/me
 ```
 
 **Authentication:** Required (JWT)
@@ -242,7 +242,7 @@ GET /auth/me
 #### 6. Update My Profile
 
 ```http
-PATCH /auth/me
+PATCH /api/auth/me
 ```
 
 **Authentication:** Required (JWT)
@@ -272,7 +272,7 @@ PATCH /auth/me
 #### 7. Search Users
 
 ```http
-GET /auth/users?q={query}&page={page}&size={size}
+GET /api/auth/users?q={query}&page={page}&size={size}
 ```
 
 **Parameters:**
@@ -301,7 +301,7 @@ GET /auth/users?q={query}&page={page}&size={size}
 #### 8. Get User by ID
 
 ```http
-GET /auth/users/{id}
+GET /api/auth/users/{id}
 ```
 
 **Parameters:**
@@ -364,7 +364,7 @@ public class Session {
 
 ### DTOs
 
-**UserInfoDTO**: Complete user information (for /auth/me, /auth/users/{id})
+**UserInfoDTO**: Complete user information (for /api/auth/me, /api/auth/users/{id})
 
 **UserSummaryDTO**: Brief info for lists/searches (id, username, fullName, avatarUrl)
 
@@ -380,7 +380,7 @@ public class Session {
 
 ```
 1. User clicks "Login with Google"
-   → Frontend redirects to: GET /auth/login/google
+   → Frontend redirects to: GET /api/public/auth/login/google
 
 2. UserSyncAugmentor intercepts authentication
    → Extracts UserInfo from Google
@@ -394,7 +394,7 @@ public class Session {
 
 4. UserSyncAugmentor adds User to SecurityIdentity
 
-5. AuthResource.login() executes
+5. PublicAuthResource.login() executes
    → Calls AuthService.createToken() → generates JWT
    → Calls AuthService.createSessionCookie() → creates session in DB
    → Returns access token + session cookie
@@ -419,7 +419,7 @@ public class Session {
 ### 3. Token Refresh Flow
 
 ```
-1. Client sends POST /auth/refresh with sessionId cookie
+1. Client sends POST /api/public/auth/refresh with sessionId cookie
 
 2. AuthService.refreshToken()
    → Validate sessionId exists in database
@@ -502,19 +502,19 @@ make build PROFILE=auth
 ### Manual Testing
 
 1. **Test Google OAuth:**
-   - Go to `http://localhost:8002/auth/login/google`
+   - Go to `http://localhost:8002/api/public/auth/login/google`
    - Complete Google auth flow
    - Verify JWT token returned
 
 2. **Test Refresh:**
    ```bash
-   curl -X POST http://localhost:8002/auth/refresh \
+   curl -X POST http://localhost:8002/api/public/auth/refresh \
      --cookie "sessionId=<your-session-id>"
    ```
 
 3. **Test Profile Update:**
    ```bash
-   curl -X PATCH http://localhost:8002/auth/me \
+   curl -X PATCH http://localhost:8002/api/auth/me \
      -H "Authorization: Bearer <your-jwt>" \
      -H "Content-Type: application/json" \
      -d '{"bio": "Updated bio"}'
@@ -556,7 +556,7 @@ quarkus.oidc.introspection-path=/introspection
 
 **Checklist**:
 1. Valid `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in environment
-2. Redirect URI configured in Google Console: `http://localhost:8002/auth/callback/google`
+2. Redirect URI configured in Google Console: `http://localhost:8002/api/public/auth/callback/google`
 3. Check logs for OIDC errors: `quarkus.log.category."io.quarkus.oidc".level=DEBUG`
 
 ---
