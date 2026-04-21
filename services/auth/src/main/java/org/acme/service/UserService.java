@@ -43,7 +43,7 @@ public class UserService {
 
 			case "42" -> syncBy42(info);
 			
-			default -> throw new WebApplicationException("Unknown provider: " + tenantId, 401);
+			default -> throw new WebApplicationException("Unsupported authentication provider", 401);
 		};
 		// Initialize lazy relations while the session is still open,
 		// since the User will be stored as a detached SecurityIdentity attribute
@@ -86,18 +86,18 @@ public class UserService {
 	@Transactional
 	public User authenticateWithPassword(PasswordLoginDTO dto) {
 		String normalizedEmail = normalizeEmail(dto.email);
-		User user = userRepository.findByEmail(normalizedEmail).orElseThrow(() -> new WebApplicationException("User not found", 404));
-
-		if (user.passwordHash == null || user.passwordHash.isBlank()) {
-			throw new WebApplicationException("Password login is not set for this account", 409);
+		User user = userRepository.findByEmail(normalizedEmail).orElse(null);
+		String passwordHash = user != null ? user.passwordHash : null;
+		if (!passwordService.verifyWithFallback(dto.password, passwordHash)) {
+			throw new WebApplicationException("Invalid credentials", 401);
 		}
 
-		if (!verifyPassword(dto.password, user.passwordHash)) {
+		if (user == null) {
 			throw new WebApplicationException("Invalid credentials", 401);
 		}
 
 		if (user.isBanned) {
-			throw new WebApplicationException("User is banned", 403);
+			throw new WebApplicationException("Invalid credentials", 401);
 		}
 
 		Hibernate.initialize(user.intra);

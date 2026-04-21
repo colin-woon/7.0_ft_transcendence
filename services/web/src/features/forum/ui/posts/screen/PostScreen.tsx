@@ -1,26 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { AlertCircle, Eye, MessageCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { MessageCircle, Eye, AlertCircle } from "lucide-react";
-import type { ForumPostDetail, ForumComment } from "@/features/forum/models";
-import PostVoteButtons from "../components/PostVoteButtons";
-import CommentVoteButtons from "../components/CommentVoteButtons";
-import WriteCommentBox from "../components/WriteCommentBox";
-import { PaginationControls } from "@/features/forum/ui/shared/PaginationControls";
-import ForumTrailButtons from "@/features/forum/ui/shared/ForumTrailButtons";
+import { useEffect, useMemo, useState } from "react";
 import {
   deleteForumComment,
   deleteForumPost,
   updateForumComment,
   updateForumPost,
 } from "@/features/forum/api/moderation";
+import { useAuthorNames } from "@/features/forum/hooks/useAuthorNames";
+import type { ForumComment, ForumPostDetail } from "@/features/forum/models";
 import {
   CommentModerationControls,
   EditCommentDialog,
   EditPostDialog,
   PostModerationControls,
 } from "@/features/forum/ui/moderation";
+import ForumTrailButtons from "@/features/forum/ui/shared/ForumTrailButtons";
+import { PaginationControls } from "@/features/forum/ui/shared/PaginationControls";
+import CommentVoteButtons from "../components/CommentVoteButtons";
+import PostVoteButtons from "../components/PostVoteButtons";
+import WriteCommentBox from "../components/WriteCommentBox";
 
 interface PostDetailClientProps {
   post: ForumPostDetail;
@@ -79,6 +80,14 @@ export default function PostDetailClient({
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
   const COMMENTS_PER_PAGE = 6;
+  const authorIds = useMemo(
+    () => [
+      postState.authorId,
+      ...commentState.map((comment) => comment.authorId),
+    ],
+    [postState.authorId, commentState],
+  );
+  const resolveAuthorName = useAuthorNames(authorIds);
 
   const totalCommentPages = Math.max(
     1,
@@ -256,7 +265,9 @@ export default function PostDetailClient({
             />
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-small text-sm">{postState.author}</span>
+                <span className="font-small text-sm">
+                  {resolveAuthorName(postState.authorId)}
+                </span>
                 <div className="ml-auto">
                   <PostModerationControls
                     authorId={postState.authorId}
@@ -333,7 +344,7 @@ export default function PostDetailClient({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-semibold text-sm text-slate-900">
-                          {comment.author}
+                          {resolveAuthorName(comment.authorId)}
                         </span>
                         {comment.isBestAnswer && (
                           <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">

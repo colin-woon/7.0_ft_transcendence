@@ -21,6 +21,7 @@ import ConfirmActionDialog from "@/features/auth/ui/settings/components/ConfirmA
 import EditUserDialog, {
   type EditUserDraft,
 } from "@/features/auth/ui/settings/components/EditUserDialog";
+import UserAdminActionButtons from "@/features/auth/ui/shared/UserAdminActionButtons";
 import {
   fileToDataUrl,
   validateAvatarFile,
@@ -112,6 +113,7 @@ export default function UsersSearchPage({
     minChars: 1,
     pageSize: 8,
     debounceMs: 300,
+    excludeUserId: user?.id,
   });
 
   const {
@@ -120,12 +122,14 @@ export default function UsersSearchPage({
     loading,
     error,
     page,
+    hasMore,
     setPage,
     searchNow: searchResultsNow,
   } = useUserSearch({
     minChars: 1,
     pageSize: RESULTS_PAGE_SIZE,
     debounceMs: 300,
+    excludeUserId: user?.id,
   });
 
   const [confirmAction, setConfirmAction] = useState<UserConfirmAction | null>(
@@ -376,8 +380,10 @@ export default function UsersSearchPage({
 
   const trimmedQuery = typedQuery.trim();
   const hasCommittedQuery = committedQuery.trim().length > 0;
+  const filteredDropdownResults = dropdownResults;
+  const filteredResults = results;
   const canGoPrev = page > 0 && !loading;
-  const canGoNext = !loading && results.length === RESULTS_PAGE_SIZE;
+  const canGoNext = !loading && hasMore;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -418,10 +424,10 @@ export default function UsersSearchPage({
               <div className="p-4 text-sm text-error">{dropdownError}</div>
             ) : dropdownLoading ? (
               <div className="p-4 text-sm text-slate-500">Searching...</div>
-            ) : dropdownResults.length === 0 ? (
+            ) : filteredDropdownResults.length === 0 ? (
               <div className="p-4 text-sm text-slate-500">No users found.</div>
             ) : (
-              dropdownResults.map((result) => (
+              filteredDropdownResults.map((result) => (
                 <div
                   key={result.id}
                   className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50"
@@ -473,7 +479,7 @@ export default function UsersSearchPage({
               ))
             )}
 
-            {!dropdownLoading && dropdownResults.length > 0 && (
+            {!dropdownLoading && filteredDropdownResults.length > 0 && (
               <div className="px-3 py-2 border-t border-slate-100 flex items-center justify-between">
                 <span className="text-xs text-slate-500">
                   Press Enter for full results
@@ -507,13 +513,13 @@ export default function UsersSearchPage({
         <p className="text-sm text-base-content/60">
           Type in the search bar and press Enter to show results.
         </p>
-      ) : results.length === 0 ? (
+      ) : filteredResults.length === 0 ? (
         <p className="text-sm text-base-content/60">
           No users found for this query.
         </p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {results.map((result) => (
+          {filteredResults.map((result) => (
             <div
               key={result.id}
               className="card bg-base-100 border border-base-200 hover:border-base-300 transition"
@@ -548,32 +554,20 @@ export default function UsersSearchPage({
                   </button>
 
                   {isAdmin && (
-                    <>
-                      <button
-                        type="button"
-                        className="btn btn-xs btn-neutral"
-                        onClick={() => void openEditDialog(result.id)}
-                        disabled={adminLoading}
-                      >
-                        Edit profile
-                      </button>
-
-                      <button
-                        type="button"
-                        className="btn btn-xs btn-warning"
-                        onClick={() =>
-                          setConfirmAction({
-                            kind: "logout",
-                            userId: result.id,
-                            username: result.username,
-                          })
-                        }
-                        disabled={adminLoading}
-                      >
-                        <UserX size={12} />
-                        Force logout
-                      </button>
-                    </>
+                    <UserAdminActionButtons
+                      compact
+                      disabled={adminLoading}
+                      editAriaLabel={`Edit profile ${result.username}`}
+                      forceLogoutAriaLabel={`Force logout ${result.username}`}
+                      onEdit={() => void openEditDialog(result.id)}
+                      onForceLogout={() =>
+                        setConfirmAction({
+                          kind: "logout",
+                          userId: result.id,
+                          username: result.username,
+                        })
+                      }
+                    />
                   )}
                 </div>
               </div>

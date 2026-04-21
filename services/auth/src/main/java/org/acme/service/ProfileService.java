@@ -11,7 +11,6 @@ import org.acme.model.User;
 import org.acme.model.UserRole;
 import org.acme.repository.UserRepository;
 import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -31,11 +30,8 @@ public class ProfileService {
 	@Inject
 	AvatarStorageService avatarStorageService;
 
-	@ConfigProperty(name = "secure.cookies", defaultValue = "false")
-	Boolean secureCookies;
-
-	@ConfigProperty(name = "app.domain.name", defaultValue = "localhost")
-	String domain;
+	@Inject
+	CookieService cookieService;
 
 	public UserInfoDTO getMyInfo(Long userId) {
 		User user = userRepository.findById(userId);
@@ -120,7 +116,7 @@ public class ProfileService {
 	}
 
 	@Transactional
-	public NewCookie deleteAccount(Long userId) {
+	public NewCookie[] deleteAccount(Long userId) {
 		User user = userRepository.findById(userId);
 		if (user == null) {
 			LOG.error("User not found for deletion: " + userId);
@@ -130,14 +126,6 @@ public class ProfileService {
 		LOG.warn("Deleting user account: " + user.id);
 		avatarStorageService.deleteManagedAvatar(user.avatarUrl);
 		userRepository.delete(user);
-		return new NewCookie.Builder("sessionId")
-			.value("")
-			.path("/")
-			.domain(domain)
-			.maxAge(0)
-			.secure(secureCookies)
-			.httpOnly(true)
-			.comment("The session id to replace the old one, effectively deleting the user")
-			.build();
+		return cookieService.clearSessionCookies();
 	}
 }

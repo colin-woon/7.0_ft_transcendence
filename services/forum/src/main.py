@@ -243,6 +243,16 @@ def list_my_subscriptions(
     return logic.get_subscriptions_by_user(db, user_id)
 
 
+@router.get("/projects/users/{user_id}/subscriptions", response_model=List[schemas.ProjectResponse])
+def list_user_subscriptions(
+    user_id: int,
+    db: Session = Depends(get_db),
+    identity: tuple[int, bool] = Depends(get_request_identity),
+):
+    _requester_id, _ = identity
+    return logic.get_subscriptions_by_user(db, user_id)
+
+
 @router.get(
     "/projects/{project_id}/subscription-status",
     response_model=schemas.ProjectSubscriptionStatusResponse,

@@ -18,18 +18,19 @@ components:
       type: apiKey
       in: header
       name: X-Intra-User-Id
-      description: "Dev Mode: Manually inject the user ID that the Gateway normally provides."
+      description: "Dev Mode: Manually inject the user ID that the Gateway normally
+        provides."
   schemas:
     ChatRoom:
       type: object
-      required: [chatId, type, isAllowedChat]
+      required: [ chatId, type, isAllowedChat ]
       properties:
         chatId:
           type: string
           format: uuid
         type:
           type: string
-          enum: [direct, group]
+          enum: [ direct, group ]
         name:
           type: string
           nullable: true
@@ -38,15 +39,17 @@ components:
           type: array
           items:
             type: integer
-          description: "List of all user IDs in this chat. Frontend uses this to fetch avatars/names."
-          example: [123, 456]
+          description: "List of all user IDs in this chat. Frontend uses this to fetch
+            avatars/names."
+          example: [ 123, 456 ]
         isAllowedChat:
           type: boolean
           default: true
-          description: "Always true for 'group'. For 'direct', reflects the friendship is_chat_allowed status."
+          description: "Always true for 'group'. For 'direct', reflects the friendship
+            is_chat_allowed status."
     ChatMessage:
       type: object
-      required: [id, chatId, senderId, content, createdAt]
+      required: [ id, chatId, senderId, content, createdAt ]
       properties:
         id:
           type: integer
@@ -63,7 +66,7 @@ components:
           example: "2026-03-09T08:24:27Z"
     TypingIndicator:
       type: object
-      required: [chatId, senderId]
+      required: [ chatId, senderId ]
       properties:
         chatId:
           type: string
@@ -72,7 +75,7 @@ components:
           type: integer
     ReadReceipt:
       type: object
-      required: [chatId, userId, messageId]
+      required: [ chatId, userId, messageId ]
       properties:
         chatId:
           type: string
@@ -83,7 +86,7 @@ components:
           type: integer
     UserStatus:
       type: object
-      required: [userId, isOnline]
+      required: [ userId, isOnline ]
       properties:
         userId:
           type: integer
@@ -93,10 +96,10 @@ components:
           description: Whether the user is now online or offline
     FriendshipStatus:
       type: string
-      enum: [requested, accepted, blocked, pending]
+      enum: [ requested, accepted, blocked, pending ]
     PendingFriendRequest:
       type: object
-      required: [requesterId, addresseeId, status]
+      required: [ requesterId, addresseeId, status ]
       properties:
         requesterId: { type: integer }
         addresseeId: { type: integer }
@@ -127,11 +130,11 @@ components:
         isOnline: true
     StreamEvent:
       type: object
-      required: [type, payload]
+      required: [ type, payload ]
       properties:
         type:
           type: string
-          enum: [NEW_MESSAGE, USER_TYPING, USER_STATUS, USER_READ]
+          enum: [ NEW_MESSAGE, USER_TYPING, USER_STATUS, USER_READ ]
           description: "The type of event being sent down the stream"
         payload:
           type: object
@@ -144,14 +147,14 @@ components:
             - $ref: "#/components/schemas/UserStatus"
 
 paths:
-  /friendship/{receiverId}:
+  /friendship/request/{targetUserId}:
     post:
       tags:
         - Friendship
       summary: Send a friend request
       operationId: sendFriendRequest
       parameters:
-        - name: receiverId
+        - name: targetUserId
           in: path
           required: true
           schema:
@@ -299,7 +302,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [content]
+              required: [ content ]
               properties:
                 content:
                   type: string
@@ -381,7 +384,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [name, memberIds]
+              required: [ name, memberIds ]
               properties:
                 name:
                   type: string
@@ -437,7 +440,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [messageId]
+              required: [ messageId ]
               properties:
                 messageId:
                   type: integer

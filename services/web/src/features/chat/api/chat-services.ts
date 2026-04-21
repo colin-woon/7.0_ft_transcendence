@@ -11,12 +11,12 @@ export async function getPendingFriendRequests(): Promise<PendingFriendRequest[]
   return apiClient.get<PendingFriendRequest[]>(`${CHAT_API_BASE_PREFIX}/friendship/pending`);
 }
 
-export async function sendFriendRequest(receiverId: FriendId): Promise<void> {
-  return apiClient.post<void>(`${CHAT_API_BASE_PREFIX}/friendship/${receiverId}`);
+export async function sendFriendRequest(targetUserId: FriendId): Promise<void> {
+  return apiClient.post<void>(`${CHAT_API_BASE_PREFIX}/friendship/request/${targetUserId}`);
 }
 
-export async function updateFriendshipStatus(receiverId: FriendId, status: FriendStatus): Promise<void> {
-  return apiClient.patch<void>(`${CHAT_API_BASE_PREFIX}/friendship/${receiverId}?status=${status}`);
+export async function updateFriendshipStatus(targetUserId: FriendId, status: FriendStatus): Promise<void> {
+  return apiClient.patch<void>(`${CHAT_API_BASE_PREFIX}/friendship/${targetUserId}?status=${status}`);
 }
 
 export async function sendMessage(chatId: ChatId, message: SendMessageRequest): Promise<void> {
