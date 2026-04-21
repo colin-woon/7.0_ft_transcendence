@@ -207,20 +207,6 @@ SELECT
         LIMIT 1
     ) AS friendship_status
 
-	-- CASE
-	-- 	WHEN c.type = 'group' THEN NULL::text
-	-- 	ELSE (
-	-- 		SELECT f.status
-	-- 		FROM chat_service.room_members rm_other
-	-- 		JOIN chat_service.friendships f
-	-- 		ON (f.requester_id = $1 AND f.addressee_id = rm_other.user_id)
-	-- 		OR (f.requester_id = rm_other.user_id AND f.addressee_id = $1)
-	-- 		WHERE rm_other.chat_id = c.id
-	-- 		AND rm_other.user_id != $1
-	-- 		LIMIT 1
-	-- 	)
-	-- END::text AS friendship_status
-
 FROM chat_service.rooms c
 JOIN chat_service.room_members rm ON c.id = rm.chat_id
 WHERE c.id IN (

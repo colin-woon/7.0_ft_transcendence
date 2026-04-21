@@ -98,7 +98,7 @@ INSERT INTO chat_service.friendships (requester_id, addressee_id, last_action_us
 VALUES ($1, $2, $3, 'pending')
 ON CONFLICT (requester_id, addressee_id)
 DO UPDATE SET
-    status = CASE 
+    status = CASE
         WHEN chat_service.friendships.status = 'requested' THEN 'pending'::chat_service.friend_status
         ELSE chat_service.friendships.status
     END,
@@ -243,17 +243,19 @@ func (q *Queries) GetFriendship(ctx context.Context, arg GetFriendshipParams) (C
 }
 
 const getPendingFriendRequests = `-- name: GetPendingFriendRequests :many
-SELECT requester_id, addressee_id, status
+SELECT requester_id, addressee_id, last_action_user_id, status
 FROM chat_service.friendships
-WHERE addressee_id = $1
+WHERE (addressee_id = $1 OR requester_id = $1)
     AND status = 'pending'
-ORDER BY requester_id ASC
+    AND last_action_user_id != $1
+ORDER BY created_at DESC
 `
 
 type GetPendingFriendRequestsRow struct {
-	RequesterID int32                       `json:"requesterId"`
-	AddresseeID int32                       `json:"addresseeId"`
-	Status      NullChatServiceFriendStatus `json:"status"`
+	RequesterID      int32                       `json:"requesterId"`
+	AddresseeID      int32                       `json:"addresseeId"`
+	LastActionUserID int32                       `json:"lastActionUserId"`
+	Status           NullChatServiceFriendStatus `json:"status"`
 }
 
 func (q *Queries) GetPendingFriendRequests(ctx context.Context, addresseeID int32) ([]GetPendingFriendRequestsRow, error) {
@@ -265,7 +267,12 @@ func (q *Queries) GetPendingFriendRequests(ctx context.Context, addresseeID int3
 	var items []GetPendingFriendRequestsRow
 	for rows.Next() {
 		var i GetPendingFriendRequestsRow
-		if err := rows.Scan(&i.RequesterID, &i.AddresseeID, &i.Status); err != nil {
+		if err := rows.Scan(
+			&i.RequesterID,
+			&i.AddresseeID,
+			&i.LastActionUserID,
+			&i.Status,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
