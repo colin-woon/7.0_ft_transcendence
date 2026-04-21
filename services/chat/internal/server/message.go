@@ -192,10 +192,6 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// 2. Map DB Rows to API Models
-// Handle sql.NullString -> *string
-// Handle []int32 -> *[]int
-// 3. Encode the mapped slice
 func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -210,6 +206,7 @@ func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to retrieve user chats", http.StatusInternalServerError)
 		return
 	}
+
 	inbox := make([]api.ChatRoom, 0, len(rows))
 	for _, row := range rows {
 		chat := api.ChatRoom{
@@ -229,6 +226,17 @@ func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request) {
 				ids[i] = int(v)
 			}
 			chat.MemberIds = &ids
+		}
+
+		// NEW: Map the requested_by field
+		if row.RequestedBy != 0 {
+			reqId := int(row.RequestedBy)
+			chat.RequestedBy = &reqId
+		}
+
+		if row.FriendshipStatus.Valid {
+			status := api.FriendshipStatus(row.FriendshipStatus.ChatServiceFriendStatus)
+			chat.FriendshipStatus = &status
 		}
 
 		inbox = append(inbox, chat)
@@ -336,22 +344,51 @@ func (s *Server) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId 
 		return
 	}
 
+	permission, err := s.db.GetQueries().CheckChatPermissions(ctx, database.CheckChatPermissionsParams{
+		ID:     chatId,
+		UserID: int32(senderId),
+	})
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "Forbidden: Sender is not a member of this chat", http.StatusForbidden)
+			return
+		}
+		http.Error(w, "Failed to verify chat permissions", http.StatusInternalServerError)
+		return
+	}
+
+	if permission.IsChatAllowed.Valid && !permission.IsChatAllowed.Bool {
+		http.Error(w, "Forbidden: Sender is not allowed to send messages in this chat", http.StatusForbidden)
+		return
+	}
+
 	memberIDs, err := s.db.GetQueries().GetRoomMemberIDs(ctx, chatId)
 	if err != nil {
 		http.Error(w, "Failed to fetch room members", http.StatusInternalServerError)
 		return
 	}
-	isMember := false
+
+	filteredMemberIDs := make([]int32, 0, len(memberIDs))
 	for _, id := range memberIDs {
 		if int(id) == senderId {
-			isMember = true
-			break
+			continue
+		}
+
+		friendship, err := s.db.GetQueries().GetFriendship(ctx, database.GetFriendshipParams{
+			RequesterID: int32(senderId),
+			AddresseeID: id,
+		})
+		if err == nil && friendship.Status.Valid && friendship.Status.ChatServiceFriendStatus == database.ChatServiceFriendStatusAccepted {
+			filteredMemberIDs = append(filteredMemberIDs, id)
 		}
 	}
-	if !isMember {
-		http.Error(w, "Forbidden: Sender is not a member of this chat", http.StatusForbidden)
+
+	if len(filteredMemberIDs) == 0 {
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
+
 	data := api.StreamEvent{
 		Type: api.USERTYPING,
 	}
@@ -368,7 +405,7 @@ func (s *Server) SendTypingEvent(w http.ResponseWriter, r *http.Request, chatId 
 		http.Error(w, "Failed to serialize typing event", http.StatusInternalServerError)
 		return
 	}
-	s.sseHub.BroadcastToRoomExcept(memberIDs, senderId, string(jsonData))
+	s.sseHub.BroadcastToRoomExcept(filteredMemberIDs, senderId, string(jsonData))
 	w.WriteHeader(http.StatusNoContent)
 }
 

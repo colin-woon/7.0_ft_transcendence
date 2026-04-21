@@ -3,7 +3,7 @@ INSERT INTO chat_service.friendships (requester_id, addressee_id, last_action_us
 VALUES ($1, $2, $3, 'pending')
 ON CONFLICT (requester_id, addressee_id)
 DO UPDATE SET
-    status = CASE 
+    status = CASE
         WHEN chat_service.friendships.status = 'requested' THEN 'pending'::chat_service.friend_status
         ELSE chat_service.friendships.status
     END,
@@ -85,11 +85,12 @@ SELECT
 FROM friends f;
 
 -- name: GetPendingFriendRequests :many
-SELECT requester_id, addressee_id, status
+SELECT requester_id, addressee_id, last_action_user_id, status
 FROM chat_service.friendships
-WHERE addressee_id = $1
+WHERE (addressee_id = $1 OR requester_id = $1)
     AND status = 'pending'
-ORDER BY requester_id ASC;
+    AND last_action_user_id != $1
+ORDER BY created_at DESC;
 
 -- name: CreateMessageRequestFriendship :one
 INSERT INTO chat_service.friendships (requester_id, addressee_id, last_action_user_id, status, is_chat_allowed)

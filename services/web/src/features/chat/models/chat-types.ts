@@ -57,6 +57,8 @@ export interface ChatRoom {
     memberIds: FriendId[];
     messages: ChatMessage[] | null;
     readReceipts?: Record<FriendId, number>; // Maps userId to lastReadMessageId
+    requestedBy?: FriendId; // Only relevant for direct chats, indicates who sent the friend request if not friends yet
+    friendshipStatus?: FriendStatus; // Only relevant for direct chats
 }
 
 export type FriendStatus = 'pending' | 'blocked' | 'accepted' | 'requested';

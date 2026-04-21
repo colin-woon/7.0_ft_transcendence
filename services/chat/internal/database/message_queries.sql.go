@@ -176,7 +176,37 @@ SELECT
              LIMIT 1),
             false
         )
-    END::boolean AS is_allowed_chat
+    END::boolean AS is_allowed_chat,
+
+    COALESCE(
+        CASE
+            WHEN c.type = 'group' THEN NULL::integer
+            ELSE (
+                SELECT f.last_action_user_id
+                FROM chat_service.room_members rm_other
+                JOIN chat_service.friendships f
+                ON (f.requester_id = $1 AND f.addressee_id = rm_other.user_id)
+                OR (f.requester_id = rm_other.user_id AND f.addressee_id = $1)
+                WHERE rm_other.chat_id = c.id
+                AND rm_other.user_id != $1
+                LIMIT 1
+            )
+        END,
+        0
+    )::int AS requested_by,
+
+	(
+        SELECT f.status
+        FROM chat_service.room_members rm_other
+        JOIN chat_service.friendships f
+        ON (f.requester_id = $1 AND f.addressee_id = rm_other.user_id)
+        OR (f.requester_id = rm_other.user_id AND f.addressee_id = $1)
+        WHERE rm_other.chat_id = c.id
+        AND rm_other.user_id != $1
+        AND c.type != 'group' -- Moved your CASE logic into the WHERE clause
+        LIMIT 1
+    ) AS friendship_status
+
 FROM chat_service.rooms c
 JOIN chat_service.room_members rm ON c.id = rm.chat_id
 WHERE c.id IN (
@@ -200,11 +230,13 @@ GROUP BY c.id, c.type, c.name
 `
 
 type GetUserInboxRow struct {
-	ChatID        uuid.UUID      `json:"chatId"`
-	Type          string         `json:"type"`
-	Name          sql.NullString `json:"name"`
-	MemberIds     []int32        `json:"memberIds"`
-	IsAllowedChat bool           `json:"isAllowedChat"`
+	ChatID           uuid.UUID                   `json:"chatId"`
+	Type             string                      `json:"type"`
+	Name             sql.NullString              `json:"name"`
+	MemberIds        []int32                     `json:"memberIds"`
+	IsAllowedChat    bool                        `json:"isAllowedChat"`
+	RequestedBy      int32                       `json:"requestedBy"`
+	FriendshipStatus NullChatServiceFriendStatus `json:"friendshipStatus"`
 }
 
 func (q *Queries) GetUserInbox(ctx context.Context, requesterID int32) ([]GetUserInboxRow, error) {
@@ -222,6 +254,8 @@ func (q *Queries) GetUserInbox(ctx context.Context, requesterID int32) ([]GetUse
 			&i.Name,
 			pq.Array(&i.MemberIds),
 			&i.IsAllowedChat,
+			&i.RequestedBy,
+			&i.FriendshipStatus,
 		); err != nil {
 			return nil, err
 		}

@@ -1,6 +1,6 @@
 import { createStore } from 'zustand/vanilla';
 import { immer } from 'zustand/middleware/immer';
-import type { AllChatSessions, FriendId, ChatMessage, ChatId, FriendList, ChatRoomType, PendingFriendRequest } from './chat-types';
+import type { AllChatSessions, FriendId, ChatMessage, ChatId, FriendList, ChatRoomType, PendingFriendRequest, FriendStatus } from './chat-types';
 import { getFriendList, getUserInbox, getMessageHistory, updateReadReceipt as apiUpdateReadReceipt, getPendingFriendRequests } from '../api';
 import debounce from 'lodash.debounce';
 
@@ -69,11 +69,11 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
             friend.isOnline = isOnline;
           }
         }),
-      setChatSession: (chatId: ChatId, type: ChatRoomType, name: string | null, friendIds: FriendId[], messages: ChatMessage[] | null, isAllowedChat: boolean = false) => 
+      setChatSession: (chatId: ChatId, type: ChatRoomType, name: string | null, friendIds: FriendId[], messages: ChatMessage[] | null, isAllowedChat: boolean = false, requestedBy?: FriendId, friendshipStatus?: FriendStatus) => 
         set((state) => {  
           state.currentChatSessionId = chatId;
            if (!state.allChatSessions[chatId]) {
-            state.allChatSessions[chatId] = { chatId: chatId, type: type, name: name, memberIds: friendIds, messages: [], isAllowedChat: isAllowedChat};
+            state.allChatSessions[chatId] = { chatId: chatId, type: type, name: name, memberIds: friendIds, messages: [], isAllowedChat: isAllowedChat, requestedBy, friendshipStatus };
           }
           state.allChatSessions[chatId].messages = messages; // Directly set the array
         }),
@@ -128,6 +128,9 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
                 name: session.name || null,
                 isAllowedChat: session.isAllowedChat || false,
                 messages: [],
+                readReceipts: {},
+                requestedBy: session.requestedBy,
+                friendshipStatus: session.friendshipStatus,
               };
             });
             state.allChatSessions = transformedSessions;

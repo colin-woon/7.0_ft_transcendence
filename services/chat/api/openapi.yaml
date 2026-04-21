@@ -47,6 +47,16 @@ components:
           default: true
           description: "Always true for 'group'. For 'direct', reflects the friendship
             is_chat_allowed status."
+        requestedBy:
+          type: integer
+          default: null
+          description: "The user who sent the message request (for dms where isAllowedChat
+            is false). Null for group chats and allowed DMs."
+        friendshipStatus:
+          default: null
+          $ref: "#/components/schemas/FriendshipStatus"
+          description: "The current friendship status between the users (for direct
+            chats). Null for group chats."
     ChatMessage:
       type: object
       required: [ id, chatId, senderId, content, createdAt ]

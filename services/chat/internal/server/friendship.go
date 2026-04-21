@@ -379,9 +379,17 @@ func (s *Server) GetPendingFriendRequests(w http.ResponseWriter, r *http.Request
 			status = api.FriendshipStatus(row.Status.ChatServiceFriendStatus)
 		}
 
+		var addresseeID int32 // or int, depending on your struct
+
+		if row.LastActionUserID == row.RequesterID {
+			addresseeID = row.AddresseeID
+		} else {
+			addresseeID = row.RequesterID
+		}
+
 		response = append(response, api.PendingFriendRequest{
-			RequesterId: int(row.RequesterID),
-			AddresseeId: int(row.AddresseeID),
+			RequesterId: int(row.LastActionUserID), // The one who sent the request is the last action user for pending requests
+			AddresseeId: int(addresseeID),          // The other party is the addressee
 			Status:      status,
 		})
 	}
