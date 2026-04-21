@@ -6,11 +6,9 @@ import org.bumIntra.gateway.exception.GatewayErrorCode;
 import org.bumIntra.gateway.exception.GatewayException;
 import org.eclipse.microprofile.faulttolerance.CircuitBreaker;
 import org.eclipse.microprofile.faulttolerance.Retry;
-import org.eclipse.microprofile.faulttolerance.exceptions.CircuitBreakerOpenException;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.core.Response;
 
 @ApplicationScoped
 public class FaultToleranceServiceCallExecutor {
@@ -18,26 +16,17 @@ public class FaultToleranceServiceCallExecutor {
     @Inject
     ServiceCallExecutor sce;
 
-    @Retry(maxRetries = 0,
+    @Retry(maxRetries = 1,
             delay = 150, jitter = 50, retryOn = RetryableServiceException.class, abortOn = NonRetryableServiceException.class)
     @CircuitBreaker(requestVolumeThreshold = 10,
             failureRatio = 0.6,
             delay = 4000,
+            successThreshold = 2,
             failOn = RetryableServiceException.class,
-            skipOn = NonRetryableServiceException.class,
-            successThreshold = 2
+            skipOn = NonRetryableServiceException.class
     )
     public <T> T authExecute(Supplier<T> serviceCall) {
-        try {
-            return executeInner(serviceCall);
-        } catch (RetryableServiceException | NonRetryableServiceException e) {
-            throw (GatewayException) e.getCause();
-        } catch (CircuitBreakerOpenException cboe) {
-            throw new GatewayException(
-                    Response.Status.SERVICE_UNAVAILABLE,
-                    GatewayErrorCode.SERVICE_UNAVAILABLE,
-                    "Service unavailable due to circuit breaker being open: " + cboe.getMessage());
-        }
+        return executeInner(serviceCall);
     }
 
     @Retry(maxRetries = 1,
@@ -45,21 +34,12 @@ public class FaultToleranceServiceCallExecutor {
     @CircuitBreaker(requestVolumeThreshold = 12,
             failureRatio = 0.7,
             delay = 5000,
+            successThreshold = 2,
             failOn = RetryableServiceException.class,
-            skipOn = NonRetryableServiceException.class,
-            successThreshold = 2
+            skipOn = NonRetryableServiceException.class
     )
     public <T> T forumExecute(Supplier<T> serviceCall) {
-        try {
-            return executeInner(serviceCall);
-        } catch (RetryableServiceException | NonRetryableServiceException e) {
-            throw (GatewayException) e.getCause();
-        } catch (CircuitBreakerOpenException cboe) {
-            throw new GatewayException(
-                    Response.Status.SERVICE_UNAVAILABLE,
-                    GatewayErrorCode.SERVICE_UNAVAILABLE,
-                    "Service unavailable due to circuit breaker being open: " + cboe.getMessage());
-        }
+        return executeInner(serviceCall);
     }
 
     @Retry(maxRetries = 1,
@@ -67,21 +47,12 @@ public class FaultToleranceServiceCallExecutor {
     @CircuitBreaker(requestVolumeThreshold = 12,
             failureRatio = 0.6,
             delay = 4000,
+            successThreshold = 2,
             failOn = RetryableServiceException.class,
-            skipOn = NonRetryableServiceException.class,
-            successThreshold = 2
+            skipOn = NonRetryableServiceException.class
     )
     public <T> T chatExecute(Supplier<T> serviceCall) {
-        try {
-            return executeInner(serviceCall);
-        } catch (RetryableServiceException | NonRetryableServiceException e) {
-            throw (GatewayException) e.getCause();
-        } catch (CircuitBreakerOpenException cboe) {
-            throw new GatewayException(
-                    Response.Status.SERVICE_UNAVAILABLE,
-                    GatewayErrorCode.SERVICE_UNAVAILABLE,
-                    "Service unavailable due to circuit breaker being open: " + cboe.getMessage());
-        }
+        return executeInner(serviceCall);
     }
 
     <T> T executeInner(Supplier<T> serviceCall) {

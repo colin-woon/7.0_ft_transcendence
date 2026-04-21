@@ -71,8 +71,7 @@ public class RequestPreAuthFilter implements ContainerRequestFilter {
     }
 
     private boolean populateAuth() {
-        String cookieHeader = grc.getHeaders().getFirst(HttpHeaders.COOKIE);
-        String accessToken = extractCookie(cookieHeader, "accessToken");
+        String accessToken = extractCookie(grc.getHeaders().getFirst(HttpHeaders.COOKIE), "accessToken");
 
         if (accessToken != null && !accessToken.isBlank()) {
             try {
