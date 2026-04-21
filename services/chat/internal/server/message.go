@@ -203,7 +203,6 @@ func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := s.db.GetQueries().GetUserInbox(ctx, int32(userId))
 	if err != nil {
-		log.Printf("Error fetching user inbox: %v", err)
 		http.Error(w, "Failed to retrieve user chats", http.StatusInternalServerError)
 		return
 	}

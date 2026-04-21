@@ -67,6 +67,14 @@ export const useCurrentChatSession = () => {
             if (!s.currentChatSessionId) return false;
             return s.allChatSessions[s.currentChatSessionId]?.isAllowedChat === true;
         }),
+        requestedBy: useStore(store, (s) => {
+            if (!s.currentChatSessionId) return null;
+            return s.allChatSessions[s.currentChatSessionId]?.requestedBy || null;
+        }),
+        friendshipStatus: useStore(store, (s) => {
+            if (!s.currentChatSessionId) return null;
+            return s.allChatSessions[s.currentChatSessionId]?.friendshipStatus || null;
+        }),
     };
 };
 
