@@ -106,9 +106,9 @@ export default function FriendsPage() {
 
         {/* Add Friend Button */}
         <div className="ml-auto pl-2 shrink-0 flex items-center">
-          <button className="btn btn-xs sm:btn-sm btn-primary text-success-content font-medium">
+          <Link href="/search" className="btn btn-xs sm:btn-sm btn-primary text-success-content font-medium">
             Add Friend
-          </button>
+          </Link>
         </div>
       </header>
 

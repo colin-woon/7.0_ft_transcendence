@@ -96,6 +96,20 @@ func (q *Queries) CreateDirectRoomWithMembers(ctx context.Context, arg CreateDir
 const createFriendship = `-- name: CreateFriendship :one
 INSERT INTO chat_service.friendships (requester_id, addressee_id, last_action_user_id, status)
 VALUES ($1, $2, $3, 'pending')
+ON CONFLICT (requester_id, addressee_id)
+DO UPDATE SET
+    status = CASE 
+        WHEN chat_service.friendships.status = 'requested' THEN 'pending'::chat_service.friend_status
+        ELSE chat_service.friendships.status
+    END,
+    last_action_user_id = CASE
+        WHEN chat_service.friendships.status = 'requested' THEN EXCLUDED.last_action_user_id
+        ELSE chat_service.friendships.last_action_user_id
+    END,
+    updated_at = CASE
+        WHEN chat_service.friendships.status = 'requested' THEN CURRENT_TIMESTAMP
+        ELSE chat_service.friendships.updated_at
+    END
 RETURNING requester_id, addressee_id, last_action_user_id, is_chat_allowed, status, created_at, updated_at
 `
 

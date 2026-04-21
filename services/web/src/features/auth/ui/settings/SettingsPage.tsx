@@ -307,10 +307,10 @@ export default function SettingsPage({
     authError ??
     profileError ??
     profileEditError ??
-    sessionsError ??
+    (activeTab === "sessions" ? sessionsError : null) ??
     adminActionError ??
     actionError ??
-    adminHookError;
+    (activeTab === "admin" ? adminHookError : null);
 
   const updateNewUserForm = (key: string, value: any) => {
     setNewUserForm((prev) => ({ ...prev, [key]: value }));

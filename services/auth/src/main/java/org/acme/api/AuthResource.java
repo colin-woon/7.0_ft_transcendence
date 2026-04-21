@@ -157,12 +157,12 @@ public class AuthResource {
 		JsonWebToken jwt = (JsonWebToken) identity.getPrincipal();
 		Long userId = Long.valueOf(jwt.getSubject());
 
-		NewCookie clearCookie = authService.deleteSession(targetSessionId, cookieSessionId, userId);
+		NewCookie[] clearCookies = authService.deleteSession(targetSessionId, cookieSessionId, userId);
 		Response.ResponseBuilder response = Response.ok()
 			.entity("{\"message\": \"Session logged out\"}");
 
-		if (clearCookie != null)
-			response.cookie(clearCookie);
+		if (clearCookies.length > 0)
+			response.cookie(clearCookies);
 		return response.build();
 	}
 
@@ -243,6 +243,7 @@ public class AuthResource {
 
 		return Response.noContent()
 			.cookie(profileService.deleteAccount(Long.valueOf(jwt.getSubject())))
+			.cookie(authService.clearAccessTokenCookies())
 			.build();
 	}
 
