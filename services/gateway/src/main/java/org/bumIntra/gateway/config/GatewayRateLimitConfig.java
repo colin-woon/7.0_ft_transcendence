@@ -10,17 +10,14 @@ import io.smallrye.config.WithDefault;
 @ConfigMapping(prefix = "gateway.config.ratelimit")
 public interface GatewayRateLimitConfig {
 
-	@WithDefault("true")
-	boolean enabled();
+    @WithDefault("true")
+    boolean enabled();
 
-	// Token bucket capacity
-	@WithDefault("60")
-	long limit();
+    // Token bucket capacity
+    @WithDefault("60")
+    long limit();
 
-	// Bucket refill window
-	@WithDefault("60s")
-	Duration window();
-
-	@WithDefault("ip-auth")
-	String keyScheme();
+    // Bucket refill window
+    @WithDefault("60s")
+    Duration window();
 }

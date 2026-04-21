@@ -11,26 +11,18 @@ import jakarta.inject.Inject;
 @ApplicationScoped
 public class RateLimitProfiles {
 
-	@Inject
-	GatewayRateLimitConfig grlc;
+    @Inject
+    GatewayRateLimitConfig grlc;
 
-	// private final Map<RateLimitAccess, RateLimitProfile> profiles = Map.of(
-	// RateLimitAccess.GUEST, new RateLimitProfile(20,
-	// java.time.Duration.ofSeconds(10)),
-	// RateLimitAccess.USER, new RateLimitProfile(100,
-	// java.time.Duration.ofSeconds(10)),
-	// RateLimitAccess.SERVICE, new RateLimitProfile(1000,
-	// java.time.Duration.ofSeconds(10)));
+    public RateLimitProfile getProfile(RateLimitAccess access) {
 
-	public RateLimitProfile getProfile(RateLimitAccess access) {
+        long baseLimit = grlc.limit();
+        Duration baseWindow = grlc.window();
 
-		long baseLimit = grlc.limit();
-		Duration baseWindow = grlc.window();
-
-		return switch (access) {
-			case GUEST -> new RateLimitProfile(Math.max(1, baseLimit / 3), baseWindow);
-			case USER -> new RateLimitProfile(Math.max(1, baseLimit), baseWindow);
-			case ADMIN, SERVICE -> new RateLimitProfile(Math.max(1, baseLimit * 10), baseWindow);
-		};
-	}
+        return switch (access) {
+            case GUEST -> new RateLimitProfile(Math.max(1, baseLimit / 3), baseWindow);
+            case USER -> new RateLimitProfile(Math.max(1, baseLimit), baseWindow);
+            case ADMIN, SERVICE -> new RateLimitProfile(Math.max(1, baseLimit * 10), baseWindow);
+        };
+    }
 }
