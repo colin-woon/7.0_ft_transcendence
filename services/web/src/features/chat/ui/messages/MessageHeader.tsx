@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   BUBBLE_COLORS,
   useCurrentChatSession,
@@ -14,10 +15,14 @@ export function MessageHeader() {
 
   // Find the ID of the person we are chatting with (if it's a 1-on-1)
   const otherUserId = friendIds?.find((id) => id !== currentUserId);
+  const displayLookupIds = useMemo(
+    () => (otherUserId ? [otherUserId] : []),
+    [otherUserId],
+  );
 
   // Safely grab the online status. If otherUserId is undefined (like in a group), we just pass -1
   const isOnline = useUserStatus(otherUserId || -1);
-  const resolveUserDisplay = useUserDisplay(otherUserId ? [otherUserId] : []);
+  const resolveUserDisplay = useUserDisplay(displayLookupIds);
   const resolvedUser = resolveUserDisplay(otherUserId);
 
   // Determine chat type and derived UI state
