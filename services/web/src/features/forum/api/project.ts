@@ -129,7 +129,7 @@ async function fetchAllProjectsCached(): Promise<ForumApiProjectSummary[]> {
   const pageSize = 100;
   let allApiProjects: ForumApiProjectSummary[] = [];
 
-  const firstPageRes = await forumFetchPublic(
+  const firstPageRes = await forumFetch(
     `/projects?page=1&page_size=${pageSize}`,
     {
       cache: 'force-cache',
@@ -156,7 +156,7 @@ async function fetchAllProjectsCached(): Promise<ForumApiProjectSummary[]> {
 
     const responses = await Promise.all(
       pagesToFetch.map((page) =>
-        forumFetchPublic(`/projects?page=${page}&page_size=${pageSize}`, {
+        forumFetch(`/projects?page=${page}&page_size=${pageSize}`, {
           cache: 'force-cache',
           next: {
             revalidate: 30,
