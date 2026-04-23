@@ -30,6 +30,8 @@ export const useChatActions = () => {
         updateReadReceipt: useStore(store, (s) => s.updateReadReceipt),
         sendReadReceipt: useStore(store, (s) => s.sendReadReceipt),
         updateChatPermission: useStore(store, (s) => s.updateChatPermission),
+        fetchAllFriendshipStatuses: useStore(store, (s) => s.fetchAllFriendshipStatuses),
+        setFriendshipStatus: useStore(store, (s) => s.setFriendshipStatus),
     };
 }
 
@@ -344,4 +346,11 @@ export const useIsAllowedChat = (chatId: ChatId | null) => {
     if (!chatId) return false;
     return s.allChatSessions[chatId]?.isAllowedChat === true;
   });
+};
+
+export const useAllFriendshipStatuses = () => {
+  const store = useContext(ChatStoreContext);
+  if (!store) throw new Error('useAllFriendshipStatuses must be used within ChatStoreProvider');
+
+  return useStore(store, (s) => s.allFriendshipStatuses);
 };

@@ -27,6 +27,21 @@ export async function getMessageHistory(chatId: ChatId): Promise<ChatMessage[]> 
   return apiClient.get<ChatMessage[]>(`${CHAT_API_BASE_PREFIX}/message/history/${chatId}`);
 }
 
+// Define what backend actually send
+interface FriendStatusItem {
+  userId: number;
+  status: FriendStatus; 
+}
+
+export async function getAllFriendshipStatuses(): Promise<Record<FriendId, FriendStatus>> {
+  const response = await apiClient.get<FriendStatusItem[]>(`${CHAT_API_BASE_PREFIX}/friendship/statuses`);
+  const statusRecord: Record<FriendId, FriendStatus> = {};
+  response.forEach((item) => {
+    statusRecord[item.userId] = item.status;
+  });
+  return statusRecord;
+}
+
 // 2. Initialize the connection
 // 3. Listen for incoming messages
 // SSE sends data as a string. We must parse it to match your ChatMessage schema.

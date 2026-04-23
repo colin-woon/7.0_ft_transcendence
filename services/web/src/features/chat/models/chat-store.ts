@@ -1,7 +1,7 @@
 import { createStore } from 'zustand/vanilla';
 import { immer } from 'zustand/middleware/immer';
 import type { AllChatSessions, FriendId, ChatMessage, ChatId, FriendList, ChatRoomType, PendingFriendRequest, FriendStatus } from './chat-types';
-import { getFriendList, getUserInbox, getMessageHistory, updateReadReceipt as apiUpdateReadReceipt, getPendingFriendRequests } from '../api';
+import { getFriendList, getUserInbox, getMessageHistory, updateReadReceipt as apiUpdateReadReceipt, getPendingFriendRequests, getAllFriendshipStatuses } from '../api';
 import debounce from 'lodash.debounce';
 
 export interface ChatState {
@@ -11,6 +11,7 @@ export interface ChatState {
   pendingRequests: PendingFriendRequest[];
   isLoadingFriends: boolean;
   friendsError: string | null;
+  allFriendshipStatuses: Record<FriendId, FriendStatus>;
   typingUsers: Record<ChatId, Record<FriendId, boolean>>;
   readReceipts: Record<ChatId, Record<FriendId, number>>; // chatId -> userId -> lastReadMessageId
 }
@@ -24,6 +25,8 @@ export interface ChatActions {
   fetchAllAcceptedFriends: () => Promise<void>;
   fetchPendingFriendships: () => Promise<void>;
   fetchAllChatSessions: () => Promise<void>;
+  setFriendshipStatus: (friendId: FriendId, status: FriendStatus) => void;
+  fetchAllFriendshipStatuses: () => Promise<void>;
   fetchChatHistory: (chatId: ChatId) => Promise<void>;
   setTypingStatus: (chatId: ChatId, senderId: FriendId) => void;
   updateReadReceipt: (chatId: ChatId, userId: FriendId, messageId: number) => void;
@@ -59,6 +62,7 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
       friendsError: null,
       typingUsers: {},
       readReceipts: {},
+      allFriendshipStatuses: {},
 
       setUserStatus: (userId: FriendId, isOnline: boolean) =>
         set((state) => {
@@ -99,7 +103,12 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
       setAllAcceptedFriends: (friendList: FriendList) =>
         set((state) => {
           state.allAcceptedFriends = friendList;
-        }),
+      }),
+
+      setFriendshipStatus: (friendId: FriendId, status: FriendStatus) =>
+        set((state) => {
+          state.allFriendshipStatuses[friendId] = status;
+      }),
 
       fetchAllAcceptedFriends: async () => {
         const friendList = await getFriendList();
@@ -112,6 +121,14 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
         const pending = await getPendingFriendRequests();
         set((state) => {
           state.pendingRequests = pending;
+        });
+      },
+
+      fetchAllFriendshipStatuses: async () => {
+        const friendshipStatuses = await getAllFriendshipStatuses();
+
+        set((state) => {
+          state.allFriendshipStatuses = friendshipStatuses;
         });
       },
 
