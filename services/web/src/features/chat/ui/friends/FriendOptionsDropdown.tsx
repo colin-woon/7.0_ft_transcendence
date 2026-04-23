@@ -52,9 +52,11 @@ export function FriendOptionsDropdown({ friendId, onActionComplete, isProfilePag
         {!isProfilePage && (
           <li><a onClick={() => router.push(`/users/${friendId}`)}>View Profile</a></li>
         )}
+        {!isProfilePage && isFriend && (
+          <div className="divider my-0"></div>
+        )}
         {isFriend && (
           <>
-            <div className="divider my-0"></div>
             <li><a onClick={handleRemoveFriend} className="text-error hover:bg-error/20 hover:text-error">Remove Friend</a></li>
             <li><a onClick={handleBlockFriend} className="text-error hover:bg-error/20 hover:text-error">Block User</a></li>
           </>

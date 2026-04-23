@@ -4,7 +4,7 @@ import { Calendar, Mail, MapPin, Shield } from "lucide-react";
 import Image from "next/image";
 import type { User } from "@/features/auth/api/authService";
 import { useAuth } from "@/features/auth/models/AuthContext";
-import { AddFriendButton, DirectMessageButton } from "@/features/chat/ui";
+import { AddFriendButton, DirectMessageButton, FriendOptionsDropdown } from "@/features/chat/ui";
 
 interface ProfileCardProps {
   user: User | null;
@@ -109,6 +109,7 @@ export default function ProfileCard({
               <div className="mt-3 flex flex-wrap gap-2">
                 <AddFriendButton targetUserId={user.id} />
                 <DirectMessageButton targetUserId={user.id} />
+                <FriendOptionsDropdown friendId={user.id} isProfilePage={true} />
               </div>
             ) : null}
           </div>
