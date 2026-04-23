@@ -1,44 +1,70 @@
 import { useLabContext } from '../context/labContext';
 
 export default function LogBox() {
-	const sampleResponse = {
-		requestId: 'lab-2f9c1d58',
-		status: 200,
-		method: 'POST',
-		path: '/api/auth/me',
-		durationMs: 12,
-		body: {
-			ok: true,
-			message: 'Manual lab trigger completed.',
-			user: {
-				id: 42,
-				role: 'STUDENT',
-			},
-		},
-	};
-
 	const { labState } = useLabContext();
 
-	const lastResult = labState.result?.result.at(-1);
+	const display = formatLogEntry();
 
-	const display = lastResult
-		? JSON.stringify(
+	function formatLogEntry() {
+		if (labState.result?.result?.length === undefined) {
+			return 'No response yet.';
+		}
+
+		if (labState.result.result.length === 1) {
+			return JSON.stringify(
 				{
-					status: lastResult.status,
-					statusText: lastResult.statusText,
-					headers: lastResult.headers,
-					body: parseJson(lastResult.body),
+					status: labState.result.result[0].status,
+					statusText: getStatusLabel(
+						labState.result.result[0].status
+					),
+					headers: labState.result.result[0].headers,
+					body: parseJson(labState.result.result[0].body),
 				},
 				null,
 				2
-			)
-		: 'No response yet.';
+			);
+		} else {
+			const logs = [];
+
+			for (const entry of labState.result.result) {
+				logs.push(
+					`[${entry.index + 1}] ${entry.status} ${getStatusLabel(entry.status)}`
+				);
+			}
+			return logs.join('\n');
+		}
+	}
 
 	function parseJson(body: string) {
 		try {
 			return JSON.parse(body);
 		} catch (err) {
 			return body;
+		}
+	}
+
+	function getStatusLabel(status: number) {
+		switch (status) {
+			case 200:
+				return 'OK';
+			case 201:
+				return 'Created';
+			case 401:
+				return 'Unauthorized';
+			case 403:
+				return 'Forbidden';
+			case 404:
+				return 'Not Found';
+			case 429:
+				return 'Too Many Requests';
+			case 500:
+				return 'Internal Server Error';
+			case 502:
+				return 'Bad Gateway';
+			case 503:
+				return 'Service Unavailable';
+			default:
+				return 'Unknown';
 		}
 	}
 
@@ -53,9 +79,12 @@ export default function LogBox() {
 						>
 							terminal
 						</span>
-						<span className="font-headline text-xs font-bold uppercase tracking-wider text-slate-100">
-							Response Output
-						</span>
+						{/* <span className="font-headline text-xs font-bold uppercase tracking-wider text-slate-100"> */}
+						{/* 	Response Output */}
+						{/* </span> */}
+						<p className="font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-indigo-300">
+							Response Log
+						</p>
 					</div>
 					<div className="h-4 w-px bg-slate-700/70"></div>
 					<div className="flex items-center gap-4">
@@ -69,8 +98,11 @@ export default function LogBox() {
 					</div>
 				</div>
 				<div className="flex items-center gap-3">
-					<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">
-						Read Only
+					{/* <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500"> */}
+					{/* 	Read Only */}
+					{/* </span> */}
+					<span className="material-symbols-outlined text-sm text-indigo-300">
+						android_cell_5_bar
 					</span>
 				</div>
 			</div>

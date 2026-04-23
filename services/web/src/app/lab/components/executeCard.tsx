@@ -36,8 +36,8 @@ export default function ExecuteCard() {
 						<span className="inline-flex border border-indigo-400/30 bg-indigo-400/12 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-indigo-300">
 							Run
 						</span>
-						<span className="font-mono text-[10px] uppercase tracking-[0.24em] text-slate-500">
-							Manual
+						<span className="material-symbols-outlined text-sm text-indigo-300">
+							play_arrow
 						</span>
 					</div>
 					<h3 className="mt-5 font-headline text-2xl font-black uppercase leading-none tracking-tight text-slate-50">

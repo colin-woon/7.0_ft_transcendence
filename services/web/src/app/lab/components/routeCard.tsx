@@ -36,8 +36,8 @@ export default function RouteCard({ type, title, desc }: RouteCardProps) {
 						<span className="inline-flex border border-indigo-400/30 bg-indigo-400/12 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-indigo-300">
 							{type || 'Component / Dynamic_Hover'}
 						</span>
-						<span className="font-mono text-[10px] uppercase tracking-[0.24em] text-slate-500">
-							PutIcon
+						<span className="material-symbols-outlined text-sm text-indigo-300">
+							route
 						</span>
 					</div>
 					<h3 className="mt-5 font-headline text-3xl font-black leading-none tracking-tighter text-slate-50">
