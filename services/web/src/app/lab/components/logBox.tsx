@@ -1,4 +1,5 @@
 import { useLabContext } from '../context/labContext';
+import { LabResult } from '../types';
 
 export default function LogBox() {
 	const { labState } = useLabContext();
@@ -6,7 +7,11 @@ export default function LogBox() {
 	const display = formatLogEntry();
 
 	function formatLogEntry() {
-		if (labState.result?.result?.length === undefined) {
+		if (
+			!labState.result ||
+			!labState.result.result ||
+			labState.result.result.length === 0
+		) {
 			return 'No response yet.';
 		}
 
@@ -28,7 +33,7 @@ export default function LogBox() {
 
 			for (const entry of labState.result.result) {
 				logs.push(
-					`[${entry.index + 1}] ${entry.status} ${getStatusLabel(entry.status)}`
+					`[${entry.index + 1}] ${entry.status} ${getStatusLabel(entry.status)} ${getGatewayErrorLable(entry)}`
 				);
 			}
 			return logs.join('\n');
@@ -41,6 +46,16 @@ export default function LogBox() {
 		} catch (err) {
 			return body;
 		}
+	}
+
+	function getGatewayErrorLable(labResult: LabResult) {
+		const body = parseJson(labResult.body);
+
+		if (body && typeof body === 'object' && 'code' in body) {
+			return `${body.code}`;
+		}
+
+		return '';
 	}
 
 	function getStatusLabel(status: number) {
