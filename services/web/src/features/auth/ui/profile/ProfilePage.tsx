@@ -26,6 +26,9 @@ import {
 import { getUserInitials } from "@/features/auth/utils/userInitials";
 import { useProfileProjects } from "@/features/forum/hooks/useProfileProjects";
 import ProfileCard from "./ProfileCard";
+import ProfileCard2 from "./ProfileCard2";
+import AchievementCard from "./AchievementCard";
+
 
 interface ProfilePageProps {
   viewedUserId?: number;
@@ -351,6 +354,14 @@ export default function ProfilePage({
           year: "numeric",
         })
       : "Unknown",
+    wallet: intraSummary?.wallet ?? 0,
+    evalPoints: intraSummary?.correctionPoints ?? 0,
+    partnerships: partnershipsCount,
+    groups: groupsCount,
+    isAlumni: intraSummary?.isAlumni ?? false,
+    pool: activeProfile?.intraInfo?.poolMonth && activeProfile?.intraInfo?.poolYear
+      ? `${activeProfile.intraInfo.poolMonth} ${activeProfile.intraInfo.poolYear}`
+      : "N/A",
   };
 
   if (authLoading || (user && profileLoading)) {
@@ -457,7 +468,7 @@ export default function ProfilePage({
         </div>
       )}
 
-      <ProfileCard
+      <ProfileCard2
         user={activeProfile}
         profile={profileCardData}
         initials={initials}
@@ -473,6 +484,8 @@ export default function ProfilePage({
           ) : undefined
         }
       />
+
+      <AchievementCard achievements={achievements} />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         {/* 42 card: extended Intra metadata beyond the primary identity profile card. */}
@@ -622,6 +635,51 @@ export default function ProfilePage({
                 ) : null}
               </div>
             </div>
+          )}
+        </div>
+
+        {/* Debug/Test Card: Show all intra fields for verification */}
+        <div className="bg-yellow-50 rounded-2xl border border-yellow-200 shadow-sm p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-yellow-900">
+                Intra Data Debug Card
+              </h2>
+              <p className="text-xs text-yellow-700 mt-1">
+                Raw values for wallet, correctionPoints, partnerships, isAlumni, pool, groups.
+              </p>
+            </div>
+          </div>
+          {hasIntraData ? (
+            <div className="mt-4 space-y-2 text-sm text-yellow-900">
+              <div><b>url:</b> {String(activeProfile?.intraInfo?.url)}</div>
+              <div><b>phone:</b> {String(activeProfile?.intraInfo?.phone)}</div>
+              <div><b>kind:</b> {String(activeProfile?.intraInfo?.kind)}</div>
+              <div><b>image:</b> {JSON.stringify(activeProfile?.intraInfo?.image)}</div>
+              <div><b>correctionPoints:</b> {String(activeProfile?.intraInfo?.correctionPoints)}</div>
+              <div><b>poolMonth:</b> {String(activeProfile?.intraInfo?.poolMonth)}</div>
+              <div><b>poolYear:</b> {String(activeProfile?.intraInfo?.poolYear)}</div>
+              <div><b>location:</b> {String(activeProfile?.intraInfo?.location)}</div>
+              <div><b>wallet:</b> {String(activeProfile?.intraInfo?.wallet)}</div>
+              <div><b>isAlumni:</b> {String(activeProfile?.intraInfo?.isAlumni)}</div>
+              <div><b>isActive:</b> {String(activeProfile?.intraInfo?.isActive)}</div>
+              <div><b>groups:</b> {JSON.stringify(activeProfile?.intraInfo?.groups)}</div>
+              <div><b>cursusUsers:</b> {JSON.stringify(activeProfile?.intraInfo?.cursusUsers)}</div>
+              <div><b>projectsUsers:</b> {JSON.stringify(activeProfile?.intraInfo?.projectsUsers)}</div>
+              <div><b>languagesUsers:</b> {JSON.stringify(activeProfile?.intraInfo?.languagesUsers)}</div>
+              <div><b>achievements:</b> {JSON.stringify(activeProfile?.intraInfo?.achievements)}</div>
+              <div><b>titles:</b> {JSON.stringify(activeProfile?.intraInfo?.titles)}</div>
+              <div><b>titlesUsers:</b> {JSON.stringify(activeProfile?.intraInfo?.titlesUsers)}</div>
+              <div><b>partnerships:</b> {JSON.stringify(activeProfile?.intraInfo?.partnerships)}</div>
+              <div><b>patroned:</b> {JSON.stringify(activeProfile?.intraInfo?.patroned)}</div>
+              <div><b>patroning:</b> {JSON.stringify(activeProfile?.intraInfo?.patroning)}</div>
+              <div><b>expertisesUsers:</b> {JSON.stringify(activeProfile?.intraInfo?.expertisesUsers)}</div>
+              <div><b>roles:</b> {JSON.stringify(activeProfile?.intraInfo?.roles)}</div>
+              <div><b>campus:</b> {JSON.stringify(activeProfile?.intraInfo?.campus)}</div>
+              <div><b>campusUsers:</b> {JSON.stringify(activeProfile?.intraInfo?.campusUsers)}</div>
+            </div>
+          ) : (
+            <div className="mt-4 text-yellow-700">No intra data available.</div>
           )}
         </div>
 

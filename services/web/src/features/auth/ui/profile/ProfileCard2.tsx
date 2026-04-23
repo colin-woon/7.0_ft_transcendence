@@ -1,11 +1,12 @@
 "use client";
- 
+
 import { Shield } from "lucide-react";
 import Image from "next/image";
+import guestImg from "@/components/ui/imgs/guest_img.png";
 import type { User } from "@/features/auth/api/authService";
 import { useAuth } from "@/features/auth/models/AuthContext";
 import { AddFriendButton, DirectMessageButton } from "@/features/chat/ui";
- 
+
 interface ProfileCard2Props {
   user: User | null;
   profile: {
@@ -19,16 +20,19 @@ interface ProfileCard2Props {
     wallet?: number;
     evalPoints?: number;
     projectsCount?: number;
+    pool?: string;
   };
   initials: string;
   adminActions?: React.ReactNode;
+  bio?: string | null;
 }
- 
+
 export default function ProfileCard2({
   user,
   profile,
   initials,
   adminActions,
+  bio,
 }: ProfileCard2Props) {
   const { user: loggedInUser } = useAuth();
   const loggedInUserId = loggedInUser?.id;
@@ -36,119 +40,122 @@ export default function ProfileCard2({
     loggedInUserId !== undefined &&
     typeof user?.id === "number" &&
     user.id !== loggedInUserId;
- 
+
+  const displayBio = bio ?? user?.bio ?? null;
+
+  const stats = [
+    { label: "Wallet", value: profile.wallet ?? 0 },
+    { label: "Eval.P", value: profile.evalPoints ?? 0 },
+    { label: "Projects", value: profile.projectsCount ?? 0 },
+  ];
+
   return (
-    <div className="w-full bg-white border border-gray-200 rounded-md px-6 py-5 flex items-center gap-5">
-      {/* Avatar */}
-      <div className="shrink-0">
-        {user?.avatarImage ? (
-          <div className="w-14 h-14 rounded-full overflow-hidden relative">
+    <div className="card bg-base-100 shadow-md rounded-xl p-4 flex flex-col md:flex-row items-center gap-5">
+        
+        {/* Avatar */}
+        <div className="avatar shrink-0">
+          <div className="relative w-19 h-19 sm:w-18 sm:h-18 rounded-full ring-2 ring-black overflow-hidden">
             <Image
-              src={user.avatarImage}
-              alt={`${user.fullName} avatar`}
+              src={user?.avatarImage || guestImg} // Fallback logic
+              alt={`${user?.fullName || initials} avatar`}
               fill
-              sizes="56px"
-              className="object-cover"
+              sizes="(max-width: 640px) 64px, 80px"
+              className="object-cover object-center" // This crops it to a center circle
               unoptimized
             />
           </div>
-        ) : (
-          <div className="w-14 h-14 rounded-full bg-[#1c1c1e] flex items-center justify-center">
-            <span className="text-lg font-bold text-white tracking-tight">
-              {initials}
-            </span>
-          </div>
-        )}
-      </div>
- 
-      {/* Identity + XP */}
-      <div className="flex-1 min-w-0 flex flex-col gap-[5px]">
-        {/* Name + badge */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[17px] font-bold text-[#1a1a1a] leading-none tracking-tight">
+        </div>
+
+        {/* Center column */}
+        <div className="flex-auto min-w-0 flex flex-col gap-[6px]">
+        {/* Name + role badge */}
+        <div className="flex items-center gap-[7px] flex-wrap">
+            <span className="text-2xl font-medium text-[#1a1a1a] leading-none tracking-tight">
             {user?.fullName ?? "Jane Doe"}
-          </span>
-          <span className="inline-flex items-center gap-[3px] text-[10px] font-semibold uppercase tracking-[0.5px] text-[#0f6f6b] bg-[#0f6f6b]/[0.08] border border-[#0f6f6b]/[0.18] px-[7px] py-[2px] rounded-full leading-relaxed">
+            </span>
+            <span className="inline-flex items-center gap-[3px] text-[10px] font-semibold uppercase tracking-[0.5px] text-[#0b5855] bg-[#0f6f6b]/[0.09] border border-[#0f6f6b]/[0.22] px-[7px] py-[2px] rounded-full leading-[1.7]">
             <Shield size={9} strokeWidth={2.5} />
             {user?.role ?? "Student"}
-          </span>
+            </span>
         </div>
- 
-        {/* Handle + cursus */}
-        <div className="text-[12px] text-gray-400 font-normal">
-          @{user?.username ?? "jdoe"}&nbsp;·&nbsp;{profile.cursus}
-        </div>
- 
-        {/* Meta */}
-        <div className="flex items-center text-[11.5px] text-gray-300 gap-0">
-          <span>{user?.email ?? profile.email}</span>
-          <span className="mx-[5px] text-gray-200">·</span>
-          <span>Since {profile.since}</span>
-          {profile.location ? (
-            <>
-              <span className="mx-[5px] text-gray-200">·</span>
+
+        {/* meta data */}
+        <div className="flex items-center text-sm text-gray-400 flex-wrap leading-[1.4]">
+            <span>@{user?.username ?? "jdoe"}</span>
+            <span className="mx-[5px] opacity-40">·</span>
+            <span>{profile.cursus}</span>
+            <span className="mx-[5px] opacity-40">·</span>
+            <span>{user?.email ?? profile.email}</span>
+            {profile.pool && profile.pool !== "N/A" ? (
+              <>
+                <span className="mx-[5px] opacity-40">·</span>
+                <span>since {profile.pool}</span>
+              </>
+            ) : null}
+            {profile.location ? (
+              <>
+              <span className="mx-[5px] opacity-40">·</span>
               <span>{profile.location}</span>
-            </>
-          ) : null}
+              </>
+            ) : null}
         </div>
- 
+
+        {/* Bio */}
+        {displayBio ? (
+        <p className="text-sm text-gray-600 leading-relaxed mt-[1px]">
+            {displayBio}
+        </p>
+        ) : (
+        <p className="text-sm italic text-gray-400 leading-[1.4]">
+            No bio yet.
+        </p>
+        )}
+
         {/* XP bar */}
-        <div className="flex items-center gap-[9px] mt-[1px]">
-          <span className="text-[11.5px] font-semibold text-[#444] whitespace-nowrap">
-            Lv.&nbsp;{profile.level}
-          </span>
-          <div className="flex-1 h-[4px] bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#0f6f6b] rounded-full"
-              style={{ width: `${Math.max(profile.levelProgress, 1)}%` }}
-            />
-          </div>
-          <span className="text-[11px] text-gray-300 whitespace-nowrap">
-            {profile.levelProgress}%
-          </span>
+       <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs font-medium text-gray-600 whitespace-nowrap">
+              Lv. {Math.floor(profile.level)}
+            </span>
+            <div className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                className="absolute left-0 top-0 h-full bg-[#0f6f6b] transition-all"
+                style={{ width: `${profile.levelProgress}%` }}
+                />
+            </div>
+            <span className="text-xs text-gray-400 whitespace-nowrap">
+                {profile.levelProgress}%
+            </span>
         </div>
- 
+
         {/* Peer actions */}
         {canShowPeerActions ? (
-          <div className="flex flex-wrap gap-2 mt-1">
+          <div className="flex flex-wrap gap-2 mt-2">
             <AddFriendButton targetUserId={user.id} />
             <DirectMessageButton targetUserId={user.id} />
           </div>
         ) : null}
- 
+
         {adminActions ? <div className="mt-1">{adminActions}</div> : null}
-      </div>
- 
-      {/* Divider */}
-      <div className="w-px h-11 bg-gray-100 shrink-0" />
- 
-      {/* Stats */}
-      <div className="flex gap-1 shrink-0">
-        <div className="flex flex-col items-center gap-[2px] px-4 py-[6px] min-w-[64px]">
-          <span className="text-[10px] uppercase tracking-[0.5px] text-gray-300 font-medium">
-            Wallet
-          </span>
-          <span className="text-[17px] font-bold text-[#1a1a1a] leading-none tracking-tight">
-            {profile.wallet ?? 0}
-          </span>
         </div>
-        <div className="flex flex-col items-center gap-[2px] px-4 py-[6px] min-w-[64px]">
-          <span className="text-[10px] uppercase tracking-[0.5px] text-gray-300 font-medium">
-            Eval
-          </span>
-          <span className="text-[17px] font-bold text-[#1a1a1a] leading-none tracking-tight">
-            {profile.evalPoints ?? 0}
-          </span>
-        </div>
-        <div className="flex flex-col items-center gap-[2px] px-4 py-[6px] min-w-[64px]">
-          <span className="text-[10px] uppercase tracking-[0.5px] text-gray-300 font-medium">
-            Projects
-          </span>
-          <span className="text-[17px] font-bold text-[#1a1a1a] leading-none tracking-tight">
-            {profile.projectsCount ?? 0}
-          </span>
+
+        {/* Stats */}
+        <div className="flex flex-wrap items-center justify-center w-full md:w-auto shrink-0 mb-4 px-2 md:px-0">
+          {stats.map(({ label, value }, i) => (
+            <div key={label} className="flex items-center">
+              {i > 0 && (
+                <div className="w-px bg-gray-100 self-stretch my-[6px]" />
+              )}
+              <div className="flex flex-col items-center gap-[3px] px-[18px] py-[6px] min-w-[60px]">
+                <span className="text-xs uppercase tracking-[0.5px] text-gray-400 font-medium">
+                  {label}
+                </span>
+                <span className="text-lg font-semibold text-[#1a1a1a] leading-none tracking-tight">
+                  {value}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-    </div>
-  );
+    );
 }
