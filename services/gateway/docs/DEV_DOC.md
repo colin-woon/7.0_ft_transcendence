@@ -1,168 +1,348 @@
 # Gateway — Developer Notes
 
-## Toolchain Setup
-
-Java tooling is managed via **SDKMAN** so everyone on the team uses identical SDK versions.
-
-```bash
-# Install SDKMAN
-curl -s "https://get.sdkman.io" | bash
-
-# Install versions declared in .sdkmanrc
-sdk env install
-
-# Activate for the current terminal
-sdk env
-```
-
-To avoid re-running `sdk env` on every new terminal, enable auto-activation:
-```bash
-# ~/.sdkman/etc/config
-sdkman_auto_env=true
-```
+These notes describe the current gateway codebase and the main implementation traps. They intentionally avoid older design notes that no longer match the service.
 
 ---
 
-## Project Structure
+## Tooling
 
+The gateway is a Quarkus JVM service under:
+
+- [`services/gateway`](..)
+
+Common local commands:
+
+```bash
+./mvnw quarkus:dev
+./mvnw clean test
+./mvnw clean package
 ```
+
+In the repo workflow, gateway is usually run through the root `Makefile` and Compose targets.
+
+---
+
+## Current Package Layout
+
+```text
 src/main/java/org/bumIntra/gateway/
-├── api/             Dynamic HTTP proxies (GatewayResource, PublicResource, StreamResources)
-├── client/          Outbound REST clients, fault tolerance, DTOs (AuthClient, ChatClient, etc.)
-│   └── dto/         Shared DTOs (AuthResult - deprecated)
-├── config/          @ConfigMapping beans (auth, rate limit, headers, methods)
-├── exception/       GatewayException, error codes, error response, exception mapper
-├── filter/          Inbound/outbound container filters (request + response pipeline)
-├── obs/             Observer pattern: dispatcher, logging impl, metrics impl
-│   └── event/       Event records (GatewayRequestStart/End, GatewayWsOpen/Auth/Throttle/Close)
-├── policy/          GatewayPolicy interface + implementations (Currently disabled)
-├── ratelimit/       RateLimiter interface, Redis + in-mem token-bucket impls, profiles, resolver
-│   └── ws/          WS-specific rate limit service (WsRateLimitService, WsRateLimitProfiles)
-├── security/        GatewayRequestContext (request-scoped), AuthLevel, IdentityHeaders
-└── websocket/       WsChatServer endpoint + handlers (WsAuthHandler, WsSessionStateHandler, etc.)
+├── api/         GatewayResource, PublicResource, StreamResources
+├── client/      REST clients, FT executors/wrappers, downstream service adapters
+├── config/      Config mappings for auth, methods, headers, rate limiting
+├── exception/   GatewayException, error codes, response mapping
+├── filter/      Request/response/client filters
+├── obs/         Observer dispatcher, logging, metrics
+│   └── event/   Request lifecycle event records
+├── ratelimit/   Access resolver, profiles, Redis limiter, Lua registry
+└── security/    GatewayRequestContext, AuthLevel, internal header constants
 ```
 
 ---
 
-## Key Concepts
+## Core Request State
 
-### GatewayRequestContext
+[`GatewayRequestContext`](../src/main/java/org/bumIntra/gateway/security/GatewayRequestContext.java) is the request-scoped state shared across filters and downstream client calls.
 
-`@RequestScoped` CDI bean that acts as the per-request shared state between filters.
+Important fields:
 
-Key fields:
-- `requestId` — UUID set by `RequestContextFilter`, echoed back to client as `X-Intra-Request-Id`
-- `startTime` — Instant when the request started
-- `auth` — raw Authorization header value
-- `userId`, `roles`, `authLevel` — populated by `RequestPreAuthFilter`
-- `clientIp`, `realIp`, `forwardedFor`, etc. — populated from headers
-- `serviceName` — targeted downstream service name (for observability)
-- `errorCode`, `errorStatus` — set when a `GatewayException` is mapped
+- `requestId`
+- `startTime`
+- `path`
+- `pathType`
+- `serviceName`
+- `headers`
+- `queryParams`
+- `clientIp`
+- `realIp`
+- `forwardedFor`
+- `forwardedHost`
+- `forwardedProto`
+- `userId`
+- `roles`
+- `authLevel`
+- `errorCode`
+- `errorStatus`
 
-`RequestContextFilter` also classifies `/api/stream/**` requests as `pathType=stream`.
-For valid stream requests it requires `Accept: text/event-stream`; otherwise it throws
-`GatewayException` with `SSE_ACCEPT_REQUIRED` and HTTP `406`.
-
-### Observer / Dispatcher Pattern
-
-```
-GatewayObserver (interface)
-    ├── GatewayObserverLogging   (@ApplicationScoped) — structured log lines
-    └── GatewayObserverMetrics   (@ApplicationScoped) — Micrometer counters/timers
-
-GatewayObserverDispatcher       (@ApplicationScoped, @Typed)
-    — injects Instance<GatewayObserver>, fans out to all implementations
-    — @Typed(GatewayObserverDispatcher.class) prevents it from being included in
-      its own Instance<GatewayObserver> loop
-```
-
-Filters and the WS endpoint inject `GatewayObserverDispatcher` directly and call
-the event methods (`onRequestStart`, `onWsOpen`, etc.).
-
-### Policy Engine
-
-> **Note:** The `PolicyEngineFilter` and `GatewayPolicyEngine` are currently **commented out/disabled**.
-> Basic RBAC is currently handled by `RequestRBACFilter`.
-
-### Rate Limiter
-
-Production: `RedisTokenBucketRateLimiter` — executes a Lua script.
-Access levels are resolved via `RateLimitAccessResolver` (default implementation uses `AuthLevel`).
-
-Profiles are managed in `RateLimitProfiles`, providing different buckets for `GUEST`, `USER`, and `ADMIN/SERVICE`.
+It is also where the current rate-limit identity key is derived.
 
 ---
 
-## Filter Priority Reference
+## Filter Ordering
 
-| Priority Value | Filter                       | Direction |
-|----------------|------------------------------|-----------|
-| 900            | `RequestContextFilter`       | Request   |
-| 910            | `RequestMethodAllowFilter`   | Request   |
-| 920            | `RequestHeaderAllowFilter`   | Request   |
-| 930            | `RequestPreAuthFilter`       | Request   |
-| 1900           | `RequestRateLimitFilter`     | Request   |
-| 1910           | `RequestRBACFilter`          | Request   |
-| 2900           | `ServiceClientContextFilter` | Client    |
-| 3000           | `ResponseContextFilter`      | Response  |
-| 3050           | `ResponseHeaderStripFilter`  | Response  |
-| 3100           | `ResponseMDCCleanFilter`     | Response  |
+Current effective order:
 
----
+| Priority                  | Filter                       | Role                                            |
+| ------------------------- | ---------------------------- | ----------------------------------------------- |
+| `AUTHENTICATION - 100`    | `RequestContextFilter`       | normalize request, build context, emit start    |
+| `AUTHENTICATION - 90`     | `RequestMethodAllowFilter`   | reject unsupported methods                      |
+| `AUTHENTICATION - 80`     | `RequestHeaderAllowFilter`   | strip disallowed inbound headers                |
+| `AUTHENTICATION - 70`     | `RequestPreAuthFilter`       | parse cookie JWT, classify public/internal/auth |
+| `AUTHORIZATION - 100`     | `RequestRateLimitFilter`     | consume token bucket                            |
+| `AUTHORIZATION - 90`      | `RequestRBACFilter`          | guard `/admin/`                                 |
+| `HEADER_DECORATOR - 100`  | `ServiceClientContextFilter` | decorate downstream client requests             |
+| `HEADER_DECORATOR + 1000` | `ResponseContextFilter`      | emit end event / response context               |
+| `HEADER_DECORATOR + 1050` | `ResponseHeaderStripFilter`  | strip outbound headers                          |
+| `HEADER_DECORATOR + 1100` | `ResponseMDCCleanFilter`     | clear MDC                                       |
 
-## Dev Mode Config (`%dev` profile)
-
-When running `./mvnw quarkus:dev`, the `%dev.*` properties activate:
-
-- Plain HTTP on port 8080 (no TLS)
-- No inbound mTLS (`client-auth=none`)
-- No outbound mTLS to backend services
-- `gateway.auth.required=false` (auth bypass)
-- Backend service URLs point to `localhost` equivalents (e.g. `${DEV_AUTH_SERVICE_URL}`)
-
-These are never active in the Docker/prod image.
+NOTE: if you add a new filter, be sure to choose an appropriate priority to fit it into the intended place in the chain. The priority determines the order of execution relative to other filters.
 
 ---
 
-## Adding a New Observer
+## Authentication Behavior
 
-1. Implement the `GatewayObserver` interface (all methods have `default` no-ops)
-2. Annotate with `@ApplicationScoped`
-3. Done — the dispatcher picks it up automatically via `Instance<GatewayObserver>`
+### Browser/User Auth
 
-Example:
-```java
-@ApplicationScoped
-public class GatewayObserverAudit implements GatewayObserver {
-    @Override
-    public void onRequestStart(GatewayRequestStart e) {
-        // write to audit log
-    }
-}
+The gateway reads the browser access token from cookies:
+
+```properties
+mp.jwt.token.header=Cookie
+mp.jwt.token.cookie=accessToken
 ```
 
+[`RequestPreAuthFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestPreAuthFilter.java):
+
+- extracts `accessToken` from the raw `Cookie` header
+- parses the JWT locally
+- fills:
+    - `userId`
+    - `roles`
+    - `authLevel`
+
+### Public Routes
+
+Public routes are matched by prefix:
+
+```properties
+gateway.auth.public-paths=/api/public/
+```
+
+Public requests still attempt token parsing if a cookie is present, but they bypass the “user/admin required” enforcement.
+
+### Internal/Service Auth
+
+Internal requests are identified by the presence of a trusted internal header "`X-Intra-Internal-Request: true`".
+This header is injected by trusted clients (e.g. other services in the cluster) and is not allowed(filtered) from external requests.
+
+### Dev Caveat
+
+`%dev.gateway.auth.required=false` disables auth enforcement in dev. This is convenient for local work, but it also means dev behavior can hide production auth problems unless you test through the stricter path deliberately.
+
 ---
 
-## Common Pitfalls
+## Downstream Routing
 
-**`NoClassDefFoundError` or stale `*_ClientProxy` classes after structural changes**
-Quarkus generates CDI proxy and build-time helper classes into `target/`. After
-structural CDI changes (bean signatures, record shapes, observer payloads, injected
-types), stale generated classes can survive an incremental rebuild and cause confusing
-runtime linkage/proxy errors.
-Always use `mvn clean package` or `make rebuild-gateway` (which includes `clean`) after
-those changes.
+### Main API
 
-**Observer fires N times per request**
-`GatewayObserverDispatcher` must have `@Typed(GatewayObserverDispatcher.class)`.
-Without it, CDI registers it as a `GatewayObserver` too, so
-`Instance<GatewayObserver>` includes the dispatcher itself — causing infinite recursion.
-There is also a defensive runtime guard (`if (o != this)`), but `@Typed` is the main
-CDI-level protection and should not be removed.
+[`GatewayResource`](../src/main/java/org/bumIntra/gateway/api/GatewayResource.java) proxies:
 
-**WS throttle log spam**
-The current implementation emits a throttle observer event on every rejected WS message
-or connection attempt. `LAST_THROTTLE_AT` still exists in `WsSessionStateHandler`, but
-the debounce logic is not currently enforced in `WsChatServer`.
-If per-message throttling starts spamming logs or metrics under burst traffic, re-add a
-per-session cooldown before documenting debounce behavior as active.
+- `/api/auth/...`
+- `/api/forum/...`
+- `/api/chat/...`
+
+### Public API
+
+[`PublicResource`](../src/main/java/org/bumIntra/gateway/api/PublicResource.java) exposes only a narrow auth/public surface:
+
+- OAuth login/callback GETs
+- refresh
+- password login/register
+
+The login/callback GETs now use `proxyPublicGet(...)`, which intentionally bypasses FT retry/circuit-breaker handling. That split exists because OAuth/login GETs are not safe to blindly retry.
+
+### SSE
+
+[`StreamResources`](../src/main/java/org/bumIntra/gateway/api/StreamResources.java) only supports:
+
+- `/api/stream/chat/...`
+
+It proxies bytes from the upstream response stream and closes upstream resources on completion or disconnect.
+
+---
+
+## Fault Tolerance Design
+
+The current FT stack is:
+
+- [`ServiceCallExecutor`](../src/main/java/org/bumIntra/gateway/client/ServiceCallExecutor.java)
+- [`FaultToleranceServiceCallExecutor`](../src/main/java/org/bumIntra/gateway/client/FaultToleranceServiceCallExecutor.java)
+- [`FaultToleranceCallWrapper`](../src/main/java/org/bumIntra/gateway/client/FaultToleranceCallWrapper.java)
+
+### Separation of Responsibilities
+
+`ServiceCallExecutor`
+
+- maps raw downstream HTTP and transport failures into `GatewayException`
+
+`FaultToleranceServiceCallExecutor`
+
+- applies retry/circuit-breaker policy
+- classifies `GatewayException` into:
+    - `RetryableServiceException`
+    - `NonRetryableServiceException`
+
+`FaultToleranceCallWrapper`
+
+- unwraps FT wrapper exceptions back to the original `GatewayException`
+- converts `CircuitBreakerOpenException` into `503 SERVICE_UNAVAILABLE`
+
+### Current FT Scope
+
+There are separate FT lanes for:
+
+- auth
+- forum
+- chat
+
+This keeps breaker state isolated per downstream dependency.
+
+### Current Retryable Codes
+
+- `SERVICE_TIMEOUT`
+- `SERVICE_UNAVAILABLE`
+- `SERVICE_SERVER_ERROR`
+- `SERVICE_INVALID_RESPONSE`
+
+Client-side downstream failures such as `401` or other `4xx` become `SERVICE_CLIENT_ERROR` and are intentionally non-retryable.
+
+---
+
+## Rate Limiting Design
+
+Rate limiting is enforced by [`RequestRateLimitFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestRateLimitFilter.java).
+
+### Access Class
+
+Resolved from `AuthLevel` by [`DefaultRateLimitResolver`](../src/main/java/org/bumIntra/gateway/ratelimit/DefaultRateLimitResolver.java):
+
+- `GUEST`
+- `USER`
+- `ADMIN`
+- `SERVICE`
+
+### Identity Key
+
+Derived in [`GatewayRequestContext.getRateLimitKey()`](../src/main/java/org/bumIntra/gateway/security/GatewayRequestContext.java):
+
+- `internal:{serviceName}`
+- `user:{userId}`
+- `ip:{clientIp}`
+
+### Final Storage Key
+
+The request filter hashes the identity key and prefixes it with the access class:
+
+```text
+{ACCESS_CLASS}:{sha256(identityKey)}
+```
+
+If the identity key is null/blank, it falls back to `unknown`.
+
+### Current Profiles
+
+[`RateLimitProfiles`](../src/main/java/org/bumIntra/gateway/ratelimit/RateLimitProfiles.java):
+
+- guest: `base / 3`
+- user: `base`
+- admin: `base * 10`
+- service: `base * 10`
+
+---
+
+## Header Forwarding Rules
+
+### Client -> Gateway
+
+`RequestHeaderAllowFilter` strips disallowed inbound headers based on:
+
+- `gateway.config.headers.request-deny-prefixes`
+
+Current deny prefixes:
+
+- `x-intra-`
+- `x-forwarded-`
+
+This prevents clients from spoofing trusted internal headers.
+
+### Gateway -> Downstream
+
+`ServiceClientContextFilter` forwards selected user-facing headers and injects trusted internal headers.
+
+Forwarded:
+
+- `Cookie`
+- `Content-Type`
+- `Accept`
+- `Authorization`
+- `Last-Event-ID`
+
+Injected:
+
+- `X-Intra-Request-Id`
+- `X-Intra-Auth-Level`
+- `X-Intra-User-Id`
+- `X-Intra-User-Roles`
+- `X-Intra-Internal-Request`
+- forwarding metadata headers
+
+---
+
+## Observability Notes
+
+### Logs
+
+Current observer logs are only request-lifecycle logs:
+
+```text
+gw.start ...
+gw.end ...
+```
+
+### Metrics
+
+Current metric names:
+
+- `gateway_http_requests_total`
+- `gateway_http_errors_total`
+- `gateway_http_request_duration_seconds`
+- `gateway_downstream_timeouts_total`
+
+One useful implementation detail:
+
+- the `downstream` label is `cb_fast_fail` when the circuit breaker opens before a downstream call happens
+
+That label is what the current Grafana/alerting work is built around.
+
+---
+
+## Current Dev/Config Footguns
+
+### JWT Issuer Drift
+
+Gateway and auth must agree on JWT issuer values. If auth mints tokens with one issuer and gateway verifies against another, browser flows can succeed through OAuth but later fail when the gateway parses the cookie token.
+
+### Dev Auth Toggle
+
+Because `%dev.gateway.auth.required=false`, local route behavior can be more permissive than prod. Be careful when debugging auth/redirect problems: some failures happen in Quarkus security before the request ever reaches your resource method.
+
+### Compose Env Source
+
+This repo relies on Compose `--env-file ./environment/shared.env` in the root `Makefile`. If you run `docker compose` manually without the same `--env-file`, gateway/auth config may silently lose required env values.
+
+---
+
+## When To Clean Rebuild
+
+Do a clean rebuild after structural changes to:
+
+- CDI wiring
+- observer event records
+- injected filter/client types
+- Quarkus config-driven auth behavior
+
+Recommended:
+
+```bash
+./mvnw clean package
+```
+
+or the equivalent root `make`/Compose rebuild path.

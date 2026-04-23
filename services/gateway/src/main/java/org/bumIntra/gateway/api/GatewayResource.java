@@ -30,7 +30,7 @@ public class GatewayResource {
 
     // TODO: endpoint for testing
     @GET
-    @Path("/gateway/ping")
+    @Path("/gateway/health")
     public Response ping() {
         return Response.ok(Map.of("message", "pong from gateway"))
                 .header("X-Internal-Debug", "true")
