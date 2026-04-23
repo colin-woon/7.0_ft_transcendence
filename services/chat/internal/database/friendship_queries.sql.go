@@ -161,6 +161,47 @@ func (q *Queries) CreateMessageRequestFriendship(ctx context.Context, arg Create
 	return i, err
 }
 
+const getAllFriendshipStatuses = `-- name: GetAllFriendshipStatuses :many
+SELECT requester_id, addressee_id, last_action_user_id, status
+FROM chat_service.friendships
+WHERE requester_id = $1 OR addressee_id = $1
+`
+
+type GetAllFriendshipStatusesRow struct {
+	RequesterID      int32                       `json:"requesterId"`
+	AddresseeID      int32                       `json:"addresseeId"`
+	LastActionUserID int32                       `json:"lastActionUserId"`
+	Status           NullChatServiceFriendStatus `json:"status"`
+}
+
+func (q *Queries) GetAllFriendshipStatuses(ctx context.Context, requesterID int32) ([]GetAllFriendshipStatusesRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllFriendshipStatuses, requesterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllFriendshipStatusesRow
+	for rows.Next() {
+		var i GetAllFriendshipStatusesRow
+		if err := rows.Scan(
+			&i.RequesterID,
+			&i.AddresseeID,
+			&i.LastActionUserID,
+			&i.Status,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getFriendListWithChatIds = `-- name: GetFriendListWithChatIds :many
 WITH friends AS (
     SELECT addressee_id AS friend_id

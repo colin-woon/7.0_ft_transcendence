@@ -138,6 +138,14 @@ components:
         friendId: 123
         chatId: "550e8400-e29b-41d4-a716"
         isOnline: true
+    FriendshipStatusItem:
+      type: object
+      properties:
+        userId:
+          type: integer
+          description: The ID of the other user
+        status:
+          $ref: "#/components/schemas/FriendshipStatus"
     StreamEvent:
       type: object
       required: [ type, payload ]
@@ -157,6 +165,25 @@ components:
             - $ref: "#/components/schemas/UserStatus"
 
 paths:
+  /friendship/statuses:
+    get:
+      tags:
+        - Friendship
+      summary: Get all friendship statuses for the current user
+      description: Returns a list of all relationships (accepted, pending, requested,
+        blocked) to initialize the frontend store.
+      operationId: getAllFriendshipStatuses
+      responses:
+        "200":
+          description: Successfully retrieved all statuses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FriendshipStatusItem"
+        "500":
+          description: Internal Server Error
   /friendship/request/{targetUserId}:
     post:
       tags:

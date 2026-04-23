@@ -448,3 +448,45 @@ func (s *Server) AcceptMessageRequest(w http.ResponseWriter, r *http.Request, re
 
 	w.WriteHeader(http.StatusOK)
 }
+
+func (s *Server) GetAllFriendshipStatuses(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	userId, ok := r.Context().Value(userIDKey).(int)
+	if !ok {
+		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
+		return
+	}
+
+	rows, err := s.db.GetQueries().GetAllFriendshipStatuses(ctx, int32(userId))
+	if err != nil {
+		http.Error(w, "Failed to retrieve friendship statuses", http.StatusInternalServerError)
+		return
+	}
+
+	response := make([]api.FriendshipStatusItem, 0, len(rows))
+	for _, row := range rows {
+		var otherUserId int32
+
+		if row.RequesterID == int32(userId) {
+			otherUserId = row.AddresseeID
+		} else {
+			otherUserId = row.RequesterID
+		}
+
+		// 1. Create local copies of the values
+		valUserId := int(otherUserId)
+		valStatus := api.FriendshipStatus(row.Status.ChatServiceFriendStatus)
+
+		response = append(response, api.FriendshipStatusItem{
+			UserId: &valUserId,
+			Status: &valStatus,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode friendship statuses", http.StatusInternalServerError)
+		return
+	}
+}
