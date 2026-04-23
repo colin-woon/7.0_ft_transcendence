@@ -1,6 +1,4 @@
-'use client';
-
-import useRateLimitMultiplier from '../hooks/useRateLimitMultiplier';
+import useRateLimitMultiplier from '../model/useRateLimitMultiplier';
 
 type RateLimitCardProps = {
 	type: string;
@@ -13,7 +11,7 @@ export default function RateLimitCard({
 	title,
 	desc,
 }: RateLimitCardProps) {
-	const [multiplier, setMultiplier] = useRateLimitMultiplier(1);
+	const [multiplier, setMultiplier] = useRateLimitMultiplier();
 
 	return (
 		<div className="flex flex-col gap-3">

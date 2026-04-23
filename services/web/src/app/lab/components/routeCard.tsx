@@ -1,6 +1,6 @@
-'use client';
-
-import { useState } from 'react';
+import { useLabContext } from '../context/labContext';
+import { labRoutes } from '../model/routes';
+import { LabService } from '../types';
 import GroupLabButton from './groupLabButton';
 
 type RouteCardProps = {
@@ -10,22 +10,22 @@ type RouteCardProps = {
 };
 
 export default function RouteCard({ type, title, desc }: RouteCardProps) {
-	const [active, setActive] = useState('Valid');
+	const { labState, setService, setEndpoint, setMethod } = useLabContext();
 
-	type Service = 'Auth' | 'Forum' | 'Chat' | 'Invalid';
+	// const [service, setService] = useState<Service>('Auth');
+	//
+	// const [endpoint, setEndpoint] = useState('me');
+	//
+	const baseService = Object.keys(labRoutes) as LabService[];
 
-	const [service, setService] = useState<Service>('Auth');
+	const baseEndpoint = labRoutes[labState.service].endpoints;
 
-	const [endpoint, setEndpoint] = useState('me');
-
-	const baseService: Service[] = ['Auth', 'Forum', 'Chat', 'Invalid'];
-
-	const baseEndpoint: Record<Service, string[]> = {
-		Auth: ['ping', 'login', 'me'],
-		Forum: ['ping', 'health', 'me'],
-		Chat: ['ping', 'health', 'me'],
-		Invalid: ['ping', 'health', 'me'],
-	};
+	// const baseEndpoint: Record<Service, string[]> = {
+	// 	Auth: ['ping', 'login', 'me'],
+	// 	Forum: ['ping', 'health', 'me'],
+	// 	Chat: ['ping', 'health', 'me'],
+	// 	Invalid: ['ping', 'health', 'me'],
+	// };
 
 	return (
 		<div className="flex flex-col gap-3">
@@ -56,9 +56,11 @@ export default function RouteCard({ type, title, desc }: RouteCardProps) {
 							</div>
 							<div className="flex items-center justify-evenly gap-4">
 								<GroupLabButton
-									labels={['GET', 'POST', 'PUT', 'DELETE']}
-									active={active}
-									onClick={(e) => setActive(e)}
+									labels={['GET', 'POST', 'DELETE']}
+									active={labState.method}
+									onClick={(e) =>
+										setMethod(e as typeof labState.method)
+									}
 								/>
 							</div>
 							<div className="mb-3 flex items-center justify-between gap-4">
@@ -73,10 +75,11 @@ export default function RouteCard({ type, title, desc }: RouteCardProps) {
 									</div>
 									<div className="relative focus-within:ring-1 focus-within:ring-indigo-400/30">
 										<select
-											value={service}
+											value={labState.service}
 											onChange={(e) =>
 												setService(
-													e.target.value as Service
+													e.target
+														.value as typeof labState.service
 												)
 											}
 											className="w-full appearance-none bg-slate-950/80 px-3 py-3 pr-10 font-headline text-sm font-bold uppercase tracking-wide text-slate-100 outline-none"
@@ -102,13 +105,16 @@ export default function RouteCard({ type, title, desc }: RouteCardProps) {
 									</div>
 									<div className="relative focus-within:ring-1 focus-within:ring-indigo-400/30">
 										<select
-											value={endpoint}
+											value={labState.endpoint}
 											onChange={(e) =>
-												setEndpoint(e.target.value)
+												setEndpoint(
+													e.target
+														.value as typeof labState.endpoint
+												)
 											}
 											className="w-full appearance-none bg-slate-950/80 px-3 py-3 pr-10 font-headline text-sm font-bold uppercase tracking-wide text-slate-100 outline-none"
 										>
-											{baseEndpoint[service].map((ep) => (
+											{baseEndpoint.map((ep) => (
 												<option
 													key={ep}
 													value={ep}

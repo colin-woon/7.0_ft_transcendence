@@ -1,3 +1,5 @@
+import { useLabContext } from '../context/labContext';
+
 export default function LogBox() {
 	const sampleResponse = {
 		requestId: 'lab-2f9c1d58',
@@ -14,6 +16,31 @@ export default function LogBox() {
 			},
 		},
 	};
+
+	const { labState } = useLabContext();
+
+	const lastResult = labState.result?.result.at(-1);
+
+	const display = lastResult
+		? JSON.stringify(
+				{
+					status: lastResult.status,
+					statusText: lastResult.statusText,
+					headers: lastResult.headers,
+					body: parseJson(lastResult.body),
+				},
+				null,
+				2
+			)
+		: 'No response yet.';
+
+	function parseJson(body: string) {
+		try {
+			return JSON.parse(body);
+		} catch (err) {
+			return body;
+		}
+	}
 
 	return (
 		<section className="relative bottom-0 left-0 z-40 w-full overflow-hidden rounded-md border border-slate-700/70 bg-slate-950/80 shadow-2xl ring-1 ring-inset ring-indigo-300/10 backdrop-blur-sm">
@@ -58,7 +85,7 @@ export default function LogBox() {
 			{/* </div> */}
 			<div className="bg-slate-950/90 p-4">
 				<pre className="min-h-56 overflow-x-auto rounded-md border border-slate-800 bg-slate-950/70 px-4 py-4 font-mono text-[12px] leading-6 text-slate-300 console-scrollbar">
-					{JSON.stringify(sampleResponse, null, 2)}
+					{display}
 				</pre>
 			</div>
 		</section>
