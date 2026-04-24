@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { labRoutes } from './routes';
+import getLabBodyTemplate from './getLabBodyTemplate';
 import type { LabState } from '../types';
 
 const defaultLabState: LabState = {
@@ -6,7 +8,7 @@ const defaultLabState: LabState = {
 	service: 'Auth',
 	endpoint: '/health',
 	method: 'GET',
-	body: '',
+	body: getLabBodyTemplate('GET', 'Auth', '/health'),
 	rateLimit: 1,
 
 	result: null,
@@ -22,11 +24,29 @@ export function useLabState() {
 		setUserType: (userType: LabState['userType']) =>
 			setLabState((prev) => ({ ...prev, userType })),
 		setService: (service: LabState['service']) =>
-			setLabState((prev) => ({ ...prev, service })),
+			setLabState((prev) => {
+				const nextEndpoint =
+					labRoutes[service].endpoints[0] ?? prev.endpoint;
+
+				return {
+					...prev,
+					service,
+					endpoint: nextEndpoint,
+					body: getLabBodyTemplate(prev.method, service, nextEndpoint),
+				};
+			}),
 		setEndpoint: (endpoint: LabState['endpoint']) =>
-			setLabState((prev) => ({ ...prev, endpoint })),
+			setLabState((prev) => ({
+				...prev,
+				endpoint,
+				body: getLabBodyTemplate(prev.method, prev.service, endpoint),
+			})),
 		setMethod: (method: LabState['method']) =>
-			setLabState((prev) => ({ ...prev, method })),
+			setLabState((prev) => ({
+				...prev,
+				method,
+				body: getLabBodyTemplate(method, prev.service, prev.endpoint),
+			})),
 		setBody: (body: LabState['body']) =>
 			setLabState((prev) => ({ ...prev, body })),
 		setRateLimit: (rateLimit: LabState['rateLimit']) =>
