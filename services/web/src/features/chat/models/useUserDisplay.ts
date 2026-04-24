@@ -18,6 +18,7 @@ export function useUserDisplay(userIds: Array<number | undefined>) {
   const { user } = useAuth();
   const viewerRole = user?.role;
   const requestedIdsRef = useRef<Set<string>>(new Set());
+  const inFlightIdsRef = useRef<Set<string>>(new Set());
   const [displayById, setDisplayById] = useState<
     Record<number, CachedUserDisplay>
   >({});
@@ -36,32 +37,37 @@ export function useUserDisplay(userIds: Array<number | undefined>) {
 
   useEffect(() => {
     const roleKey = viewerRole ?? "ANON";
-    const missingIds = uniqueIds.filter(
-      (id) => !requestedIdsRef.current.has(`${roleKey}:${id}`),
-    );
+    const idsToLoad = uniqueIds.filter((id) => {
+      const requestKey = `${roleKey}:${id}`;
+      return (
+        !requestedIdsRef.current.has(requestKey) &&
+        !inFlightIdsRef.current.has(requestKey)
+      );
+    });
 
-    if (missingIds.length === 0) {
+    if (idsToLoad.length === 0) {
       return;
     }
 
-    for (const id of missingIds) {
-      requestedIdsRef.current.add(`${roleKey}:${id}`);
+    for (const id of idsToLoad) {
+      inFlightIdsRef.current.add(`${roleKey}:${id}`);
     }
 
     let cancelled = false;
 
     const load = async () => {
       const resolved = await Promise.all(
-        missingIds.map(async (id) => {
+        idsToLoad.map(async (id) => {
+          const requestKey = `${roleKey}:${id}`;
           try {
             const nextUser = await authService.getUserById(id);
             const baseName =
               nextUser.username?.trim() || nextUser.fullName?.trim() || null;
-            const avatarImage =
-              nextUser.avatarImage ?? nextUser.avatarUrl ?? null;
+            const avatarImage = nextUser.avatarImage ?? nextUser.avatarUrl ?? null;
 
             return {
               id,
+              requestKey,
               display: {
                 displayName: baseName,
                 avatarImage,
@@ -75,6 +81,7 @@ export function useUserDisplay(userIds: Array<number | undefined>) {
             ) {
               return {
                 id,
+                requestKey,
                 display: {
                   displayName: "Admin",
                   avatarImage: null,
@@ -84,6 +91,7 @@ export function useUserDisplay(userIds: Array<number | undefined>) {
 
             return {
               id,
+              requestKey,
               display: {
                 displayName: null,
                 avatarImage: null,
@@ -93,6 +101,10 @@ export function useUserDisplay(userIds: Array<number | undefined>) {
         }),
       );
 
+      for (const entry of resolved) {
+        inFlightIdsRef.current.delete(entry.requestKey);
+      }
+
       if (cancelled) {
         return;
       }
@@ -101,6 +113,9 @@ export function useUserDisplay(userIds: Array<number | undefined>) {
         const next = { ...prev };
         for (const entry of resolved) {
           next[entry.id] = entry.display;
+          if (entry.display.displayName) {
+            requestedIdsRef.current.add(entry.requestKey);
+          }
         }
         return next;
       });
