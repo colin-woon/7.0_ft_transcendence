@@ -17,7 +17,7 @@ export default function ProjectsCard({ projects }: { projects: Project[] }) {
   return (
     <div className="card bg-base-100 shadow-md rounded-xl p-4 flex flex-col md:flex-row items-center gap-5 w-full h-full">
       <div className="w-full">
-        <h2 className="text-lg font-bold mb-3 text-slate-900">Recent Projects</h2>
+        <h2 className="text-lg font-bold mb-3 text-slate-900">42 Projects</h2>
         
         <div className="max-h-64 overflow-y-auto pr-1 space-y-1.5 w-full">
           {projects.map((project) => {
