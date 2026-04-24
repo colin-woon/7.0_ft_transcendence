@@ -37,6 +37,14 @@ public class GatewayResource {
                 .build();
     }
 
+    @POST
+    @Path("/gateway/testbody")
+    public Response echo(byte[] body) {
+        return Response.ok(Map.of("message", "body received", "size", body.length))
+                .header("X-Internal-Debug", "true")
+                .build();
+    }
+
     @GET
     @Path("/{service}/{subpath: .*}")
     public Response proxyGet(@PathParam("service") String service, @PathParam("subpath") String subpath) {
