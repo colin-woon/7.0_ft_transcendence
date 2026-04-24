@@ -29,6 +29,7 @@ import ProfileCard from "./ProfileCard";
 import ProfileCard2 from "./ProfileCard2";
 import AchievementCard from "./AchievementCard";
 import ProjectsCard from "./ProjectsCard";
+import SkillsCard from "./SkillsCard";
 
 
 interface ProfilePageProps {
@@ -532,11 +533,21 @@ export default function ProfilePage({
         }
       />
 
-      <AchievementCard achievements={achievements} />
+      <div className="flex flex-col md:flex-row gap-5">
+        <div className="w-full md:w-1/2">
+          <SkillsCard skills={cursusSkills} />
+        </div>
+        <div className="w-full md:w-1/2">
+          <AchievementCard achievements={achievements} />
+        </div>
+      </div>
+
       <ProjectsCard projects={projects} />
 
+        {/* 42 Card: Show extended Intra metadata beyond the primary identity/profile card. 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         {/* 42 card: extended Intra metadata beyond the primary identity profile card. */}
+        {/*
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -685,8 +696,9 @@ export default function ProfilePage({
             </div>
           )}
         </div>
-
+          */}
         {/* Debug/Test Card: Show all intra fields for verification */}
+        {/*
         <div className="bg-yellow-50 rounded-2xl border border-yellow-200 shadow-sm p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -730,8 +742,10 @@ export default function ProfilePage({
             <div className="mt-4 text-yellow-700">No intra data available.</div>
           )}
         </div>
+        */}
 
         {/* Forum projects card: subscriptions and high-signal project suggestions. */}
+        {/*} Note: this is separate from the main Intra data card because it relies on our own backend data and logic rather than just being a reflection of Intra details. 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -854,6 +868,7 @@ export default function ProfilePage({
           </button>
         </div>
       )}
+        */}
 
       <EditUserDialog
         open={editOpen}
