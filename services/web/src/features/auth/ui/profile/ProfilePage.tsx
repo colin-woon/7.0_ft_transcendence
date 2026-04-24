@@ -30,6 +30,7 @@ import ProfileCard2 from "./ProfileCard2";
 import AchievementCard from "./AchievementCard";
 import ProjectsCard from "./ProjectsCard";
 import SkillsCard from "./SkillsCard";
+import SubscribedProjectsCard from "./ProfileForumProjects";
 
 
 interface ProfilePageProps {
@@ -543,6 +544,13 @@ export default function ProfilePage({
       </div>
 
       <ProjectsCard projects={projects} />
+
+      <SubscribedProjectsCard
+        subscribedProjects={subscribedProjects}
+        isLoading={projectsLoading}
+        error={projectsError}
+        onRefresh={refetchProjects}
+      />
 
         {/* 42 Card: Show extended Intra metadata beyond the primary identity/profile card. 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
