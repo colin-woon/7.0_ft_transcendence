@@ -28,6 +28,7 @@ import { useProfileProjects } from "@/features/forum/hooks/useProfileProjects";
 import ProfileCard from "./ProfileCard";
 import ProfileCard2 from "./ProfileCard2";
 import AchievementCard from "./AchievementCard";
+import ProjectsCard from "./ProjectsCard";
 
 
 interface ProfilePageProps {
@@ -140,6 +141,18 @@ export default function ProfilePage({
     [activeProfile?.intraInfo],
   );
 
+  const cursusSkills = useMemo(() => {
+    const raw = (activeProfile?.intraInfo?.cursusUsers ?? []);
+    // Find the main cursus (or whatever logic you want)
+    const mainCursus = raw.find((c: any) => c.kind === "main" || c.cursus_id === 21);
+    if (!mainCursus || !Array.isArray(mainCursus.skills)) return [];
+    return mainCursus.skills.map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      level: s.level,
+    }));
+  }, [activeProfile?.intraInfo]);
+
   const skills = useMemo(
     () =>
       activeProfile?.intraInfo
@@ -177,7 +190,7 @@ export default function ProfilePage({
         .slice(0, 8)
         .map(p => ({
           name: p.project.name,
-          mark: p.final_mark,
+          score: p.final_mark,
           status: p.status,
         }));
     }, [activeProfile?.intraInfo]);
@@ -520,6 +533,7 @@ export default function ProfilePage({
       />
 
       <AchievementCard achievements={achievements} />
+      <ProjectsCard projects={projects} />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         {/* 42 card: extended Intra metadata beyond the primary identity profile card. */}
