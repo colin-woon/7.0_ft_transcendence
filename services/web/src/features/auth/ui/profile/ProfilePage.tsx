@@ -534,6 +534,13 @@ export default function ProfilePage({
         }
       />
 
+      <SubscribedProjectsCard
+        subscribedProjects={subscribedProjects}
+        isLoading={projectsLoading}
+        error={projectsError}
+        onRefresh={refetchProjects}
+      />
+      
       <div className="flex flex-col md:flex-row gap-5">
         <div className="w-full md:w-1/2">
           <SkillsCard skills={cursusSkills} />
@@ -545,12 +552,7 @@ export default function ProfilePage({
 
       <ProjectsCard projects={projects} />
 
-      <SubscribedProjectsCard
-        subscribedProjects={subscribedProjects}
-        isLoading={projectsLoading}
-        error={projectsError}
-        onRefresh={refetchProjects}
-      />
+      
 
         {/* 42 Card: Show extended Intra metadata beyond the primary identity/profile card. 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
