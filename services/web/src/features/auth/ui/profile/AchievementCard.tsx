@@ -1,4 +1,13 @@
 import type { AchievementInfo } from "@/features/auth/utils/intraDataParser";
+import { Trophy } from "lucide-react";
+
+function AchievementIcon() {
+  return (
+    <div className="w-10 h-10 rounded-md bg-white flex items-center justify-center border border-inherit">
+      <Trophy className="w-5 h-5 text-yellow-400" />
+    </div>
+  );
+}
 
 export default function AchievementCard({ achievements }: { achievements?: AchievementInfo[] }) {
   if (!achievements || achievements.length === 0) {
@@ -15,31 +24,28 @@ export default function AchievementCard({ achievements }: { achievements?: Achie
           {achievements.map((achievement) => (
             <div
               key={achievement.id}
-              className="card card-side bg-white shadow-none border border-base-300"
+              className="flex items-center bg-white border border-base-300 rounded-md p-2 gap-3"
             >
-              <figure className="pl-4 py-3 shrink-0">
+              <figure className="shrink-0 drop-shadow-sm">
                 {achievement.image ? (
                   <img
-                    src={`https://api.intra.42.fr${achievement.image}`}
+                    src={`https://cdn.intra.42.fr${achievement.image}`}
                     alt={achievement.name}
-                    className="w-10 h-10 object-contain"
+                    className="w-10 h-10 object-contain border border-inherit rounded-md"
                     onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display = "none";
+                      e.currentTarget.style.display = "none";
+                      e.currentTarget.nextElementSibling?.classList.remove("hidden");
                     }}
                   />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center text-base-content/30 text-lg">
-                    ?
-                  </div>
-                )}
-              </figure>
-
-              <div className="card-body p-3 gap-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-base-content leading-tight">
-                    {achievement.name}
-                  </span>
+                ) : null}
+                <div className={achievement.image ? "hidden" : ""}>
+                  <AchievementIcon />
                 </div>
+              </figure>
+              <div className="flex flex-col p-1 gap-0.5">
+                <span className="text-sm font-semibold text-base-content leading-tight">
+                  {achievement.name}
+                </span>
                 {achievement.description && (
                   <p className="text-xs text-base-content/60 leading-snug">
                     {achievement.description}

@@ -148,6 +148,40 @@ export default function ProfilePage({
     [activeProfile?.intraInfo],
   );
 
+  interface IntraProject {
+    project: {
+      id: number;
+      name: string;
+    };
+    updated_at: string;
+    final_mark: number | null;
+    status: string;
+  }
+
+  const projects = useMemo(() => {
+      const raw = (activeProfile?.intraInfo?.projectsUsers as unknown as IntraProject[]) ?? [];
+      
+      const deduped = Object.values(
+        raw.reduce((acc, p) => {
+          const key = p.project.id;
+          // Now p.updated_at is recognized as a string
+          if (!acc[key] || new Date(p.updated_at).getTime() > new Date(acc[key].updated_at).getTime()) {
+            acc[key] = p;
+          }
+          return acc;
+        }, {} as Record<number, IntraProject>)
+      );
+
+      return deduped
+        .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+        .slice(0, 8)
+        .map(p => ({
+          name: p.project.name,
+          mark: p.final_mark,
+          status: p.status,
+        }));
+    }, [activeProfile?.intraInfo]);
+
   const titleNames = useMemo(
     () =>
       activeProfile?.intraInfo
