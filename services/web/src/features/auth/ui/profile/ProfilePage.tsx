@@ -26,6 +26,12 @@ import {
 import { getUserInitials } from "@/features/auth/utils/userInitials";
 import { useProfileProjects } from "@/features/forum/hooks/useProfileProjects";
 import ProfileCard from "./ProfileCard";
+import ProfileCard2 from "./ProfileCard2";
+import AchievementCard from "./AchievementCard";
+import ProjectsCard from "./ProjectsCard";
+import SkillsCard from "./SkillsCard";
+import ForumProjectsCard from "./ProfileForumProjects";
+
 
 interface ProfilePageProps {
   viewedUserId?: number;
@@ -137,6 +143,18 @@ export default function ProfilePage({
     [activeProfile?.intraInfo],
   );
 
+  const cursusSkills = useMemo(() => {
+    const raw = (activeProfile?.intraInfo?.cursusUsers ?? []);
+    // Find the main cursus (or whatever logic you want)
+    const mainCursus = raw.find((c: any) => c.kind === "main" || c.cursus_id === 21);
+    if (!mainCursus || !Array.isArray(mainCursus.skills)) return [];
+    return mainCursus.skills.map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      level: s.level,
+    }));
+  }, [activeProfile?.intraInfo]);
+
   const skills = useMemo(
     () =>
       activeProfile?.intraInfo
@@ -144,6 +162,40 @@ export default function ProfilePage({
         : [],
     [activeProfile?.intraInfo],
   );
+
+  interface IntraProject {
+    project: {
+      id: number;
+      name: string;
+    };
+    updated_at: string;
+    final_mark: number | null;
+    status: string;
+  }
+
+  const projects = useMemo(() => {
+      const raw = (activeProfile?.intraInfo?.projectsUsers as unknown as IntraProject[]) ?? [];
+      
+      const deduped = Object.values(
+        raw.reduce((acc, p) => {
+          const key = p.project.id;
+          // Now p.updated_at is recognized as a string
+          if (!acc[key] || new Date(p.updated_at).getTime() > new Date(acc[key].updated_at).getTime()) {
+            acc[key] = p;
+          }
+          return acc;
+        }, {} as Record<number, IntraProject>)
+      );
+
+      return deduped
+        .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+        .slice(0, 8)
+        .map(p => ({
+          name: p.project.name,
+          score: p.final_mark,
+          status: p.status,
+        }));
+    }, [activeProfile?.intraInfo]);
 
   const titleNames = useMemo(
     () =>
@@ -351,6 +403,14 @@ export default function ProfilePage({
           year: "numeric",
         })
       : "Unknown",
+    wallet: intraSummary?.wallet ?? 0,
+    evalPoints: intraSummary?.correctionPoints ?? 0,
+    partnerships: partnershipsCount,
+    groups: groupsCount,
+    isAlumni: intraSummary?.isAlumni ?? false,
+    pool: activeProfile?.intraInfo?.poolMonth && activeProfile?.intraInfo?.poolYear
+      ? `${activeProfile.intraInfo.poolMonth} ${activeProfile.intraInfo.poolYear}`
+      : "N/A",
   };
 
   if (authLoading || (user && profileLoading)) {
@@ -457,10 +517,11 @@ export default function ProfilePage({
         </div>
       )}
 
-      <ProfileCard
+      <ProfileCard2
         user={activeProfile}
         profile={profileCardData}
         initials={initials}
+        subscribedProjects={subscribedProjects}
         adminActions={
           isAdmin && user && activeProfile.id !== user.id ? (
             <UserAdminActionButtons
@@ -474,280 +535,24 @@ export default function ProfilePage({
         }
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        {/* 42 card: extended Intra metadata beyond the primary identity profile card. */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">
-                42 Additional Info
-              </h2>
-              <p className="text-xs text-slate-500 mt-1">
-                Achievements, titles, skills, and account stats from 42 Intra.
-              </p>
-            </div>
-          </div>
+      <ForumProjectsCard
+        subscribedProjects={subscribedProjects}
+        suggestedProjects={viewingOwnProfile ? suggestedProjects : []} 
+        isLoading={projectsLoading}
+        error={projectsError}
+        onRefresh={refetchProjects}
+      />
 
-          {!hasIntraData ? (
-            <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-600">
-              Log into 42 to load additional Intra details for this profile.
-            </div>
-          ) : (
-            <div className="mt-4 space-y-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                <div className="rounded-xl border border-slate-200 p-3">
-                  <div className="text-slate-500">Wallet</div>
-                  <div className="text-sm font-semibold text-slate-900">
-                    {intraSummary?.wallet ?? 0}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-slate-200 p-3">
-                  <div className="text-slate-500">Eval Points</div>
-                  <div className="text-sm font-semibold text-slate-900">
-                    {intraSummary?.correctionPoints ?? 0}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-slate-200 p-3">
-                  <div className="text-slate-500">Partnerships</div>
-                  <div className="text-sm font-semibold text-slate-900">
-                    {partnershipsCount}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-slate-200 p-3">
-                  <div className="text-slate-500">Alumni</div>
-                  <div className="text-sm font-semibold text-slate-900">
-                    {intraSummary?.isAlumni ? "Yes" : "No"}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-slate-200 p-3">
-                  <div className="text-slate-500">Pool</div>
-                  <div className="text-sm font-semibold text-slate-900">
-                    {activeProfile?.intraInfo?.poolMonth &&
-                    activeProfile?.intraInfo?.poolYear
-                      ? `${activeProfile.intraInfo.poolMonth} ${activeProfile.intraInfo.poolYear}`
-                      : "N/A"}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-slate-200 p-3">
-                  <div className="text-slate-500">Groups</div>
-                  <div className="text-sm font-semibold text-slate-900 truncate">
-                    {groupsCount}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
-                  Titles
-                </h3>
-                {titleNames.length === 0 ? (
-                  <p className="text-sm text-slate-500">No titles available.</p>
-                ) : (
-                  <div className="max-h-24 overflow-y-auto pr-1">
-                    <div className="flex flex-wrap gap-2">
-                      {titleNames.map((title) => (
-                        <span
-                          key={title}
-                          className="text-xs px-2 py-1 rounded-full bg-[#8EE7E3]/20 text-[#0f6f6b]"
-                        >
-                          {title}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
-                  Achievements
-                </h3>
-                {achievements.length === 0 ? (
-                  <p className="text-sm text-slate-500">
-                    No achievements available.
-                  </p>
-                ) : (
-                  <div className="max-h-44 overflow-y-auto pr-1">
-                    <ul className="space-y-2">
-                      {achievements.map((achievement) => (
-                        <li
-                          key={achievement.id}
-                          className="rounded-xl border border-slate-200 p-2"
-                        >
-                          <div className="text-sm font-semibold text-slate-900">
-                            {achievement.name}
-                          </div>
-                          {achievement.description ? (
-                            <p className="text-xs text-slate-500 mt-1">
-                              {achievement.description}
-                            </p>
-                          ) : null}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
-                  Skills & Languages
-                </h3>
-                {skills.length > 0 || languageNames.length > 0 ? (
-                  <div className="max-h-24 overflow-y-auto pr-1">
-                    <div className="flex flex-wrap gap-2">
-                      {skills.map((skill) => (
-                        <span
-                          key={skill.id}
-                          className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700"
-                        >
-                          {skill.name} ({skill.level.toFixed(2)})
-                        </span>
-                      ))}
-                      {languageNames.map((language) => (
-                        <span
-                          key={language}
-                          className="text-xs px-2 py-1 rounded-full bg-indigo-50 text-indigo-600"
-                        >
-                          {language}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-                {skills.length === 0 && languageNames.length === 0 ? (
-                  <span className="text-sm text-slate-500">
-                    No skills or languages available.
-                  </span>
-                ) : null}
-              </div>
-            </div>
-          )}
+      <div className="flex flex-col md:flex-row gap-5">
+        <div className="w-full md:w-1/2">
+          <SkillsCard skills={cursusSkills} />
         </div>
-
-        {/* Forum projects card: subscriptions and high-signal project suggestions. */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">Projects</h2>
-              <p className="text-xs text-slate-500 mt-1">
-                Current subscriptions and suggested forum projects.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => void refetchProjects()}
-              className="btn btn-xs btn-ghost"
-            >
-              Refresh
-            </button>
-          </div>
-
-          {projectsLoading ? (
-            <div className="mt-4 inline-flex items-center gap-2 text-sm text-slate-600">
-              <Loader2 size={14} className="animate-spin" />
-              Loading project data...
-            </div>
-          ) : (
-            <div className="mt-4 space-y-4">
-              {projectsError ? (
-                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
-                  {projectsError}
-                </div>
-              ) : null}
-
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
-                  Subscribed Projects
-                </h3>
-                {subscribedProjects.length === 0 ? (
-                  <p className="text-sm text-slate-500">
-                    {viewingOwnProfile
-                      ? "You are not subscribed to any projects yet."
-                      : "No subscribed projects were detected for this user."}
-                  </p>
-                ) : (
-                  <ul className="space-y-2">
-                    {subscribedProjects.map((project) => (
-                      <li
-                        key={project.id}
-                        className="rounded-xl border border-slate-200 p-3"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-900 truncate">
-                              {project.name}
-                            </p>
-                            <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                              {project.description}
-                            </p>
-                          </div>
-                          <Link
-                            href={`/projects/${project.id}`}
-                            className="btn btn-xs btn-outline"
-                          >
-                            Open
-                          </Link>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
-                  Suggested Projects
-                </h3>
-                {suggestedProjects.length === 0 ? (
-                  <p className="text-sm text-slate-500">
-                    No suggestions available right now.
-                  </p>
-                ) : (
-                  <ul className="space-y-2">
-                    {suggestedProjects.map((project) => (
-                      <li
-                        key={project.id}
-                        className="rounded-xl border border-slate-200 p-3"
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-900 truncate">
-                              {project.name}
-                            </p>
-                            <p className="text-xs text-slate-500 mt-1">
-                              {project.difficulty} · {project.xp} xp
-                            </p>
-                          </div>
-                          <Link
-                            href={`/projects/${project.id}`}
-                            className="btn btn-xs btn-neutral"
-                          >
-                            View Forum
-                          </Link>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          )}
+        <div className="w-full md:w-1/2">
+          <AchievementCard achievements={achievements} />
         </div>
       </div>
 
-      {!viewingOwnProfile && profileError && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-sm text-slate-600">
-          <p>Failed to refresh this profile.</p>
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className="mt-2 btn btn-xs btn-ghost"
-          >
-            Try again
-          </button>
-        </div>
-      )}
+      <ProjectsCard projects={projects} />
 
       <EditUserDialog
         open={editOpen}
