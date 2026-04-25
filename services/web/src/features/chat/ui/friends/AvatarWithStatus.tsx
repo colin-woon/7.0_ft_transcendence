@@ -53,13 +53,13 @@ export function AvatarWithStatus({
     <div className="indicator">
       {/* Unread Badge (Top Right)*/}
       {hasUnread && (
-        <span className="indicator-item badge badge-error badge-sm px-1 z-10 transform translate-x-1 -translate-y-1 border-base-100 border-2" />
+        <div className="indicator-item w-2 h-2 bg-error rounded-full z-10 transform translate-x-0.25" />
       )}
 
       {/* Status Dot (Bottom Right) */}
       {!isGroup && isAcceptedFriend && (
         <span
-          className={`indicator-item indicator-bottom indicator-end status status-lg z-10 transform -translate-x-1 border-base-100 border-2 ${getStatusColorClass(status, isOnline)}`}
+          className={`indicator-item indicator-bottom indicator-end status status-lg z-10 transform -translate-x-0.25 border-base-100 border-2 ${getStatusColorClass(status, isOnline)}`}
         />
       )}
 

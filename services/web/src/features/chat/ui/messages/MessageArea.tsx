@@ -116,6 +116,7 @@ export function MessageArea() {
 
         return (
           <div 
+            data-message-id={msg.id}
             key={msg.id} 
             className={`chat ${isMe ? 'chat-end' : 'chat-start'}`}
             ref={(el) => {
