@@ -93,13 +93,11 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
 
       addMessage: (msg: ChatMessage) => 
         set((state) => {
-          const chatId = state.currentChatSessionId;
-          if (!chatId) return;
+          const session = state.allChatSessions[msg.chatId]; 
+          if (!session) return; 
           
-          const session = state.allChatSessions[chatId];
-          if (!session.messages) return;
+          if (!session.messages) session.messages = [];
 
-          // Deduplicate: check if message ID already exists
           const exists = session.messages.some(m => m.id === msg.id);
           if (exists) return;
 
