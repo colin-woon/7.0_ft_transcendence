@@ -477,10 +477,12 @@ func (s *Server) GetAllFriendshipStatuses(w http.ResponseWriter, r *http.Request
 		// 1. Create local copies of the values
 		valUserId := int(otherUserId)
 		valStatus := api.FriendshipStatus(row.Status.ChatServiceFriendStatus)
+		valLastActionUserId := int(row.LastActionUserID)
 
 		response = append(response, api.FriendshipStatusItem{
-			UserId: &valUserId,
-			Status: &valStatus,
+			UserId:           &valUserId,
+			Status:           &valStatus,
+			LastActionUserId: &valLastActionUserId,
 		})
 	}
 

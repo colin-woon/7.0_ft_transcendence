@@ -146,6 +146,9 @@ components:
           description: The ID of the other user
         status:
           $ref: "#/components/schemas/FriendshipStatus"
+        lastActionUserId:
+          type: integer
+          description: The user who performed the last status change
     StreamEvent:
       type: object
       required: [ type, payload ]
@@ -184,6 +187,7 @@ paths:
                   $ref: "#/components/schemas/FriendshipStatusItem"
         "500":
           description: Internal Server Error
+
   /friendship/request/{targetUserId}:
     post:
       tags:

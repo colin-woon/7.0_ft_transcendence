@@ -4,9 +4,9 @@ export { AddFriendButton } from "./friends/AddFriendButton";
 export { DirectMessageButton } from "./friends/DirectMessageButton";
 export { FriendOptionsDropdown } from "./friends/FriendOptionsDropdown";
 
-export { MessageHeader } from "./messages/MessageHeader";
-export { MessageArea } from "./messages/MessageArea";
-export { MessageInput } from "./messages/MessageInput";
+export { ChatHeader } from "./messages/ChatHeader";
+export { ChatArea } from "./messages/ChatArea";
+export { ChatInput } from "./messages/ChatInput";
 export { UserInbox } from "./messages/UserInbox";
 
 export { CreateGroupChatButton } from "./CreateGroupChatButton";

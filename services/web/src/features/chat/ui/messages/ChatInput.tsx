@@ -6,7 +6,7 @@ import { useCurrentChatSession, useChatActions } from '@/features/chat/models';
 import { SendHorizontal } from 'lucide-react'
 import toast from 'react-hot-toast';
 
-export function MessageInput() {
+export function ChatInput() {
   const { currentUserId, chatId, isAllowedChat, requestedBy, friendshipStatus } = useCurrentChatSession();
   const { updateChatPermission } = useChatActions();
   

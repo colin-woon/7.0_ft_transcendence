@@ -6,19 +6,21 @@ import {
   useCurrentChatSession,
   useUserDisplay,
   useUserStatus,
+  useIsAcceptedFriend,
 } from "@/features/chat/models";
 import { AvatarWithStatus, FriendOptionsDropdown } from "@/features/chat/ui";
 
-export function MessageHeader() {
-  const { chatSessionName, friendIds, currentUserId, chatId } =
-    useCurrentChatSession();
-
+export function ChatHeader() {
+  const { chatSessionName, friendIds, currentUserId, chatId } = useCurrentChatSession();
+  
   // Find the ID of the person we are chatting with (if it's a 1-on-1)
   const otherUserId = friendIds?.find((id) => id !== currentUserId);
   const displayLookupIds = useMemo(
     () => (otherUserId ? [otherUserId] : []),
     [otherUserId],
   );
+
+  const isAcceptedFriend = useIsAcceptedFriend(otherUserId ?? -1);
 
   // Safely grab the online status. If otherUserId is undefined (like in a group), we just pass -1
   const isOnline = useUserStatus(otherUserId || -1);
@@ -88,11 +90,13 @@ export function MessageHeader() {
         {/* User / Group Info */}
         <div className="flex flex-col">
           <div className="font-semibold text-md leading-tight">{title}</div>
-          <div
-            className={`text-xs font-medium ${isStatusPositive ? "text-success" : "text-base-content/60"}`}
-          >
-            {statusText}
-          </div>
+          {isAcceptedFriend && (
+            <div
+              className={`text-xs font-medium ${isStatusPositive ? "text-success" : "text-base-content/60"}`}
+            >
+              {statusText}
+            </div>
+          )}
         </div>
       </div>
 

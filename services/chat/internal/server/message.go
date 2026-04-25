@@ -471,7 +471,27 @@ func (s *Server) UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatI
 		return
 	}
 
-	s.sseHub.BroadcastToRoomExcept(memberIDs, userId, string(jsonData))
+	filteredMemberIDs := make([]int32, 0, len(memberIDs))
+	for _, id := range memberIDs {
+		if int(id) == userId {
+			continue
+		}
+
+		friendship, err := s.db.GetQueries().GetFriendship(ctx, database.GetFriendshipParams{
+			RequesterID: int32(userId),
+			AddresseeID: id,
+		})
+		if err == nil && friendship.Status.Valid && friendship.Status.ChatServiceFriendStatus == database.ChatServiceFriendStatusAccepted {
+			filteredMemberIDs = append(filteredMemberIDs, id)
+		}
+	}
+
+	if len(filteredMemberIDs) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	s.sseHub.BroadcastToRoomExcept(filteredMemberIDs, userId, string(jsonData))
 	w.WriteHeader(http.StatusNoContent)
 }
 

@@ -47,6 +47,12 @@ export interface ReadReceipt {
   messageId: number;
 }
 
+export interface FriendStatusItem {
+  userId: FriendId;
+  status: FriendStatus;
+  lastActionUserId: FriendId; 
+}
+
 export type ChatRoomType = 'group' | 'direct';
 
 export interface ChatRoom {

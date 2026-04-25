@@ -3,7 +3,8 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { updateFriendshipStatus } from '@/features/chat/api';
-import { useIsAcceptedFriend } from '@/features/chat/models/chat-hooks';
+import { useIsAcceptedFriend, useChatActions, useAllFriendshipStatuses } from '@/features/chat/models/chat-hooks';
+import { useAuth } from '@/features/auth/models/AuthContext';
 
 interface FriendOptionsDropdownProps {
   friendId: number;
@@ -14,10 +15,16 @@ interface FriendOptionsDropdownProps {
 export function FriendOptionsDropdown({ friendId, onActionComplete, isProfilePage = false }: FriendOptionsDropdownProps) {
   const router = useRouter();
   const isFriend = useIsAcceptedFriend(friendId);
+  const statuses = useAllFriendshipStatuses()
+  const status = statuses[friendId]?.status || 'none'
+  const { setFriendshipStatus } = useChatActions();
+  const { user } = useAuth();
+  
 
   const handleRemoveFriend = async () => {
     try {
       await updateFriendshipStatus(friendId, 'requested');
+      setFriendshipStatus(friendId, 'requested', user!.id);
       onActionComplete?.();
     } catch (error) {
       console.error('Failed to update friendship status:', error);
@@ -27,15 +34,17 @@ export function FriendOptionsDropdown({ friendId, onActionComplete, isProfilePag
   const handleBlockFriend = async () => {
     try {
       await updateFriendshipStatus(friendId, 'blocked');
+      setFriendshipStatus(friendId, 'blocked', user!.id);
       onActionComplete?.();
     } catch (error) {
       console.error('Failed to update friendship status:', error);
     }
   };
 
-  if (!isFriend && isProfilePage) {
+  if (!isFriend && isProfilePage || status === 'blocked') {
     return null;
   }
+
 
   return (
     <div className="dropdown dropdown-end">

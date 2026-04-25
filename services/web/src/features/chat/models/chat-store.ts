@@ -11,7 +11,7 @@ export interface ChatState {
   pendingRequests: PendingFriendRequest[];
   isLoadingFriends: boolean;
   friendsError: string | null;
-  allFriendshipStatuses: Record<FriendId, FriendStatus>;
+  allFriendshipStatuses: Record<FriendId, { status: FriendStatus, lastActionUserId: FriendId }>;
   typingUsers: Record<ChatId, Record<FriendId, boolean>>;
   readReceipts: Record<ChatId, Record<FriendId, number>>; // chatId -> userId -> lastReadMessageId
 }
@@ -25,7 +25,7 @@ export interface ChatActions {
   fetchAllAcceptedFriends: () => Promise<void>;
   fetchPendingFriendships: () => Promise<void>;
   fetchAllChatSessions: () => Promise<void>;
-  setFriendshipStatus: (friendId: FriendId, status: FriendStatus) => void;
+  setFriendshipStatus: (friendId: FriendId, status: FriendStatus, lastActionUserId: FriendId) => void;
   fetchAllFriendshipStatuses: () => Promise<void>;
   fetchChatHistory: (chatId: ChatId) => Promise<void>;
   setTypingStatus: (chatId: ChatId, senderId: FriendId) => void;
@@ -111,9 +111,9 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
           state.allAcceptedFriends = friendList;
       }),
 
-      setFriendshipStatus: (friendId: FriendId, status: FriendStatus) =>
+      setFriendshipStatus: (friendId: FriendId, status: FriendStatus, lastActionUserId: FriendId) =>
         set((state) => {
-          state.allFriendshipStatuses[friendId] = status;
+          state.allFriendshipStatuses[friendId] = { status, lastActionUserId };
       }),
 
       fetchAllAcceptedFriends: async () => {
@@ -131,11 +131,16 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
       },
 
       fetchAllFriendshipStatuses: async () => {
-        const friendshipStatuses = await getAllFriendshipStatuses();
+      const friendshipStatusesRaw = await getAllFriendshipStatuses();
+      const statusRecords: Record<FriendId, { status: FriendStatus, lastActionUserId: FriendId }> = {};
 
-        set((state) => {
-          state.allFriendshipStatuses = friendshipStatuses;
-        });
+      friendshipStatusesRaw.forEach((item) => {
+        statusRecords[item.userId] = { status: item.status, lastActionUserId: item.lastActionUserId };
+      });
+
+      set((state) => {
+        state.allFriendshipStatuses = statusRecords;
+      });
       },
 
       fetchAllChatSessions: async () => {

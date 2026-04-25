@@ -1,7 +1,7 @@
 'use client';
 
 import React, { use, useEffect } from 'react';
-import { MessageHeader, MessageArea, MessageInput } from '@/features/chat/ui';
+import { ChatHeader, ChatArea, ChatInput } from '@/features/chat/ui';
 import { useChatActions } from '@/features/chat/models';
 
 export default function ActiveChatPage({ 
@@ -20,9 +20,9 @@ export default function ActiveChatPage({
 
   return (
     <div className="flex flex-col h-full w-full bg-base-100 overflow-hidden">
-      <MessageHeader />
-      <MessageArea />
-      <MessageInput />
+      <ChatHeader />
+      <ChatArea />
+      <ChatInput />
     </div>
   );
 }

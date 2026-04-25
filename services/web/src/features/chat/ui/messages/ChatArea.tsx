@@ -14,7 +14,7 @@ const BUBBLE_COLORS = [
   'chat-bubble-warning'
 ];
 
-export function MessageArea() {
+export function ChatArea() {
   const { fetchChatHistory, sendReadReceipt } = useChatActions();
   const { chatId, messages, typingUsers, readReceipts } = useCurrentChatSession();
   const isAllowedChat = useIsAllowedChat(chatId);
