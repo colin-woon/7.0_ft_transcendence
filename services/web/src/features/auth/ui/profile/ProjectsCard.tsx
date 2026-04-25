@@ -21,7 +21,6 @@ export default function ProjectsCard({ projects }: { projects: Project[] }) {
         
         <div className="max-h-64 overflow-y-auto pr-1 space-y-1.5 w-full">
           {projects.map((project) => {
-            // Background opacity logic for the teal tint
             let opacity = 0.05;
             if (project.score !== null) {
               opacity = Math.max(0.05, (project.score / 125) * 0.35);
@@ -41,7 +40,6 @@ export default function ProjectsCard({ projects }: { projects: Project[] }) {
                 className="flex items-center justify-between rounded-md border border-base-300 px-3 py-1.5 transition-all"
                 style={{ backgroundColor: `rgba(142, 231, 227, ${opacity})` }}
               >
-                {/* Slimmed down: Name and Status on one line */}
                 <div className="flex items-center gap-2 overflow-hidden">
                   <span className="text-sm font-semibold text-base-content truncate">
                     {project.name}

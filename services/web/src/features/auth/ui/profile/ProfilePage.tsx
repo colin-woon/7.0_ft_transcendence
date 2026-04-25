@@ -521,6 +521,7 @@ export default function ProfilePage({
         user={activeProfile}
         profile={profileCardData}
         initials={initials}
+        subscribedProjects={subscribedProjects}
         adminActions={
           isAdmin && user && activeProfile.id !== user.id ? (
             <UserAdminActionButtons

@@ -17,7 +17,6 @@ export default function SkillsCard({ skills }: { skills: { name: string; level: 
         <h2 className="text-lg font-bold text-slate-900">Skill Graph</h2>
         
         {hasData && (
-          /* The 250px height is only rendered if data exists */
           <div className="w-full h-[250px] mt-3 flex items-center justify-center overflow-hidden">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart cx="50%" cy="50%" outerRadius="70%" data={skills}>
