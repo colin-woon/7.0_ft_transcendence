@@ -92,7 +92,12 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId uuid
 	}
 	payload := string(jsonData)
 
-	s.sseHub.BroadcastToRoomExcept(memberIDs, senderId, payload)
+	members := make([]int, len(memberIDs))
+	for i, id := range memberIDs {
+		members[i] = int(id)
+	}
+
+	s.sseHub.BroadcastToUsers(members, payload)
 
 	// 5. Return 201 Created to the sender
 	w.WriteHeader(http.StatusCreated)

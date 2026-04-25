@@ -92,9 +92,15 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
           const chatId = state.currentChatSessionId;
           if (!chatId) return;
           
-          if (state.allChatSessions[chatId].messages) {
-            state.allChatSessions[chatId].messages.unshift(msg);
-          }
+          const session = state.allChatSessions[chatId];
+          if (!session.messages) return;
+
+          // Deduplicate: check if message ID already exists
+          const exists = session.messages.some(m => m.id === msg.id);
+          if (exists) return;
+
+          session.messages.unshift(msg);
+
           if (state.typingUsers[msg.chatId]?.[msg.senderId]) {
             delete state.typingUsers[msg.chatId][msg.senderId];
           }

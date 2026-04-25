@@ -38,13 +38,6 @@ export function MessageInput() {
         { content: messageText }
       );
       setMessageText('');
-      addMessage({
-        id: "msg-" + currentUserId + '-' + Date.now(),
-        chatId: chatId,
-        senderId: currentUserId,
-        content: messageText,
-        createdAt: new Date().toISOString(),
-      });
     }
   };
 

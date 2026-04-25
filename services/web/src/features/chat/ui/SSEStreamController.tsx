@@ -13,11 +13,10 @@ export function SSEStreamController() {
     
     const eventSource = getMessageStream((eventContent) => {
       if (eventContent.type === 'NEW_MESSAGE' && eventContent.payload.chatId === chatId) {
-        const chatUserId = currentUserId === 1 ? eventContent.payload.senderId : 1;
         addMessage({
           id: eventContent.payload.id,
           chatId: chatId!,
-          senderId: chatUserId,     
+          senderId: eventContent.payload.senderId,
           content: eventContent.payload.content,
           createdAt: eventContent.payload.createdAt
         });

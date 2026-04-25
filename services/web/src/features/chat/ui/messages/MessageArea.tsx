@@ -28,7 +28,6 @@ export function MessageArea() {
   // Use visibility tracking hook
   const { observeElement } = useMessageVisibility({
     chatId,
-    messages: messages || [],
     userId: currentUserId || 0,
     onReadReceipt: isAllowedChat ? sendReadReceipt : async () => {},
   });
@@ -42,7 +41,7 @@ export function MessageArea() {
   useEffect(() => {
     messageRefs.current.forEach((element, messageId) => {
       if (element) {
-        observeElement(element, messageId);
+        observeElement(element);
       }
     });
   }, [messages, observeElement]);
