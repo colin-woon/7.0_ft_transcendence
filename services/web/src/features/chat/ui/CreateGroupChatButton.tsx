@@ -1,8 +1,9 @@
 'use client';
-import { useRef, useState, useEffect } from 'react'; // <-- Add useState and useEffect
-import { createPortal } from 'react-dom'; // <-- Add createPortal
-import { useCreateGroupChatAction } from '../models';
-import type { FriendId } from '../models/chat-types';
+
+import { useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { useCreateGroupChatAction, useUserDisplay, BUBBLE_COLORS } from '@/features/chat/models';
+import { AvatarWithStatus } from '@/features/chat/ui';
 
 const FALLBACK_AVATAR_URL = 'https://img.daisyui.com/images/profile/demo/yellingcat@192.webp';
 
@@ -21,6 +22,9 @@ export function CreateGroupChatButton() {
         allAcceptedFriends
     } = useCreateGroupChatAction();
 
+    const friendIds = allAcceptedFriends?.map(f => f.friendId) || [];
+    const resolveDisplay = useUserDisplay(friendIds);
+    
     // Ensure we only render the portal on the client-side
     useEffect(() => {
         setMounted(true);
@@ -75,24 +79,32 @@ export function CreateGroupChatButton() {
                                 {!allAcceptedFriends || allAcceptedFriends.length === 0 ? (
                                     <p className="text-sm opacity-70">No friends available.</p>
                                 ) : (
-                                    allAcceptedFriends.map(friend => (
-                                        <div key={friend.friendId} className="flex justify-between items-center p-2 rounded hover:bg-base-500/50 ">
-                                            <div className="flex items-center gap-3">
-                                                <div className="avatar">
-                                                    <div className="w-10 rounded-full">
-                                                        <img src={FALLBACK_AVATAR_URL} alt={`Friend ${friend.friendId}`} />
-                                                    </div>
+                                    allAcceptedFriends.map(friend => {
+                                        const { displayName, avatarImage } = resolveDisplay(friend.friendId);
+                                        const initials = displayName.substring(0, 2).toUpperCase() || '??';
+                                        const color = BUBBLE_COLORS[friend.friendId % BUBBLE_COLORS.length];
+                                        
+return (
+                                            <div key={friend.friendId} className="flex justify-between items-center p-2 rounded hover:bg-base-500/50 ">
+                                                <div className="flex items-center gap-3">
+                                                    <AvatarWithStatus
+                                                        userId={friend.friendId}
+                                                        name={displayName}
+                                                        initials={initials}
+                                                        avatarImage={avatarImage}
+                                                        color={color}
+                                                    />
+                                                    <p className="text-sm font-medium">{displayName}</p>
                                                 </div>
-                                                <p className="text-sm font-medium">Friend #{friend.friendId}</p>
+                                                <input 
+                                                    type="checkbox" 
+                                                    className="checkbox checkbox-secondary" 
+                                                    checked={selectedFriendIds.includes(friend.friendId)}
+                                                    onChange={() => toggleFriendId(friend.friendId)}
+                                                />
                                             </div>
-                                            <input 
-                                                type="checkbox" 
-                                                className="checkbox checkbox-secondary" 
-                                                checked={selectedFriendIds.includes(friend.friendId)}
-                                                onChange={() => toggleFriendId(friend.friendId)}
-                                            />
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </div>
 

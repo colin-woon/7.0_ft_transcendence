@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useChatActions, useCurrentChatSession, useMessageVisibility, useIsAllowedChat } from '@/features/chat/models';
+import { useChatActions, useCurrentChatSession, useMessageVisibility, useIsAllowedChat, useUserDisplay } from '@/features/chat/models';
 import { useAuth } from '@/features/auth/models/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -24,6 +24,8 @@ export function ChatArea() {
     
   // Refs for message elements to attach Intersection Observer
   const messageRefs = useRef<Map<number | string, HTMLDivElement>>(new Map());
+  const senderIds = Array.from(new Set(messages?.map(m => m.senderId) || []));
+  const resolveDisplay = useUserDisplay(senderIds);
 
   // Use visibility tracking hook
   const { observeElement } = useMessageVisibility({
@@ -99,6 +101,7 @@ export function ChatArea() {
       {/* CHAT MESSAGES */}
       {loadedMessages.map((msg) => {
         const isMe = msg.senderId === currentUserId;
+        const { displayName } = resolveDisplay(msg.senderId);
 
         // Step 2: Assign a consistent color using modulo on the senderId
         const colorClass = isMe 
@@ -125,7 +128,7 @@ export function ChatArea() {
             {/* Step 3: Add the chat-header for sender label if it's not the current user */}
             {!isMe && (
               <div className="chat-header pb-1 text-xs opacity-70 hover:underline cursor-pointer" onClick={() => router.push(`/users/${msg.senderId}`)}>
-                User #{msg.senderId}
+                {displayName}
               </div>
             )}
             <div className={`chat-bubble break-words max-w-[85%] md:max-w-[70%] ${colorClass}`}>
@@ -135,7 +138,7 @@ export function ChatArea() {
             {isMe && usersWhoRead.length > 0 && (
               <div className="chat-footer opacity-50 text-xs mt-1">
                 ✓ Read by {usersWhoRead.length === 1 
-                  ? `User #${usersWhoRead[0]}` 
+                  ? `${resolveDisplay(usersWhoRead[0]).displayName}` 
                   : `${usersWhoRead.length} users`}
               </div>
             )}

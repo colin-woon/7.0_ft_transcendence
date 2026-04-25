@@ -9,6 +9,7 @@ export interface ChatState {
   allChatSessions: AllChatSessions;
   allAcceptedFriends: FriendList;
   pendingRequests: PendingFriendRequest[];
+  isLoadingUserInbox: boolean
   isLoadingChatHistory: boolean
   isLoadingFriends: boolean;
   friendsError: string | null;
@@ -59,6 +60,7 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
       allAcceptedFriends: [],
       pendingRequests: [],
       currentChatSessionId: null,
+      isLoadingUserInbox: true,
       isLoadingChatHistory: true,
       isLoadingFriends: false,
       friendsError: null,
@@ -149,6 +151,7 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
         try {
           const rawSessions = await getUserInbox()
           set((state) => {
+            state.isLoadingUserInbox = false;
             const transformedSessions: AllChatSessions = {};
             rawSessions.forEach((session) => {
               const existingMessages = state.allChatSessions[session.chatId]?.messages || [];

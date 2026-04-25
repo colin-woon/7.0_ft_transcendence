@@ -91,6 +91,7 @@ export const useAllChatSessions = () => {
     return {
         currentUserId: user?.id || null,
         allChatSessions: useStore(store, (s) => s.allChatSessions),
+        isLoadingUserInbox: useStore(store, (s) => s.isLoadingUserInbox),
     };
 };
 
