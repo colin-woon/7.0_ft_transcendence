@@ -101,7 +101,7 @@ export function ChatHeader() {
       </div>
 
       {!isGroup && typeof otherUserId === "number" && (
-        <FriendOptionsDropdown friendId={otherUserId} />
+        <FriendOptionsDropdown friendId={otherUserId} isChatHeader={true} />
       )}
     </div>
   );

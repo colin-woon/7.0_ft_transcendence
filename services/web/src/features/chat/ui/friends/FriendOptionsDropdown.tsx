@@ -10,9 +10,10 @@ interface FriendOptionsDropdownProps {
   friendId: number;
   onActionComplete?: () => void;
   isProfilePage?: boolean;
+  isChatHeader?: boolean;
 }
 
-export function FriendOptionsDropdown({ friendId, onActionComplete, isProfilePage = false }: FriendOptionsDropdownProps) {
+export function FriendOptionsDropdown({ friendId, onActionComplete, isProfilePage = false, isChatHeader = false }: FriendOptionsDropdownProps) {
   const router = useRouter();
   const isFriend = useIsAcceptedFriend(friendId);
   const statuses = useAllFriendshipStatuses()
@@ -61,10 +62,10 @@ export function FriendOptionsDropdown({ friendId, onActionComplete, isProfilePag
         {!isProfilePage && (
           <li><a onClick={() => router.push(`/users/${friendId}`)}>View Profile</a></li>
         )}
-        {!isProfilePage && isFriend && (
+        {!isProfilePage && isFriend && status === 'accepted' && (
           <div className="divider my-0"></div>
         )}
-        {isFriend && (
+        {isFriend && !isChatHeader && status === 'accepted' && (
           <>
             <li><a onClick={handleRemoveFriend} className="text-error hover:bg-error/20 hover:text-error">Remove Friend</a></li>
             <li><a onClick={handleBlockFriend} className="text-error hover:bg-error/20 hover:text-error">Block User</a></li>
