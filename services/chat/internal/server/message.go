@@ -552,7 +552,7 @@ func (s *Server) SendMessageRequest(w http.ResponseWriter, r *http.Request, rece
 	} else {
 		// If chat already allowed, must use standard /message/{chatId}
 		if existing.IsChatAllowed.Valid && existing.IsChatAllowed.Bool {
-			http.Error(w, "Chat already allowed, use SendMessage", http.StatusBadRequest)
+			http.Error(w, "Chat already allowed", http.StatusBadRequest)
 			return
 		}
 

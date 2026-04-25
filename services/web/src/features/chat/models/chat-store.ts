@@ -9,6 +9,7 @@ export interface ChatState {
   allChatSessions: AllChatSessions;
   allAcceptedFriends: FriendList;
   pendingRequests: PendingFriendRequest[];
+  isLoadingChatHistory: boolean
   isLoadingFriends: boolean;
   friendsError: string | null;
   allFriendshipStatuses: Record<FriendId, { status: FriendStatus, lastActionUserId: FriendId }>;
@@ -58,6 +59,7 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
       allAcceptedFriends: [],
       pendingRequests: [],
       currentChatSessionId: null,
+      isLoadingChatHistory: true,
       isLoadingFriends: false,
       friendsError: null,
       typingUsers: {},
@@ -149,13 +151,14 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
           set((state) => {
             const transformedSessions: AllChatSessions = {};
             rawSessions.forEach((session) => {
+              const existingMessages = state.allChatSessions[session.chatId]?.messages || [];
               transformedSessions[session.chatId] = {
                 chatId: session.chatId,
                 type: session.type,
                 memberIds: session.memberIds,
                 name: session.name || null,
                 isAllowedChat: session.isAllowedChat || false,
-                messages: [],
+                messages: existingMessages,
                 readReceipts: {},
                 requestedBy: session.requestedBy,
                 friendshipStatus: session.friendshipStatus,
@@ -170,9 +173,19 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
       fetchChatHistory: async (chatId: ChatId) => {
         const messages = await getMessageHistory(chatId);
         set((state) => {
-          if (state.allChatSessions[chatId]) {
-            state.allChatSessions[chatId].messages = messages;
+          state.isLoadingChatHistory = false;
+          if (!state.allChatSessions[chatId]) {
+            state.allChatSessions[chatId] = {
+              chatId: chatId,
+              type: 'direct',
+              memberIds: [],
+              messages: [],
+              name: null,
+              isAllowedChat: false,
+              readReceipts: {},
+            };
           }
+          state.allChatSessions[chatId].messages = messages;
         });
       },
       setTypingStatus: (chatId: ChatId, senderId: FriendId) => {

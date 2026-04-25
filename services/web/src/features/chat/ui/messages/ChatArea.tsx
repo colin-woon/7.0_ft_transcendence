@@ -15,7 +15,7 @@ const BUBBLE_COLORS = [
 ];
 
 export function ChatArea() {
-  const { fetchChatHistory, sendReadReceipt } = useChatActions();
+  const { sendReadReceipt } = useChatActions();
   const { chatId, messages, typingUsers, readReceipts } = useCurrentChatSession();
   const isAllowedChat = useIsAllowedChat(chatId);
   const { user } = useAuth();
@@ -31,11 +31,6 @@ export function ChatArea() {
     userId: currentUserId || 0,
     onReadReceipt: isAllowedChat ? sendReadReceipt : async () => {},
   });
-
-  useEffect(() => {
-    if (chatId)
-      fetchChatHistory(chatId);
-  }, [chatId, fetchChatHistory]);
 
   // Observe message elements when they mount or messages change
   useEffect(() => {

@@ -77,6 +77,7 @@ export const useCurrentChatSession = () => {
             if (!s.currentChatSessionId) return null;
             return s.allChatSessions[s.currentChatSessionId]?.friendshipStatus || null;
         }),
+        isLoadingChatHistory: useStore(store, (s) => s.isLoadingChatHistory),
     };
 };
 
