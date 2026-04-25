@@ -42,7 +42,7 @@ export function FriendOptionsDropdown({ friendId, onActionComplete, isProfilePag
     }
   };
 
-  if (!isFriend && isProfilePage || status === 'blocked') {
+  if (!isFriend && isProfilePage && status !== 'accepted' || status === 'blocked') {
     return null;
   }
 
@@ -62,7 +62,7 @@ export function FriendOptionsDropdown({ friendId, onActionComplete, isProfilePag
         {!isProfilePage && (
           <li><a onClick={() => router.push(`/users/${friendId}`)}>View Profile</a></li>
         )}
-        {!isProfilePage && isFriend && status === 'accepted' && (
+        {!isProfilePage && isFriend && status === 'accepted' && !isChatHeader && (
           <div className="divider my-0"></div>
         )}
         {isFriend && !isChatHeader && status === 'accepted' && (
