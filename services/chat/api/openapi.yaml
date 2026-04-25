@@ -42,6 +42,13 @@ components:
           description: "List of all user IDs in this chat. Frontend uses this to fetch
             avatars/names."
           example: [ 123, 456 ]
+        lastReadMessageId:
+          type: integer
+          nullable: true
+          description: "The ID of the last message read by the current user in this chat.
+            Used for read receipt functionality. Null if no messages have been
+            read."
+          example: 67
         isAllowedChat:
           type: boolean
           default: true

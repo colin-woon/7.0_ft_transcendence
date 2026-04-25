@@ -250,6 +250,11 @@ func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request) {
 			chat.FriendshipStatus = &status
 		}
 
+		if row.LastReadMessageID.Valid {
+			msgId := int(row.LastReadMessageID.Int64)
+			chat.LastReadMessageId = &msgId
+		}
+
 		inbox = append(inbox, chat)
 	}
 

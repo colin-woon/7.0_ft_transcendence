@@ -23,6 +23,7 @@ SELECT
     c.id AS chat_id,
     c.type,
     c.name,
+    rm_me.last_read_message_id,
     array_agg(rm.user_id)::integer[] AS member_ids,
     CASE
         WHEN c.type = 'group' THEN true
@@ -56,7 +57,7 @@ SELECT
         0
     )::int AS requested_by,
 
-	(
+    (
         SELECT f.status
         FROM chat_service.room_members rm_other
         JOIN chat_service.friendships f
@@ -64,12 +65,13 @@ SELECT
         OR (f.requester_id = rm_other.user_id AND f.addressee_id = $1)
         WHERE rm_other.chat_id = c.id
         AND rm_other.user_id != $1
-        AND c.type != 'group' -- Moved your CASE logic into the WHERE clause
+        AND c.type != 'group'
         LIMIT 1
     ) AS friendship_status
 
 FROM chat_service.rooms c
 JOIN chat_service.room_members rm ON c.id = rm.chat_id
+JOIN chat_service.room_members rm_me ON c.id = rm_me.chat_id AND rm_me.user_id = $1
 WHERE c.id IN (
     SELECT rm_sub.chat_id
     FROM chat_service.room_members rm_sub
@@ -87,7 +89,7 @@ AND NOT (
           AND f.status = 'blocked'
     )
 )
-GROUP BY c.id, c.type, c.name;
+GROUP BY c.id, c.type, c.name, rm_me.last_read_message_id;
 
 -- name: CreateGroupChatRoom :one
 INSERT INTO chat_service.rooms (type, name)

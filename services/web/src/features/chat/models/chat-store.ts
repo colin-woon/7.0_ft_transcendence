@@ -147,7 +147,7 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
 
       fetchAllChatSessions: async () => {
         try {
-          const rawSessions = await getUserInbox();
+          const rawSessions = await getUserInbox()
           set((state) => {
             const transformedSessions: AllChatSessions = {};
             rawSessions.forEach((session) => {
@@ -159,6 +159,7 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
                 name: session.name || null,
                 isAllowedChat: session.isAllowedChat || false,
                 messages: existingMessages,
+                lastReadMessageId: session.lastReadMessageId || 0,
                 readReceipts: {},
                 requestedBy: session.requestedBy,
                 friendshipStatus: session.friendshipStatus,
@@ -216,34 +217,33 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
           }
         });
       },
+      
+      // 1. Update global receipt map
+      // 2. Update session receipt map
+      // 3. Update personal field
       sendReadReceipt: async (chatId: ChatId, userId: FriendId, messageId: number) => {
-        // Check monotonicity before sending
         const currentState = get();
         const currentMessageId = currentState.readReceipts[chatId]?.[userId] || 0;
-        if (messageId <= currentMessageId) {
-          return; // Don't send if not progressing forward
-        }
+        if (messageId <= currentMessageId) return;
 
         try {
-          // Optimistically update local state
           set((state) => {
-            if (!state.readReceipts[chatId]) {
-              state.readReceipts[chatId] = {};
-            }
+            if (!state.readReceipts[chatId]) state.readReceipts[chatId] = {};
             state.readReceipts[chatId][userId] = messageId;
+
             if (state.allChatSessions[chatId]) {
               if (!state.allChatSessions[chatId].readReceipts) {
                 state.allChatSessions[chatId].readReceipts = {};
               }
               state.allChatSessions[chatId].readReceipts![userId] = messageId;
+              
+              state.allChatSessions[chatId].lastReadMessageId = messageId;
             }
           });
 
-          // Send to backend
           await apiUpdateReadReceipt(chatId, messageId);
         } catch (error) {
           console.error('Failed to send read receipt:', error);
-          // In a production app, you might want to rollback the optimistic update here
         }
       },
 
@@ -253,7 +253,8 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
             state.allChatSessions[chatId].isAllowedChat = allowed;
           }
         });
-      }
+      },
+
     }))
   );
 };
