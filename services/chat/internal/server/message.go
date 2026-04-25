@@ -5,6 +5,7 @@ import (
 	"app/internal/database"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -27,6 +28,11 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId uuid
 	var body api.SendMessageJSONRequestBody
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			http.Error(w, "Request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -480,6 +486,11 @@ func (s *Server) SendMessageRequest(w http.ResponseWriter, r *http.Request, rece
 
 	var body api.SendMessageRequestJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			http.Error(w, "Request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
