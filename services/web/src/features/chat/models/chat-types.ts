@@ -47,6 +47,12 @@ export interface ReadReceipt {
   messageId: number;
 }
 
+export interface FriendStatusItem {
+  userId: FriendId;
+  status: FriendStatus;
+  lastActionUserId: FriendId; 
+}
+
 export type ChatRoomType = 'group' | 'direct';
 
 export interface ChatRoom {
@@ -56,7 +62,8 @@ export interface ChatRoom {
     isAllowedChat: boolean; // For direct chats, reflects if the users are friends. Always true for group chats.
     memberIds: FriendId[];
     messages: ChatMessage[] | null;
-    readReceipts?: Record<FriendId, number>; // Maps userId to lastReadMessageId
+    lastReadMessageId?: number; // The ID of the last message read by the current user in this chat
+    readReceipts?: Record<FriendId, number>; // Maps other userIds to lastReadMessageId
     requestedBy?: FriendId; // Only relevant for direct chats, indicates who sent the friend request if not friends yet
     friendshipStatus?: FriendStatus; // Only relevant for direct chats
 }

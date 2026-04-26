@@ -4,12 +4,12 @@ import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { MessageSquare, Send } from 'lucide-react';
 import { ChatId, FriendId } from '@/features/chat/models';
-import { useAllChatSessions } from '@/features/chat/models/chat-hooks';
+import { useAllChatSessions, useAllFriendshipStatuses } from '@/features/chat/models/chat-hooks';
 import { sendMessageRequest } from '@/features/chat/api/chat-services';
 
 interface DirectMessageButtonProps {
   chatId?: ChatId;
-  targetUserId?: FriendId;
+  targetUserId: FriendId;
   className?: string;
 }
 
@@ -19,6 +19,8 @@ export function DirectMessageButton({ chatId, targetUserId, className = "" }: Di
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [message, setMessage] = useState("Hi, nice to meet you! Let's chat?");
   const [isSending, setIsSending] = useState(false);
+  const statuses = useAllFriendshipStatuses()
+  const status = statuses[targetUserId]?.status || 'none'
 
   // Link priority: 1. Passed chatId 2. Found chatId 3. Open Modal
   const existingChatId = useMemo(() => {
@@ -56,6 +58,10 @@ export function DirectMessageButton({ chatId, targetUserId, className = "" }: Di
       setIsSending(false);
     }
   };
+
+  if (status === 'blocked') {
+    return null;
+  }
 
   return (
     <>

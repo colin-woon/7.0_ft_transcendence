@@ -1,7 +1,7 @@
 import { createStore } from 'zustand/vanilla';
 import { immer } from 'zustand/middleware/immer';
 import type { AllChatSessions, FriendId, ChatMessage, ChatId, FriendList, ChatRoomType, PendingFriendRequest, FriendStatus } from './chat-types';
-import { getFriendList, getUserInbox, getMessageHistory, updateReadReceipt as apiUpdateReadReceipt, getPendingFriendRequests } from '../api';
+import { getFriendList, getUserInbox, getMessageHistory, updateReadReceipt as apiUpdateReadReceipt, getPendingFriendRequests, getAllFriendshipStatuses } from '../api';
 import debounce from 'lodash.debounce';
 
 export interface ChatState {
@@ -9,8 +9,11 @@ export interface ChatState {
   allChatSessions: AllChatSessions;
   allAcceptedFriends: FriendList;
   pendingRequests: PendingFriendRequest[];
+  isLoadingUserInbox: boolean
+  isLoadingChatHistory: boolean
   isLoadingFriends: boolean;
   friendsError: string | null;
+  allFriendshipStatuses: Record<FriendId, { status: FriendStatus, lastActionUserId: FriendId }>;
   typingUsers: Record<ChatId, Record<FriendId, boolean>>;
   readReceipts: Record<ChatId, Record<FriendId, number>>; // chatId -> userId -> lastReadMessageId
 }
@@ -24,6 +27,8 @@ export interface ChatActions {
   fetchAllAcceptedFriends: () => Promise<void>;
   fetchPendingFriendships: () => Promise<void>;
   fetchAllChatSessions: () => Promise<void>;
+  setFriendshipStatus: (friendId: FriendId, status: FriendStatus, lastActionUserId: FriendId) => void;
+  fetchAllFriendshipStatuses: () => Promise<void>;
   fetchChatHistory: (chatId: ChatId) => Promise<void>;
   setTypingStatus: (chatId: ChatId, senderId: FriendId) => void;
   updateReadReceipt: (chatId: ChatId, userId: FriendId, messageId: number) => void;
@@ -55,10 +60,13 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
       allAcceptedFriends: [],
       pendingRequests: [],
       currentChatSessionId: null,
+      isLoadingUserInbox: true,
+      isLoadingChatHistory: true,
       isLoadingFriends: false,
       friendsError: null,
       typingUsers: {},
       readReceipts: {},
+      allFriendshipStatuses: {},
 
       setUserStatus: (userId: FriendId, isOnline: boolean) =>
         set((state) => {
@@ -85,12 +93,16 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
 
       addMessage: (msg: ChatMessage) => 
         set((state) => {
-          const chatId = state.currentChatSessionId;
-          if (!chatId) return;
+          const session = state.allChatSessions[msg.chatId]; 
+          if (!session) return; 
           
-          if (state.allChatSessions[chatId].messages) {
-            state.allChatSessions[chatId].messages.unshift(msg);
-          }
+          if (!session.messages) session.messages = [];
+
+          const exists = session.messages.some(m => m.id === msg.id);
+          if (exists) return;
+
+          session.messages.unshift(msg);
+
           if (state.typingUsers[msg.chatId]?.[msg.senderId]) {
             delete state.typingUsers[msg.chatId][msg.senderId];
           }
@@ -99,7 +111,12 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
       setAllAcceptedFriends: (friendList: FriendList) =>
         set((state) => {
           state.allAcceptedFriends = friendList;
-        }),
+      }),
+
+      setFriendshipStatus: (friendId: FriendId, status: FriendStatus, lastActionUserId: FriendId) =>
+        set((state) => {
+          state.allFriendshipStatuses[friendId] = { status, lastActionUserId };
+      }),
 
       fetchAllAcceptedFriends: async () => {
         const friendList = await getFriendList();
@@ -115,19 +132,35 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
         });
       },
 
+      fetchAllFriendshipStatuses: async () => {
+      const friendshipStatusesRaw = await getAllFriendshipStatuses();
+      const statusRecords: Record<FriendId, { status: FriendStatus, lastActionUserId: FriendId }> = {};
+
+      friendshipStatusesRaw.forEach((item) => {
+        statusRecords[item.userId] = { status: item.status, lastActionUserId: item.lastActionUserId };
+      });
+
+      set((state) => {
+        state.allFriendshipStatuses = statusRecords;
+      });
+      },
+
       fetchAllChatSessions: async () => {
         try {
-          const rawSessions = await getUserInbox();
+          const rawSessions = await getUserInbox()
           set((state) => {
+            state.isLoadingUserInbox = false;
             const transformedSessions: AllChatSessions = {};
             rawSessions.forEach((session) => {
+              const existingMessages = state.allChatSessions[session.chatId]?.messages || [];
               transformedSessions[session.chatId] = {
                 chatId: session.chatId,
                 type: session.type,
                 memberIds: session.memberIds,
                 name: session.name || null,
                 isAllowedChat: session.isAllowedChat || false,
-                messages: [],
+                messages: existingMessages,
+                lastReadMessageId: session.lastReadMessageId || 0,
                 readReceipts: {},
                 requestedBy: session.requestedBy,
                 friendshipStatus: session.friendshipStatus,
@@ -142,9 +175,19 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
       fetchChatHistory: async (chatId: ChatId) => {
         const messages = await getMessageHistory(chatId);
         set((state) => {
-          if (state.allChatSessions[chatId]) {
-            state.allChatSessions[chatId].messages = messages;
+          state.isLoadingChatHistory = false;
+          if (!state.allChatSessions[chatId]) {
+            state.allChatSessions[chatId] = {
+              chatId: chatId,
+              type: 'direct',
+              memberIds: [],
+              messages: [],
+              name: null,
+              isAllowedChat: false,
+              readReceipts: {},
+            };
           }
+          state.allChatSessions[chatId].messages = messages;
         });
       },
       setTypingStatus: (chatId: ChatId, senderId: FriendId) => {
@@ -175,34 +218,33 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
           }
         });
       },
+      
+      // 1. Update global receipt map
+      // 2. Update session receipt map
+      // 3. Update personal field
       sendReadReceipt: async (chatId: ChatId, userId: FriendId, messageId: number) => {
-        // Check monotonicity before sending
         const currentState = get();
         const currentMessageId = currentState.readReceipts[chatId]?.[userId] || 0;
-        if (messageId <= currentMessageId) {
-          return; // Don't send if not progressing forward
-        }
+        if (messageId <= currentMessageId) return;
 
         try {
-          // Optimistically update local state
           set((state) => {
-            if (!state.readReceipts[chatId]) {
-              state.readReceipts[chatId] = {};
-            }
+            if (!state.readReceipts[chatId]) state.readReceipts[chatId] = {};
             state.readReceipts[chatId][userId] = messageId;
+
             if (state.allChatSessions[chatId]) {
               if (!state.allChatSessions[chatId].readReceipts) {
                 state.allChatSessions[chatId].readReceipts = {};
               }
               state.allChatSessions[chatId].readReceipts![userId] = messageId;
+              
+              state.allChatSessions[chatId].lastReadMessageId = messageId;
             }
           });
 
-          // Send to backend
           await apiUpdateReadReceipt(chatId, messageId);
         } catch (error) {
           console.error('Failed to send read receipt:', error);
-          // In a production app, you might want to rollback the optimistic update here
         }
       },
 
@@ -212,7 +254,8 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
             state.allChatSessions[chatId].isAllowedChat = allowed;
           }
         });
-      }
+      },
+
     }))
   );
 };

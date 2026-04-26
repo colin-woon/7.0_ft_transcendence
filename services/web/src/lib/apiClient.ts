@@ -24,7 +24,7 @@ class ApiClient {
 
     if (!res.ok) {
       // You can add global error handling here later (e.g., redirect on 401)
-      throw new Error(`API Error ${res.status}: ${res.statusText}`);
+      throw res;
     }
 
     const text = await res.text();
