@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/apiClient';
-import type { StreamEvent, ChatId, ChatMessage, FriendStatus, FriendId, FriendList, PendingFriendRequest, SendMessageRequest, ChatRoom } from '../models/chat-types';
+import type { StreamEvent, ChatId, ChatMessage, FriendStatus, FriendId, FriendList, PendingFriendRequest, SendMessageRequest, ChatRoom, FriendStatusItem } from '../models/chat-types';
 
 const CHAT_API_BASE_PREFIX = '/chat';
 
@@ -25,6 +25,18 @@ export async function sendMessage(chatId: ChatId, message: SendMessageRequest): 
 
 export async function getMessageHistory(chatId: ChatId): Promise<ChatMessage[]> {
   return apiClient.get<ChatMessage[]>(`${CHAT_API_BASE_PREFIX}/message/history/${chatId}`);
+}
+
+// Define what backend actually send
+
+export async function getAllFriendshipStatuses(): Promise<FriendStatusItem[]> {
+  return apiClient.get<FriendStatusItem[]>(`${CHAT_API_BASE_PREFIX}/friendship/statuses`);
+  // const response = await apiClient.get<FriendStatusItem[]>(`${CHAT_API_BASE_PREFIX}/friendship/statuses`);
+  // const statusRecord: Record<FriendId, FriendStatus> = {};
+  // response.forEach((item) => {
+  //   statusRecord[item.userId] = item.status;
+  // });
+  // return statusRecord;
 }
 
 // 2. Initialize the connection

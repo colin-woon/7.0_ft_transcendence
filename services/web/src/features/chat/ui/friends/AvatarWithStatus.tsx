@@ -6,6 +6,7 @@ import {
   useHasUnreadMessages,
   useIsAcceptedFriend,
   useUserStatus,
+  useAllFriendshipStatuses,
 } from "@/features/chat/models";
 
 interface AvatarWithStatusProps {
@@ -40,9 +41,10 @@ export function AvatarWithStatus({
   initials,
   color = "bg-base-200",
   avatarImage,
-  status,
   isGroup = false,
 }: AvatarWithStatusProps & { status?: string }) {
+  const statuses = useAllFriendshipStatuses()
+  const status = userId ? (statuses[userId]?.status ?? 'none') : 'none'
   const isAcceptedFriend = useIsAcceptedFriend(userId ?? null);
   const isOnline = useUserStatus(userId ?? -1);
   const hasUnread = useHasUnreadMessages(chatId ?? null);
@@ -53,13 +55,13 @@ export function AvatarWithStatus({
     <div className="indicator">
       {/* Unread Badge (Top Right)*/}
       {hasUnread && (
-        <span className="indicator-item badge badge-error badge-sm px-1 z-10 transform translate-x-1 -translate-y-1 border-base-100 border-2" />
+        <div className="indicator-item w-2 h-2 bg-error rounded-full z-10 transform translate-x-0.25" />
       )}
 
       {/* Status Dot (Bottom Right) */}
-      {!isGroup && isAcceptedFriend && (
+      {!isGroup && isAcceptedFriend && status === 'accepted' && (
         <span
-          className={`indicator-item indicator-bottom indicator-end status status-lg z-10 transform -translate-x-1 border-base-100 border-2 ${getStatusColorClass(status, isOnline)}`}
+          className={`indicator-item indicator-bottom indicator-end status status-lg z-10 transform -translate-x-0.25 border-base-100 border-2 ${getStatusColorClass(status, isOnline)}`}
         />
       )}
 

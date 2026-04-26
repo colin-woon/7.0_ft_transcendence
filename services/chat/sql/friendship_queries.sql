@@ -117,3 +117,8 @@ LEFT JOIN chat_service.friendships f
 WHERE r.id = $1
   AND me.user_id = $2
 LIMIT 1;
+
+-- name: GetAllFriendshipStatuses :many
+SELECT requester_id, addressee_id, last_action_user_id, status
+FROM chat_service.friendships
+WHERE requester_id = $1 OR addressee_id = $1;

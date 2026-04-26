@@ -3,21 +3,29 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { updateFriendshipStatus } from '@/features/chat/api';
-import { useIsAcceptedFriend } from '@/features/chat/models/chat-hooks';
+import { useIsAcceptedFriend, useChatActions, useAllFriendshipStatuses } from '@/features/chat/models/chat-hooks';
+import { useAuth } from '@/features/auth/models/AuthContext';
 
 interface FriendOptionsDropdownProps {
   friendId: number;
   onActionComplete?: () => void;
   isProfilePage?: boolean;
+  isChatHeader?: boolean;
 }
 
-export function FriendOptionsDropdown({ friendId, onActionComplete, isProfilePage = false }: FriendOptionsDropdownProps) {
+export function FriendOptionsDropdown({ friendId, onActionComplete, isProfilePage = false, isChatHeader = false }: FriendOptionsDropdownProps) {
   const router = useRouter();
   const isFriend = useIsAcceptedFriend(friendId);
+  const statuses = useAllFriendshipStatuses()
+  const status = statuses[friendId]?.status || 'none'
+  const { setFriendshipStatus } = useChatActions();
+  const { user } = useAuth();
+  
 
   const handleRemoveFriend = async () => {
     try {
       await updateFriendshipStatus(friendId, 'requested');
+      setFriendshipStatus(friendId, 'requested', user!.id);
       onActionComplete?.();
     } catch (error) {
       console.error('Failed to update friendship status:', error);
@@ -27,15 +35,17 @@ export function FriendOptionsDropdown({ friendId, onActionComplete, isProfilePag
   const handleBlockFriend = async () => {
     try {
       await updateFriendshipStatus(friendId, 'blocked');
+      setFriendshipStatus(friendId, 'blocked', user!.id);
       onActionComplete?.();
     } catch (error) {
       console.error('Failed to update friendship status:', error);
     }
   };
 
-  if (!isFriend && isProfilePage) {
+  if (!isFriend && isProfilePage && status !== 'accepted' || status === 'blocked') {
     return null;
   }
+
 
   return (
     <div className="dropdown dropdown-end">
@@ -52,9 +62,11 @@ export function FriendOptionsDropdown({ friendId, onActionComplete, isProfilePag
         {!isProfilePage && (
           <li><a onClick={() => router.push(`/users/${friendId}`)}>View Profile</a></li>
         )}
-        {isFriend && (
+        {!isProfilePage && isFriend && status === 'accepted' && !isChatHeader && (
+          <div className="divider my-0"></div>
+        )}
+        {isFriend && !isChatHeader && status === 'accepted' && (
           <>
-            <div className="divider my-0"></div>
             <li><a onClick={handleRemoveFriend} className="text-error hover:bg-error/20 hover:text-error">Remove Friend</a></li>
             <li><a onClick={handleBlockFriend} className="text-error hover:bg-error/20 hover:text-error">Block User</a></li>
           </>
