@@ -186,14 +186,14 @@ export default function ProjectsPage({
               <div className="relative flex-1 max-w-md min-w-0">
                 <Search
                   size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-20"
                 />
                 <input
                   type="text"
                   placeholder="Search projects..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#8EE7E3] bg-gray-50 hover:border-[#8EE7E3] hover:shadow"
+                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#8EE7E3] bg-gray-50 hover:border-[#8EE7E3] hover:shadow z-20"
                 />
               </div>
               {/* Tabs: show in row on sm+, hide on mobile */}
