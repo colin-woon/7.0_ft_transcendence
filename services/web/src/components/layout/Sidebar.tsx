@@ -66,7 +66,7 @@ export default function Sidebar() {
       {isOpen && (
         <button
           type="button"
-          className="fixed inset-0 bg-black/40 z-40"
+          className="fixed inset-0 bg-black/40 z-60"
           aria-label="Close sidebar overlay"
           onClick={onClose}
         />

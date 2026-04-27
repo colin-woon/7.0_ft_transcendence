@@ -10,7 +10,7 @@ export default function Header() {
 
   return (
     <header className="h-16 bg-white text-slate-900 z-[60] border-b border-gray-200 w-full shadow-sm px-4 pr-2">
-      <div className="max-w-7xl mx-auto h-full flex items-center py-3">
+      <div className="max-w-7xl h-full flex items-center py-3">
         <div className="flex items-center justify-between w-full">
           {/* Left: Sidebar + Brand */}
           <div className="flex items-center gap-2 min-w-0 w-auto lg:w-64 justify-start shrink-0">
@@ -28,7 +28,7 @@ export default function Header() {
             </button>
             <Link
               href="/projects"
-              className="pl-3 text-base-content text-xl font-bold inline hover:text-secondary transition-colors"
+              className="pl-3 text-base-content text-xl font-bold inline hover:text-secondary transition-colors ml-4"
             >
               <Image
                 src="/assets/42overflow.png"
