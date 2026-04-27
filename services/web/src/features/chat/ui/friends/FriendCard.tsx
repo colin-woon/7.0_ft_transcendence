@@ -97,7 +97,7 @@ export function FriendCard({
           </>
         ) : (
           <>
-            <DirectMessageButton chatId={friend.chatId} />
+            <DirectMessageButton chatId={friend.chatId} targetUserId={friend.friendId} />
             <FriendOptionsDropdown
               friendId={friend.friendId}
               onActionComplete={onActionComplete}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChatSidebar } from '@/features/chat/ui';
 import { SSEStreamController } from '@/features/chat/ui';
+import { Toaster } from 'react-hot-toast';
 
 export default function ChatLayout({
   children,
@@ -26,6 +27,7 @@ export default function ChatLayout({
       */}
       <main id="chat-main" className="flex-1 flex flex-col h-full w-full overflow-hidden relative bg-base-100">
         <SSEStreamController />
+        <Toaster position="top-right" reverseOrder={false} />
         {children}
       </main>
 
