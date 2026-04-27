@@ -23,6 +23,7 @@ interface ProfileCard2Props {
     pool?: string;
   };
   initials: string;
+  subscribedProjects?: any[];
   adminActions?: React.ReactNode;
   bio?: string | null;
 }
@@ -31,6 +32,7 @@ export default function ProfileCard2({
   user,
   profile,
   initials,
+  subscribedProjects = [],
   adminActions,
   bio,
 }: ProfileCard2Props) {
@@ -40,13 +42,16 @@ export default function ProfileCard2({
     loggedInUserId !== undefined &&
     typeof user?.id === "number" &&
     user.id !== loggedInUserId;
+    const profileCardData = {
+      projectsCount: subscribedProjects.length,
+    };
 
   const displayBio = bio ?? user?.bio ?? null;
 
   const stats = [
     { label: "Wallet", value: profile.wallet ?? 0 },
     { label: "Eval.P", value: profile.evalPoints ?? 0 },
-    { label: "Projects", value: profile.projectsCount ?? 0 },
+    { label: "Projects", value: subscribedProjects.length ?? 0 },
   ];
 
   return (
@@ -66,9 +71,8 @@ export default function ProfileCard2({
         </div>
       </div>
 
-      {/* 2. Center Column */}
+      {/* 2. info Column */}
       <div className="flex-auto min-w-0 flex flex-col gap-[6px]">
-        {/* Name + role badge + Actions Row */}
         <div className="flex items-center gap-[7px] flex-wrap">
           <span className="text-2xl font-medium text-[#1a1a1a] leading-none tracking-tight">
             {user?.fullName ?? "Jane Doe"}
@@ -143,7 +147,7 @@ export default function ProfileCard2({
             {profile.levelProgress}%
           </span>
         </div>
-      </div> {/* END OF CENTER COLUMN */}
+      </div>
 
       {/* 3. Stats Section */}
       <div className="flex flex-wrap items-center justify-center w-full md:w-auto shrink-0 px-2 md:px-0">

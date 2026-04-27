@@ -15,11 +15,9 @@ export default function AchievementCard({ achievements }: { achievements?: Achie
   return (
     <div className="card bg-base-100 shadow-md rounded-xl p-4 flex flex-col md:flex-row items-center gap-5">
       <div className="w-full">
-        {/* Removed mb-3 from here */}
         <h2 className="text-lg font-bold text-slate-900">Achievements</h2>
         
         {hasData && (
-          /* Added mt-3 here so it only pushes down when there is content */
           <div className="max-h-64 overflow-y-auto pr-1 space-y-2 w-full mt-3">
             {achievements.map((achievement) => (
               <div
