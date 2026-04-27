@@ -23,7 +23,7 @@ export default function GlassInfoCard({
     >
       <div className="px-6 pt-4 pb-2">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-medium">42 info</h2>
+          <h2 className="text-lg font-medium">{title}</h2>
           <span className="text-[10px] text-slate-500/70 ml-2">
             {subtitle}
           </span>
