@@ -29,7 +29,7 @@ export default function AchievementCard({ achievements }: { achievements?: Achie
                     <img
                       src={`https://cdn.intra.42.fr${achievement.image}`}
                       alt={achievement.name}
-                      className="w-10 h-10 object-contain border border-inherit rounded-md"
+                      className="w-10 h-10 object-contain border border-inherit rounded-md pr-1"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
                         e.currentTarget.nextElementSibling?.classList.remove("hidden");
