@@ -17,7 +17,7 @@ export default function Header() {
             <button
               type="button"
               onClick={toggleSidebar}
-              className="inline-flex h-10 w-10 items-center justify-center shrink-0 rounded-full p-2 text-slate-700 hover:bg-black/5 transition"
+              className="inline-flex h-10 w-10 items-center justify-center shrink-0 rounded-full p-2 text-slate-700 hover:bg-black/5 transition sm:ml-4"
               aria-label="Toggle sidebar"
             >
               <Menu

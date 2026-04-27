@@ -157,6 +157,9 @@ export default function Sidebar() {
             </nav>
           </div>
 
+          {/* Spacer */}
+          <div className="flex-1" />
+
           {/* Resources Section */}
           <div className="p-3">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 mb-2">
@@ -181,34 +184,8 @@ export default function Sidebar() {
               </button>
             </div>
           </div>
-
-          {/* Spacer */}
-          <div className="flex-1" />
-
-          {/* Footer */}
-          <div className="p-3 border-t border-gray-200">
-            <div className="text-xs text-gray-500 space-y-1">
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => openPolicyModal("privacy")}
-                  className="hover:underline"
-                >
-                  Privacy
-                </button>
-                <span>·</span>
-                <button
-                  type="button"
-                  onClick={() => openPolicyModal("terms")}
-                  className="hover:underline"
-                >
-                  Terms
-                </button>
-              </div>
-              <p className="text-gray-400">42 overflow, Inc. © 2026</p>
-            </div>
-          </div>
         </div>
+
       </aside>
 
       {isPolicyOpen && (
