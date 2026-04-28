@@ -33,10 +33,7 @@ export default function getLabBodyTemplate(
 		return '';
 	}
 
-	if (
-		(service === 'Chat' && endpoint.startsWith('/message')) ||
-		(service === 'Gateway' && endpoint === '/testbody')
-	) {
+	if (service === 'Gateway' && endpoint === '/testbody') {
 		return buildNear5KbChatBody(service, endpoint);
 	}
 
