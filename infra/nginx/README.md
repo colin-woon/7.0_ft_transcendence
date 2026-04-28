@@ -47,7 +47,7 @@ Behavior:
   - nginx -> gateway
   - nginx -> web
   - nginx -> prometheus
-- Grafana is currently upstream TLS with CA verification, but without nginx presenting a client certificate
+- the Grafana upstream is configured as HTTPS with CA verification
 - upstream TLS hostname verification is explicitly pinned with `proxy_ssl_name`
 
 ### Development
@@ -124,13 +124,13 @@ Both dev and prod serve HTTPS using:
 - `/etc/nginx/certs/nginx-internal.crt`
 - `/etc/nginx/certs/nginx-internal.key`
 
-The `80 -> 443` redirect is hard-coded to:
+The `80 -> 443` redirect is configured as:
 
 ```nginx
 return 308 https://localhost$request_uri;
 ```
 
-So the current configs assume local access through `https://localhost`.
+These configs assume local access through `https://localhost`.
 
 ### Upstream TLS in Production
 
@@ -249,32 +249,6 @@ Current cert mounts in prod include:
 - CA cert
 
 Dev reuses the nginx TLS termination certs for the browser-facing endpoint, but internal upstreams stay plain HTTP.
-
----
-
-## Current Footguns
-
-### 1. Upstream TLS Name Mismatch
-
-If you add or rename HTTPS upstream blocks in prod and forget `proxy_ssl_name`, nginx can start returning `502` with certificate mismatch errors even though DNS and service reachability are fine.
-
-### 2. Manual Compose Without `--env-file`
-
-The repo’s Make targets use `--env-file ./environment/shared.env`. If you run Compose manually without the same env file, some services may come up with missing env substitutions and fail in less obvious ways.
-
-### 3. Hard-coded `localhost` Redirect
-
-The HTTP-to-HTTPS redirect currently forces:
-
-```nginx
-https://localhost$request_uri
-```
-
-That is acceptable for the current local/dev workflow, but it is not a generic host-preserving redirect config.
-
-### 4. Grafana Is Not Full mTLS
-
-Prometheus, gateway, and web upstreams use nginx client certificates in prod. Grafana currently does not. Do not document Grafana as full mutual TLS unless that upstream is updated accordingly.
 
 ---
 

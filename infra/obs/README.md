@@ -89,7 +89,7 @@ Production uses:
 - Prometheus over HTTPS with mutual TLS
 - postgres-exporter over HTTPS with mutual TLS
 - Grafana over HTTPS
-- Grafana datasource access to Prometheus over HTTPS with client certs
+- Grafana datasource access to Prometheus over HTTPS with mutual TLS
 
 Mounted from:
 
@@ -260,7 +260,7 @@ The prod datasource uses:
 - client key
 - `serverName: prometheus-service`
 
-So Grafana reaches Prometheus with TLS client auth in prod.
+So Grafana reaches Prometheus with mutual TLS for datasource access in production.
 
 ### Development Datasource
 
@@ -345,7 +345,7 @@ Those routes are convenience access points and can be hard-blocked at the nginx 
 
 ---
 
-## Current Footguns
+## Operational Notes
 
 ### 1. Dashboard UI Changes Are Not the Repo Source of Truth
 
@@ -361,7 +361,7 @@ Dev does not.
 
 Do not assume a dev scrape or datasource success proves the prod TLS config is correct.
 
-### 3. Alerting Is Availability-Only Right Now
+### 3. Alerting is currently availability-focused
 
 The current rule set catches:
 
@@ -375,7 +375,7 @@ It does not yet fully cover degraded states like:
 - circuit breaker fast-fail
 - elevated latency
 
-Those were discussed separately and may be added later.
+Those alert classes are not part of the current rule set.
 
 ### 4. Nginx Exposure Is a Separate Decision
 

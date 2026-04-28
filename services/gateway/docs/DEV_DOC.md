@@ -1,4 +1,4 @@
-# Gateway — Developer Notes
+# Gateway — Developer Guide
 
 These notes describe the current gateway codebase and the main implementation traps. They intentionally avoid older design notes that no longer match the service.
 
@@ -76,6 +76,7 @@ Current effective order:
 | `AUTHENTICATION - 100`    | `RequestContextFilter`       | normalize request, build context, emit start    |
 | `AUTHENTICATION - 90`     | `RequestMethodAllowFilter`   | reject unsupported methods                      |
 | `AUTHENTICATION - 80`     | `RequestHeaderAllowFilter`   | strip disallowed inbound headers                |
+| `AUTHENTICATION - 79`     | `RequestBodyAllowFilter`     | enforce configured request body size limits     |
 | `AUTHENTICATION - 70`     | `RequestPreAuthFilter`       | parse cookie JWT, classify public/internal/auth |
 | `AUTHORIZATION - 100`     | `RequestRateLimitFilter`     | consume token bucket                            |
 | `AUTHORIZATION - 90`      | `RequestRBACFilter`          | guard `/admin/`                                 |
@@ -84,7 +85,7 @@ Current effective order:
 | `HEADER_DECORATOR + 1050` | `ResponseHeaderStripFilter`  | strip outbound headers                          |
 | `HEADER_DECORATOR + 1100` | `ResponseMDCCleanFilter`     | clear MDC                                       |
 
-NOTE: if you add a new filter, be sure to choose an appropriate priority to fit it into the intended place in the chain. The priority determines the order of execution relative to other filters.
+When adding a new filter, choose its priority based on where it must execute in the existing chain.
 
 ---
 
@@ -248,6 +249,41 @@ If the identity key is null/blank, it falls back to `unknown`.
 
 ---
 
+## Request Body Limit Design
+
+Request body limits are enforced by [`RequestBodyAllowFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestBodyAllowFilter.java).
+
+### Config Shape
+
+[`GatewayRequestBodyConfig`](../src/main/java/org/bumIntra/gateway/config/GatewayRequestBodyConfig.java) maps normalized path prefixes to `MemorySize` values.
+
+Example:
+
+```properties
+gateway.config.body.path-max-size."/api/chat/message"=5K
+gateway.config.body.path-max-size."/api/chat/message/request"=5K
+```
+
+### Matching Rules
+
+- matching is prefix-based, not exact-path based
+- both configured prefixes and request paths are normalized
+- the longest matching prefix wins
+
+### Enforcement Scope
+
+Current filter behavior:
+
+- skips `GET`, `HEAD`, and `OPTIONS`
+- reads `Content-Length` when present
+- rejects oversized requests with:
+    - HTTP `413`
+    - `PAYLOAD_TOO_LARGE`
+
+This is an early gateway guard. It does not fully measure streamed/chunked bodies at this layer, so downstream services should still enforce the final payload rule.
+
+---
+
 ## Header Forwarding Rules
 
 ### Client -> Gateway
@@ -314,7 +350,7 @@ That label is what the current Grafana/alerting work is built around.
 
 ---
 
-## Current Dev/Config Footguns
+## Current Dev/Config Caveats
 
 ### JWT Issuer Drift
 

@@ -10,7 +10,7 @@ The gateway is the single HTTP entry point for external application traffic afte
 - SSE proxying for chat streams
 - structured logging and Prometheus metrics
 
-This document reflects the current implementation in `services/gateway/src/main/java`, not older architecture notes.
+This document describes the gateway service as currently configured and implemented.
 
 ---
 
@@ -32,7 +32,7 @@ This document reflects the current implementation in `services/gateway/src/main/
 - management on `8180`
 - `gateway.auth.required=false`
 
-The dev profile is intentionally looser for local iteration. It should not be treated as the production security model.
+The development profile relaxes several transport and auth requirements for local use and should not be treated as the production security model.
 
 ---
 
@@ -112,7 +112,14 @@ Filters execute in priority order:
 
 - removes denied inbound headers and prefixes before proxying
 
-4. [`RequestPreAuthFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestPreAuthFilter.java)
+4. [`RequestBodyAllowFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestBodyAllowFilter.java)
+
+- skips `GET`, `HEAD`, and `OPTIONS`
+- checks configured body-size limits by request-path prefix
+- enforces limits from the `Content-Length` header when present
+- returns `413 PAYLOAD_TOO_LARGE` when the configured limit is exceeded
+
+5. [`RequestPreAuthFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestPreAuthFilter.java)
 
 - reads `accessToken` from the `Cookie` header
 - parses JWT locally with the gateway public key
@@ -121,32 +128,32 @@ Filters execute in priority order:
 - enforces auth on non-public routes when `gateway.auth.required=true`
 - treats X.509 principal identity as `SERVICE` when present
 
-5. [`RequestRateLimitFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestRateLimitFilter.java)
+6. [`RequestRateLimitFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestRateLimitFilter.java)
 
 - resolves access class
 - computes the limiter key
 - consumes from the Redis token bucket
 
-6. [`RequestRBACFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestRBACFilter.java)
+7. [`RequestRBACFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestRBACFilter.java)
 
 - enforces `/admin/` access for `ADMIN`
 
-7. Resource handler
+8. Resource handler
 
 - `GatewayResource`
 - `PublicResource`
 - `StreamResources`
 
-8. [`ResponseContextFilter`](../src/main/java/org/bumIntra/gateway/filter/ResponseContextFilter.java)
+9. [`ResponseContextFilter`](../src/main/java/org/bumIntra/gateway/filter/ResponseContextFilter.java)
 
 - emits `gw.end`
 - adds request-context response headers
 
-9. [`ResponseHeaderStripFilter`](../src/main/java/org/bumIntra/gateway/filter/ResponseHeaderStripFilter.java)
+10. [`ResponseHeaderStripFilter`](../src/main/java/org/bumIntra/gateway/filter/ResponseHeaderStripFilter.java)
 
 - strips internal response headers before returning to clients
 
-10. [`ResponseMDCCleanFilter`](../src/main/java/org/bumIntra/gateway/filter/ResponseMDCCleanFilter.java)
+11. [`ResponseMDCCleanFilter`](../src/main/java/org/bumIntra/gateway/filter/ResponseMDCCleanFilter.java)
 
 - clears MDC state
 
@@ -253,6 +260,30 @@ gateway.config.ratelimit.enabled=true
 gateway.config.ratelimit.limit=60
 gateway.config.ratelimit.window=60s
 ```
+
+---
+
+## Request Body Limits
+
+Request body limits are enforced by [`RequestBodyAllowFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestBodyAllowFilter.java).
+
+Current behavior:
+
+- only applies to configured path prefixes
+- ignores `GET`, `HEAD`, and `OPTIONS`
+- checks `Content-Length` when the header is present
+- rejects oversized requests with:
+    - HTTP `413`
+    - `PAYLOAD_TOO_LARGE`
+
+Config is path-prefix based and uses the full gateway route family:
+
+```properties
+gateway.config.body.path-max-size."/api/chat/message"=5K
+gateway.config.body.path-max-size."/api/chat/message/request"=5K
+```
+
+The matcher normalizes paths and uses the longest matching prefix. This is an early gateway guard; downstream services should still enforce their own authoritative payload rules.
 
 ---
 

@@ -176,7 +176,7 @@ Those values keep Prometheus working correctly behind nginx under `/prometheus/`
 
 ---
 
-## Current Footguns
+## Operational Notes
 
 ### 1. Prod and Dev Are Not Symmetric
 

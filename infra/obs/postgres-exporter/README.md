@@ -107,7 +107,7 @@ This exporter is not a backup system, failover system, or database access proxy.
 
 ---
 
-## Current Footguns
+## Operational Notes
 
 ### 1. Dev Success Does Not Prove Prod TLS Is Correct
 

@@ -14,7 +14,7 @@ The project currently uses **one PostgreSQL instance** with **schema-level isola
 
 ### Database container
 
-`db-service` in [`docker-compose.yml`](/home/vee/42KL/Core/m6/bumIntra/docker-compose.yml) runs:
+`db-service` in [`docker-compose.yml`](../../docker-compose.yml) runs:
 
 - image: `postgres:18.1-alpine`
 - volume: `postgres_data:/var/lib/postgresql`
@@ -30,7 +30,7 @@ This is the primary stateful data store for:
 
 ### Init scripts
 
-[`init-scripts/schema.sql`](/home/vee/42KL/Core/m6/bumIntra/infra/postgres/init-scripts/schema.sql) is the current bootstrap source of truth.
+[`init-scripts/schema.sql`](./init-scripts/schema.sql) is the current bootstrap source of truth.
 
 It creates:
 
@@ -119,7 +119,7 @@ Auth uses JDBC and explicitly pins its schema in Quarkus config.
 
 Relevant config:
 
-- [`services/auth/src/main/resources/application.properties`](/home/vee/42KL/Core/m6/bumIntra/services/auth/src/main/resources/application.properties)
+- [`services/auth/src/main/resources/application.properties`](../../services/auth/src/main/resources/application.properties)
 
 Current shape:
 
@@ -132,7 +132,7 @@ Forum uses `DATABASE_URL` from container env.
 
 Relevant file:
 
-- [`services/forum/src/database.py`](/home/vee/42KL/Core/m6/bumIntra/services/forum/src/database.py)
+- [`services/forum/src/database.py`](../../services/forum/src/database.py)
 
 The service now requires `DATABASE_URL` and no longer falls back to a hardcoded development DSN.
 
@@ -144,7 +144,7 @@ Chat builds its own connection string and uses `search_path` for schema targetin
 
 Relevant file:
 
-- [`services/chat/internal/database/database.go`](/home/vee/42KL/Core/m6/bumIntra/services/chat/internal/database/database.go)
+- [`services/chat/internal/database/database.go`](../../services/chat/internal/database/database.go)
 
 That means chat still talks to the same PostgreSQL instance, but operates inside the `chat_service` schema.
 
@@ -166,7 +166,7 @@ Current setup:
 
 Backups are written to:
 
-- [`shared/backups/postgres`](/home/vee/42KL/Core/m6/bumIntra/shared/backups/postgres)
+- [`shared/backups/postgres`](../../shared/backups/postgres)
 
 Typical output folders:
 
@@ -177,7 +177,7 @@ Typical output folders:
 
 The recovery flow is documented separately in:
 
-- [`docs/disaster_recovery.md`](/home/vee/42KL/Core/m6/bumIntra/docs/disaster_recovery.md)
+- [`docs/disaster_recovery.md`](../../docs/disaster_recovery.md)
 
 ## Health and Operations
 
@@ -203,15 +203,13 @@ That means the stack currently has:
 
 Database metrics are exported separately through:
 
-- [`infra/obs/postgres-exporter`](/home/vee/42KL/Core/m6/bumIntra/infra/obs/postgres-exporter)
+- [`infra/obs/postgres-exporter`](../obs/postgres-exporter)
 
 That component is documented in its own README and is not owned by this folder directly.
 
-## Current Constraints and Footguns
+## Operational Notes
 
 ### Init scripts are not migrations
-
-This is the biggest operational gotcha.
 
 If you edit `schema.sql` after the volume already exists:
 
@@ -251,7 +249,7 @@ That is useful for local rebuilds, but it is destructive if done carelessly.
 
 ## Related Files
 
-- [`docker-compose.yml`](/home/vee/42KL/Core/m6/bumIntra/docker-compose.yml)
-- [`init-scripts/schema.sql`](/home/vee/42KL/Core/m6/bumIntra/infra/postgres/init-scripts/schema.sql)
-- [`docs/disaster_recovery.md`](/home/vee/42KL/Core/m6/bumIntra/docs/disaster_recovery.md)
-- [`infra/obs/postgres-exporter/README.md`](/home/vee/42KL/Core/m6/bumIntra/infra/obs/postgres-exporter/README.md)
+- [`docker-compose.yml`](../../docker-compose.yml)
+- [`init-scripts/schema.sql`](./init-scripts/schema.sql)
+- [`docs/disaster_recovery.md`](../../docs/disaster_recovery.md)
+- [`infra/obs/postgres-exporter/README.md`](../obs/postgres-exporter/README.md)

@@ -125,6 +125,8 @@ In prod, Compose also sets:
 
 So Grafana is configured to operate behind the nginx subpath.
 
+This service configuration covers HTTPS on the Grafana server itself. Mutual TLS is used separately on the Grafana-to-Prometheus datasource connection.
+
 ---
 
 ## Working With Dashboards
@@ -144,7 +146,7 @@ This avoids losing dashboards when:
 
 ---
 
-## Current Footguns
+## Operational Notes
 
 ### 1. UI Changes Alone Are Not Durable
 

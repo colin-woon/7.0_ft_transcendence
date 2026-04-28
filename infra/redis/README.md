@@ -15,7 +15,7 @@ There is one Redis container in Compose:
 
 ### Gateway Redis image
 
-[`gateway-redis/Dockerfile`](/home/vee/42KL/Core/m6/bumIntra/infra/redis/gateway-redis/Dockerfile) builds a thin Redis image on top of `redis:7.4.7-alpine`.
+[`gateway-redis/Dockerfile`](./gateway-redis/Dockerfile) builds a thin Redis image on top of `redis:7.4.7-alpine`.
 
 Current runtime flags:
 
@@ -38,7 +38,7 @@ For this project, that is acceptable because the data stored here is temporary r
 
 `gw-redis-service` is defined in:
 
-- [`docker-compose.yml`](/home/vee/42KL/Core/m6/bumIntra/docker-compose.yml)
+- [`docker-compose.yml`](../../docker-compose.yml)
 
 Current shape:
 
@@ -57,7 +57,7 @@ The gateway depends on Redis health before starting.
 
 In development override:
 
-- [`docker-compose.override.yml`](/home/vee/42KL/Core/m6/bumIntra/docker-compose.override.yml)
+- [`docker-compose.override.yml`](../../docker-compose.override.yml)
 
 Redis is also exposed on:
 
@@ -69,7 +69,7 @@ That is mainly for local inspection and debugging.
 
 The gateway rate-limit configuration lives in:
 
-- [`services/gateway/src/main/resources/application.properties`](/home/vee/42KL/Core/m6/bumIntra/services/gateway/src/main/resources/application.properties)
+- [`services/gateway/src/main/resources/application.properties`](../../services/gateway/src/main/resources/application.properties)
 
 Current relevant settings:
 
@@ -81,12 +81,12 @@ Current relevant settings:
 
 The actual Redis-backed limiter lives in:
 
-- [`RedisTokenBucketRateLimiter.java`](/home/vee/42KL/Core/m6/bumIntra/services/gateway/src/main/java/org/bumIntra/gateway/ratelimit/RedisTokenBucketRateLimiter.java)
+- [`RedisTokenBucketRateLimiter.java`](../../services/gateway/src/main/java/org/bumIntra/gateway/ratelimit/RedisTokenBucketRateLimiter.java)
 
 It uses:
 
-- [`RedisScriptRegistry.java`](/home/vee/42KL/Core/m6/bumIntra/services/gateway/src/main/java/org/bumIntra/gateway/ratelimit/RedisScriptRegistry.java)
-- [`token_bucket.lua`](/home/vee/42KL/Core/m6/bumIntra/services/gateway/src/main/resources/redis/token_bucket.lua)
+- [`RedisScriptRegistry.java`](../../services/gateway/src/main/java/org/bumIntra/gateway/ratelimit/RedisScriptRegistry.java)
+- [`token_bucket.lua`](../../services/gateway/src/main/resources/redis/token_bucket.lua)
 
 The Lua script is loaded at startup and reloaded if Redis returns `NOSCRIPT`.
 
@@ -94,7 +94,7 @@ The Lua script is loaded at startup and reloaded if Redis returns `NOSCRIPT`.
 
 The request filter currently builds Redis keys in:
 
-- [`RequestRateLimitFilter.java`](/home/vee/42KL/Core/m6/bumIntra/services/gateway/src/main/java/org/bumIntra/gateway/filter/RequestRateLimitFilter.java)
+- [`RequestRateLimitFilter.java`](../../services/gateway/src/main/java/org/bumIntra/gateway/filter/RequestRateLimitFilter.java)
 
 Current shape:
 
@@ -102,8 +102,8 @@ Current shape:
 
 Where:
 
-- `ACCESS_CLASS` comes from [`DefaultRateLimitResolver.java`](/home/vee/42KL/Core/m6/bumIntra/services/gateway/src/main/java/org/bumIntra/gateway/ratelimit/DefaultRateLimitResolver.java)
-- `identityKey` comes from [`GatewayRequestContext.getRateLimitKey()`](/home/vee/42KL/Core/m6/bumIntra/services/gateway/src/main/java/org/bumIntra/gateway/security/GatewayRequestContext.java)
+- `ACCESS_CLASS` comes from [`DefaultRateLimitResolver.java`](../../services/gateway/src/main/java/org/bumIntra/gateway/ratelimit/DefaultRateLimitResolver.java)
+- `identityKey` comes from [`GatewayRequestContext.getRateLimitKey()`](../../services/gateway/src/main/java/org/bumIntra/gateway/security/GatewayRequestContext.java)
 
 Current identity sources:
 
@@ -123,7 +123,7 @@ Rate-limit capacity is access-class based, not endpoint specific.
 
 Current profiles in:
 
-- [`RateLimitProfiles.java`](/home/vee/42KL/Core/m6/bumIntra/services/gateway/src/main/java/org/bumIntra/gateway/ratelimit/RateLimitProfiles.java)
+- [`RateLimitProfiles.java`](../../services/gateway/src/main/java/org/bumIntra/gateway/ratelimit/RateLimitProfiles.java)
 
 Current behavior:
 
@@ -202,7 +202,7 @@ That avoids silently dropping bucket state under memory pressure.
 
 If memory becomes constrained, failures should be explicit rather than hidden by eviction behavior.
 
-## Current Constraints and Footguns
+## Operational Notes
 
 ### This Redis is gateway-specific
 
@@ -210,7 +210,7 @@ Do not treat this instance as shared application cache unless the design changes
 
 Right now it is scoped to gateway rate limiting only.
 
-### Bucket identity quality depends on request context quality
+### Bucket identity depends on gateway request context
 
 The Redis layer only stores the key it receives.
 
@@ -222,7 +222,7 @@ If upstream request context is degraded:
 
 the filter can collapse callers into fallback buckets such as `unknown`.
 
-That is mostly a gateway-context concern, not a Redis concern, but it affects observed behavior here.
+This is primarily a gateway-context concern, but it affects how rate-limit buckets are partitioned.
 
 ### Dev and prod topology differ slightly
 
@@ -238,10 +238,10 @@ So any direct local inspection flow that depends on host port `6379` is a dev co
 
 ## Related Files
 
-- [`gateway-redis/Dockerfile`](/home/vee/42KL/Core/m6/bumIntra/infra/redis/gateway-redis/Dockerfile)
-- [`docker-compose.yml`](/home/vee/42KL/Core/m6/bumIntra/docker-compose.yml)
-- [`docker-compose.override.yml`](/home/vee/42KL/Core/m6/bumIntra/docker-compose.override.yml)
-- [`services/gateway/src/main/resources/application.properties`](/home/vee/42KL/Core/m6/bumIntra/services/gateway/src/main/resources/application.properties)
-- [`services/gateway/src/main/java/org/bumIntra/gateway/filter/RequestRateLimitFilter.java`](/home/vee/42KL/Core/m6/bumIntra/services/gateway/src/main/java/org/bumIntra/gateway/filter/RequestRateLimitFilter.java)
-- [`services/gateway/src/main/java/org/bumIntra/gateway/ratelimit/RedisTokenBucketRateLimiter.java`](/home/vee/42KL/Core/m6/bumIntra/services/gateway/src/main/java/org/bumIntra/gateway/ratelimit/RedisTokenBucketRateLimiter.java)
-- [`services/gateway/src/main/resources/redis/token_bucket.lua`](/home/vee/42KL/Core/m6/bumIntra/services/gateway/src/main/resources/redis/token_bucket.lua)
+- [`gateway-redis/Dockerfile`](./gateway-redis/Dockerfile)
+- [`docker-compose.yml`](../../docker-compose.yml)
+- [`docker-compose.override.yml`](../../docker-compose.override.yml)
+- [`services/gateway/src/main/resources/application.properties`](../../services/gateway/src/main/resources/application.properties)
+- [`services/gateway/src/main/java/org/bumIntra/gateway/filter/RequestRateLimitFilter.java`](../../services/gateway/src/main/java/org/bumIntra/gateway/filter/RequestRateLimitFilter.java)
+- [`services/gateway/src/main/java/org/bumIntra/gateway/ratelimit/RedisTokenBucketRateLimiter.java`](../../services/gateway/src/main/java/org/bumIntra/gateway/ratelimit/RedisTokenBucketRateLimiter.java)
+- [`services/gateway/src/main/resources/redis/token_bucket.lua`](../../services/gateway/src/main/resources/redis/token_bucket.lua)
