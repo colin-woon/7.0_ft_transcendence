@@ -1,6 +1,4 @@
-'use client';
-
-import useRateLimitMultiplier from '../hooks/useRateLimitMultiplier';
+import useRateLimitMultiplier from '../model/useRateLimitMultiplier';
 
 type RateLimitCardProps = {
 	type: string;
@@ -13,7 +11,7 @@ export default function RateLimitCard({
 	title,
 	desc,
 }: RateLimitCardProps) {
-	const [multiplier, setMultiplier] = useRateLimitMultiplier(1);
+	const [multiplier, setMultiplier] = useRateLimitMultiplier();
 
 	return (
 		<div className="flex flex-col gap-3">
@@ -24,8 +22,8 @@ export default function RateLimitCard({
 						<span className="inline-flex border border-indigo-400/30 bg-indigo-400/12 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-indigo-300">
 							{type || 'Component / Dynamic_Hover'}
 						</span>
-						<span className="font-mono text-[10px] uppercase tracking-[0.24em] text-slate-500">
-							PutIcon
+						<span className="material-symbols-outlined text-sm text-indigo-300">
+							bolt_boost
 						</span>
 					</div>
 					<h3 className="mt-5 font-headline text-3xl font-black leading-none tracking-tighter text-slate-50">

@@ -1,140 +1,257 @@
 # Gateway Service
 
-The gateway is the single entry point for all external traffic in the bumIntra platform. It handles:
+The gateway is the single HTTP entry point for external application traffic after Nginx. It is a Quarkus-based reverse proxy that centralizes:
 
-- **mTLS termination** — all inbound traffic requires mutual TLS
-- **Authentication** — validates Bearer tokens with the auth service
-- **Rate limiting** — token bucket via Redis for HTTP and WebSocket traffic
-- **Header control** — strips forbidden inbound headers and internal headers from responses
-- **Policy enforcement** — pluggable policy engine evaluated per request
-- **WebSocket proxying** — authenticated, rate-limited WS sessions for the chat service
-- **SSE proxying** — dedicated `/api/stream/**` routes for server-sent event traffic
-- **Observability** — structured logging and Prometheus metrics via a dispatcher pattern
+- route dispatch to `auth`, `forum`, and `chat`
+- cookie-JWT pre-auth and RBAC checks
+- request filtering and header hygiene
+- Redis-backed rate limiting
+- per-service fault tolerance for safe downstream reads
+- SSE proxying for chat streams
+- structured logging and Prometheus metrics
 
-Built with **Quarkus 3.x** on JVM (Java 21).
-
----
-
-## Ports
-
-| Port   | Purpose                                                     |
-| ------ | ----------------------------------------------------------- |
-| `8443` | HTTPS (mTLS required)                                       |
-| `8180` | Management — health, metrics (plain HTTP, no mTLS required) |
+This document describes the gateway service as currently configured and implemented.
 
 ---
 
-## HTTP Request Pipeline
+## Runtime Modes
 
-Filters execute in JAX-RS priority order (lower number = earlier):
+### Production
 
+- inbound HTTPS on `8443`
+- inbound mTLS required
+- management interface on `8180`
+- outbound mTLS enabled for forum/chat and trust-store validation enabled for auth
+- auth enforcement enabled
+
+### Development
+
+- plain HTTP on `8080`
+- no inbound mTLS
+- no outbound mTLS
+- management on `8180`
+- `gateway.auth.required=false`
+
+The development profile relaxes several transport and auth requirements for local use and should not be treated as the production security model.
+
+---
+
+## Exposed Route Families
+
+### Main API
+
+`/api/{service}/...`
+
+Handled by [`GatewayResource.java`](../src/main/java/org/bumIntra/gateway/api/GatewayResource.java).
+
+Current routed services:
+
+- `auth`
+- `forum`
+- `chat`
+
+All standard methods are proxied:
+
+- `GET`
+- `POST`
+- `DELETE`
+- `PUT`
+- `PATCH`
+
+For auth, downstream paths are prefixed with `auth/`. For forum/chat, the gateway forwards the downstream subpath directly.
+
+### Public API
+
+`/api/public/...`
+
+Handled by [`PublicResource.java`](../src/main/java/org/bumIntra/gateway/api/PublicResource.java).
+
+Current public surface:
+
+- `GET /api/public/ping`
+- `GET /api/public/auth/login/{provider}`
+- `GET /api/public/auth/callback/{provider}`
+- `POST /api/public/auth/refresh`
+- `POST /api/public/auth/password/login`
+- `POST /api/public/auth/password/register`
+
+Only the auth routes above are allowed on the public POST path.
+
+### SSE Streams
+
+`/api/stream/{service}/...`
+
+Handled by [`StreamResources.java`](../src/main/java/org/bumIntra/gateway/api/StreamResources.java).
+
+Current downstream stream support:
+
+- `chat`
+
+The gateway is a byte-stream proxy here. It does not generate SSE events itself.
+
+---
+
+## Request Pipeline
+
+Filters execute in priority order:
+
+1. [`RequestContextFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestContextFilter.java)
+
+- normalizes the request path
+- stores headers/query params in `GatewayRequestContext`
+- derives `pathType` and target `serviceName`
+- resolves client IP from `X-Intra-*` forwarding headers
+- validates SSE `Accept: text/event-stream` for `/api/stream/**`
+- emits `gw.start`
+
+2. [`RequestMethodAllowFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestMethodAllowFilter.java)
+
+- blocks methods outside `gateway.config.methods.allowed-methods`
+
+3. [`RequestHeaderAllowFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestHeaderAllowFilter.java)
+
+- removes denied inbound headers and prefixes before proxying
+
+4. [`RequestBodyAllowFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestBodyAllowFilter.java)
+
+- skips `GET`, `HEAD`, and `OPTIONS`
+- checks configured body-size limits by request-path prefix
+- enforces limits from the `Content-Length` header when present
+- returns `413 PAYLOAD_TOO_LARGE` when the configured limit is exceeded
+
+5. [`RequestPreAuthFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestPreAuthFilter.java)
+
+- reads `accessToken` from the `Cookie` header
+- parses JWT locally with the gateway public key
+- sets `userId`, `roles`, and `authLevel`
+- marks `/api/public/**` routes as public
+- enforces auth on non-public routes when `gateway.auth.required=true`
+- treats X.509 principal identity as `SERVICE` when present
+
+6. [`RequestRateLimitFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestRateLimitFilter.java)
+
+- resolves access class
+- computes the limiter key
+- consumes from the Redis token bucket
+
+7. [`RequestRBACFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestRBACFilter.java)
+
+- enforces `/admin/` access for `ADMIN`
+
+8. Resource handler
+
+- `GatewayResource`
+- `PublicResource`
+- `StreamResources`
+
+9. [`ResponseContextFilter`](../src/main/java/org/bumIntra/gateway/filter/ResponseContextFilter.java)
+
+- emits `gw.end`
+- adds request-context response headers
+
+10. [`ResponseHeaderStripFilter`](../src/main/java/org/bumIntra/gateway/filter/ResponseHeaderStripFilter.java)
+
+- strips internal response headers before returning to clients
+
+11. [`ResponseMDCCleanFilter`](../src/main/java/org/bumIntra/gateway/filter/ResponseMDCCleanFilter.java)
+
+- clears MDC state
+
+---
+
+## Authentication Model
+
+The gateway no longer depends on inbound Bearer headers for the main browser flow.
+
+Current behavior:
+
+- browser auth is primarily derived from the `accessToken` cookie
+- the gateway parses JWTs locally using `JWTParser`
+- authenticated users become:
+    - `USER`
+    - `ADMIN`
+- service-authenticated internal requests can become:
+    - `SERVICE`
+- unauthenticated requests remain:
+    - `GUEST`
+
+Public routes under `/api/public/` bypass auth enforcement, but the gateway still attempts to parse an access token if one is present.
+
+Important config:
+
+- `mp.jwt.token.header=Cookie`
+- `mp.jwt.token.cookie=accessToken`
+- `mp.jwt.verify.publickey.location=publicKey.pem`
+
+The JWT issuer in gateway config must match the issuer used by auth when minting tokens.
+
+---
+
+## Downstream Header Propagation
+
+[`ServiceClientContextFilter`](../src/main/java/org/bumIntra/gateway/filter/ServiceClientContextFilter.java) adds context to downstream service calls.
+
+Forwarded client headers:
+
+- `Cookie`
+- `Content-Type`
+- `Accept`
+- `Authorization`
+- `Last-Event-ID`
+
+Injected internal headers:
+
+- `X-Intra-Request-Id`
+- `X-Intra-Auth-Level`
+- `X-Intra-User-Id`
+- `X-Intra-User-Roles`
+- `X-Intra-Internal-Request`
+- `X-Intra-Real-IP`
+- `X-Intra-Forwarded-For`
+- `X-Intra-Forwarded-Host`
+- `X-Intra-Forwarded-Proto`
+
+This is how backend services receive trusted gateway-resolved identity and request metadata.
+
+---
+
+## Rate Limiting
+
+Rate limiting is implemented by [`RequestRateLimitFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestRateLimitFilter.java) with [`RedisTokenBucketRateLimiter`](../src/main/java/org/bumIntra/gateway/ratelimit/RedisTokenBucketRateLimiter.java).
+
+Access classes are resolved from `AuthLevel`:
+
+- `GUEST`
+- `USER`
+- `ADMIN`
+- `SERVICE`
+
+Profiles from [`RateLimitProfiles.java`](../src/main/java/org/bumIntra/gateway/ratelimit/RateLimitProfiles.java):
+
+| Access    | Formula     |
+| --------- | ----------- |
+| `GUEST`   | `base / 3`  |
+| `USER`    | `base`      |
+| `ADMIN`   | `base * 10` |
+| `SERVICE` | `base * 10` |
+
+Current identity key scheme from [`GatewayRequestContext.getRateLimitKey()`](../src/main/java/org/bumIntra/gateway/security/GatewayRequestContext.java):
+
+- `SERVICE` -> `internal:{serviceName}`
+- authenticated user/admin -> `user:{userId}`
+- fallback guest -> `ip:{clientIp}`
+
+Final Redis key shape:
+
+```text
+{ACCESS_CLASS}:{sha256(identityKey)}
 ```
-Incoming HTTPS request
-        │
-        ▼
-[900]  RequestContextFilter          — assign requestId, populate GatewayRequestContext, fire obs.onRequestStart
-        │
-[910]  RequestMethodAllowFilter      — reject disallowed HTTP methods (405)
-        │
-[920]  RequestHeaderAllowFilter      — strip inbound headers matching deny prefixes
-        │
-[930]  RequestPreAuthFilter          — verify JWT with local public key; populate userId/roles
-        │
-[1900] RequestRateLimitFilter        — token bucket (Redis); key = auth user or client IP
-        │
-[1910] RequestRBACFilter             — check permissions (e.g. /admin/ paths)
-        │
-        ▼
-      Handler / Proxy (GatewayResource / PublicResource / StreamResources)
-        │
-        ▼
-[3000] ResponseContextFilter         — echo X-Intra-Request-Id, fire obs.onRequestEnd
-        │
-[3050] ResponseHeaderStripFilter     — strip internal headers from response to client
-        │
-[3100] ResponseMDCCleanFilter        — clear MDC logging context
+
+If the identity key is null/blank, the filter falls back to:
+
+```text
+{ACCESS_CLASS}:unknown
 ```
-
----
-
-## WebSocket Pipeline (`/ws/chat`)
-
-Handled via `WsChatServer` and specialized handlers (`WsAuthHandler`, `WsRateLimiter`, etc.).
-
-```
-Client connects (WSS)
-        │
-  @OnOpen
-        ├─ Mark pending
-        ├─ obs.onWsOpen
-        ├─ CONN_IP rate limit      — 20 connections / 10s per IP
-        ├─ Check Authorization header / JWT
-        ├─ Local JWT verification
-        ├─ CONN_USER rate limit    — 5 connections / 10s per user
-        └─ Mark session "authenticated"
-
-  @OnMessage
-        ├─ Guard: session must be "authenticated"
-        ├─ MSG rate limit          — 10 messages / 1s per userId
-        │   ├─ Throttled: Terminate session (TRY_AGAIN_LATER) + obs.onWsThrottle
-        │   └─ Allowed: echo / forward message (currently echos for testing)
-
-  @OnClose  → obs.onWsClose
-  @OnError  → obs.onWsError
-```
-
----
-
-## Authentication
-
-Controlled by `gateway.auth.required` (default: `true`).
-
-`RequestPreAuthFilter` uses **Quarkus SmallRye JWT** for local verification of Bearer tokens. On success it populates
-`GatewayRequestContext` with:
-
-- `userId` (from `sub` claim)
-- `roles` (from `groups` claim)
-- `authLevel` (set to `ADMIN` if groups contains "ADMIN", else `USER`)
-
-Requests from internal IPs/headers are marked as `SERVICE` level.
-
----
-
-## Stream Routes (`/api/stream/**`)
-
-SSE traffic is handled by `StreamResources` under the dedicated `/api/stream/{service}/...` namespace.
-
-Current downstream support:
-
-- `chat` → forwarded through `StreamChatService`
-
-Gateway contract for stream requests:
-
-- method must be `GET`
-- path must be `/api/stream/{service}/...`
-- `Accept` must include `text/event-stream`
-
-Requests to `/api/stream/**` without a valid SSE `Accept` header are rejected with:
-
-- HTTP `406 Not Acceptable`
-- error code `SSE_ACCEPT_REQUIRED`
-
-Legacy `/stream/**` routes are no longer supported.
-
----
-
-## Rate Limiting (HTTP)
-
-Implementation: **Redis token bucket** (`RedisTokenBucketRateLimiter`) via a Lua script.
-
-| Access level | Limit formula          | Default (60 req / 60s config) |
-| ------------ | ---------------------- | ----------------------------- |
-| `GUEST`      | `base / 3` per window  | 20 req / 60s                  |
-| `USER`       | `base` per window      | 60 req / 60s                  |
-| `ADMIN`      | `base × 10` per window | 600 req / 60s                 |
-| `SERVICE`    | `base × 10` per window | 600 req / 60s                 |
-
-Key format: `{access}:{sha256(authToken or clientIp)}`
 
 Config:
 
@@ -142,141 +259,156 @@ Config:
 gateway.config.ratelimit.enabled=true
 gateway.config.ratelimit.limit=60
 gateway.config.ratelimit.window=60s
-gateway.config.ratelimit.key-scheme=ip-auth
 ```
 
 ---
 
-## Rate Limiting (WebSocket)
+## Request Body Limits
 
-All WS rate limits use the same Redis token bucket logic. Profiles are defined in `WsRateLimitProfiles`:
+Request body limits are enforced by [`RequestBodyAllowFilter`](../src/main/java/org/bumIntra/gateway/filter/RequestBodyAllowFilter.java).
 
-| Check       | Profile                      | Trigger             |
-| ----------- | ---------------------------- | ------------------- |
-| `CONN_IP`   | 20 connections / 10s per IP  | `@OnOpen` pre-auth  |
-| `CONN_USER` | 5 connections / 10s per user | `@OnOpen` post-auth |
-| `MSG`       | 10 messages / 1s per user    | `@OnMessage`        |
+Current behavior:
 
-**Note:** Unlike HTTP, WS rate limit violations currently result in immediate **session termination**.
+- only applies to configured path prefixes
+- ignores `GET`, `HEAD`, and `OPTIONS`
+- checks `Content-Length` when the header is present
+- rejects oversized requests with:
+    - HTTP `413`
+    - `PAYLOAD_TOO_LARGE`
 
----
-
-## Identity Headers (Gateway → Backend Services)
-
-Injected by `ServiceClientContextFilter` on every outgoing downstream request:
-
-| Header                     | Value                                  |
-| -------------------------- | -------------------------------------- |
-| `X-Intra-Auth-Level`       | `GUEST` / `USER` / `ADMIN` / `SERVICE` |
-| `X-Intra-User-Id`          | userId (USER/ADMIN only)               |
-| `X-Intra-User-Roles`       | comma-separated roles                  |
-| `X-Intra-Request-Id`       | request-scoped UUID                    |
-| `X-Intra-Internal-Request` | `true` (SERVICE level only)            |
-| `Authorization`            | forwarded Bearer token                 |
-
----
-
-## Header Control
-
-**Inbound (client → gateway):** Headers matching deny prefixes are stripped:
+Config is path-prefix based and uses the full gateway route family:
 
 ```properties
-gateway.config.headers.request-deny-prefixes=x-intra-,x-forwarded-
+gateway.config.body.path-max-size."/api/chat/message"=5K
+gateway.config.body.path-max-size."/api/chat/message/request"=5K
 ```
 
-**Outbound (gateway → client):** Internal/infra headers are stripped from responses:
-
-```properties
-gateway.config.headers.response-strip-headers=server,via,x-powered-by
-gateway.config.headers.response-strip-prefixes=x-intra-,x-forwarded-
-```
+The matcher normalizes paths and uses the longest matching prefix. This is an early gateway guard; downstream services should still enforce their own authoritative payload rules.
 
 ---
 
-## Error Response Format
+## Fault Tolerance
 
-All gateway errors return JSON:
+Safe downstream reads are wrapped with MicroProfile Fault Tolerance in [`FaultToleranceServiceCallExecutor.java`](../src/main/java/org/bumIntra/gateway/client/FaultToleranceServiceCallExecutor.java).
+
+Separate lanes exist for:
+
+- `authExecute`
+- `forumExecute`
+- `chatExecute`
+
+Current policy shape:
+
+- retries: `maxRetries = 1`
+- breaker trips only on retryable downstream failures
+- downstream client errors (`4xx`) are classified as non-retryable and skipped by the breaker
+
+Retryable gateway error codes:
+
+- `SERVICE_TIMEOUT`
+- `SERVICE_UNAVAILABLE`
+- `SERVICE_SERVER_ERROR`
+- `SERVICE_INVALID_RESPONSE`
+
+Non-retryable examples:
+
+- `SERVICE_CLIENT_ERROR`
+- auth failures
+- path validation failures
+
+[`FaultToleranceCallWrapper.java`](../src/main/java/org/bumIntra/gateway/client/FaultToleranceCallWrapper.java) translates:
+
+- wrapped retry/non-retry exceptions back into the original `GatewayException`
+- `CircuitBreakerOpenException` into:
+    - HTTP `503`
+    - `SERVICE_UNAVAILABLE`
+
+Important route split:
+
+- public auth login/callback GETs use `proxyPublicGet(...)` and bypass FT retry
+- normal auth GETs still go through the auth FT lane
+
+---
+
+## SSE Proxying
+
+[`StreamResources.java`](../src/main/java/org/bumIntra/gateway/api/StreamResources.java) proxies upstream SSE responses from chat.
+
+Current behavior:
+
+- only `GET /api/stream/chat/...` is supported
+- non-success upstream responses are normalized before being returned
+- upstream `401`, `403`, and `404` are passed through
+- other upstream failures become `502`
+- the downstream `Response` and `InputStream` are closed with try-with-resources
+- client disconnects cause the upstream stream to be closed; there is no special close message
+
+This gateway does not frame or generate SSE payloads. That remains a chat-service concern.
+
+---
+
+## Error Mapping
+
+[`ServiceCallExecutor.java`](../src/main/java/org/bumIntra/gateway/client/ServiceCallExecutor.java) maps downstream client and transport failures into `GatewayException`.
+
+Main mappings:
+
+| Source                                 | Gateway Code               | HTTP                  |
+| -------------------------------------- | -------------------------- | --------------------- |
+| downstream `4xx`                       | `SERVICE_CLIENT_ERROR`     | original `4xx` status |
+| downstream `5xx`                       | `SERVICE_SERVER_ERROR`     | `502`                 |
+| timeout                                | `SERVICE_TIMEOUT`          | `504`                 |
+| invalid/malformed downstream response  | `SERVICE_INVALID_RESPONSE` | `502`                 |
+| generic transport/connectivity failure | `SERVICE_UNAVAILABLE`      | `503`                 |
+
+[`GatewayExceptionMapper.java`](../src/main/java/org/bumIntra/gateway/exception/GatewayExceptionMapper.java) serializes gateway failures into a consistent JSON envelope.
+
+Response shape:
 
 ```json
 {
-	"timestamp": "2024-03-21T12:00:00.000Z",
+	"timestamp": "2026-04-21T23:00:00.000Z",
 	"status": 401,
 	"error": "UNAUTHORIZED",
 	"code": "AUTH_REQUIRED",
 	"message": "Authentication is required",
-	"requestId": "2c3a8267-c1a4-46a5-8a64-6b30b1d1677c"
+	"requestId": "..."
 }
 ```
-
-| Error Code                 | HTTP Status | Meaning                              |
-| -------------------------- | ----------- | ------------------------------------ |
-| `AUTH_REQUIRED`            | 401         | No Authorization header              |
-| `AUTH_INVALID`             | 401         | Token rejected by auth service       |
-| `FORBIDDEN`                | 405 / 403   | Method not allowed / access denied   |
-| `RATE_LIMITED`             | 429         | Token bucket exhausted               |
-| `SSE_ACCEPT_REQUIRED`      | 406         | Stream request missing SSE `Accept`  |
-| `SERVICE_TIMEOUT`          | 504         | Downstream timed out                 |
-| `SERVICE_UNAVAILABLE`      | 503         | Downstream unreachable               |
-| `SERVICE_INVALID_RESPONSE` | 502         | Downstream returned invalid response |
-| `SERVICE_CLIENT_ERROR`     | 502         | Downstream returned 4xx              |
-| `SERVICE_SERVER_ERROR`     | 502         | Downstream returned 5xx              |
-| `GATEWAY_ERROR`            | 500         | Unexpected gateway-internal failure  |
 
 ---
 
 ## Observability
 
-### Logging
+### Logs
 
-Structured log lines from `GatewayObserverLogging`:
+[`GatewayObserverLogging.java`](../src/main/java/org/bumIntra/gateway/obs/GatewayObserverLogging.java) emits structured request lifecycle logs:
 
-```
-gw.start       requestId method path at
-gw.end         requestId httpStatus latency(ms) success errorCode
-gw.ws.open     sessionId ip at
-gw.ws.auth     sessionId ip success userId latencyMs reason
-gw.ws.throttle sessionId ip userId type key at
-gw.ws.close    sessionId userId closeCode reason at
+```text
+gw.start requestId=... method=... path=... at=...
+gw.end requestId=... httpStatus=... latency=... success=... errorCode=...
 ```
 
-### Metrics (Prometheus — `/metrics`)
+### Metrics
 
-| Metric                             | Type    | Description                        |
-| ---------------------------------- | ------- | ---------------------------------- |
-| `gateway_requests_total`           | Counter | All requests by result/errorCode   |
-| `gateway_errors_total`             | Counter | Failed requests by errorCode       |
-| `gateway_timeouts_total`           | Counter | Service timeout count              |
-| `gateway_request_duration_seconds` | Timer   | Request latency histogram          |
-| `gateway_ws_open_total`            | Counter | WS sessions opened                 |
-| `gateway_ws_close_total`           | Counter | WS sessions closed (by close code) |
-| `gateway_ws_active_sessions`       | Gauge   | Current live WS sessions           |
-| `gateway_ws_auth_success_total`    | Counter | Successful WS auths                |
-| `gateway_ws_auth_failure_total`    | Counter | Failed WS auths                    |
-| `gateway_ws_auth_duration_seconds` | Timer   | WS auth latency histogram          |
-| `gateway_ws_throttle_total`        | Counter | WS throttle events by type         |
-| `gateway_ws_errors_total`          | Counter | WS error events                    |
+[`GatewayObserverMetrics.java`](../src/main/java/org/bumIntra/gateway/obs/GatewayObserverMetrics.java) exports:
+
+- `gateway_http_requests_total`
+- `gateway_http_errors_total`
+- `gateway_http_request_duration_seconds`
+- `gateway_downstream_timeouts_total`
+
+Key labels include:
+
+- `result`
+- `error_code`
+- `downstream`
+- `service`
+- `path`
+
+The `downstream` label uses:
+
+- `called` for normal downstream calls
+- `cb_fast_fail` when the request was short-circuited before making a downstream call
 
 ---
-
-## Building & Running
-
-### Local dev (no mTLS)
-
-```bash
-cd services/gateway
-./mvnw quarkus:dev
-# Available at http://localhost:8080
-# Dev UI at http://localhost:8080/q/dev/
-```
-
-### Docker (via Makefile from repo root)
-
-```bash
-# Production:
-make gateway         # build and start gateway container in prod mode
-make rebuild         # rebuild and restart gateway
-
-# Development:
-make dev-gateway     # build and start gateway container in dev mode
-make dev-rebuild     # rebuild and restart gateway in dev mode
-```

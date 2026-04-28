@@ -1,7 +1,12 @@
 'use client';
 
-import LabHome from './components/home';
+import { LabProvider } from './context/labContext';
+import LabHome from './components/labHome';
 
 export default function LabPage() {
-	return <LabHome />;
+	return (
+		<LabProvider>
+			<LabHome />
+		</LabProvider>
+	);
 }

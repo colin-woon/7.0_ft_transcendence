@@ -1,21 +1,9 @@
-'use client';
+import { useLabContext } from '../context/labContext';
 
-import { useEffect, useState } from 'react';
+export default function BodyBox() {
+	const { labState, setBody } = useLabContext();
 
-type BodyBoxProps = {
-	value: string;
-	method: string;
-};
-
-export default function BodyBox({ value, method }: BodyBoxProps) {
-	const [content, setContent] = useState(value);
-
-	const isEditable =
-		method === 'POST' || method === 'PUT' || method === 'PATCH';
-
-	useEffect(() => {
-		setContent(value);
-	}, [value]);
+	const isEditable = labState.method !== 'GET' ? true : false;
 
 	return (
 		<div className="flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-md border border-slate-700/70 bg-slate-950/80 shadow-2xl ring-1 ring-inset ring-indigo-300/10 backdrop-blur-sm">
@@ -37,13 +25,13 @@ export default function BodyBox({ value, method }: BodyBoxProps) {
 							: 'border-slate-700/70 bg-slate-900/80 text-slate-500'
 					}`}
 				>
-					{method}
+					{labState.method}
 				</span>
 			</div>
 			<textarea
 				disabled={!isEditable}
-				value={isEditable ? content : '{}'}
-				onChange={(e) => setContent(e.target.value)}
+				value={isEditable ? labState.body : 'Disabled edits for GET'}
+				onChange={(e) => setBody(e.target.value)}
 				spellCheck={false}
 				className={`min-h-56 w-full resize-none px-4 py-4 font-mono text-sm leading-6 console-scrollbar focus:outline-none ${
 					isEditable

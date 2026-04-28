@@ -6,6 +6,7 @@ import RouteCard from './routeCard';
 import BodyBox from './bodyBox';
 import ExecuteCard from './executeCard';
 import LabBackground from './labBackground';
+import { useLabContext } from '../context/labContext';
 
 export default function LabHome() {
 	const [motion, setMotion] = React.useState({ x: 0, y: 0 });
@@ -24,12 +25,9 @@ export default function LabHome() {
 		});
 	}
 
-	const testdata = {
-		testPost: {
-			hhehee: '',
-		},
-		testvee: '',
-	};
+	const { labState } = useLabContext();
+
+	// console.log('Lab State:', labState); // Debug log to check the lab state
 
 	return (
 		<main
@@ -64,17 +62,11 @@ export default function LabHome() {
 							tests and real-time logs.
 						</p>
 					</div>
-					{/* <div className="divide-dashed divide-indigo-400 divide-x-3 grid grid-cols-1 gap-6 p-6 md:grid-cols-2 lg:grid-cols-3 px-5 py-4 border-b border-outline/20 bg-surface-container-high"> */}
-					{/* <MonoCard /> */}
-					{/* <MonoCard /> */}
-					{/* <MonoCard /> */}
-					{/* </div> */}
-
 					<div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2 lg:grid-cols-3">
 						<UserCard
 							type="Auth"
 							title="User Type"
-							desc="Fetch and display user information based on the current session or provided credentials."
+							desc="Select user credentials to test different access levels and permissions within the system."
 						/>
 						<RateLimitCard
 							type="Rate Limit"
@@ -84,14 +76,11 @@ export default function LabHome() {
 						<RouteCard
 							type="Route"
 							title="Route Explorer"
-							desc="Selection of available routes."
+							desc="Selection of available methods and routes."
 						/>
 					</div>
-					<div className="flex items-center justify-center p-6 gap-6 ">
-						<BodyBox
-							value={JSON.stringify(testdata, null, 4)}
-							method="POST"
-						/>
+					<div className="flex items-center justify-center px-6 py-2 gap-6 h-80">
+						<BodyBox />
 						<ExecuteCard />
 					</div>
 				</section>

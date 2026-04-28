@@ -1,3 +1,5 @@
+import { useLabContext } from '../context/labContext';
+import executeLab from '../model/executeLab';
 import LabButton from './labButton';
 
 // type ExecuteCardProps = {
@@ -7,6 +9,24 @@ import LabButton from './labButton';
 // };
 
 export default function ExecuteCard() {
+	const { labState, setResult, setExecRun, setExecError } = useLabContext();
+
+	async function executeHandler() {
+		setExecRun(true);
+		setExecError(false);
+		setResult(null);
+
+		try {
+			const res = await executeLab(labState);
+			setResult(res);
+		} catch (err) {
+			setExecError(true);
+			setExecRun(false);
+		} finally {
+			setExecRun(false);
+		}
+	}
+
 	return (
 		<div className="flex h-full min-w-64 flex-col gap-3">
 			<div className="group relative flex h-full flex-col border border-slate-700/70 bg-slate-950/70 px-5 py-5 transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400/30 hover:bg-slate-950">
@@ -16,8 +36,8 @@ export default function ExecuteCard() {
 						<span className="inline-flex border border-indigo-400/30 bg-indigo-400/12 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-indigo-300">
 							Run
 						</span>
-						<span className="font-mono text-[10px] uppercase tracking-[0.24em] text-slate-500">
-							Manual
+						<span className="material-symbols-outlined text-sm text-indigo-300">
+							play_arrow
 						</span>
 					</div>
 					<h3 className="mt-5 font-headline text-2xl font-black uppercase leading-none tracking-tight text-slate-50">
@@ -33,7 +53,15 @@ export default function ExecuteCard() {
 								Action
 							</p>
 							<div className="mt-3">
-								<LabButton label="Execute" />
+								<LabButton
+									label={
+										labState.execRun
+											? 'Executing...'
+											: 'Execute'
+									}
+									onClick={executeHandler}
+									disabled={labState.execRun}
+								/>
 							</div>
 						</div>
 					</div>
