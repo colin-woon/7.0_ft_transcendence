@@ -29,7 +29,7 @@ export function AppShell({ children }: AppShellProps) {
     <div className="h-screen bg-[#f9f9f9] text-slate-900 flex flex-col overflow-hidden">
       
       {/* 1. Header is pushed to the top and won't shrink */}
-      <div className="flex-shrink-0 z-[60]">
+      <div className="flex-shrink-0 z-[80]">
         <Header />
       </div>
 

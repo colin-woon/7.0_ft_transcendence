@@ -102,10 +102,11 @@ export function extractProjects(intraInfo: IntraInfo | null | undefined): Projec
 }
 
 export interface AchievementInfo {
-  id: number
-  name: string
-  description: string
-  achievementTier: string | null
+  id: number;
+  name: string;
+  description: string;
+  achievementTier: string | null;
+  image?: string;
 }
 
 export function extractAchievements(intraInfo: IntraInfo | null | undefined): AchievementInfo[] {

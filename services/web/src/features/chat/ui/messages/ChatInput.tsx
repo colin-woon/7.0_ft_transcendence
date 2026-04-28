@@ -4,10 +4,11 @@ import { useState, useRef } from 'react';
 import { sendMessage, sendTypingEvent, acceptMessageRequest } from '@/features/chat/api';
 import { useCurrentChatSession, useChatActions } from '@/features/chat/models';
 import { SendHorizontal } from 'lucide-react'
+import toast from 'react-hot-toast';
 
-export function MessageInput() {
+export function ChatInput() {
   const { currentUserId, chatId, isAllowedChat, requestedBy, friendshipStatus } = useCurrentChatSession();
-  const { addMessage, updateChatPermission } = useChatActions();
+  const { updateChatPermission } = useChatActions();
   
   const lastTypingTime = useRef<number>(0);
   const [messageText, setMessageText] = useState('');
@@ -31,20 +32,27 @@ export function MessageInput() {
     // Removed empty finally block
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (messageText.trim() && chatId && currentUserId) {
-      sendMessage(
-        chatId,
-        { content: messageText }
-      );
-      setMessageText('');
-      addMessage({
-        id: "msg-" + currentUserId + '-' + Date.now(),
-        chatId: chatId,
-        senderId: currentUserId,
-        content: messageText,
-        createdAt: new Date().toISOString(),
-      });
+      const textBackup = messageText; // Save it in case it fails
+      setMessageText(''); // Optimistically clear the input so it feels instant
+
+      try {
+        await sendMessage(chatId, { content: textBackup });
+      } catch (error: any) {
+        // Put the text back if it failed!
+        setMessageText(textBackup); 
+        
+        // Handle your specific status codes (assuming Axios or similar error structure)
+        const status = error?.status;
+        if (status === 429) {
+          toast.error("Slow down! You're sending messages too fast.");
+        } else if (status === 413) {
+          toast.error("Message is too large to send.");
+        } else {
+          toast.error("Failed to send message. Please try again.");
+        }
+      }
     }
   };
 

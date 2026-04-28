@@ -5,6 +5,7 @@ import (
 	"app/internal/database"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -27,6 +28,11 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId uuid
 	var body api.SendMessageJSONRequestBody
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			http.Error(w, "Request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -92,7 +98,12 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request, chatId uuid
 	}
 	payload := string(jsonData)
 
-	s.sseHub.BroadcastToRoomExcept(memberIDs, senderId, payload)
+	members := make([]int, len(memberIDs))
+	for i, id := range memberIDs {
+		members[i] = int(id)
+	}
+
+	s.sseHub.BroadcastToUsers(members, payload)
 
 	// 5. Return 201 Created to the sender
 	w.WriteHeader(http.StatusCreated)
@@ -237,6 +248,11 @@ func (s *Server) GetUserInbox(w http.ResponseWriter, r *http.Request) {
 		if row.FriendshipStatus.Valid {
 			status := api.FriendshipStatus(row.FriendshipStatus.ChatServiceFriendStatus)
 			chat.FriendshipStatus = &status
+		}
+
+		if row.LastReadMessageID.Valid {
+			msgId := int(row.LastReadMessageID.Int64)
+			chat.LastReadMessageId = &msgId
 		}
 
 		inbox = append(inbox, chat)
@@ -460,7 +476,27 @@ func (s *Server) UpdateReadReceipt(w http.ResponseWriter, r *http.Request, chatI
 		return
 	}
 
-	s.sseHub.BroadcastToRoomExcept(memberIDs, userId, string(jsonData))
+	filteredMemberIDs := make([]int32, 0, len(memberIDs))
+	for _, id := range memberIDs {
+		if int(id) == userId {
+			continue
+		}
+
+		friendship, err := s.db.GetQueries().GetFriendship(ctx, database.GetFriendshipParams{
+			RequesterID: int32(userId),
+			AddresseeID: id,
+		})
+		if err == nil && friendship.Status.Valid && friendship.Status.ChatServiceFriendStatus == database.ChatServiceFriendStatusAccepted {
+			filteredMemberIDs = append(filteredMemberIDs, id)
+		}
+	}
+
+	if len(filteredMemberIDs) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	s.sseHub.BroadcastToRoomExcept(filteredMemberIDs, userId, string(jsonData))
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -475,6 +511,11 @@ func (s *Server) SendMessageRequest(w http.ResponseWriter, r *http.Request, rece
 
 	var body api.SendMessageRequestJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			http.Error(w, "Request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -516,7 +557,7 @@ func (s *Server) SendMessageRequest(w http.ResponseWriter, r *http.Request, rece
 	} else {
 		// If chat already allowed, must use standard /message/{chatId}
 		if existing.IsChatAllowed.Valid && existing.IsChatAllowed.Bool {
-			http.Error(w, "Chat already allowed, use SendMessage", http.StatusBadRequest)
+			http.Error(w, "Chat already allowed", http.StatusBadRequest)
 			return
 		}
 

@@ -7,18 +7,13 @@ import { createContext, ReactNode, useRef, useEffect } from 'react';
 import { createChatStore } from './chat-store';
 import { useAuth } from '@/features/auth/models/AuthContext';
 
-
-// Context holds the store INSTANCE, not the state itself
 export const ChatStoreContext = createContext<StoreApi<ChatStore> | undefined>(undefined);
 
-// The "Next.js" way to type children
 interface ChatStoreProviderProps {
   children: ReactNode;         
   initialSessions?: AllChatSessions;
 }
 
-// useRef ensures the store is only created once per component lifecycle
-// preventing hydration infinite loops
 export const ChatStoreProvider = ({ 
   children, 
   initialSessions = {} 
@@ -32,7 +27,15 @@ export const ChatStoreProvider = ({
 
   useEffect(() => {
     if (user?.id && storeRef.current) {
-      storeRef.current.getState().fetchAllAcceptedFriends();
+      const store = storeRef.current.getState();
+      
+      Promise.all([
+        store.fetchAllAcceptedFriends(),
+        store.fetchAllChatSessions(),
+        store.fetchAllFriendshipStatuses()
+      ]).catch((error) => {
+        console.error("Failed to initialize chat store data:", error);
+      });
     }
   }, [user?.id]);
 
