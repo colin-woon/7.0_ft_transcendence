@@ -110,6 +110,7 @@ export const useFriendList = () => {
 
 export const useCreateGroupChatAction = () => {
     const { allAcceptedFriends, currentUserId } = useFriendList();
+    const { setChatSession } = useChatActions();
 
     const [groupName, setGroupName] = useState('');
     const [selectedFriendIds, setSelectedFriendIds] = useState<FriendId[]>([]);
@@ -128,23 +129,37 @@ export const useCreateGroupChatAction = () => {
         setSelectedFriendIds([]);
     };
 
-    const submitGroupChat = async (onSuccess: () => void) => {
-        if (!currentUserId || !groupName.trim() || selectedFriendIds.length === 0) return;
+  const submitGroupChat = async (onSuccess: () => void) => {
+    if (!currentUserId || !groupName.trim() || selectedFriendIds.length === 0) return;
 
-        try {
-            setIsSubmitting(true);
-            await createGroupChat({
-                name: groupName,
-                memberIds: selectedFriendIds
-            });
-            resetForm();
-            onSuccess();
-        } catch (error) {
-            console.error("Failed to create group chat", error);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+    try {
+      setIsSubmitting(true);
+
+      const newChat = await createGroupChat({
+        name: groupName,
+        memberIds: selectedFriendIds
+      });
+
+      setChatSession(
+        newChat.chatId,
+        newChat.type,
+        newChat.name,
+        newChat.memberIds,
+        [],
+        true
+      );
+
+      resetForm();
+      onSuccess();
+
+      return newChat;
+    } catch (error) {
+      console.error("Failed to create group chat", error);
+      throw error;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
     return {
         groupName,
