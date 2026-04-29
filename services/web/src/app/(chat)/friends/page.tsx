@@ -14,7 +14,7 @@ export default function FriendsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   
   const { allAcceptedFriends, pendingRequests, currentUserId, isLoading, error } = useFriendList();
-  const { fetchAllAcceptedFriends, fetchPendingFriendships } = useChatActions();
+  const { fetchAllAcceptedFriends, fetchPendingFriendships, setFriendshipStatus } = useChatActions();
 
   const hasPending = (pendingRequests?.length ?? 0) > 0;
 
@@ -25,11 +25,29 @@ export default function FriendsPage() {
     }
   }, [currentUserId, fetchAllAcceptedFriends, fetchPendingFriendships]);
 
-  const handleUpdateStatus = async (friendId: number, status: 'accepted' | 'requested') => {
-    if (currentUserId) {
-      await updateFriendshipStatus(friendId, status); // assuming requester -> receiver
+  const handleUpdateStatus = async (
+    friendId: number,
+    status: 'accepted' | 'requested'
+  ) => {
+    if (!currentUserId) return;
+
+    try {
+      setFriendshipStatus(friendId, status, currentUserId);
+
+      await updateFriendshipStatus(friendId, status);
+
+      // this is dog water code, couldve been optimized by syncing the friendship stores 
       fetchPendingFriendships();
       fetchAllAcceptedFriends();
+
+    } catch (err) {
+      console.error("Failed update friendship", err);
+
+      setFriendshipStatus(
+        friendId,
+        status === 'accepted' ? 'requested' : 'accepted',
+        currentUserId
+      );
     }
   };
 
