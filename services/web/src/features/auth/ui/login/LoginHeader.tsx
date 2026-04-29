@@ -1,5 +1,3 @@
-
-
 import mascotCat from '@/components/ui/imgs/42_oveflow_mascot_cat.png';
 
 
