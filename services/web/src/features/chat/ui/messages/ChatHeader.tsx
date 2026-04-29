@@ -30,8 +30,8 @@ export function ChatHeader() {
   // Determine chat type and derived UI state
   const isGroup = friendIds?.length > 2 || !!chatSessionName;
 
-  let title = "Active Conversation";
-  let statusText = "...";
+  let title = "Loading...";
+  let statusText = "loading...";
   let isStatusPositive = false;
 
   if (isGroup) {
