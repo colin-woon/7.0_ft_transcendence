@@ -68,7 +68,7 @@ export default function CreatePage({
   const [body, setBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const TITLE_MAX = 300;
+  const TITLE_MAX = 255;
 
   const canSubmit =
     !isSubmitting && title.trim().length > 0 && body.trim().length > 0;
@@ -179,6 +179,7 @@ export default function CreatePage({
                 <textarea
                   rows={8}
                   value={body}
+                  maxLength={TITLE_MAX}
                   onChange={(e) => setBody(e.target.value)}
                   placeholder="Explain your idea, include details and context."
                   className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70 focus:border-transparent focus:bg-white transition resize-none"

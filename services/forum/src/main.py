@@ -72,27 +72,6 @@ app = FastAPI(title="Forum Service API", lifespan=lifespan)
 Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 
-# @app.middleware("http")
-# async def request_logger(request: Request, call_next):
-#     request_id = request.headers.get("x-intra-request-id", "-")
-#     logger.info(
-#         "REQUEST_START requestId=%s method=%s path=%s client=%s",
-#         request_id,
-#         request.method,
-#         request.url.path,
-#         request.client.host if request.client else "unknown",
-#     )
-#     response = await call_next(request)
-#     logger.info(
-#         "REQUEST_END requestId=%s method=%s path=%s status=%s",
-#         request_id,
-#         request.method,
-#         request.url.path,
-#         response.status_code,
-#     )
-#     return response
-
-
 @app.exception_handler(HTTPException)
 async def http_exception_logger(request: Request, exc: HTTPException):
     logger.warning(
@@ -103,7 +82,6 @@ async def http_exception_logger(request: Request, exc: HTTPException):
         exc.detail,
     )
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
-
 
 
 @app.get("/health")
@@ -122,8 +100,6 @@ def get_request_identity(
     x_intra_user_id: str | None = Header(default=None, alias="X-Intra-User-Id"),
     x_intra_user_roles: str | None = Header(default=None, alias="X-Intra-User-Roles"),
 ) -> tuple[int, bool]:
-    logger.info("X-Intra-User-Id header value: %s", x_intra_user_id)
-    logger.info("X-Intra-User-Roles header value: %s", x_intra_user_roles)
 
     if x_intra_user_id is None:
         logger.warning(
