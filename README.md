@@ -1,4 +1,4 @@
-_This project has been created as part of the 42 curriculum by <loginA>, <loginB>, <loginC>, <loginD>, <loginE>._
+_This project has been created as part of the 42 curriculum by vlow, tjun-fan, cwoon, jothomas, rteoh._
 
 # 42 Overflow
 
@@ -66,7 +66,8 @@ For a longer overview, see:
 
 For additional environment details, see:
 
-- [Development Environment Setup](./docs/dev_env_setup.md)
+- [`environment/`](./environment)
+- [Project Overview](./docs/0.project_overview.md)
 
 ### Run the Project
 
@@ -106,50 +107,57 @@ Operational and service-local details are documented in:
 
 ## Team Information
 
-Replace the placeholder logins and names below with the final team values before submission.
+### vlow
 
-### Member A
-
-- Placeholder login: `<loginA>`
+- 42 login: `vlow`
+- GitHub: [Neikichi](https://github.com/Neikichi)
 - Role: Product Owner
 - Responsibilities:
-    - gateway service
-    - backend coordination across service boundaries
-    - DevOps and observability setup
+    - gateway architecture
+    - backend integration
+    - DevOps
+    - observability
 
-### Member B
+### tjun-fan
 
-- Placeholder login: `<loginB>`
+- 42 login: `tjun-fan`
+- GitHub: [wesleytaetae](https://github.com/wesleytaetae)
 - Role: Project Manager
 - Responsibilities:
     - forum service
-    - web forum implementation
-    - coordination of forum-facing product scope
+    - forum UI
+    - forum product coordination
 
-### Member C
+### cwoon
 
-- Placeholder login: `<loginC>`
-- Role: Architect
+- 42 login: `cwoon`
+- GitHub: [colin-woon](https://github.com/colin-woon)
+- Role: Tech Lead
 - Responsibilities:
     - chat service
-    - web chat implementation
-    - friends-related architecture and flows
+    - chat UI
+    - friends flows
+    - technical architecture
 
-### Member D
+### jothomas
 
-- Placeholder login: `<loginD>`
+- 42 login: `jothomas`
+- GitHub: [SolR3G3m](https://github.com/SolR3G3m)
 - Role: Developer
 - Responsibilities:
     - auth service
-    - web authentication and user login flows
+    - login flows
+    - identity-related frontend integration
 
-### Member E
+### rteoh
 
-- Placeholder login: `<loginE>`
+- 42 login: `rteoh`
+- GitHub: [ricetea25](https://github.com/ricetea25)
 - Role: Developer
 - Responsibilities:
-    - overall web implementation
-    - shared frontend delivery and integration work
+    - shared frontend implementation
+    - integration
+    - UI delivery
 
 ---
 
@@ -157,11 +165,12 @@ Replace the placeholder logins and names below with the final team values before
 
 Work was organized through role ownership and service/domain boundaries:
 
+- service and domain ownership with cross-review during integration
 - gateway, backend integration, and DevOps ownership
 - forum service and forum UI ownership
 - chat service and chat UI ownership
 - auth service and authentication UI ownership
-- frontend integration and shared UI ownership
+- shared frontend integration and UI ownership
 
 The team coordinated through:
 
@@ -169,11 +178,12 @@ The team coordinated through:
 - shared documentation
 - direct collaboration across service boundaries
 
-Replace the placeholders below with the exact tools/channels used during submission preparation if needed:
+Project-management details:
 
-- task tracking: Github Issues
-- communication channel: Discord
-- Meeting cadence: short syncs 2–3 times per week, with additional ad hoc calls during integration and debugging.
+- task distribution: service/domain ownership with cross-review during integration
+- task tracking: `GitHub Issues / Projects`
+- communication channel: `Discord`
+- meeting cadence: 2 syncs per week plus ad hoc debugging calls
 
 ---
 
@@ -230,6 +240,14 @@ Main domains include:
 - forum discussion data
 - chat and messaging data
 
+High-level relationship summary:
+
+- users own profile-related state and roles
+- friendships connect users and drive direct-message access flows
+- forum discussions link projects, posts, replies, and voting behavior
+- chat state links users, rooms, message history, and presence-related behavior
+- service-owned schemas separate the main application domains inside PostgreSQL
+
 Primary schema source:
 
 - [`infra/postgres/init-scripts/schema.sql`](./infra/postgres/init-scripts/schema.sql)
@@ -251,7 +269,7 @@ Supporting references:
 - Profile management
 - Avatar support
 - Role-based access control
-- Main contributors: Member D, Member E
+- Main contributors: `vlow`, `jothomas`
 
 ### Forum
 
@@ -259,7 +277,7 @@ Supporting references:
 - Posts and replies
 - Voting interactions
 - Structured technical discussion
-- Main contributors: Member B, Member E
+- Main contributors: `tjun-fan`
 
 ### Chat and Social Interaction
 
@@ -269,7 +287,7 @@ Supporting references:
 - Chat history persistence
 - Typing indicators
 - Read receipts
-- Main contributors: Member C, Member E
+- Main contributors: `cwoon`
 
 ### Gateway and Platform Security
 
@@ -278,7 +296,7 @@ Supporting references:
 - Role-based access control enforcement
 - Rate limiting
 - Request filtering and policy enforcement
-- Main contributors: Member A
+- Main contributors: `vlow`
 
 ### DevOps and Observability
 
@@ -288,7 +306,7 @@ Supporting references:
 - Grafana dashboards
 - Alerting rules
 - Backups and disaster recovery documentation
-- Main contributors: Member A
+- Main contributors: `vlow`
 
 ---
 
@@ -298,10 +316,10 @@ Supporting references:
 
 - Web Module
     - Major: framework for both frontend and backend
+    - Major: realtime features
     - Major: user interaction
     - Minor: ORM
     - Minor: SSR
-    - Minor: notification system
     - Minor: advanced search, filtering, sorting, and pagination
 
 - User Management Module
@@ -309,7 +327,7 @@ Supporting references:
     - Major: advanced permissions system
     - Minor: remote authentication with OAuth 2.0
 
-- Gaming and User Experience Module
+- User Experience Module
     - Minor: advanced chat features
 
 - DevOps Module
@@ -323,55 +341,79 @@ Supporting references:
 ### Point Calculation
 
 - Major: 16 points
-- Minor: 7 points
-- Total: 23 points
+- Minor: 6 points
+- Total: 22 points
 
 ### Module Implementation References
 
 - [Project Overview](./docs/0.project_overview.md)
 - [Product Requirements](./docs/1.product_requirements.md)
 - [Custom Module Justification: Gateway](./docs/custom_module_gateway.md)
-- [`TODO.local.md`](./TODO.local.md) for the working module checklist during development
+
+### Module Implementation Summary
+
+- Web
+    - implemented with Next.js on the frontend and Quarkus / FastAPI / Go services on the backend
+    - covers realtime interaction, core chat/profile/friends flows, SSR, and forum search/filtering
+- User Management
+    - implemented through the Auth Service, profile flows, OAuth login, role-aware views, and admin capabilities
+- User Experience
+    - implemented through advanced chat behavior including blocking, history persistence, typing indicators, read receipts, and profile access from chat
+- DevOps
+    - implemented through Docker-managed microservices, Prometheus scraping, Grafana dashboards and alerts, runtime health checks, backups, and a tested disaster recovery runbook
+- Modules of Choice
+    - implemented through the zero-trust API gateway, centralized RBAC, request policy enforcement, Redis-backed rate limiting, and edge observability
+
+### Module Justification Summary
+
+- Web, User Management, and User Experience were chosen because they match the product's social and collaborative platform direction.
+- DevOps was chosen to make the platform observable, operable, and demonstrable as a production-style multi-service system.
+- The custom gateway module was chosen because the project needed one central control plane for routing, authentication, RBAC, request policy, and observability.
 
 ### Module Ownership
 
-- Web: Members B, C, D, E
-- User Management: Members C, D, E
-- Gaming and User Experience: Members C, E
-- DevOps: Member A
-- Modules of Choice: Member A
+- Web: tjun-fan, cwoon, jothomas, rteoh
+- User Management: cwoon, jothomas, rteoh
+- User Experience: cwoon, rteoh
+- DevOps: vlow
+- Modules of Choice: vlow
 
 ---
 
 ## Individual Contributions
 
-### Member A
+### vlow
 
 - Gateway architecture and implementation
 - Backend policy enforcement design
 - DevOps setup, monitoring, and observability
+- Challenge note: `<to be filled by vlow>`
 
-### Member B
+### tjun-fan
 
 - Forum service implementation
 - Forum-facing web integration
 - Coordination of forum product scope
+- Challenge note: `<to be filled by tjun-fan>`
 
-### Member C
+### cwoon
 
 - Chat service implementation
 - Chat UI integration
 - Friends-related architecture and behavior
+- Challenge note: `<to be filled by cwoon>`
 
-### Member D
+### jothomas
 
 - Auth service implementation
 - Authentication and login-related frontend flows
+- Challenge note: `<to be filled by jothomas>`
 
-### Member E
+### rteoh
 
 - Shared frontend implementation
 - Cross-page web integration and UI delivery
+- Challenge note: `<to be filled by rteoh>`
 
 ---
 
@@ -385,7 +427,6 @@ Supporting references:
 - [Architectural Decisions](./docs/2.architectual_decisions.md)
 - [Technical Decisions](./docs/3.technical_decisions.md)
 - [Disaster Recovery](./docs/disaster_recovery.md)
-- service-local documentation under `services/*/docs/`
 
 ### Technical Documentation
 
@@ -408,5 +449,7 @@ They were used for tasks such as:
 - refining documentation structure
 - reviewing implementation ideas
 - summarizing technical decisions
+- drafting and refining public-facing documentation
+- checking consistency across architecture, module, and DevOps documentation
 
 AI output was treated as assistive material and was reviewed, corrected, and integrated within the project's actual codebase and team decisions.
