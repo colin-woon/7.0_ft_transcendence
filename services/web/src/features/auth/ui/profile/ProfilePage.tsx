@@ -18,6 +18,7 @@ import {
   fileToDataUrl,
   validateAvatarFile,
 } from "@/features/auth/utils/avatarFile";
+import { updateProfileSchema } from "@/features/auth/validation/authSchemas";
 import {
   extractAchievements,
   extractIntraSummary,
@@ -276,6 +277,18 @@ export default function ProfilePage({
         setQuickActionError(validationError);
         return;
       }
+    }
+
+    const parsed = updateProfileSchema.safeParse({
+      username: editDraft.username,
+      fullName: editDraft.fullName,
+      bio: editDraft.bio,
+      avatarFile: pendingAvatarFile ? "placeholder" : "",
+    });
+
+    if (!parsed.success) {
+      setQuickActionError(parsed.error.issues[0]?.message || "Invalid input");
+      return;
     }
 
     const avatarFile = pendingAvatarFile
