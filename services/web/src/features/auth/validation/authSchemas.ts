@@ -59,6 +59,40 @@ export const passwordChangeSchema = z
     message: 'Passwords do not match',
   })
 
+  export const updateProfileSchema = z.object({
+    username: z
+      .string()
+      .trim()
+      .min(3, "Username must be between 3 and 30 characters")
+      .max(30, "Username must be between 3 and 30 characters")
+      .regex(
+        usernamePattern,
+        "Username can only contain letters, numbers, underscores, and hyphens",
+      )
+      .optional()
+      .or(z.literal("")),
+    fullName: z
+      .string()
+      .trim()
+      .min(1, "Full name is required")
+      .max(100, "Full name must be between 1 and 100 characters")
+      .optional()
+      .or(z.literal("")),
+    avatarFile: z
+      .string()
+      .trim()
+      .max(3000000, "Avatar file payload is too large")
+      .optional()
+      .or(z.literal("")),
+    bio: z
+      .string()
+      .trim()
+      .max(500, "Bio must not exceed 500 characters")
+      .optional()
+      .or(z.literal("")),
+  });
+
 export type PasswordLoginFormValues = z.infer<typeof loginWithPasswordSchema>
 export type PasswordRegisterFormValues = z.infer<typeof registerWithPasswordSchema>
 export type PasswordChangeFormValues = z.infer<typeof passwordChangeSchema>
+export type UpdateProfileFormValues = z.infer<typeof updateProfileSchema>;

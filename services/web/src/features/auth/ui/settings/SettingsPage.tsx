@@ -4,7 +4,6 @@ import Image from "next/image";
 import intraIcon from "@/components/ui/imgs/42_icon.png";
 import PasswordForm from "@/features/auth/ui/settings/components/DropdownPassword";
 import CreateUserDialog from "@/features/auth/ui/settings/components/CreateUserDialog";
-
 import {
   AlertCircle,
   Calendar,
@@ -39,9 +38,12 @@ import {
   validateAvatarFile,
 } from "@/features/auth/utils/avatarFile";
 import {
-  type PasswordChangeFormValues,
   passwordChangeSchema,
+  type PasswordChangeFormValues,
+  updateProfileSchema,
+  type UpdateProfileFormValues,
 } from "@/features/auth/validation/authSchemas";
+
 
 interface SettingsPageProps {
   initialProfile?: User | null;
@@ -333,6 +335,18 @@ export default function SettingsPage({
       avatarFilePayload = await fileToDataUrl(pendingAvatarFile);
     }
 
+    const parsed = updateProfileSchema.safeParse({
+      username: editDraft.username,
+      fullName: editDraft.fullName,
+      bio: editDraft.bio,
+      avatarFile: avatarFilePayload ?? "",
+    });
+
+    if (!parsed.success) {
+      setAdminActionError(parsed.error.issues[0]?.message || "Invalid input");
+      return;
+    }
+
     const updated = await saveProfile({
       username: editDraft.username.trim() || undefined,
       fullName: editDraft.fullName.trim() || undefined,
@@ -439,6 +453,12 @@ export default function SettingsPage({
     event.preventDefault();
     setAdminActionError(null);
     setAdminActionSuccess(null);
+
+    const parsed = updateProfileSchema.safeParse(newUserForm);
+    if (!parsed.success) {
+      setAdminActionError(parsed.error.issues[0]?.message || "Invalid input");
+      return;
+    }
 
     const username = newUserForm.username.trim();
     const fullName = newUserForm.fullName.trim();
