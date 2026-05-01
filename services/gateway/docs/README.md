@@ -77,6 +77,19 @@ Current public surface:
 
 Only the auth routes above are allowed on the public POST path.
 
+### Admin API
+
+`/api/admin/{service}/...`
+
+Handled by [`AdminResources.java`](../src/main/java/org/bumIntra/gateway/api/AdminResources.java).
+
+Current admin-routed services:
+
+- `prometheus`
+- `grafana`
+
+This route family is protected by gateway RBAC and is intended for authenticated `ADMIN` access to observability tooling.
+
 ### SSE Streams
 
 `/api/stream/{service}/...`
@@ -141,6 +154,7 @@ Filters execute in priority order:
 8. Resource handler
 
 - `GatewayResource`
+- `AdminResources`
 - `PublicResource`
 - `StreamResources`
 

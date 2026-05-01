@@ -146,7 +146,7 @@ tls_server_config:
   client_ca_file: /certs/internal-ca.crt
 ```
 
-So direct Prometheus UI/API access in prod is TLS-protected and client-cert-gated.
+So Prometheus server access in prod is TLS-protected and client-cert-gated.
 
 ### Development
 
@@ -169,10 +169,10 @@ Current mounts:
 
 Current runtime args in prod also set:
 
-- `--web.external-url=https://localhost/prometheus/`
-- `--web.route-prefix=/prometheus/`
+- `--web.external-url=https://localhost/api/admin/prometheus/`
+- `--web.route-prefix=/api/admin/prometheus/`
 
-Those values keep Prometheus working correctly behind nginx under `/prometheus/`.
+Those values keep Prometheus working correctly behind the gateway-admin prefix.
 
 ---
 
@@ -194,7 +194,7 @@ Those are not in the rule file yet.
 
 ### 3. Route Prefix Matters
 
-If nginx or Grafana proxy paths change, Prometheus `external-url` / `route-prefix` may also need to change.
+If gateway-admin browser paths change, Prometheus `external-url` / `route-prefix` may also need to change.
 
 ---
 
