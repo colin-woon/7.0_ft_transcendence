@@ -15,6 +15,14 @@ Use this when:
 
 Do not use this for a short-lived outage where `db-service` restarts cleanly and dependent services recover on their own.
 
+This runbook targets the production Compose topology:
+
+```bash
+docker compose -f docker-compose.yml --env-file ./environment/shared.env ...
+```
+
+Do not rely on bare `docker compose ...` in this repository during recovery, because `docker-compose.override.yml` may be picked up implicitly and change service behavior.
+
 ## Backup Source
 
 Automated backups are written by `db-backup-service` to:
@@ -28,14 +36,16 @@ The quickest restore target is usually:
 
 - `shared/backups/postgres/last/postgres_db-latest.sql.gz`
 
+`db-backup-service` does not take a backup automatically on container start. This avoids replacing the `last/` snapshot with a freshly booted empty or partially recovered database during a restore drill.
+
 ## Recovery Flow
 
 ### 1. Stop write traffic
 
-Stop services that can write to PostgreSQL before restoring:
+Stop services that may create or observe database activity before restoring:
 
 ```bash
-docker compose stop nginx-service gateway-service auth-service forum-service chat-service web-service db-backup-service
+make dr-stop-services
 ```
 
 `db-service` should remain running for the restore command unless the container itself is broken.
@@ -52,16 +62,21 @@ Use one of these paths before restoring:
 For the volume-recreation path:
 
 ```bash
-docker compose stop db-service
-docker compose rm -f db-service
-docker volume rm bumintra_postgres_data
-docker compose up -d db-service
+make dr-recreate-db
+```
+
+The default database volume for the current project name is `42overflow_postgres_data`.
+
+If your local volume name differs, override it when running the target:
+
+```bash
+make dr-recreate-db DR_DB_VOLUME=<actual-volume-name>
 ```
 
 After `db-service` comes back, confirm it is reachable before continuing:
 
 ```bash
-docker compose exec db-service sh -lc 'pg_isready -U "$POSTGRES_USER" -d postgres'
+make dr-db-ready
 ```
 
 ### 3. Pick the backup file
@@ -79,13 +94,14 @@ Choose the dump to restore. In most cases:
 shared/backups/postgres/last/postgres_db-latest.sql.gz
 ```
 
+If the most recent `last/` snapshot is not the one you want, restore from `daily/`, `weekly/`, or `monthly/` instead.
+
 ### 4. Recreate the target database
 
 Drop and recreate the application database inside `db-service`:
 
 ```bash
-docker compose exec db-service sh -lc 'psql -U "$POSTGRES_USER" -d postgres -c "DROP DATABASE IF EXISTS \"$POSTGRES_DB\";"'
-docker compose exec db-service sh -lc 'psql -U "$POSTGRES_USER" -d postgres -c "CREATE DATABASE \"$POSTGRES_DB\";"'
+make dr-reset-db
 ```
 
 ### 5. Restore the dump
@@ -93,17 +109,21 @@ docker compose exec db-service sh -lc 'psql -U "$POSTGRES_USER" -d postgres -c "
 Restore the chosen backup into the recreated database:
 
 ```bash
-gunzip -c shared/backups/postgres/last/postgres_db-latest.sql.gz | docker compose exec -T db-service sh -lc 'psql -v ON_ERROR_STOP=on -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+make dr-restore-last
 ```
 
-If you are restoring a different dump, replace the file path on the left side of the pipe.
+If you are restoring a different dump, override the backup path:
+
+```bash
+make dr-restore-last DR_BACKUP_FILE=./shared/backups/postgres/daily/<backup-file>.sql.gz
+```
 
 ### 6. Start the stack again
 
 Bring the stopped services back:
 
 ```bash
-docker compose start db-backup-service auth-service forum-service chat-service web-service gateway-service nginx-service
+make dr-start-services
 ```
 
 ## Verification
@@ -118,7 +138,7 @@ After restore, verify:
 Useful checks:
 
 ```bash
-docker compose ps
+make ps
 docker logs postgres-db --tail 100
 docker logs postgres-backup-service --tail 100
 ```

@@ -158,7 +158,7 @@ Current setup:
 - source env: `./environment/db.env`
 - host target: `db-service`
 - schedule: `@daily`
-- `BACKUP_ON_START=TRUE`
+- `BACKUP_ON_START=FALSE`
 - retention:
   - `BACKUP_KEEP_DAYS=7`
   - `BACKUP_KEEP_WEEKS=4`
