@@ -10,6 +10,7 @@ export default async function runApi(
 			method: req.method,
 			headers: {
 				'Content-type': 'application/json',
+				...(req.isAuth && !req.isAdmin && { 'X-Intra-Lab': 'true' }),
 			},
 			credentials: req.isAuth ? 'include' : 'omit',
 			body:
