@@ -679,7 +679,13 @@ export default function SettingsPage({
                 </div>
                 <div className="rounded-xl border border-base-200 p-3 md:col-span-2">
                   <div className="text-xs text-base-content/60 mb-1">Bio</div>
-                  <div className="text-sm">
+                  <div
+                    className="text-sm overflow-hidden text-ellipsis whitespace-nowrap md:whitespace-normal md:line-clamp-2"
+                    style={{
+                      maxWidth: "100%",
+                      display: "block",
+                    }}
+                  >
                     {activeProfile.bio || "No bio yet"}
                   </div>
                 </div>
