@@ -34,7 +34,7 @@ export const registerWithPasswordSchema = z
       .max(3000000, 'Avatar file payload is too large')
       .optional()
       .or(z.literal('')),
-    bio: z.string().trim().max(500, 'Bio must not exceed 500 characters').optional().or(z.literal('')),
+    bio: z.string().trim().max(100, 'Bio must not exceed 100 characters').optional().or(z.literal('')),
     password: passwordSchema,
     confirmPassword: passwordSchema,
   })
@@ -87,7 +87,7 @@ export const passwordChangeSchema = z
     bio: z
       .string()
       .trim()
-      .max(500, "Bio must not exceed 500 characters")
+      .max(100, "Bio must not exceed 100 characters")
       .optional()
       .or(z.literal("")),
   });

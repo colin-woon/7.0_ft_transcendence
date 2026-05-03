@@ -78,6 +78,7 @@ export default function CreateUserDialog({
               <textarea
                 className="textarea rounded-md text-sm bg-base-100 min-h-24 resize-none leading-relaxed shadow-sm py-3 w-full border border-base-200 focus:outline-none focus:border-base-300 focus:ring-2 focus:ring-base-300/50 transition-all"
                 placeholder="Short profile bio..."
+                maxLength={100}
                 value={draft.bio ?? ""}
                 onChange={e => onChange("bio", e.target.value)}
               />
