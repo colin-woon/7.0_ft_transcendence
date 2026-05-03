@@ -244,6 +244,20 @@ export default function ProfilePage({
     subscriptionUserId: viewingOwnProfile ? null : (activeProfile?.id ?? null),
   });
 
+  const editValidation = useMemo(
+    () =>
+      updateProfileSchema.safeParse({
+        username: editDraft.username,
+        fullName: editDraft.fullName,
+        bio: editDraft.bio,
+        avatarFile: pendingAvatarFile ? "placeholder" : "",
+      }),
+    [editDraft.bio, editDraft.fullName, editDraft.username, pendingAvatarFile],
+  );
+  const editValidationMessage = editValidation.success
+    ? null
+    : editValidation.error.issues[0]?.message || "Invalid input";
+
   const openAdminEditDialog = async () => {
     if (
       !activeProfile?.id ||
@@ -576,6 +590,8 @@ export default function ProfilePage({
         draft={editDraft}
         saving={adminLoading}
         error={quickActionError ?? adminError}
+        validationMessage={editValidationMessage}
+        submitDisabled={!editValidation.success}
         showAvatarUpload
         avatarFileName={pendingAvatarFile?.name ?? null}
         onAvatarFileChange={setPendingAvatarFile}

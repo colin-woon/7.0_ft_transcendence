@@ -123,7 +123,7 @@ export default function ProfileCard2({
 
         {/* Bio */}
         {displayBio ? (
-          <p className="text-sm text-gray-600 leading-relaxed mt-[1px]">
+          <p className="text-sm text-gray-600 leading-relaxed mt-[1px] break-words whitespace-pre-wrap">
             {displayBio}
           </p>
         ) : (

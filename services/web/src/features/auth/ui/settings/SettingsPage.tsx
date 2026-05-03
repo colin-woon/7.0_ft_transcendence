@@ -264,6 +264,20 @@ export default function SettingsPage({
     [isAdmin],
   );
 
+  const editValidation = useMemo(
+    () =>
+      updateProfileSchema.safeParse({
+        username: editDraft.username,
+        fullName: editDraft.fullName,
+        bio: editDraft.bio,
+        avatarFile: pendingAvatarFile ? "placeholder" : "",
+      }),
+    [editDraft.bio, editDraft.fullName, editDraft.username, pendingAvatarFile],
+  );
+  const editValidationMessage = editValidation.success
+    ? null
+    : editValidation.error.issues[0]?.message || "Invalid input";
+
   useEffect(() => {
     if (!activeProfile) return;
     setEditDraft({
@@ -932,7 +946,6 @@ export default function SettingsPage({
                   Create user
                 </button>
               </div>
-              {/* You can add other admin content here if needed */}
             </div>
           )}
         </div>
@@ -945,6 +958,8 @@ export default function SettingsPage({
         showAvatarUpload={true}
         saving={profileSaving}
         error={profileEditError}
+        validationMessage={editValidationMessage}
+        submitDisabled={!editValidation.success}
         avatarFileName={pendingAvatarFile?.name ?? null}
         onChange={(next) => setEditDraft((prev) => ({ ...prev, ...next }))}
         onAvatarFileChange={setPendingAvatarFile}
