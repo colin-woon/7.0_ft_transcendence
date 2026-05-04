@@ -29,8 +29,11 @@ public class GatewayTokenRefreshService {
         }
 
         RecentRefreshEntry recent = memoRefreshMap.get(sessionId);
-        if (recent != null && recent.isFresh()) {
-            return CompletableFuture.completedFuture(recent.result());
+        if (recent != null) {
+            if (recent.isFresh()) {
+                return CompletableFuture.completedFuture(recent.result());
+            }
+            memoRefreshMap.remove(sessionId, recent);
         }
 
         CompletableFuture<TokenRefreshResult> existing = refreshMap.get(sessionId);
@@ -50,6 +53,7 @@ public class GatewayTokenRefreshService {
             created.complete(result);
         } catch (Exception e) {
             created.completeExceptionally(e);
+            memoRefreshMap.remove(sessionId);
         } finally {
             refreshMap.remove(sessionId, created);
         }

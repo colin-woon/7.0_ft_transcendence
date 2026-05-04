@@ -67,7 +67,11 @@ public class GrafanaWsBridgeService {
             return;
         }
 
-        serviceSession.writeTextMessage(message);
+        serviceSession.writeTextMessage(message)
+                .onFailure(e -> {
+                    obsHandler.onBridgeFailure("grafana", e);
+                    closePair(clientSession);
+                });
     }
 
     public void forwardToClient(Session clientSession, String message) {
