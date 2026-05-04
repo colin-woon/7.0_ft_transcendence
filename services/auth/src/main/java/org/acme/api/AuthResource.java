@@ -256,11 +256,11 @@ public class AuthResource {
 	public List<@NonNull UserSummaryDTO> searchUser(
 			@QueryParam("q") @DefaultValue("") String query,
 			@QueryParam("page") @DefaultValue("0") int page,
-			@QueryParam("size") @DefaultValue("10") int size) {
+			@QueryParam("size") Integer size) {
 
 		JsonWebToken jwt = (JsonWebToken) identity.getPrincipal();
 		
-		return profileService.searchUser(query, page, size, jwt.getGroups());
+		return profileService.searchUser(query, page, size == null ? 0 : size, jwt.getGroups());
 	}
 
 	// To lookup user by id, returning user info

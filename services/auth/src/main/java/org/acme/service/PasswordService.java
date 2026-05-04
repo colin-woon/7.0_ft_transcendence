@@ -1,7 +1,5 @@
 package org.acme.service;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
 import de.mkammerer.argon2.Argon2;
 import de.mkammerer.argon2.Argon2Factory;
 import jakarta.annotation.PostConstruct;

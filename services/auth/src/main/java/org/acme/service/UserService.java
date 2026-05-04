@@ -72,9 +72,7 @@ public class UserService {
 		user.email = normalizedEmail;
 		user.username = normalizedUsername;
 		user.fullName = dto.fullName.trim();
-		if (dto.avatarFile != null && !dto.avatarFile.isBlank()) {
-			user.avatarUrl = avatarStorageService.storeBase64Avatar(dto.avatarFile, null);
-		}
+		user.avatarUrl = avatarStorageService.replaceManagedAvatar(dto.avatarFile, null);
 		user.bio = sanitizeOptional(dto.bio);
 		user.role = UserRole.STUDENT;
 		user.passwordHash = hashPassword(dto.password);

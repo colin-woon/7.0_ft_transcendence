@@ -17,7 +17,6 @@ public class UserUpdateDTO {
 			String> fullName = Optional.empty();
 
 	public Optional<
-			@Size(max = 3000000, message = "Avatar file payload is too large")
 			String> avatarFile = Optional.empty();
 
 	public Optional<
