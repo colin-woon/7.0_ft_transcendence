@@ -26,7 +26,7 @@ In the repo workflow, gateway is usually run through the root `Makefile` and Com
 
 ```text
 src/main/java/org/bumIntra/gateway/
-├── api/         GatewayResource, PublicResource, StreamResources
+├── api/         GatewayResource, AdminResources, PublicResource, StreamResources
 ├── client/      REST clients, FT executors/wrappers, downstream service adapters
 ├── config/      Config mappings for auth, methods, headers, rate limiting
 ├── exception/   GatewayException, error codes, response mapping
@@ -149,6 +149,22 @@ This header is injected by trusted clients (e.g. other services in the cluster) 
 - password login/register
 
 The login/callback GETs now use `proxyPublicGet(...)`, which intentionally bypasses FT retry/circuit-breaker handling. That split exists because OAuth/login GETs are not safe to blindly retry.
+
+### Admin API
+
+[`AdminResources`](../src/main/java/org/bumIntra/gateway/api/AdminResources.java) currently exposes:
+
+- `/api/admin/prometheus/...`
+- `/api/admin/grafana/...`
+
+These routes are intended for authenticated admin-only browser access to observability tooling.
+
+Current design notes:
+
+- route-family RBAC is enforced by `RequestRBACFilter`
+- Prometheus is reached with the gateway's mTLS client identity
+- Grafana is reached over HTTPS with CA verification
+- both upstreams are configured to operate under the `/api/admin/...` browser prefix
 
 ### SSE
 

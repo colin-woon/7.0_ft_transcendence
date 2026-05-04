@@ -90,6 +90,7 @@ Production uses:
 - postgres-exporter over HTTPS with mutual TLS
 - Grafana over HTTPS
 - Grafana datasource access to Prometheus over HTTPS with mutual TLS
+- gateway-admin access for browser-facing observability routes
 
 Mounted from:
 
@@ -226,7 +227,7 @@ tls_server_config:
   client_ca_file: /certs/internal-ca.crt
 ```
 
-So direct Prometheus access in prod is not plain unauthenticated HTTP.
+So Prometheus is not exposed as plain unauthenticated HTTP in production.
 
 ### Development
 
@@ -254,7 +255,7 @@ Dev:
 
 The prod datasource uses:
 
-- `url: https://prometheus-service:9090/prometheus/`
+- `url: https://prometheus-service:9090/api/admin/prometheus/`
 - CA cert
 - client cert
 - client key
@@ -266,7 +267,7 @@ So Grafana reaches Prometheus with mutual TLS for datasource access in productio
 
 The dev datasource is intentionally simpler:
 
-- `url: http://prometheus-service:9090`
+- `url: http://prometheus-service:9090/api/admin/prometheus/`
 - no TLS client config
 
 ### Dashboard Provisioning
@@ -336,12 +337,12 @@ Important mounts:
 - dashboard JSON files
 - exporter web config
 
-Grafana and Prometheus are also proxied by nginx under:
+Browser-facing observability access is routed through the gateway admin surface:
 
-- `/grafana/`
-- `/prometheus/`
+- `/api/admin/grafana/`
+- `/api/admin/prometheus/`
 
-Those routes are convenience access points and can be hard-blocked at the nginx layer if desired.
+Those routes are intended for authenticated admin use rather than direct public edge exposure.
 
 ---
 
@@ -377,9 +378,9 @@ It does not yet fully cover degraded states like:
 
 Those alert classes are not part of the current rule set.
 
-### 4. Nginx Exposure Is a Separate Decision
+### 4. Browser Access Is Gateway-Gated
 
-Prometheus and Grafana are reachable through nginx for convenience. That does not mean they should always remain exposed. The nginx layer already supports switching those routes back to hard denial.
+Prometheus and Grafana are intended to be accessed through the gateway admin surface rather than direct public edge routes.
 
 ---
 
