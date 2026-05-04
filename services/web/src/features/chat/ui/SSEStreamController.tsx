@@ -1,12 +1,17 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useCurrentChatSession, useChatActions } from '@/features/chat/models';
 import { getMessageStream } from '@/features/chat/api';
 
 export function SSEStreamController() {
   const { addMessage, setTypingStatus, updateReadReceipt, setUserStatus } = useChatActions();
   const { currentUserId, chatId } = useCurrentChatSession();
+  const chatIdRef = useRef(chatId);
+
+  useEffect(() => {
+    chatIdRef.current = chatId;
+  }, [chatId]);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -21,10 +26,10 @@ export function SSEStreamController() {
           createdAt: eventContent.payload.createdAt
         });
       }
-      else if (eventContent.type === 'USER_TYPING' && eventContent.payload.chatId === chatId) {
+      else if (eventContent.type === 'USER_TYPING' && eventContent.payload.chatId === chatIdRef.current) {
         setTypingStatus(eventContent.payload.chatId, eventContent.payload.senderId)
       }
-      else if (eventContent.type === 'USER_READ' && eventContent.payload.chatId === chatId) {
+      else if (eventContent.type === 'USER_READ' && eventContent.payload.chatId === chatIdRef.current) {
         updateReadReceipt(eventContent.payload.chatId, eventContent.payload.userId, eventContent.payload.messageId);
       }
       else if (eventContent.type === 'USER_STATUS') {
@@ -38,7 +43,7 @@ export function SSEStreamController() {
         eventSource.close();
       }
     };
-  }, [chatId, currentUserId, addMessage, updateReadReceipt]);
+  }, [currentUserId]);
 
   // Headless: Handles logic, renders no UI
   return null; 

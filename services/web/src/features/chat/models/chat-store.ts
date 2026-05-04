@@ -3,6 +3,10 @@ import { immer } from 'zustand/middleware/immer';
 import type { AllChatSessions, FriendId, ChatMessage, ChatId, FriendList, ChatRoomType, PendingFriendRequest, FriendStatus } from './chat-types';
 import { getFriendList, getUserInbox, getMessageHistory, updateReadReceipt as apiUpdateReadReceipt, getPendingFriendRequests, getAllFriendshipStatuses } from '../api';
 import debounce from 'lodash.debounce';
+import { authService } from '@/features/auth/api/authService';
+import { enableMapSet } from "immer";
+
+enableMapSet();
 
 export interface ChatState {
   currentChatSessionId: ChatId | null;
@@ -260,3 +264,79 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
   );
 };
 
+export type UserDisplay = {
+  displayName: string | null;
+  avatarImage: string | null;
+};
+
+export type UserDisplayState = {
+  displayById: Record<number, UserDisplay>;
+  loadingIds: Set<number>;
+
+  fetchUserDisplays: (ids: number[]) => Promise<void>;
+};
+
+export type UserDisplayStore = UserDisplayState;
+
+export const createUserDisplayStore = () => {
+  return createStore<UserDisplayState>()(
+    immer((set, get) => ({
+      displayById: {},
+      loadingIds: new Set(),
+
+      fetchUserDisplays: async (ids: number[]) => {
+        const state = get();
+
+        const idsToLoad = ids.filter(
+          (id) =>
+            typeof id === "number" &&
+            id > 0 &&
+            !state.displayById[id] &&
+            !state.loadingIds.has(id)
+        );
+
+        if (idsToLoad.length === 0) return;
+
+        // mark loading
+        set((s) => {
+          idsToLoad.forEach((id) => s.loadingIds.add(id));
+        });
+
+        const results = await Promise.all(
+          idsToLoad.map(async (id) => {
+            try {
+              const user = await authService.getUserById(id);
+
+              return {
+                id,
+                displayName:
+                  user.username?.trim() ||
+                  user.fullName?.trim() ||
+                  null,
+                avatarImage:
+                  user.avatarImage ?? user.avatarUrl ?? null,
+              };
+            } catch {
+              return {
+                id,
+                displayName: null,
+                avatarImage: null,
+              };
+            }
+          })
+        );
+
+        // write results
+        set((s) => {
+          results.forEach((r) => {
+            s.displayById[r.id] = {
+              displayName: r.displayName,
+              avatarImage: r.avatarImage,
+            };
+            s.loadingIds.delete(r.id);
+          });
+        });
+      },
+    }))
+  );
+};
