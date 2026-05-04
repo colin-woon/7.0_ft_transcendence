@@ -17,6 +17,7 @@ import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.ext.Provider;
 
 @Provider
@@ -34,6 +35,10 @@ public class ResponseContextFilter implements ContainerResponseFilter {
 
         if (grc.getRequestId() != null) {
             response.getHeaders().putSingle("X-Request-Id", grc.getRequestId());
+        }
+
+        if (grc.getRefreshCookie() != null && !grc.getRefreshCookie().isBlank()) {
+            response.getHeaders().add(HttpHeaders.SET_COOKIE, grc.getRefreshCookie());
         }
 
         if (grc.isSse()) {
