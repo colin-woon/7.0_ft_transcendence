@@ -220,6 +220,12 @@ export default function SettingsPage({
     null,
   );
   const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
+  const [createUserSubmitAttempted, setCreateUserSubmitAttempted] = useState(
+    false,
+  );
+  const [createUserDialogError, setCreateUserDialogError] = useState<
+    string | null
+  >(null);
 
   const [editDraft, setEditDraft] = useState<EditUserDraft>({
     username: "",
@@ -283,6 +289,25 @@ export default function SettingsPage({
   const editValidationMessage = editValidation.success
     ? null
     : editValidation.error.issues[0]?.message || "Invalid input";
+  const createUserValidation = useMemo(
+    () =>
+      updateProfileSchema.safeParse({
+        username: newUserForm.username,
+        fullName: newUserForm.fullName,
+        bio: newUserForm.bio ?? "",
+        avatarFile: "",
+      }),
+    [newUserForm.bio, newUserForm.fullName, newUserForm.username],
+  );
+  const trimmedCreateEmail = newUserForm.email.trim();
+  const createUserValidationMessage = !createUserValidation.success
+    ? createUserValidation.error.issues[0]?.message || "Invalid input"
+    : !trimmedCreateEmail
+      ? "Email is required."
+      : null;
+  const createUserDisplayMessage = createUserSubmitAttempted
+    ? createUserValidationMessage
+    : null;
 
   useEffect(() => {
     if (!activeProfile) return;
@@ -324,6 +349,13 @@ export default function SettingsPage({
 
     lastTabRef.current = activeTab;
   }, [activeTab, refreshSessions, user]);
+
+  useEffect(() => {
+    if (!createUserModalOpen) {
+      setCreateUserSubmitAttempted(false);
+      setCreateUserDialogError(null);
+    }
+  }, [createUserModalOpen]);
 
   const pageError =
     authError ??
@@ -471,12 +503,12 @@ export default function SettingsPage({
     event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
-    setAdminActionError(null);
+    setCreateUserSubmitAttempted(true);
+    setCreateUserDialogError(null);
     setAdminActionSuccess(null);
 
     const parsed = updateProfileSchema.safeParse(newUserForm);
     if (!parsed.success) {
-      setAdminActionError(parsed.error.issues[0]?.message || "Invalid input");
       return;
     }
 
@@ -485,7 +517,7 @@ export default function SettingsPage({
     const email = newUserForm.email.trim();
 
     if (!username || !fullName || !email) {
-      setAdminActionError("Username, full name, and email are required.");
+      setCreateUserDialogError("Username, full name, and email are required.");
       return;
     }
 
@@ -499,7 +531,7 @@ export default function SettingsPage({
     });
 
     if (!created) {
-      setAdminActionError("Failed to create user");
+      setCreateUserDialogError("Failed to create user");
       return;
     }
 
@@ -511,6 +543,7 @@ export default function SettingsPage({
       role: "STUDENT",
       isBanned: false,
     });
+    setCreateUserDialogError(null);
     setAdminActionSuccess(`Created user @${created.username} (${created.id}).`);
   };
 
@@ -553,6 +586,7 @@ export default function SettingsPage({
     clearActionError();
     clearAdminHookError();
     setAdminActionError(null);
+    setCreateUserDialogError(null);
   };
 
   if (authLoading || profileLoading) {
@@ -1065,7 +1099,8 @@ export default function SettingsPage({
         }}
         onChange={updateNewUserForm}
         loading={adminLoading}
-        error={adminActionError}
+        error={createUserDialogError}
+        validationMessage={createUserDisplayMessage}
       />
     </div>
   );
