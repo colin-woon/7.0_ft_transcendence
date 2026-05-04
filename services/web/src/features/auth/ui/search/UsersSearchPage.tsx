@@ -42,8 +42,6 @@ type UserConfirmAction =
       nextRole: "STUDENT" | "ADMIN";
     };
 
-const RESULTS_PAGE_SIZE = 5;
-
 function SearchAvatar({
   fullName,
   avatarImage,
@@ -90,6 +88,7 @@ export default function UsersSearchPage({
   const router = useRouter();
   const { user, isLoading, hasRole } = useAuth();
   const isAdmin = hasRole("ADMIN");
+  const searchPageSize = isAdmin ? 30 : 10;
 
   const {
     updateUser,
@@ -104,30 +103,16 @@ export default function UsersSearchPage({
   const {
     query: typedQuery,
     setQuery: setTypedQuery,
-    results: dropdownResults,
-    loading: dropdownLoading,
-    error: dropdownError,
-    setPage: setDropdownPage,
-    searchNow: searchDropdownNow,
-  } = useUserSearch({
-    minChars: 1,
-    pageSize: 8,
-    debounceMs: 300,
-    excludeUserId: user?.id,
-  });
-
-  const {
-    setQuery: setResultsQuery,
     results,
     loading,
     error,
     page,
     hasMore,
     setPage,
-    searchNow: searchResultsNow,
+    searchNow,
   } = useUserSearch({
     minChars: 1,
-    pageSize: RESULTS_PAGE_SIZE,
+    pageSize: searchPageSize,
     debounceMs: 300,
     excludeUserId: user?.id,
   });
@@ -157,9 +142,8 @@ export default function UsersSearchPage({
     const next = initialQuery.trim();
     setTypedQuery(next);
     setCommittedQuery(next);
-    setResultsQuery(next);
     setPage(0);
-  }, [initialQuery, setTypedQuery, setResultsQuery, setPage]);
+  }, [initialQuery, setTypedQuery, setPage]);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -233,7 +217,8 @@ export default function UsersSearchPage({
     setEditUsername(updated.username);
     setPendingAvatarFile(null);
 
-    await Promise.all([searchDropdownNow(), searchResultsNow()]);
+    await searchNow();
+
     setEditOpen(false);
   };
 
@@ -258,7 +243,8 @@ export default function UsersSearchPage({
       bio: updated.bio ?? "",
     }));
 
-    await Promise.all([searchDropdownNow(), searchResultsNow()]);
+    await searchNow();
+
   };
 
   /**
@@ -285,7 +271,6 @@ export default function UsersSearchPage({
           if (editUserId === confirmAction.userId) {
             setEditOpen(false);
           }
-          await Promise.all([searchDropdownNow(), searchResultsNow()]);
         }
       }
       if (confirmAction.kind === "role") {
@@ -305,7 +290,6 @@ export default function UsersSearchPage({
             fullName: updated.fullName,
             bio: updated.bio ?? "",
           }));
-          await Promise.all([searchDropdownNow(), searchResultsNow()]);
         }
       }
     } finally {
@@ -320,7 +304,6 @@ export default function UsersSearchPage({
       setShowDropdown(false);
       setCommittedQuery("");
       setPage(0);
-      setResultsQuery("");
       router.replace("/search");
       return;
     }
@@ -328,7 +311,7 @@ export default function UsersSearchPage({
     setShowDropdown(false);
     setCommittedQuery(next);
     setPage(0);
-    setResultsQuery(next);
+    void searchNow(0, true);
     router.replace(`/search?q=${encodeURIComponent(next)}`);
   };
 
@@ -380,7 +363,6 @@ export default function UsersSearchPage({
 
   const trimmedQuery = typedQuery.trim();
   const hasCommittedQuery = committedQuery.trim().length > 0;
-  const filteredDropdownResults = dropdownResults;
   const filteredResults = results;
   const canGoPrev = page > 0 && !loading;
   const canGoNext = !loading && hasMore;
@@ -399,7 +381,7 @@ export default function UsersSearchPage({
             value={typedQuery}
             onChange={(event) => {
               setTypedQuery(event.target.value);
-              setDropdownPage(0);
+              setPage(0);
               setShowDropdown(true);
             }}
             onKeyDown={(event) => {
@@ -420,14 +402,14 @@ export default function UsersSearchPage({
                 {quickActionError}
               </div>
             )}
-            {dropdownError ? (
-              <div className="p-4 text-sm text-error">{dropdownError}</div>
-            ) : dropdownLoading ? (
+            {error ? (
+              <div className="p-4 text-sm text-error">{error}</div>
+            ) : loading ? (
               <div className="p-4 text-sm text-slate-500">Searching...</div>
-            ) : filteredDropdownResults.length === 0 ? (
+            ) : filteredResults.length === 0 ? (
               <div className="p-4 text-sm text-slate-500">No users found.</div>
             ) : (
-              filteredDropdownResults.map((result) => (
+              filteredResults.map((result) => (
                 <div
                   key={result.id}
                   className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50"
@@ -479,7 +461,7 @@ export default function UsersSearchPage({
               ))
             )}
 
-            {!dropdownLoading && filteredDropdownResults.length > 0 && (
+            {!loading && filteredResults.length > 0 && (
               <div className="px-3 py-2 border-t border-slate-100 flex items-center justify-between">
                 <span className="text-xs text-slate-500">
                   Press Enter for full results
