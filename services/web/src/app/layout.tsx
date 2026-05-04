@@ -4,6 +4,8 @@ import { AuthProvider } from '@/features/auth/models/AuthContext';
 import { ChatStoreProvider } from '@/features/chat/models';
 import { AppShellProvider } from '@/components/ui/ComponentLogic/Appshell/context/AppShellContext';
 import { AppShell } from '@/components/ui/ComponentLogic/Appshell/Appshell';
+import { redirect } from 'next/dist/client/components/navigation';
+import { getServerCurrentUser } from '@/features/auth/api/serverAuthData';
 
 export const metadata: Metadata = {
 	title: '42 Overflow',
