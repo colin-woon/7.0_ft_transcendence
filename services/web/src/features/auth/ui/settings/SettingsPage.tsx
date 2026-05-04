@@ -130,6 +130,12 @@ function getConfirmConfig(action: ConfirmAction | null): {
   }
 }
 
+const XIcon = () => (
+  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+    <path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+  </svg>
+);
+
 export default function SettingsPage({
   initialProfile,
   initialProfileError,
@@ -572,6 +578,42 @@ export default function SettingsPage({
   }
 
   const confirmConfig = getConfirmConfig(confirmAction || lastConfirmAction.current);
+  const alertTextStyle = {
+    fontSize: 12.5,
+    fontWeight: 500,
+    letterSpacing: "0.01em",
+  } as const;
+  const dismissButtonStyle = {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    opacity: 0.45,
+    color: "inherit",
+    padding: 0,
+    transition: "opacity 0.15s",
+  } as const;
+  const errorNoticeStyle = {
+    background: "rgba(255, 241, 241, 0.84)",
+    border: "1px solid rgba(210, 155, 155, 0.9)",
+    color: "#6B2323",
+    boxShadow: "0 10px 24px rgba(107, 35, 35, 0.08)",
+    animation: "slideDownFade 0.2s ease-out",
+    backdropFilter: "blur(6px)",
+  } as const;
+  const successNoticeStyle = {
+    background: "rgba(236, 251, 241, 0.86)",
+    border: "1px solid rgba(152, 197, 142, 0.9)",
+    color: "#2A4F24",
+    boxShadow: "0 10px 24px rgba(42, 79, 36, 0.08)",
+    animation: "slideDownFade 0.2s ease-out",
+    backdropFilter: "blur(6px)",
+  } as const;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -583,22 +625,50 @@ export default function SettingsPage({
       </div>
 
       {pageError && (
-        <div className="alert alert-error mb-4">
-          <AlertCircle size={16} />
-          <span className="text-sm">{pageError}</span>
+        <div
+          className="flex items-center gap-2.5 px-3.5 py-2.5 mb-3 rounded-lg"
+          style={errorNoticeStyle}
+        >
+          <style>{`@keyframes slideDownFade { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }`}</style>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.65 }}>
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.1"/>
+            <path d="M8 5v3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+            <circle cx="8" cy="11" r="0.65" fill="currentColor"/>
+          </svg>
+          <p className="flex-1 m-0" style={alertTextStyle}>{pageError}</p>
           <button
-            type="button"
-            className="btn btn-xs btn-ghost ml-auto"
             onClick={clearAllErrors}
+            type="button"
+            aria-label="Dismiss"
+            style={dismissButtonStyle}
+            onMouseEnter={e => e.currentTarget.style.opacity = "0.9"}
+            onMouseLeave={e => e.currentTarget.style.opacity = "0.45"}
           >
-            Dismiss
+            <XIcon />
           </button>
         </div>
       )}
 
       {adminActionSuccess && (
-        <div className="alert alert-success mb-4 text-sm">
-          {adminActionSuccess}
+        <div
+          className="flex items-center gap-2.5 px-3.5 py-2.5 mb-3 rounded-lg"
+          style={successNoticeStyle}
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.65 }}>
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.1"/>
+            <path d="M5.5 8l2 2 3.5-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <p className="flex-1 m-0" style={alertTextStyle}>{adminActionSuccess}</p>
+          <button
+            onClick={() => setAdminActionSuccess(null)}
+            type="button"
+            aria-label="Dismiss"
+            style={dismissButtonStyle}
+            onMouseEnter={e => e.currentTarget.style.opacity = "0.9"}
+            onMouseLeave={e => e.currentTarget.style.opacity = "0.45"}
+          >
+            <XIcon />
+          </button>
         </div>
       )}
 
