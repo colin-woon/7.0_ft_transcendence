@@ -223,14 +223,8 @@ export default function ProfilePage({
     [activeProfile?.intraInfo],
   );
 
-  const groupsCount = Array.isArray(activeProfile?.intraInfo?.groups)
-    ? activeProfile.intraInfo.groups.length
-    : 0;
-  const partnershipsCount = Array.isArray(
-    activeProfile?.intraInfo?.partnerships,
-  )
-    ? activeProfile.intraInfo.partnerships.length
-    : 0;
+  const groupsCount = activeProfile?.intraInfo?.groupsCount ?? 0;
+  const partnershipsCount = activeProfile?.intraInfo?.partnershipsCount ?? 0;
   const {
     subscribedProjects,
     suggestedProjects,

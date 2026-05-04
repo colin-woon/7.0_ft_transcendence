@@ -30,20 +30,8 @@ export interface User {
   intraInfo?: IntraInfo | null
 }
 
-export interface IntraImage {
-	link: string;
-	versions: {
-		large: string;
-		medium: string;
-		small: string;
-	};
-}
-
 export interface IntraInfo {
-	url: string | null;
 	phone: string | null;
-	kind: string | null;
-	image: IntraImage | null;
 	correctionPoints: number;
 	poolMonth: string | null;
 	poolYear: string | null;
@@ -51,19 +39,14 @@ export interface IntraInfo {
 	wallet: number;
 	isAlumni: boolean;
 	isActive: boolean;
-	groups: Record<string, unknown>[];
+	groupsCount: number;
+	partnershipsCount: number;
 	cursusUsers: Record<string, unknown>[];
 	projectsUsers: Record<string, unknown>[];
 	languagesUsers: Record<string, unknown>[];
 	achievements: Record<string, unknown>[];
-	titles: Record<string, unknown>[];
 	titlesUsers: Record<string, unknown>[];
-	partnerships: Record<string, unknown>[];
-	patroned: Record<string, unknown>[];
-	patroning: Record<string, unknown>[];
 	expertisesUsers: Record<string, unknown>[];
-	roles: Record<string, unknown>[];
-	campus: Record<string, unknown>[];
 	campusUsers: Record<string, unknown>[];
 }
 
@@ -156,6 +139,7 @@ class AuthService {
 	private currentUserId: number | null = null;
 	private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 	private refreshPromise: Promise<AuthResponse> | null = null;
+	private searchRequests = new Map<string, Promise<UserSummary[]>>();
 	private cache = new Map<string, CachedValue<unknown>>();
 	private authStateVersion = 0;
 
@@ -411,22 +395,39 @@ class AuthService {
 	async searchUsers(
 		query: string,
 		page = 0,
-		size = 20
+		size = 10
 	): Promise<UserSummary[]> {
+		const requestKey = `${query.trim().toLowerCase()}|${page}|${size}`;
+		const existingRequest = this.searchRequests.get(requestKey);
+		if (existingRequest) {
+			return existingRequest;
+		}
+
 		const params = new URLSearchParams({
 			q: query,
 			page: page.toString(),
 			size: size.toString(),
 		});
 
-		const response = await this.authenticatedFetch(
-			getApiUrl(`/api/auth/users?${params.toString()}`)
-		);
-		if (!response.ok) {
-			throw this.asAuthApiError(response, 'Search failed');
-		}
+		const request = (async () => {
+			const response = await this.authenticatedFetch(
+				getApiUrl(`/api/auth/users?${params.toString()}`)
+			);
+			if (!response.ok) {
+				throw this.asAuthApiError(response, 'Search failed');
+			}
 
-		return response.json();
+			return response.json();
+		})();
+
+		this.searchRequests.set(requestKey, request);
+		try {
+			return await request;
+		} finally {
+			if (this.searchRequests.get(requestKey) === request) {
+				this.searchRequests.delete(requestKey);
+			}
+		}
 	}
 
 	async reloadIntraData(userId: number): Promise<User> {

@@ -141,7 +141,6 @@ export default function SettingsPage({
     user,
     isLoading: authLoading,
     hasRole,
-    reloadIntraData,
     updatePassword,
     clearError,
     error: authError,
@@ -235,7 +234,6 @@ export default function SettingsPage({
   );
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
-  const [reloadingIntra, setReloadingIntra] = useState(false);
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
 
   const [newUserForm, setNewUserForm] = useState<CreateUserPayload>({
@@ -416,21 +414,6 @@ export default function SettingsPage({
   };
 
   /**
-   * Triggers a server-side refresh for linked 42 profile data.
-   */
-  const handleReload42 = async () => {
-    setReloadingIntra(true);
-    try {
-      const updated = await reloadIntraData();
-      if (updated) {
-        await refetch();
-      }
-    } finally {
-      setReloadingIntra(false);
-    }
-  };
-
-  /**
    * Creates a user as admin using the fuller UserInfoDTO-aligned fields.
    */
   const handleAdminCreateUser = async (
@@ -598,23 +581,7 @@ export default function SettingsPage({
                   Public Profile
                 </h2>
                 
-                {/* edit button and refresh button*/}
                 <div className="flex items-center gap-2">
-                  {isAdmin && (
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-ghost"
-                      onClick={handleReload42}
-                      disabled={reloadingIntra}
-                      title="Reload 42 data"
-                    >
-                      <RefreshCcw
-                        size={14}
-                        className={reloadingIntra ? "animate-spin" : ""}
-                      />
-                      {reloadingIntra ? "Reloading..." : "Reload 42 info"}
-                    </button>
-                  )}
                   <button
                     type="button"
                     className="btn btn-sm btn-ghost btn-square"
