@@ -121,7 +121,7 @@ services:
             test: ['CMD', 'curl', '-f', 'http://localhost:8180/q/health']
             interval: 10s
             timeout: 5s
-            start_period: 90s
+            start_period: 150s
             retries: 5
         volumes:
             - ./services/gateway:/app
