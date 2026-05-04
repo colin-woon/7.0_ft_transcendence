@@ -19,71 +19,72 @@ import jakarta.ws.rs.ext.Provider;
 @Priority(Priorities.HEADER_DECORATOR - 100)
 public class ServiceClientContextFilter implements ClientRequestFilter {
 
-	@Inject
-	GatewayRequestContext grc;
+    @Inject
+    GatewayRequestContext grc;
 
-	@Override
-	public void filter(ClientRequestContext request) {
+    @Override
+    public void filter(ClientRequestContext request) {
 
-		if (grc.getQueryParams() != null && !grc.getQueryParams().isEmpty()) {
+        if (grc.getQueryParams() != null && !grc.getQueryParams().isEmpty()) {
 
-			var uriBuilder = UriBuilder.fromUri(request.getUri());
+            var uriBuilder = UriBuilder.fromUri(request.getUri());
 
-			grc.getQueryParams().forEach((k, v) -> {
-				uriBuilder.queryParam(k, v.toArray());
-			});
+            grc.getQueryParams().forEach((k, v) -> {
+                uriBuilder.queryParam(k, v.toArray());
+            });
 
-			request.setUri(uriBuilder.build());
-		}
+            request.setUri(uriBuilder.build());
+        }
 
-		if (grc.getHeaders() != null) {
-			// Propagate essential headers safely
-			var headersToPropagate = List.of(
-					HttpHeaders.COOKIE,
-					HttpHeaders.CONTENT_TYPE,
-					HttpHeaders.ACCEPT,
-					HttpHeaders.AUTHORIZATION,
-					"Last-Event-ID"); // for SSE
+        if (grc.getHeaders() != null) {
+            // Propagate essential headers safely
+            var headersToPropagate = List.of(
+                    HttpHeaders.COOKIE,
+                    HttpHeaders.CONTENT_TYPE,
+                    HttpHeaders.ACCEPT,
+                    HttpHeaders.USER_AGENT,
+                    HttpHeaders.AUTHORIZATION,
+                    "Last-Event-ID"); // for SSE
 
-			for (String headerName : headersToPropagate) {
-				String headerValue = grc.getHeaders().getFirst(headerName);
-				if (headerValue != null) {
-					request.getHeaders().putSingle(headerName, headerValue);
-				}
-			}
-		}
+            for (String headerName : headersToPropagate) {
+                String headerValue = grc.getHeaders().getFirst(headerName);
+                if (headerValue != null) {
+                    request.getHeaders().putSingle(headerName, headerValue);
+                }
+            }
+        }
 
-		if (grc.getRequestId() != null && !grc.getRequestId().isBlank()) {
-			request.getHeaders().putSingle(IdentityHeaders.REQUEST_ID, grc.getRequestId());
-		}
+        if (grc.getRequestId() != null && !grc.getRequestId().isBlank()) {
+            request.getHeaders().putSingle(IdentityHeaders.REQUEST_ID, grc.getRequestId());
+        }
 
-		request.getHeaders().putSingle(IdentityHeaders.AUTH_LEVEL, grc.getAuthLevel().name());
+        request.getHeaders().putSingle(IdentityHeaders.AUTH_LEVEL, grc.getAuthLevel().name());
 
-		if (grc.getUserId().isPresent()) {
-			request.getHeaders().putSingle(IdentityHeaders.USER_ID, grc.getUserId().get());
-		}
+        if (grc.getUserId().isPresent()) {
+            request.getHeaders().putSingle(IdentityHeaders.USER_ID, grc.getUserId().get());
+        }
 
-		var roles = grc.getRoles();
-		if (roles != null && !roles.isEmpty()) {
-			request.getHeaders().putSingle(IdentityHeaders.USER_ROLES,
-					String.join(",", roles));
-		}
+        var roles = grc.getRoles();
+        if (roles != null && !roles.isEmpty()) {
+            request.getHeaders().putSingle(IdentityHeaders.USER_ROLES,
+                    String.join(",", roles));
+        }
 
-		if (grc.isInternal()) {
-			request.getHeaders().putSingle(IdentityHeaders.INTERNAL_REQUEST, "true");
-		}
+        if (grc.isInternal()) {
+            request.getHeaders().putSingle(IdentityHeaders.INTERNAL_REQUEST, "true");
+        }
 
-		if (grc.getRealIp() != null && !grc.getRealIp().isBlank()) {
-			request.getHeaders().putSingle(IdentityHeaders.REAL_IP, grc.getRealIp());
-		}
-		if (grc.getForwardedFor() != null && !grc.getForwardedFor().isBlank()) {
-			request.getHeaders().putSingle(IdentityHeaders.FORWARDED_FOR, grc.getForwardedFor());
-		}
-		if (grc.getForwardedHost() != null && !grc.getForwardedHost().isBlank()) {
-			request.getHeaders().putSingle(IdentityHeaders.FORWARDED_HOST, grc.getForwardedHost());
-		}
-		if (grc.getForwardedProto() != null && !grc.getForwardedProto().isBlank()) {
-			request.getHeaders().putSingle(IdentityHeaders.FORWARDED_PROTO, grc.getForwardedProto());
-		}
-	}
+        if (grc.getRealIp() != null && !grc.getRealIp().isBlank()) {
+            request.getHeaders().putSingle(IdentityHeaders.REAL_IP, grc.getRealIp());
+        }
+        if (grc.getForwardedFor() != null && !grc.getForwardedFor().isBlank()) {
+            request.getHeaders().putSingle(IdentityHeaders.FORWARDED_FOR, grc.getForwardedFor());
+        }
+        if (grc.getForwardedHost() != null && !grc.getForwardedHost().isBlank()) {
+            request.getHeaders().putSingle(IdentityHeaders.FORWARDED_HOST, grc.getForwardedHost());
+        }
+        if (grc.getForwardedProto() != null && !grc.getForwardedProto().isBlank()) {
+            request.getHeaders().putSingle(IdentityHeaders.FORWARDED_PROTO, grc.getForwardedProto());
+        }
+    }
 }
