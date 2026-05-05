@@ -66,6 +66,7 @@ public class RequestContextFilter implements ContainerRequestFilter {
         grc.setForwardedFor(request.getHeaderString(IdentityHeaders.INTRA_FORWARDED_FOR));
         grc.setForwardedHost(request.getHeaderString(IdentityHeaders.INTRA_FORWARDED_HOST));
         grc.setForwardedProto(request.getHeaderString(IdentityHeaders.INTRA_FORWARDED_PROTO));
+        grc.setLab("true".equalsIgnoreCase(request.getHeaderString(IdentityHeaders.INTRA_LAB)));
 
         if (grc.getRealIp() == null || grc.getRealIp().isBlank()) {
             if (grc.getForwardedFor() != null && !grc.getForwardedFor().isBlank()) {

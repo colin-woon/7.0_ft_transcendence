@@ -62,12 +62,6 @@ public class RequestPreAuthFilter implements ContainerRequestFilter {
                     "Authentication is required");
         }
 
-        // Method Returns Source Claim
-        // jwt.getSubject() String sub (The "123" ID)
-        // jwt.getIssuer() String iss
-        // jwt.getGroups() Set<String> groups
-        // jwt.getExpirationTime() long exp
-        // jwt.getClaim("upn") T (Generic) upn (The email)
     }
 
     private boolean populateAuth() {
@@ -114,6 +108,10 @@ public class RequestPreAuthFilter implements ContainerRequestFilter {
         if (jwt.getGroups().contains("ADMIN")) {
             grc.setAuthLevel(AuthLevel.ADMIN);
         } else {
+            grc.setAuthLevel(AuthLevel.USER);
+        }
+
+        if (grc.getAuthLevel() == AuthLevel.ADMIN && grc.isLab()) {
             grc.setAuthLevel(AuthLevel.USER);
         }
     }

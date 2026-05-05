@@ -39,6 +39,7 @@ export type LabRequestConfig = {
 	method: LabMethod;
 	url: string;
 	isAuth: boolean;
+	isAdmin: boolean;
 	body: string;
 	rateLimit: number;
 };
