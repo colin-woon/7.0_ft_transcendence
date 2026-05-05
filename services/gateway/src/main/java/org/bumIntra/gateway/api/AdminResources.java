@@ -96,10 +96,6 @@ public class AdminResources {
             default -> "";
         };
 
-        if (prefix.isEmpty()) {
-            return subpath;
-        }
-
         if (subpath == null || subpath.isBlank()) {
             return prefix + "/";
         }

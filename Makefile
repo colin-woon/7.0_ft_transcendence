@@ -143,7 +143,9 @@ dr-start-services:
 dr-recreate-db:
 	$(COMPOSE_PROD) stop db-service
 	$(COMPOSE_PROD) rm -f db-service
-	docker volume rm $(DR_DB_VOLUME)
+	@if docker volume inspect $(DR_DB_VOLUME) >/dev/null 2>&1; then \
+		docker volume rm $(DR_DB_VOLUME); \
+	fi
 	$(COMPOSE_PROD) up -d db-service
 
 dr-db-ready:
@@ -155,6 +157,8 @@ dr-reset-db:
 	$(COMPOSE_PROD) exec db-service sh -lc 'psql -U "$$POSTGRES_USER" -d postgres -c "CREATE DATABASE \"$$POSTGRES_DB\";"'
 
 dr-restore-last:
+	test -r $(DR_BACKUP_FILE)
+	gzip -t $(DR_BACKUP_FILE)
 	gunzip -c $(DR_BACKUP_FILE) | $(COMPOSE_PROD) exec -T db-service sh -lc 'psql -v ON_ERROR_STOP=on -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"'
 
 ensure-certs:

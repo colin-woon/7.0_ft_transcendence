@@ -375,8 +375,8 @@ services:
             - GF_SERVER_PROTOCOL=https
             - GF_SERVER_CERT_FILE=/certs/grafana.crt
             - GF_SERVER_CERT_KEY=/certs/grafana.key
-            - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
-            - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+            - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER?err}
+            - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD?err}
         volumes:
             - grafana_data:/var/lib/grafana
             - ./infra/obs/grafana/provisioning/datasources/prometheus.prod.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
