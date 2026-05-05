@@ -39,4 +39,70 @@ public class GatewayObserverDispatcher implements GatewayObserver {
                 }
         }
     }
+
+    @Override
+    public void onWsOpen(GatewayWsOpen gwo) {
+        for (var o : obs) {
+            if (o != this)
+                try {
+                    o.onWsOpen(gwo);
+                } catch (Throwable ignored) {
+                }
+        }
+    }
+
+    @Override
+    public void onWsAuth(GatewayWsAuth gwa) {
+        for (var o : obs) {
+            if (o != this)
+                try {
+                    o.onWsAuth(gwa);
+                } catch (Throwable ignored) {
+                }
+        }
+    }
+
+    @Override
+    public void onWsThrottle(GatewayWsThrottle gwt) {
+        for (var o : obs) {
+            if (o != this)
+                try {
+                    o.onWsThrottle(gwt);
+                } catch (Throwable ignored) {
+                }
+        }
+    }
+
+    @Override
+    public void onWsClose(GatewayWsClose gwc) {
+        for (var o : obs) {
+            if (o != this)
+                try {
+                    o.onWsClose(gwc);
+                } catch (Throwable ignored) {
+                }
+        }
+    }
+
+    @Override
+    public void onWsError(String sessionId, Throwable t) {
+        for (var o : obs) {
+            if (o != this)
+                try {
+                    o.onWsError(sessionId, t);
+                } catch (Throwable ignored) {
+                }
+        }
+    }
+
+    @Override
+    public void onWsBridgeFailure(String serviceName, Throwable t) {
+        for (var o : obs) {
+            if (o != this)
+                try {
+                    o.onWsBridgeFailure(serviceName, t);
+                } catch (Throwable ignored) {
+                }
+        }
+    }
 }

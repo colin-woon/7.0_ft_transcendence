@@ -5,8 +5,6 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 
 @ApplicationScoped
@@ -47,5 +45,9 @@ public class AuthService {
 
     public Response proxyPublicGet(String path) {
         return sce.execute(() -> authClient.proxyGet(path));
+    }
+
+    public Response refresh(String sessionId) {
+        return sce.execute(() -> authClient.refresh("sessionId=" + sessionId));
     }
 }

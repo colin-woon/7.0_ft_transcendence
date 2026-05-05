@@ -60,6 +60,7 @@ Important fields:
 - `userId`
 - `roles`
 - `authLevel`
+- `refreshCookie`
 - `errorCode`
 - `errorStatus`
 
@@ -108,6 +109,8 @@ mp.jwt.token.cookie=accessToken
     - `userId`
     - `roles`
     - `authLevel`
+- on `/api/admin/**`, may recover browser auth from the `sessionId` cookie when `accessToken` is missing or no longer usable
+- stores a refreshed `accessToken` cookie in `GatewayRequestContext.refreshCookie` for response emission
 
 ### Public Routes
 
@@ -165,6 +168,19 @@ Current design notes:
 - Prometheus is reached with the gateway's mTLS client identity
 - Grafana is reached over HTTPS with CA verification
 - both upstreams are configured to operate under the `/api/admin/...` browser prefix
+
+### Grafana Live WebSocket
+
+[`GrafanaWsServer`](../src/main/java/org/bumIntra/gateway/websocket/grafana/GrafanaWsServer.java) exposes:
+
+- `/api/admin/grafana/api/live/ws`
+
+Current behavior:
+
+- browser-side endpoint uses Jakarta WebSocket server callbacks
+- connection auth, RBAC, and connection/frame guards live in the shared websocket core layer
+- downstream `gateway -> Grafana` Live connection uses the Grafana bridge service
+- current bridge behavior is intentionally text-frame oriented for Grafana Live traffic Json payloads
 
 ### SSE
 

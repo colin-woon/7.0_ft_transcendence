@@ -33,4 +33,50 @@ public class GatewayObserverLogging implements GatewayObserver {
                 e.success(),
                 e.errorCode().orElse("-"));
     }
+
+    @Override
+    public void onWsOpen(GatewayWsOpen e) {
+        LOG.infov("gw.ws.open sessionId={0} ip={1} at={2}",
+                e.sessionId(), e.clientIp(), e.at());
+    }
+
+    @Override
+    public void onWsAuth(GatewayWsAuth e) {
+        LOG.infov("gw.ws.auth sessionId={0} ip={1} success={2} userId={3} latencyMs={4} reason={5}",
+                e.sessionId(), e.clientIp(), e.success(),
+                e.userId().orElse("-"),
+                e.latency().map(Duration::toMillis).orElse(0L),
+                e.reason().orElse("-"));
+    }
+
+    @Override
+    public void onWsThrottle(GatewayWsThrottle e) {
+        LOG.infov("gw.ws.throttle sessionId={0} ip={1} userId={2} type={3} at={4}",
+                e.sessionId(),
+                e.clientIp(),
+                e.userId().orElse("-"),
+                e.type(),
+                e.at());
+    }
+
+    @Override
+    public void onWsClose(GatewayWsClose e) {
+        LOG.infov("gw.ws.close sessionId={0} userId={1} code={2} reason={3} at={4}",
+                e.sessionId(),
+                e.userId().orElse("-"),
+                e.closeCode(),
+                e.reason(),
+                e.at());
+    }
+
+    @Override
+    public void onWsError(String sessionId, Throwable error) {
+        LOG.warnf(error, "gw.ws.error sessionId=%s", sessionId);
+    }
+
+    @Override
+    public void onWsBridgeFailure(String serviceName, Throwable t) {
+        LOG.warnf(t, "gw.ws.bridge.failure service=%s", serviceName);
+    }
+
 }
