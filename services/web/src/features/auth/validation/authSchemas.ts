@@ -92,7 +92,41 @@ export const passwordChangeSchema = z
       .or(z.literal("")),
   });
 
+  export const createUserSchema = z.object({
+    username: z
+      .string()
+      .trim()
+      .min(3, "Username must be between 3 and 30 characters")
+      .max(30, "Username must be between 3 and 30 characters")
+      .regex(
+        usernamePattern,
+        "Username can only contain letters, numbers, underscores, and hyphens",
+      ),
+    fullName: z
+      .string()
+      .trim()
+      .min(1, "Full name is required")
+      .max(100, "Full name must be between 1 and 100 characters"),
+    email: z
+      .string()
+      .trim()
+      .email("Please enter a valid email")
+      .max(255, "Email must be at most 255 characters")
+      .refine((value) => value.toLowerCase().endsWith("@gmail.com"), {
+        message: "Only @gmail.com addresses are allowed",
+      }),
+    bio: z
+      .string()
+      .trim()
+      .max(100, "Bio must not exceed 100 characters")
+      .optional()
+      .or(z.literal("")),
+    role: z.enum(['STUDENT', 'ADMIN']),
+    isBanned: z.boolean(),
+  });
+
 export type PasswordLoginFormValues = z.infer<typeof loginWithPasswordSchema>
 export type PasswordRegisterFormValues = z.infer<typeof registerWithPasswordSchema>
 export type PasswordChangeFormValues = z.infer<typeof passwordChangeSchema>
 export type UpdateProfileFormValues = z.infer<typeof updateProfileSchema>;
+export type CreateUserFormValues = z.infer<typeof createUserSchema>;

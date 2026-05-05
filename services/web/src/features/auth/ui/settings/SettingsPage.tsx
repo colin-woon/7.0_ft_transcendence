@@ -42,11 +42,12 @@ import {
 	validateAvatarFile,
 } from '@/features/auth/utils/avatarFile';
 import {
-  passwordChangeSchema,
-  type PasswordChangeFormValues,
-  updateProfileSchema,
-  type UpdateProfileFormValues,
-} from "@/features/auth/validation/authSchemas";
+	createUserSchema,
+	passwordChangeSchema,
+	type PasswordChangeFormValues,
+	updateProfileSchema,
+	type UpdateProfileFormValues,
+} from '@/features/auth/validation/authSchemas';
 
 
 interface SettingsPageProps {
@@ -297,25 +298,31 @@ export default function SettingsPage({
   const editValidationMessage = editValidation.success
     ? null
     : editValidation.error.issues[0]?.message || "Invalid input";
-  const createUserValidation = useMemo(
-    () =>
-      updateProfileSchema.safeParse({
-        username: newUserForm.username,
-        fullName: newUserForm.fullName,
-        bio: newUserForm.bio ?? "",
-        avatarFile: "",
-      }),
-    [newUserForm.bio, newUserForm.fullName, newUserForm.username],
-  );
-  const trimmedCreateEmail = newUserForm.email.trim();
-  const createUserValidationMessage = !createUserValidation.success
-    ? createUserValidation.error.issues[0]?.message || "Invalid input"
-    : !trimmedCreateEmail
-      ? "Email is required."
-      : null;
-  const createUserDisplayMessage = createUserSubmitAttempted
-    ? createUserValidationMessage
-    : null;
+	const createUserValidation = useMemo(
+		() =>
+			createUserSchema.safeParse({
+				username: newUserForm.username,
+				fullName: newUserForm.fullName,
+				email: newUserForm.email,
+				bio: newUserForm.bio ?? '',
+				role: newUserForm.role,
+				isBanned: newUserForm.isBanned,
+			}),
+		[
+			newUserForm.bio,
+			newUserForm.email,
+			newUserForm.fullName,
+			newUserForm.isBanned,
+			newUserForm.role,
+			newUserForm.username,
+		]
+	);
+	const createUserValidationMessage = !createUserValidation.success
+		? createUserValidation.error.issues[0]?.message || 'Invalid input'
+		: null;
+	const createUserDisplayMessage = createUserSubmitAttempted
+		? createUserValidationMessage
+		: null;
 
 	useEffect(() => {
 		if (!activeProfile) return;
@@ -516,27 +523,20 @@ export default function SettingsPage({
     setCreateUserDialogError(null);
 		setAdminActionSuccess(null);
 
-    const parsed = updateProfileSchema.safeParse(newUserForm);
-    if (!parsed.success) {
-      return;
-    }
-
-		const username = newUserForm.username.trim();
-		const fullName = newUserForm.fullName.trim();
-		const email = newUserForm.email.trim();
-
-		if (!username || !fullName || !email) {
-			setCreateUserDialogError('Username, full name, and email are required.');
+		const parsed = createUserSchema.safeParse(newUserForm);
+		if (!parsed.success) {
 			return;
 		}
+
+		const { username, fullName, email, bio, role, isBanned } = parsed.data;
 
 		const created = await adminCreateUser({
 			username,
 			fullName,
 			email,
-			bio: newUserForm.bio?.trim() || undefined,
-			role: newUserForm.role,
-			isBanned: newUserForm.isBanned,
+			bio: bio?.trim() || undefined,
+			role,
+			isBanned,
 		});
 
 		if (!created) {
