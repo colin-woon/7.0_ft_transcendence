@@ -554,7 +554,7 @@ export default function SettingsPage({
 		});
     setCreateUserDialogError(null);
 		setAdminActionSuccess(
-			`Created user @${created.username} (${created.id}).`
+			`User "${created.username}" created successfully (ID: ${created.id})`
 		);
 	};
 
