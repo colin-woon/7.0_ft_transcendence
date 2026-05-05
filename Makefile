@@ -143,7 +143,9 @@ dr-start-services:
 dr-recreate-db:
 	$(COMPOSE_PROD) stop db-service
 	$(COMPOSE_PROD) rm -f db-service
-	@docker volume inspect $(DR_DB_VOLUME) >/dev/null 2>&1 && docker volume rm $(DR_DB_VOLUME) || true
+	@if docker volume inspect $(DR_DB_VOLUME) >/dev/null 2>&1; then \
+		docker volume rm $(DR_DB_VOLUME); \
+	fi
 	$(COMPOSE_PROD) up -d db-service
 
 dr-db-ready:
