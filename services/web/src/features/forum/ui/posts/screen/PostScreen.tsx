@@ -263,7 +263,7 @@ export default function PostDetailClient({
               initialUpvotes={post.upvotes}
               initialUserVote={post.userVote}
             />
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
                 <span className="font-small text-sm">
                   {resolveAuthorName(postState.authorId)}
@@ -281,7 +281,7 @@ export default function PostDetailClient({
                 </div>
               </div>
 
-              <h1 className="text-xl font-semibold text-slate-900 mb-1">
+              <h1 className="text-xl font-semibold text-slate-900 mb-1 break-words">
                 {postState.title}
               </h1>
 
@@ -367,7 +367,7 @@ export default function PostDetailClient({
                         </div>
                       </div>
 
-                      <p className="text-sm text-slate-700 mb-2">
+                      <p className="text-sm text-slate-700 mb-2 break-words">
                         {comment.content}
                       </p>
                     </div>
