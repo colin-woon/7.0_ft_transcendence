@@ -54,6 +54,7 @@ export default function EditCommentDialog({
             value={content}
             onChange={(event) => setContent(event.target.value)}
             rows={5}
+            maxLength={10000}
             placeholder="Comment content"
             className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
           />

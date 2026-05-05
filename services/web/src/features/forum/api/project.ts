@@ -120,6 +120,7 @@ function mapApiProjectToProject(apiProj: any): Project {
     tags: apiProj.objectives || ['42'],
     students: subscriberCount,
     postCount,
+    createdAt: apiProj.created_at,
     color: apiProj.color || 'from-blue-400 to-blue-600',
     posts: apiProj.posts || [],
   };

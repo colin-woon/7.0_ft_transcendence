@@ -64,6 +64,7 @@ export default function EditPostDialog({
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
+            maxLength={255}
             placeholder="Post title"
             className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
           />
@@ -71,6 +72,7 @@ export default function EditPostDialog({
             value={content}
             onChange={(event) => setContent(event.target.value)}
             rows={8}
+            maxLength={10000}
             placeholder="Post content"
             className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70"
           />

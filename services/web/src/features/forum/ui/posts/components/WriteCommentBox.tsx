@@ -72,6 +72,7 @@ export default function WriteCommentBox({
         rows={3}
         value={content}
         onChange={(e) => setContent(e.target.value)}
+        maxLength={10000}
         placeholder="Add your thoughts..."
         className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#8EE7E3]/70 focus:border-transparent focus:bg-white transition resize-y"
       />
