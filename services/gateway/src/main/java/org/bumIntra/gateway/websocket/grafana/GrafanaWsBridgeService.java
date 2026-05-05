@@ -33,9 +33,6 @@ public class GrafanaWsBridgeService {
     @ConfigProperty(name = "quarkus.rest-client.grafana-service.trust-store-password")
     String trustStorePassword;
 
-    @ConfigProperty(name = "quarkus.rest-client.grafana-service.trust-store-type")
-    String trustStoreType;
-
     @Inject
     Vertx vertx;
 
