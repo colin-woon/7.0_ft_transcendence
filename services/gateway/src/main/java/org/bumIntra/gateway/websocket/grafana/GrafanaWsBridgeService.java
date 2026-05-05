@@ -5,6 +5,7 @@ import java.net.URI;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.websocket.CloseReason;
@@ -126,7 +127,7 @@ public class GrafanaWsBridgeService {
                 session.close(new CloseReason(code, reason));
             }
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to close WebSocket session", e);
+            obsHandler.onBridgeFailure("grafana", e);
         }
     }
 
@@ -171,9 +172,18 @@ public class GrafanaWsBridgeService {
         return "wss".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
     }
 
-    private IllegalStateException failConnect(Session clientSession, Throwable cause) {
+    @PreDestroy
+    void shutdown() {
+        HttpClient client = httpClient;
+        httpClient = null;
+
+        if (client != null) {
+            client.close();
+        }
+    }
+
+    private void failConnect(Session clientSession, Throwable cause) {
         obsHandler.onBridgeFailure("grafana", cause);
         closeQuietly(clientSession, CloseReason.CloseCodes.UNEXPECTED_CONDITION, "Internal Upstream Error");
-        return new IllegalStateException("Failed to connect upstream Grafana WebSocket", cause);
     }
 }
