@@ -6,6 +6,7 @@ import { MessageSquare, Send } from 'lucide-react';
 import { ChatId, FriendId } from '@/features/chat/models';
 import { useAllChatSessions, useAllFriendshipStatuses } from '@/features/chat/models/chat-hooks';
 import { sendMessageRequest } from '@/features/chat/api/chat-services';
+import toast from 'react-hot-toast';
 
 interface DirectMessageButtonProps {
   chatId?: ChatId;
@@ -52,8 +53,15 @@ export function DirectMessageButton({ chatId, targetUserId, className = "" }: Di
       setIsModalOpen(false);
       // Backend creates room + message. Refresh inbox to see new DM room.
       router.refresh(); 
-    } catch (err) {
-      console.error('Failed to send message request:', err);
+    } catch (err : any) {
+      const status = err?.status;
+      if (status === 409) {
+        toast.error("Message request already sent. Please wait for them to respond.");
+      } else if (status === 413) {
+        toast.error("Message is too large to send.");
+      } else {
+        toast.error("Failed to send message. Please try again.");
+      }
     } finally {
       setIsSending(false);
     }

@@ -14,7 +14,7 @@ export function ChatInput() {
   const [messageText, setMessageText] = useState('');
 
   // 1. Consolidated booleans for cleaner JSX
-  const isMessageRequest = !isAllowedChat && friendshipStatus === 'requested';
+  const isMessageRequest = !isAllowedChat && (friendshipStatus === 'requested' || friendshipStatus === 'pending');
   const isReceiver = isMessageRequest && requestedBy !== currentUserId;
   const isSender = isMessageRequest && requestedBy === currentUserId;
 

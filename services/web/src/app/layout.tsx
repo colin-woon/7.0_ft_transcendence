@@ -6,6 +6,7 @@ import { AppShellProvider } from '@/components/ui/ComponentLogic/Appshell/contex
 import { AppShell } from '@/components/ui/ComponentLogic/Appshell/Appshell';
 import { redirect } from 'next/dist/client/components/navigation';
 import { getServerCurrentUser } from '@/features/auth/api/serverAuthData';
+import { Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
 	title: '42 Overflow',
@@ -29,6 +30,7 @@ export default function RootLayout({
           <ChatStoreProvider>
             <AppShellProvider>
               <AppShell>
+                <Toaster position="top-right" reverseOrder={false} />
                 {children}
               </AppShell>
             </AppShellProvider>
