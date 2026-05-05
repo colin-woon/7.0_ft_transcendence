@@ -105,8 +105,12 @@ public class RequestPreAuthFilter implements ContainerRequestFilter {
             return false;
         }
 
+        if (sessionId == null || sessionId.isBlank()) {
+            return false;
+        }
+
         try {
-            TokenRefreshResult refreshResult = trs.refresh(sessionId).join();
+            TokenRefreshResult refreshResult = trs.refresh(sessionId);
             JsonWebToken jwt = jwtParser.parse(refreshResult.accessToken());
             populateJwtClaims(jwt);
             grc.setRefreshCookie(refreshResult.setCookieHeader());

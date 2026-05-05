@@ -22,43 +22,42 @@ public class GatewayTokenRefreshService {
     @Inject
     AuthService authService;
 
-    public CompletableFuture<TokenRefreshResult> refresh(String sessionId) {
+    public TokenRefreshResult refresh(String sessionId) {
         if (sessionId == null || sessionId.isBlank()) {
-            return CompletableFuture.failedFuture(
-                    new IllegalArgumentException("sessionId is required for token refresh"));
+            throw new IllegalArgumentException("sessionId is required for token refresh");
         }
 
         RecentRefreshEntry recent = memoRefreshMap.get(sessionId);
         if (recent != null) {
             if (recent.isFresh()) {
-                return CompletableFuture.completedFuture(recent.result());
+                return recent.result();
             }
             memoRefreshMap.remove(sessionId, recent);
         }
 
         CompletableFuture<TokenRefreshResult> existing = refreshMap.get(sessionId);
         if (existing != null) {
-            return existing;
+            return existing.join();
         }
 
         CompletableFuture<TokenRefreshResult> created = new CompletableFuture<>();
-        CompletableFuture<TokenRefreshResult> raced = refreshMap.putIfAbsent(sessionId, created);
-        if (raced != null) {
-            return raced;
+        CompletableFuture<TokenRefreshResult> tokenResult = refreshMap.putIfAbsent(sessionId, created);
+        if (tokenResult != null) {
+            return tokenResult.join();
         }
 
         try {
             TokenRefreshResult result = execute(sessionId);
             memoRefreshMap.put(sessionId, new RecentRefreshEntry(result, Instant.now()));
             created.complete(result);
+            return result;
         } catch (Exception e) {
             created.completeExceptionally(e);
             memoRefreshMap.remove(sessionId);
+            throw e;
         } finally {
             refreshMap.remove(sessionId, created);
         }
-
-        return created;
     }
 
     private TokenRefreshResult execute(String sessionId) {
