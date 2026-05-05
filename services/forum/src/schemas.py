@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
@@ -75,13 +75,13 @@ class ProjectSubscriberCountResponse(BaseModel):
 
 # --- POSTS ---
 class PostCreate(BaseModel):
-    title: str
-    content: str
+    title: str = Field(..., min_length=1, max_length=255)
+    content: str = Field(..., min_length=1, max_length=10000)
 
 
 class PostUpdate(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
+    title: Optional[str] = Field(None, min_length=1, max_length=255)
+    content: Optional[str] = Field(None, min_length=1, max_length=10000)
 
 
 class PostSummary(BaseModel):
@@ -105,11 +105,11 @@ class PostDetail(PostSummary):
 
 # --- Comments ---
 class CommentCreate(BaseModel):
-    content: str
+    content: str = Field(..., min_length=1, max_length=10000)
 
 
 class CommentUpdate(BaseModel):
-    content: Optional[str] = None
+    content: Optional[str] = Field(None, min_length=1, max_length=10000)
 
 
 class CommentResponse(BaseModel):

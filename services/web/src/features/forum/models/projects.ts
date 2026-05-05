@@ -30,6 +30,7 @@ export interface Project {
   tags: string[];
   students: number;
   postCount?: number;
+  createdAt?: string;
   color: string;
   posts: ForumPost[];
 }
