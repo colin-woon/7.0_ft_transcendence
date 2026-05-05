@@ -172,9 +172,7 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request) {
 	flusher.Flush()
 
 	sseCh := make(chan string, 10)
-	s.sseHub.mutex.Lock()
-	s.sseHub.userChannels[userId] = sseCh
-	s.sseHub.mutex.Unlock()
+	s.sseHub.AddConnection(userId, sseCh)
 
 	// Broadcast "online" status to friends in a goroutine (non-blocking)
 	go s.broadcastStatusToFriends(userId, true)
@@ -184,12 +182,12 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request) {
 	for {
 		select {
 		case <-r.Context().Done():
-			s.sseHub.mutex.Lock()
-			delete(s.sseHub.userChannels, userId)
-			s.sseHub.mutex.Unlock()
+			s.sseHub.RemoveConnection(userId, sseCh)
 
 			// Broadcast "offline" status to friends (synchronous during cleanup)
-			s.broadcastStatusToFriends(userId, false)
+			if !s.sseHub.IsUserOnline(userId) {
+				s.broadcastStatusToFriends(userId, false)
+			}
 			return
 
 		case message := <-sseCh:
