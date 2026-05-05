@@ -26,7 +26,7 @@ In the repo workflow, gateway is usually run through the root `Makefile` and Com
 
 ```text
 src/main/java/org/bumIntra/gateway/
-├── api/         GatewayResource, PublicResource, StreamResources
+├── api/         GatewayResource, AdminResources, PublicResource, StreamResources
 ├── client/      REST clients, FT executors/wrappers, downstream service adapters
 ├── config/      Config mappings for auth, methods, headers, rate limiting
 ├── exception/   GatewayException, error codes, response mapping
@@ -60,6 +60,7 @@ Important fields:
 - `userId`
 - `roles`
 - `authLevel`
+- `refreshCookie`
 - `errorCode`
 - `errorStatus`
 
@@ -108,6 +109,8 @@ mp.jwt.token.cookie=accessToken
     - `userId`
     - `roles`
     - `authLevel`
+- on `/api/admin/**`, may recover browser auth from the `sessionId` cookie when `accessToken` is missing or no longer usable
+- stores a refreshed `accessToken` cookie in `GatewayRequestContext.refreshCookie` for response emission
 
 ### Public Routes
 
@@ -149,6 +152,35 @@ This header is injected by trusted clients (e.g. other services in the cluster) 
 - password login/register
 
 The login/callback GETs now use `proxyPublicGet(...)`, which intentionally bypasses FT retry/circuit-breaker handling. That split exists because OAuth/login GETs are not safe to blindly retry.
+
+### Admin API
+
+[`AdminResources`](../src/main/java/org/bumIntra/gateway/api/AdminResources.java) currently exposes:
+
+- `/api/admin/prometheus/...`
+- `/api/admin/grafana/...`
+
+These routes are intended for authenticated admin-only browser access to observability tooling.
+
+Current design notes:
+
+- route-family RBAC is enforced by `RequestRBACFilter`
+- Prometheus is reached with the gateway's mTLS client identity
+- Grafana is reached over HTTPS with CA verification
+- both upstreams are configured to operate under the `/api/admin/...` browser prefix
+
+### Grafana Live WebSocket
+
+[`GrafanaWsServer`](../src/main/java/org/bumIntra/gateway/websocket/grafana/GrafanaWsServer.java) exposes:
+
+- `/api/admin/grafana/api/live/ws`
+
+Current behavior:
+
+- browser-side endpoint uses Jakarta WebSocket server callbacks
+- connection auth, RBAC, and connection/frame guards live in the shared websocket core layer
+- downstream `gateway -> Grafana` Live connection uses the Grafana bridge service
+- current bridge behavior is intentionally text-frame oriented for Grafana Live traffic Json payloads
 
 ### SSE
 

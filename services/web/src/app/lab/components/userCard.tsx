@@ -38,7 +38,7 @@ export default function UserCard({ type, title, desc }: UserCardProps) {
 					</p>
 					<div className="mt-6 border-t border-slate-800 pt-4">
 						<GroupLabButton
-							labels={['Guest', 'User']}
+							labels={['Guest', 'User', 'Admin']}
 							active={labState.userType}
 							onClick={(e) =>
 								setUserType(e as typeof labState.userType)

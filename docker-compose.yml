@@ -31,7 +31,7 @@ services:
             - POSTGRES_HOST=db-service
             - POSTGRES_PORT=5432
             - SCHEDULE=@daily
-            - BACKUP_ON_START=TRUE
+            - BACKUP_ON_START=FALSE
             - BACKUP_KEEP_DAYS=7
             - BACKUP_KEEP_WEEKS=4
             - BACKUP_KEEP_MONTHS=6
@@ -345,8 +345,8 @@ services:
         command:
             - --config.file=/etc/prometheus/prometheus.yml
             - --web.config.file=/etc/prometheus/web.yml
-            - --web.external-url=https://localhost/prometheus/
-            - --web.route-prefix=/prometheus/
+            - --web.external-url=https://localhost/api/admin/prometheus/
+            - --web.route-prefix=/api/admin/prometheus/
         volumes:
             - ./infra/obs/prometheus/prometheus.prod.yml:/etc/prometheus/prometheus.yml:ro
             - ./infra/obs/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
@@ -370,11 +370,13 @@ services:
             start_period: 20s
             retries: 3
         environment:
-            - GF_SERVER_ROOT_URL=https://localhost/grafana/
+            - GF_SERVER_ROOT_URL=https://localhost/api/admin/grafana/
             - GF_SERVER_SERVE_FROM_SUB_PATH=true
             - GF_SERVER_PROTOCOL=https
             - GF_SERVER_CERT_FILE=/certs/grafana.crt
             - GF_SERVER_CERT_KEY=/certs/grafana.key
+            - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER?err}
+            - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD?err}
         volumes:
             - grafana_data:/var/lib/grafana
             - ./infra/obs/grafana/provisioning/datasources/prometheus.prod.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro

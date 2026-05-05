@@ -14,6 +14,7 @@ import org.bumIntra.gateway.exception.GatewayErrorCode;
 import org.bumIntra.gateway.exception.GatewayException;
 import org.bumIntra.gateway.obs.GatewayObserverDispatcher;
 import org.bumIntra.gateway.obs.event.GatewayRequestStart;
+import org.bumIntra.gateway.security.AuthLevel;
 import org.bumIntra.gateway.security.GatewayRequestContext;
 import org.bumIntra.gateway.security.IdentityHeaders;
 import org.jboss.logging.MDC;
@@ -47,7 +48,7 @@ public class RequestContextFilter implements ContainerRequestFilter {
 
     private void populateGrcContext(ContainerRequestContext request) {
 
-        grc.clearError();
+        resetContext();
 
         String requestId = request.getHeaderString(IdentityHeaders.REQUEST_ID);
 
@@ -66,6 +67,7 @@ public class RequestContextFilter implements ContainerRequestFilter {
         grc.setForwardedFor(request.getHeaderString(IdentityHeaders.INTRA_FORWARDED_FOR));
         grc.setForwardedHost(request.getHeaderString(IdentityHeaders.INTRA_FORWARDED_HOST));
         grc.setForwardedProto(request.getHeaderString(IdentityHeaders.INTRA_FORWARDED_PROTO));
+        grc.setLab("true".equalsIgnoreCase(request.getHeaderString(IdentityHeaders.INTRA_LAB)));
 
         if (grc.getRealIp() == null || grc.getRealIp().isBlank()) {
             if (grc.getForwardedFor() != null && !grc.getForwardedFor().isBlank()) {
@@ -78,7 +80,7 @@ public class RequestContextFilter implements ContainerRequestFilter {
             grc.setClientIp(grc.getRealIp().trim());
         }
 
-        // SSE event checks, default to false for java.
+        // SSE event checks, default to false.
         if (grc.getPath().startsWith("/api/stream/") && "GET".equalsIgnoreCase(request.getMethod())) {
             String accept = request.getHeaderString("Accept");
 
@@ -128,5 +130,17 @@ public class RequestContextFilter implements ContainerRequestFilter {
                 return "other";
             }
         }
+    }
+
+    private void resetContext() {
+        grc.clearError();
+        grc.setSse(false);
+        grc.setRefreshCookie(null);
+        grc.setAuthLevel(AuthLevel.GUEST);
+        grc.setPublic(false);
+        grc.setUserId(null);
+        grc.setRoles(null);
+        grc.setLab(false);
+        grc.setInternal(false);
     }
 }

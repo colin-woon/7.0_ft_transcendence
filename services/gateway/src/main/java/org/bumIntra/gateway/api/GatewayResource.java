@@ -28,7 +28,6 @@ public class GatewayResource {
     @Inject
     ChatService chatService;
 
-    // TODO: endpoint for testing
     @GET
     @Path("/gateway/health")
     public Response ping() {

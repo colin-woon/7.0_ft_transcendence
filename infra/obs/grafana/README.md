@@ -59,7 +59,7 @@ Current behavior:
 
 - datasource name: `Prometheus`
 - uid: `prometheus`
-- URL: `https://prometheus-service:9090/prometheus/`
+- URL: `https://prometheus-service:9090/api/admin/prometheus/`
 - `tlsAuth: true`
 - `tlsAuthWithCACert: true`
 - `serverName: prometheus-service`
@@ -74,7 +74,7 @@ So in prod, Grafana reaches Prometheus over TLS with client authentication.
 [`prometheus.dev.yml`](./provisioning/datasources/prometheus.dev.yml) config:
 
 - same datasource name and uid
-- URL: `http://prometheus-service:9090`
+- URL: `http://prometheus-service:9090/api/admin/prometheus/`
 - no TLS client config
 
 So the datasource shape stays stable while transport security is relaxed in dev.
@@ -114,16 +114,16 @@ Current mounts:
 - dashboard provider provisioning
 - dashboard JSON files
 
-Current Grafana service behavior:
+Grafana service behavior:
 
-- prod serves HTTPS and is exposed by nginx under `/grafana/`
-- dev serves plain HTTP internally, while nginx still exposes it through the main browser-facing TLS entrypoint
+- prod serves HTTPS and is reached in the browser through the gateway admin path
+- dev serves plain HTTP internally, while browser access still goes through the main TLS entrypoint and gateway path
 
-In prod, Compose also sets:
+Compose also sets:
 
-- `GF_SERVER_ROOT_URL=https://localhost/grafana/`
+- `GF_SERVER_ROOT_URL=https://localhost/api/admin/grafana/`
 
-So Grafana is configured to operate behind the nginx subpath.
+So Grafana is configured to operate behind the gateway-admin subpath.
 
 This service configuration covers HTTPS on the Grafana server itself. Mutual TLS is used separately on the Grafana-to-Prometheus datasource connection.
 
@@ -164,7 +164,7 @@ Do not debug a prod datasource issue by assuming the dev datasource path is equi
 
 Grafana is intended to sit behind:
 
-- `/grafana/`
+- `/api/admin/grafana/`
 
 If nginx route prefixes change, Grafana `root_url` and forwarded prefix behavior may need to change too.
 

@@ -7,7 +7,7 @@ Current files:
 - [`nginx.prod.conf`](./nginx.prod.conf)
 - [`nginx.dev.conf`](./nginx.dev.conf)
 
-Nginx is the user-facing entry layer. It sits in front of the web app, gateway, and selected observability tools.
+Nginx is the user-facing entry layer. It sits in front of the web app and gateway.
 
 ---
 
@@ -21,8 +21,6 @@ The current Nginx layer is responsible for:
   - `/` -> web service
   - `/api/` -> gateway
   - `/api/stream/` -> gateway SSE endpoints
-  - `/prometheus/` -> Prometheus
-  - `/grafana/` -> Grafana
 - forwarding trusted client metadata to downstream services
 - disabling buffering for SSE traffic
 - maintaining upstream keepalive pools with Docker DNS re-resolution
@@ -42,12 +40,10 @@ Config:
 Behavior:
 
 - browser-facing TLS enabled
-- upstream gateway/web/prometheus/grafana are reached over HTTPS
+- upstream gateway/web are reached over HTTPS
 - mTLS is used for:
   - nginx -> gateway
   - nginx -> web
-  - nginx -> prometheus
-- the Grafana upstream is configured as HTTPS with CA verification
 - upstream TLS hostname verification is explicitly pinned with `proxy_ssl_name`
 
 ### Development
@@ -77,8 +73,6 @@ Current route mapping:
 | `/health` | local Nginx 200 response |
 | `/api/stream/` | gateway stream routes |
 | `/api/` | gateway main API |
-| `/prometheus/` | Prometheus |
-| `/grafana/` | Grafana |
 | `/` | web frontend |
 
 The `/health` endpoint is local to nginx and is used by the container healthcheck.
@@ -149,8 +143,6 @@ Current values:
 
 - gateway -> `gateway-service`
 - web -> `web-service`
-- prometheus -> `prometheus-service`
-- grafana -> `grafana-service`
 
 ---
 
@@ -169,10 +161,6 @@ These headers are used by the gateway to reconstruct:
 - client IP
 - forwarded host/proto
 - request context for downstream propagation and observability
-
-For Grafana and Prometheus routes, forwarding is lighter and focused on host/proto/prefix behavior instead of the application-specific `X-Intra-*` chain.
-
----
 
 ## SSE Behavior
 
@@ -201,28 +189,13 @@ The gateway remains the SSE proxy. Nginx only preserves the streaming behavior.
 
 ## Observability Surface
 
-The nginx configs currently include convenience proxy routes for local access to observability tools:
+- `/metrics` is denied at the nginx edge
+- observability UI access is intended to flow through the gateway admin surface
+- browser access to Prometheus and Grafana now uses:
+  - `/api/admin/prometheus/`
+  - `/api/admin/grafana/`
 
-- `/prometheus/`
-- `/grafana/`
-
-These are not meant to be permanently exposed by default. Both configs also include commented hard-block rules:
-
-```nginx
-# location = /metrics { return 404; }
-# location ^~ /prometheus/ { return 404; }
-# location ^~ /grafana/ { return 404; }
-```
-
-Intended posture:
-
-- keep the proxy routes enabled when you want convenient browser access to Prometheus and Grafana
-- comment those route blocks out and restore the hard-block rules when you do not want them exposed
-
-So the observability surface is intentionally easy to toggle between:
-
-- convenient local access
-- explicit hard denial at the nginx edge
+This keeps observability access inside the same authenticated and role-aware request path as the rest of the protected platform surface.
 
 ---
 

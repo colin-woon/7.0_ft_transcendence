@@ -18,6 +18,8 @@ import org.bumIntra.gateway.exception.GatewayErrorCode;
 import org.bumIntra.gateway.exception.GatewayException;
 import org.bumIntra.gateway.security.AuthLevel;
 import org.bumIntra.gateway.security.GatewayRequestContext;
+import org.bumIntra.gateway.security.GatewayTokenRefreshService;
+import org.bumIntra.gateway.security.TokenRefreshResult;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 @Provider
@@ -35,6 +37,9 @@ public class RequestPreAuthFilter implements ContainerRequestFilter {
 
     @Inject
     JWTParser jwtParser;
+
+    @Inject
+    GatewayTokenRefreshService trs;
 
     @Override
     public void filter(ContainerRequestContext request) {
@@ -62,32 +67,57 @@ public class RequestPreAuthFilter implements ContainerRequestFilter {
                     "Authentication is required");
         }
 
-        // Method Returns Source Claim
-        // jwt.getSubject() String sub (The "123" ID)
-        // jwt.getIssuer() String iss
-        // jwt.getGroups() Set<String> groups
-        // jwt.getExpirationTime() long exp
-        // jwt.getClaim("upn") T (Generic) upn (The email)
     }
 
     private boolean populateAuth() {
-        String accessToken = extractCookie(grc.getHeaders().getFirst(HttpHeaders.COOKIE), "accessToken");
+        String cookieHeader = grc.getHeaders().getFirst(HttpHeaders.COOKIE);
+        String accessToken = extractCookie(cookieHeader, "accessToken");
+        String sessionId = extractCookie(cookieHeader, "sessionId");
 
-        if (accessToken != null && !accessToken.isBlank()) {
-            try {
-                JsonWebToken jwt = jwtParser.parse(accessToken);
-                populateJwtClaims(jwt);
-                return false;
-            } catch (Exception e) {
-                return true;
-            }
+        if (accessToken != null && !accessToken.isBlank() && tryAccess(accessToken)) {
+            return false;
+        }
+
+        if (tryAdminRefresh(sessionId)) {
+            return false;
         }
 
         if (si.getPrincipal() instanceof X500Principal) {
             grc.setAuthLevel(AuthLevel.SERVICE);
+            return false;
         }
 
-        return false;
+        return accessToken != null && !accessToken.isBlank();
+    }
+
+    private boolean tryAccess(String accessToken) {
+        try {
+            JsonWebToken jwt = jwtParser.parse(accessToken);
+            populateJwtClaims(jwt);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean tryAdminRefresh(String sessionId) {
+        if (!"admin".equals(grc.getPathType())) {
+            return false;
+        }
+
+        if (sessionId == null || sessionId.isBlank()) {
+            return false;
+        }
+
+        try {
+            TokenRefreshResult refreshResult = trs.refresh(sessionId);
+            JsonWebToken jwt = jwtParser.parse(refreshResult.accessToken());
+            populateJwtClaims(jwt);
+            grc.setRefreshCookie(refreshResult.setCookieHeader());
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private String extractCookie(String cookieHeader, String cookieName) {
@@ -114,6 +144,10 @@ public class RequestPreAuthFilter implements ContainerRequestFilter {
         if (jwt.getGroups().contains("ADMIN")) {
             grc.setAuthLevel(AuthLevel.ADMIN);
         } else {
+            grc.setAuthLevel(AuthLevel.USER);
+        }
+
+        if (grc.getAuthLevel() == AuthLevel.ADMIN && grc.isLab()) {
             grc.setAuthLevel(AuthLevel.USER);
         }
     }
