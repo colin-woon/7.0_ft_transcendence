@@ -5,7 +5,7 @@ import Image from "next/image";
 import guestImg from "@/components/ui/imgs/guest_img.png";
 import type { User } from "@/features/auth/api/authService";
 import { useAuth } from "@/features/auth/models/AuthContext";
-import { AddFriendButton, DirectMessageButton } from "@/features/chat/ui";
+import { AddFriendButton, DirectMessageButton, FriendOptionsDropdown } from "@/features/chat/ui";
 
 interface ProfileCard2Props {
   user: User | null;
@@ -88,6 +88,7 @@ export default function ProfileCard2({
               <div className="flex items-center gap-2">
                 <AddFriendButton targetUserId={user.id} />
                 <DirectMessageButton targetUserId={user.id} />
+                <FriendOptionsDropdown friendId={user.id} isProfilePage={true} />
               </div>
             )}
 

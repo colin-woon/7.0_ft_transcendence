@@ -17,18 +17,18 @@ import jakarta.ws.rs.ext.Provider;
 @Priority(Priorities.AUTHORIZATION - 90)
 public class RequestRBACFilter implements ContainerRequestFilter {
 
-	@Inject
-	GatewayRequestContext grc;
+    @Inject
+    GatewayRequestContext grc;
 
-	@Override
-	public void filter(ContainerRequestContext request) {
+    @Override
+    public void filter(ContainerRequestContext request) {
 
-		if (grc.getPath().contains("/admin/") && !grc.getAuthLevel().isAtLeast(AuthLevel.ADMIN)) {
-			throw new GatewayException(
-					Response.Status.FORBIDDEN,
-					GatewayErrorCode.FORBIDDEN,
-					"Insufficient permissions");
-		}
-	}
+        if ("admin".equals(grc.getPathType()) && !grc.getAuthLevel().isAtLeast(AuthLevel.ADMIN)) {
+            throw new GatewayException(
+                    Response.Status.FORBIDDEN,
+                    GatewayErrorCode.FORBIDDEN,
+                    "Insufficient permissions");
+        }
+    }
 
 }

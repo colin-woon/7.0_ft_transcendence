@@ -10,7 +10,7 @@ WORKDIR /app
 # uv syncs deps on first `uv run`; source is bind-mounted from the host.
 FROM base AS development
 
-CMD ["uv", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
+CMD ["uv", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080", "--reload","--timeout-keep-alive", "30"]
 
 # ── Production ───────────────────────────────────────────────────────────────
 # Deps are locked and source is baked in; no bind mounts at runtime.
@@ -22,4 +22,4 @@ RUN uv sync --frozen --no-dev
 COPY src/ ./src/
 COPY data/ ./data/
 
-CMD ["uv", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8443"]
+CMD ["uv", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8443", "--timeout-keep-alive", "30"]

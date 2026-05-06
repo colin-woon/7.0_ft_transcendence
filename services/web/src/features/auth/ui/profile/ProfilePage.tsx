@@ -31,6 +31,7 @@ import AchievementCard from "./AchievementCard";
 import ProjectsCard from "./ProjectsCard";
 import SkillsCard from "./SkillsCard";
 import ForumProjectsCard from "./ProfileForumProjects";
+import GlassInfoCard from "./GlassInfoCard";
 
 
 interface ProfilePageProps {
@@ -537,7 +538,8 @@ export default function ProfilePage({
         onRefresh={refetchProjects}
       />
 
-      <div className="flex flex-col md:flex-row gap-5">
+      <GlassInfoCard>
+      <div className="flex flex-col md:flex-row gap-5 py-3 mb-2">
         <div className="w-full md:w-1/2">
           <SkillsCard skills={cursusSkills} />
         </div>
@@ -547,6 +549,7 @@ export default function ProfilePage({
       </div>
 
       <ProjectsCard projects={projects} />
+      </GlassInfoCard>
 
       <EditUserDialog
         open={editOpen}

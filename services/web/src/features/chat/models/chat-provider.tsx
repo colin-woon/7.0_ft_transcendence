@@ -1,30 +1,31 @@
 'use client';
 
 import type { StoreApi } from 'zustand/vanilla';
-import type { ChatStore } from './chat-store';
+import type { ChatStore, UserDisplayStore } from './chat-store';
 import type { AllChatSessions } from './chat-types';
 import { createContext, ReactNode, useRef, useEffect } from 'react';
-import { createChatStore } from './chat-store';
+import { createChatStore, createUserDisplayStore } from './chat-store';
 import { useAuth } from '@/features/auth/models/AuthContext';
 
-
-// Context holds the store INSTANCE, not the state itself
 export const ChatStoreContext = createContext<StoreApi<ChatStore> | undefined>(undefined);
+export const UserDisplayStoreContext = createContext<StoreApi<UserDisplayStore> | undefined>(undefined);
 
-// The "Next.js" way to type children
 interface ChatStoreProviderProps {
   children: ReactNode;         
   initialSessions?: AllChatSessions;
 }
 
-// useRef ensures the store is only created once per component lifecycle
-// preventing hydration infinite loops
 export const ChatStoreProvider = ({ 
   children, 
   initialSessions = {} 
 }: ChatStoreProviderProps) => {
   const storeRef = useRef<StoreApi<ChatStore> | undefined>(undefined);
   const { user } = useAuth();
+  const userDisplayStoreRef = useRef<StoreApi<UserDisplayStore> | undefined>(undefined);
+
+  if (!userDisplayStoreRef.current) {
+    userDisplayStoreRef.current = createUserDisplayStore();
+  }
   
   if (!storeRef.current) {
     storeRef.current = createChatStore(initialSessions);
@@ -32,13 +33,23 @@ export const ChatStoreProvider = ({
 
   useEffect(() => {
     if (user?.id && storeRef.current) {
-      storeRef.current.getState().fetchAllAcceptedFriends();
+      const store = storeRef.current.getState();
+      
+      Promise.all([
+        store.fetchAllAcceptedFriends(),
+        store.fetchAllChatSessions(),
+        store.fetchAllFriendshipStatuses()
+      ]).catch((error) => {
+        console.error("Failed to initialize chat store data:", error);
+      });
     }
   }, [user?.id]);
 
   return (
     <ChatStoreContext.Provider value={storeRef.current}>
-      {children}
+      <UserDisplayStoreContext.Provider value={userDisplayStoreRef.current}>
+        {children}
+      </UserDisplayStoreContext.Provider>
     </ChatStoreContext.Provider>
   );
 };

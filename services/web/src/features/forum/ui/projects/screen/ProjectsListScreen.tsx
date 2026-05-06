@@ -27,6 +27,8 @@ export default function ProjectsPage({
   const [filter, setFilter] = useState<"All" | "Subscribed" | Difficulty>(
     "All",
   );
+  type SortOption = "popularity" | "alphabetical" | "date";
+  const [sort, setSort] = useState<SortOption>("popularity");
   const [currentPage, setCurrentPage] = useState(1);
   const [hydratedSubscribedIds, setHydratedSubscribedIds] =
     useState<number[]>(subscribedProjectIds);
@@ -123,18 +125,26 @@ export default function ProjectsPage({
     return matchesFilter && matchesSearch;
   });
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const sorted = [...filtered].sort((a, b) => {
+    if (sort === "alphabetical") return a.name.localeCompare(b.name);
+    if (sort === "date")
+      return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
+    return b.students - a.students;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const paginatedProjects = filtered.slice(startIndex, startIndex + PAGE_SIZE);
+  const paginatedProjects = sorted.slice(startIndex, startIndex + PAGE_SIZE);
   const pageKey = [
     filter,
+    sort,
     search.trim().toLowerCase(),
     String(currentPage),
   ].join("|");
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, filter]);
+  }, [search, filter, sort]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -186,16 +196,26 @@ export default function ProjectsPage({
               <div className="relative flex-1 max-w-md min-w-0">
                 <Search
                   size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-20"
                 />
                 <input
                   type="text"
                   placeholder="Search projects..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#8EE7E3] bg-gray-50 hover:border-[#8EE7E3] hover:shadow"
+                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#8EE7E3] bg-gray-50 hover:border-[#8EE7E3] hover:shadow z-20"
                 />
               </div>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortOption)}
+                className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#8EE7E3] hover:border-[#8EE7E3] hover:shadow"
+              >
+                <option value="popularity">Popularity</option>
+                <option value="alphabetical">A → Z</option>
+                <option value="date">Newest</option>
+              </select>
+
               {/* Tabs: show in row on sm+, hide on mobile */}
               <div className="hidden sm:block">
                 <div role="tablist" className="tabs tabs-box pl-4">
@@ -246,7 +266,7 @@ export default function ProjectsPage({
       <div className="w-full max-w-6xl mx-auto px-4 pt-10 flex items-center justify-between gap-3">
         <ForumTrailButtons className="mb-0" items={[{ label: "Projects" }]} />
         <p className="text-xs text-slate-400 mb-0 text-right font-interface">
-          Results: {filtered.length} project{filtered.length !== 1 ? "s" : ""}
+          Results: {sorted.length} project{sorted.length !== 1 ? "s" : ""}
         </p>
       </div>
 

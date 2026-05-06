@@ -14,7 +14,9 @@ export default function FriendsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   
   const { allAcceptedFriends, pendingRequests, currentUserId, isLoading, error } = useFriendList();
-  const { fetchAllAcceptedFriends, fetchPendingFriendships } = useChatActions();
+  const { fetchAllAcceptedFriends, fetchPendingFriendships, setFriendshipStatus } = useChatActions();
+
+  const hasPending = (pendingRequests?.length ?? 0) > 0;
 
   useEffect(() => {
     if (currentUserId) {
@@ -23,11 +25,29 @@ export default function FriendsPage() {
     }
   }, [currentUserId, fetchAllAcceptedFriends, fetchPendingFriendships]);
 
-  const handleUpdateStatus = async (friendId: number, status: 'accepted' | 'requested') => {
-    if (currentUserId) {
-      await updateFriendshipStatus(friendId, status); // assuming requester -> receiver
+  const handleUpdateStatus = async (
+    friendId: number,
+    status: 'accepted' | 'requested'
+  ) => {
+    if (!currentUserId) return;
+
+    try {
+      setFriendshipStatus(friendId, status, currentUserId);
+
+      await updateFriendshipStatus(friendId, status);
+
+      // this is dog water code, couldve been optimized by syncing the friendship stores 
       fetchPendingFriendships();
       fetchAllAcceptedFriends();
+
+    } catch (err) {
+      console.error("Failed update friendship", err);
+
+      setFriendshipStatus(
+        friendId,
+        status === 'accepted' ? 'requested' : 'accepted',
+        currentUserId
+      );
     }
   };
 
@@ -96,11 +116,21 @@ export default function FriendsPage() {
           >
             Online
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('Pending')}
-            className={`btn btn-xs sm:btn-sm border-none shadow-none ${activeTab === 'Pending' ? 'bg-base-300 text-base-content' : 'bg-transparent text-base-content/60'}`}
+            className={`btn btn-xs sm:btn-sm border-none shadow-none ${
+              activeTab === 'Pending'
+                ? 'bg-base-300 text-base-content'
+                : 'bg-transparent text-base-content/60'
+            }`}
           >
-            Pending
+            <div className="relative">
+              <span>Pending</span>
+
+              {hasPending && (
+                <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full" />
+              )}
+            </div>
           </button>
         </div>
 

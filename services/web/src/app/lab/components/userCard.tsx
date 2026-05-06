@@ -1,5 +1,5 @@
+import { useLabContext } from '../context/labContext';
 import GroupLabButton from './groupLabButton';
-import { useState } from 'react';
 
 type UserCardProps = {
 	type: string;
@@ -8,7 +8,8 @@ type UserCardProps = {
 };
 
 export default function UserCard({ type, title, desc }: UserCardProps) {
-	const [activeRole, setActiveRole] = useState('Guest');
+	const { labState, setUserType } = useLabContext();
+
 	return (
 		<div className="flex flex-col gap-3">
 			<div className="group relative flex h-full flex-col border border-slate-700/70 bg-slate-950/70 px-5 py-5 transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400/30 hover:bg-slate-950">
@@ -18,8 +19,14 @@ export default function UserCard({ type, title, desc }: UserCardProps) {
 						<span className="inline-flex border border-indigo-400/30 bg-indigo-400/12 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-indigo-300">
 							{type || 'Component / Dynamic_Hover'}
 						</span>
-						<span className="font-mono text-[10px] uppercase tracking-[0.24em] text-slate-500">
-							PutIcon
+						{/* <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-slate-500"> */}
+						{/* 	PutIcon */}
+						{/* </span> */}
+						{/* <span className="material-symbols-outlined text-sm text-slate-500"> */}
+						{/* 	person */}
+						{/* </span> */}
+						<span className="material-symbols-outlined text-sm text-indigo-300">
+							person
 						</span>
 					</div>
 					<h3 className="mt-5 font-headline text-3xl font-black leading-none tracking-tighter text-slate-50">
@@ -31,9 +38,11 @@ export default function UserCard({ type, title, desc }: UserCardProps) {
 					</p>
 					<div className="mt-6 border-t border-slate-800 pt-4">
 						<GroupLabButton
-							labels={['Guest', 'Student']}
-							active={activeRole}
-							onClick={(e) => setActiveRole(e)}
+							labels={['Guest', 'User', 'Admin']}
+							active={labState.userType}
+							onClick={(e) =>
+								setUserType(e as typeof labState.userType)
+							}
 						/>
 					</div>
 				</div>

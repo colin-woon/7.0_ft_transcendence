@@ -31,6 +31,8 @@ public class GatewayRequestContext {
     private String _forwardedHost;
     private String _forwardedProto;
     private String _serviceName;
+    private boolean _isLab;
+    private String _refreshCookie;
 
     // ServiceAuthFilter
     private Set<String> _roles = Collections.emptySet();
@@ -223,5 +225,21 @@ public class GatewayRequestContext {
 
     public void setPathType(String pathType) {
         _pathType = pathType;
+    }
+
+    public boolean isLab() {
+        return _isLab;
+    }
+
+    public void setLab(boolean isLab) {
+        _isLab = isLab;
+    }
+
+    public String getRefreshCookie() {
+        return _refreshCookie;
+    }
+
+    public void setRefreshCookie(String refreshCookie) {
+        _refreshCookie = refreshCookie;
     }
 }

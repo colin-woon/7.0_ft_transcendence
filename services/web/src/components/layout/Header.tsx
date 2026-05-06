@@ -4,20 +4,21 @@ import { Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAppShell } from "@/components/ui/ComponentLogic/Appshell/context/AppShellContext";
+import mascotCat from '@/components/ui/imgs/42_oveflow_mascot_cat.png';
 
 export default function Header() {
   const { toggleSidebar } = useAppShell();
 
   return (
     <header className="h-16 bg-white text-slate-900 z-[60] border-b border-gray-200 w-full shadow-sm px-4 pr-2">
-      <div className="max-w-7xl mx-auto h-full flex items-center py-3">
-        <div className="flex items-center justify-between w-full">
+      <div className="max-w-7xl h-full flex items-center py-3">
+        <div className="flex items-center justify-between w-full relative">
           {/* Left: Sidebar + Brand */}
           <div className="flex items-center gap-2 min-w-0 w-auto lg:w-64 justify-start shrink-0">
             <button
               type="button"
               onClick={toggleSidebar}
-              className="inline-flex h-10 w-10 items-center justify-center shrink-0 rounded-full p-2 text-slate-700 hover:bg-black/5 transition"
+              className="inline-flex h-10 w-10 items-center justify-center shrink-0 rounded-full p-2 text-slate-700 hover:bg-black/5 transition sm:ml-4"
               aria-label="Toggle sidebar"
             >
               <Menu
@@ -28,16 +29,16 @@ export default function Header() {
             </button>
             <Link
               href="/projects"
-              className="pl-3 text-base-content text-xl font-bold inline hover:text-secondary transition-colors"
+              className="absolute left-1/2 -translate-x-1/2 sm:static sm:translate-x-0 pl-3 text-base-content text-xl font-bold flex items-center gap-2 hover:text-secondary transition-colors sm:ml-4"
             >
-              <Image
-                src="/assets/42overflow.png"
-                alt="42 Overflow Logo"
-                width={204}
-                height={40}
-                className="object-contain"
-                priority
+              <img
+                  src={mascotCat.src}
+                  alt="42 Overflow Mascot Cat"
+                  className="w-14 h-14 object-contain"
               />
+              <span className="hidden sm:block mt-1 text-2xl text-slate-900 font-bold whitespace-nowrap" style={{ fontFamily: 'Gotham, sans-serif' }}>
+                42 OVERFLOW
+              </span>
             </Link>
           </div>
 

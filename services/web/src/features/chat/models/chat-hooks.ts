@@ -1,6 +1,6 @@
 'use client';
 
-import { ChatStoreContext } from './chat-provider';
+import { ChatStoreContext, UserDisplayStoreContext } from './chat-provider';
 import type { ChatMessage, FriendId, ChatId } from './chat-types';
 import { useStore } from 'zustand';
 import { useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -30,6 +30,8 @@ export const useChatActions = () => {
         updateReadReceipt: useStore(store, (s) => s.updateReadReceipt),
         sendReadReceipt: useStore(store, (s) => s.sendReadReceipt),
         updateChatPermission: useStore(store, (s) => s.updateChatPermission),
+        fetchAllFriendshipStatuses: useStore(store, (s) => s.fetchAllFriendshipStatuses),
+        setFriendshipStatus: useStore(store, (s) => s.setFriendshipStatus),
     };
 }
 
@@ -45,10 +47,10 @@ export const useCurrentChatSession = () => {
     return {
         currentUserId: user?.id || null,
         chatId: useStore(store, (s) => s.currentChatSessionId),
-        friendIds: useStore(store, (s) => 
+        friendIds: useStore(store, (s) =>
         s.currentChatSessionId ? s.allChatSessions[s.currentChatSessionId]?.memberIds : EMPTY_FRIENDIDS
         ),
-        chatSessionName: useStore(store, (s) => 
+        chatSessionName: useStore(store, (s) =>
         s.currentChatSessionId ? s.allChatSessions[s.currentChatSessionId]?.name : null
         ),
         messages: useStore(store, (s) => {
@@ -75,6 +77,7 @@ export const useCurrentChatSession = () => {
             if (!s.currentChatSessionId) return null;
             return s.allChatSessions[s.currentChatSessionId]?.friendshipStatus || null;
         }),
+        isLoadingChatHistory: useStore(store, (s) => s.isLoadingChatHistory),
     };
 };
 
@@ -87,6 +90,7 @@ export const useAllChatSessions = () => {
     return {
         currentUserId: user?.id || null,
         allChatSessions: useStore(store, (s) => s.allChatSessions),
+        isLoadingUserInbox: useStore(store, (s) => s.isLoadingUserInbox),
     };
 };
 
@@ -98,20 +102,21 @@ export const useFriendList = () => {
         currentUserId: user?.id || null,
         allAcceptedFriends: useStore(store, (s) => s.allAcceptedFriends),
         pendingRequests: useStore(store, (s) => s.pendingRequests),
-        isLoading: useStore(store, (s) => s.isLoadingFriends), 
+        isLoading: useStore(store, (s) => s.isLoadingFriends),
         error: useStore(store, (s) => s.friendsError),
     };
 };
 
 export const useCreateGroupChatAction = () => {
     const { allAcceptedFriends, currentUserId } = useFriendList();
-    
+    const { setChatSession } = useChatActions();
+
     const [groupName, setGroupName] = useState('');
     const [selectedFriendIds, setSelectedFriendIds] = useState<FriendId[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const toggleFriendId = (friendId: FriendId) => {
-        setSelectedFriendIds(prev => 
+        setSelectedFriendIds(prev =>
             prev.includes(friendId)
                 ? prev.filter(id => id !== friendId)
                 : [...prev, friendId]
@@ -123,23 +128,37 @@ export const useCreateGroupChatAction = () => {
         setSelectedFriendIds([]);
     };
 
-    const submitGroupChat = async (onSuccess: () => void) => {
-        if (!currentUserId || !groupName.trim() || selectedFriendIds.length === 0) return;
-        
-        try {
-            setIsSubmitting(true);
-            await createGroupChat({
-                name: groupName,
-                memberIds: selectedFriendIds
-            });
-            resetForm();
-            onSuccess();
-        } catch (error) {
-            console.error("Failed to create group chat", error);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+  const submitGroupChat = async (onSuccess: () => void) => {
+    if (!currentUserId || !groupName.trim() || selectedFriendIds.length === 0) return;
+
+    try {
+      setIsSubmitting(true);
+
+      const newChat = await createGroupChat({
+        name: groupName,
+        memberIds: selectedFriendIds
+      });
+
+      setChatSession(
+        newChat.chatId,
+        newChat.type,
+        newChat.name,
+        newChat.memberIds,
+        [],
+        true
+      );
+
+      resetForm();
+      onSuccess();
+
+      return newChat;
+    } catch (error) {
+      console.error("Failed to create group chat", error);
+      throw error;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
     return {
         groupName,
@@ -155,53 +174,27 @@ export const useCreateGroupChatAction = () => {
 
 interface UseMessageVisibilityOptions {
   chatId: ChatId | null;
-  messages: ChatMessage[];
   userId: FriendId | null;
   onReadReceipt: (chatId: ChatId, userId: FriendId, messageId: number) => Promise<void>;
   debounceMs?: number;
-  threshold?: number;
 }
 
 /**
- * Custom hook that tracks message visibility using Intersection Observer
+ * Simplified hook that tracks message visibility using a single Intersection Observer
  * and triggers debounced read receipt updates.
- * 
- * Features:
- * - Tracks which messages are visible in viewport
- * - Debounces updates to prevent excessive API calls
- * - Enforces monotonicity (only sends if messageId > last sent)
- * - Cleans up observers on unmount
+ *
+ * Requirements:
+ * - Message elements must have a `data-message-id` attribute.
  */
-// Track visible message IDs
-// Track last sent messageId to enforce monotonicity
-// Track observers for cleanup
-// Debounced function to send read receipt
-// Double-check monotonicity before sending
-// On error, reset lastSentMessageId so we can retry
-// Handle visibility change for a message
-// Find the highest visible message ID
-// Only trigger if it's higher than what we've already sent
-// Create observer for a message element
-// Don't observe if already observing
-// Cleanup function
-// Cancel any pending debounced calls
-// Disconnect all observers
-// Clear visible message IDs
-// Cleanup on unmount or when chatId changes
-// Reset last sent ID when chat changes
-// Return the observe function for components to attach to message elements
 export function useMessageVisibility({
   chatId,
   userId,
   onReadReceipt,
   debounceMs = 500,
-  threshold = 0.5,
 }: UseMessageVisibilityOptions) {
-  const visibleMessageIds = useRef<Set<number | string>>(new Set());
-  
   const lastSentMessageId = useRef<number>(0);
-  
-  const observersRef = useRef<Map<Element, IntersectionObserver>>(new Map());
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const visibleMessageIds = useRef<Set<number>>(new Set());
 
   const debouncedSendReceipt = useRef(
     debounce(async (cId: ChatId, uId: FriendId, msgId: number) => {
@@ -211,87 +204,60 @@ export function useMessageVisibility({
           await onReadReceipt(cId, uId, msgId);
         } catch (error) {
           console.error('Failed to send read receipt:', error);
+          // Allow retry by backing off slightly
           lastSentMessageId.current = Math.max(0, msgId - 1);
         }
       }
     }, debounceMs)
   ).current;
 
-  const handleVisibilityChange = useCallback(
-    (messageId: number | string, isVisible: boolean) => {
-      if (isVisible) {
-        visibleMessageIds.current.add(messageId);
-      } else {
-        visibleMessageIds.current.delete(messageId);
-      }
+  const getObserver = useCallback(() => {
+    if (observerRef.current) return observerRef.current;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const messageIdStr = (entry.target as HTMLElement).dataset.messageId;
+        const messageId = messageIdStr ? parseInt(messageIdStr, 10) : NaN;
+
+        if (isNaN(messageId)) return;
+
+        if (entry.isIntersecting) {
+          visibleMessageIds.current.add(messageId);
+        } else {
+          visibleMessageIds.current.delete(messageId);
+        }
+      });
 
       if (chatId && userId && visibleMessageIds.current.size > 0) {
-        const highestVisibleId = Array.from(visibleMessageIds.current).reduce<number>(
-          (max, id) => {
-            const numId = typeof id === 'number' ? id : parseInt(String(id), 10);
-            return !isNaN(numId) && numId > max ? numId : max;
-          },
-          0
-        );
-
-        if (highestVisibleId > lastSentMessageId.current) {
-            debouncedSendReceipt(chatId, userId, highestVisibleId);
+        const highestId = Math.max(...Array.from(visibleMessageIds.current));
+        if (highestId > lastSentMessageId.current) {
+          debouncedSendReceipt(chatId, userId, highestId);
         }
-    }
-    },
-    [chatId, userId, debouncedSendReceipt]
-    );
-
-  const observeElement = useCallback(
-    (element: Element, messageId: number | string) => {
-      if (observersRef.current.has(element)) {
-        return;
       }
-
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            handleVisibilityChange(messageId, entry.isIntersecting && entry.intersectionRatio >= threshold);
-          });
-        },
-        {
-          threshold,
-          // Optional: Add rootMargin to trigger slightly before entering viewport
-          // rootMargin: '50px',
-        }
-      );
-
-      observer.observe(element);
-      observersRef.current.set(element, observer);
-    },
-    [handleVisibilityChange, threshold]
-  );
-
-  const cleanup = useCallback(() => {
-    debouncedSendReceipt.cancel();
-    
-    observersRef.current.forEach((observer) => {
-      observer.disconnect();
     });
-    observersRef.current.clear();
-    
-    visibleMessageIds.current.clear();
-  }, [debouncedSendReceipt]);
+
+    observerRef.current = observer;
+    return observer;
+  }, [chatId, userId, debouncedSendReceipt]);
+
+  const observeElement = useCallback((element: Element) => {
+    getObserver().observe(element);
+  }, [getObserver]);
 
   useEffect(() => {
     return () => {
-      cleanup();
+      debouncedSendReceipt.cancel();
+      observerRef.current?.disconnect();
+      observerRef.current = null;
+      visibleMessageIds.current.clear();
     };
-  }, [chatId, cleanup]);
+  }, [chatId, debouncedSendReceipt]);
 
   useEffect(() => {
     lastSentMessageId.current = 0;
   }, [chatId]);
 
-  return {
-    observeElement,
-    cleanup,
-  };
+  return { observeElement };
 }
 
 // Find the friend in the array by matching the friendId
@@ -308,20 +274,19 @@ export const useHasUnreadMessages = (chatId: ChatId | null) => {
     const { user } = useAuth();
     const currentUserId = user?.id || null;
     if (!store) throw new Error('useHasUnreadMessages must be used within ChatStoreProvider');
-    
+
     return useStore(store, (s) => {
         if (!chatId || !currentUserId) return false;
-        
+
         const chat = s.allChatSessions[chatId];
         if (!chat || !chat.messages || chat.messages.length === 0) return false;
-        
+
         const latestMessage = chat.messages[0]; // messages are unshifted (newest first)
         if (latestMessage.senderId === currentUserId) return false; // Sent by myself
-        
-        const myReadReceipt = s.readReceipts[chatId]?.[currentUserId] || 0;
-        
-        const latestIdNum = typeof latestMessage.id === 'string' ? parseInt(latestMessage.id, 10) : latestMessage.id;
-        
+
+        const myReadReceipt = Number(s.allChatSessions[chatId]?.lastReadMessageId || 0);
+        const latestIdNum = Number(latestMessage.id);
+
         return Math.floor(latestIdNum) > myReadReceipt;
     });
 };
@@ -345,3 +310,47 @@ export const useIsAllowedChat = (chatId: ChatId | null) => {
     return s.allChatSessions[chatId]?.isAllowedChat === true;
   });
 };
+
+export const useAllFriendshipStatuses = () => {
+  const store = useContext(ChatStoreContext);
+  if (!store) throw new Error('useAllFriendshipStatuses must be used within ChatStoreProvider');
+
+  return useStore(store, (s) => s.allFriendshipStatuses);
+};
+
+export function useUserDisplay(userIds: Array<number | undefined>) {
+  const store = useContext(UserDisplayStoreContext);
+  if (!store) throw new Error("Missing UserDisplayStoreProvider");
+  const fetchUserDisplays = useStore(store, (s) => s.fetchUserDisplays);
+  const displayById = useStore(store, (s) => s.displayById);
+
+  const ids = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          userIds.filter(
+            (id): id is number => typeof id === "number" && id > 0
+          )
+        )
+      ),
+    [userIds]
+  );
+
+  useEffect(() => {
+    fetchUserDisplays(ids);
+  }, [ids, fetchUserDisplays]);
+
+  return useCallback(
+    (id?: number) => {
+      if (!id) return { displayName: "", avatarImage: null };
+
+      const cached = displayById[id];
+
+      return {
+        displayName: cached?.displayName ?? "",
+        avatarImage: cached?.avatarImage ?? null,
+      };
+    },
+    [displayById]
+  );
+}
