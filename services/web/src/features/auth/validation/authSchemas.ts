@@ -109,7 +109,7 @@ export const passwordChangeSchema = z
       .trim()
       .min(1, "Full name is required")
       .max(100, "Full name must be between 1 and 100 characters"),
-    email: z
+    overflowEmail: z
       .string()
       .trim()
       .email("Please enter a valid email")
@@ -123,7 +123,7 @@ export const passwordChangeSchema = z
       .max(100, "Bio must not exceed 100 characters")
       .optional()
       .or(z.literal("")),
-    role: z.enum(['STUDENT', 'ADMIN']),
+    role: z.enum(["STUDENT", "ADMIN"]),
     isBanned: z.boolean(),
   });
 
