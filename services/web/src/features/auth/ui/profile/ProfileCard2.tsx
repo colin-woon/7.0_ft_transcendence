@@ -14,7 +14,9 @@ interface ProfileCard2Props {
     levelProgress: number;
     cursus: string;
     coalition: string;
-    email: string;
+    overflowEmail?: string | null;
+    intraEmail?: string | null;
+    googleEmail?: string | null;
     location: string;
     since: string;
     wallet?: number;
@@ -37,15 +39,16 @@ export default function ProfileCard2({
   bio,
 }: ProfileCard2Props) {
   const { user: loggedInUser } = useAuth();
+  const allEmails = [
+    profile.overflowEmail ?? user?.overflowEmail,
+    profile.intraEmail ?? user?.intraEmail,
+    profile.googleEmail ?? user?.googleEmail,
+  ].filter((email): email is string => !!email && email.trim().length > 0);
   const loggedInUserId = loggedInUser?.id;
   const canShowPeerActions =
     loggedInUserId !== undefined &&
     typeof user?.id === "number" &&
     user.id !== loggedInUserId;
-    const profileCardData = {
-      projectsCount: subscribedProjects.length,
-    };
-
   const displayBio = bio ?? user?.bio ?? null;
 
   const stats = [
@@ -55,10 +58,10 @@ export default function ProfileCard2({
   ];
 
   return (
-    <div className="card bg-base-100 shadow-md rounded-xl p-4 flex flex-col md:flex-row items-center gap-5">
+    <div className="card bg-base-100 shadow-md rounded-xl p-4 flex flex-col md:flex-row md:items-start gap-5">
       
       {/* 1. Avatar Section */}
-      <div className="avatar shrink-0">
+      <div className="avatar shrink-0 self-center md:self-auto pt-1">
         <div className="relative w-19 h-19 sm:w-18 sm:h-18 rounded-full ring-2 ring-black overflow-hidden">
           <Image
             src={user?.avatarImage || guestImg}
@@ -105,8 +108,6 @@ export default function ProfileCard2({
           <span>@{user?.username ?? "jdoe"}</span>
           <span className="mx-[5px] opacity-40">·</span>
           <span>{profile.cursus}</span>
-          <span className="mx-[5px] opacity-40">·</span>
-          <span>{user?.email ?? profile.email}</span>
           {profile.pool && profile.pool !== "N/A" && (
             <>
               <span className="mx-[5px] opacity-40">·</span>
@@ -120,10 +121,15 @@ export default function ProfileCard2({
             </>
           )}
         </div>
+        {allEmails.length > 0 ? (
+          <div className="flex items-center text-sm text-gray-400 flex-wrap leading-[1.4]">
+            <span>{allEmails.join(", ")}</span>
+          </div>
+        ) : null}
 
         {/* Bio */}
         {displayBio ? (
-          <p className="text-sm text-gray-600 leading-relaxed mt-[1px]">
+          <p className="text-sm text-gray-600 leading-relaxed mt-[1px] break-words whitespace-pre-wrap">
             {displayBio}
           </p>
         ) : (
@@ -150,7 +156,7 @@ export default function ProfileCard2({
       </div>
 
       {/* 3. Stats Section */}
-      <div className="flex flex-wrap items-center justify-center w-full md:w-auto shrink-0 px-2 md:px-0">
+      <div className="flex flex-wrap items-center justify-center w-full md:w-auto shrink-0 px-2 md:px-0 self-center md:self-stretch">
         {stats.map(({ label, value }, i) => (
           <div key={label} className="flex items-center">
             {i > 0 && (
@@ -167,6 +173,6 @@ export default function ProfileCard2({
           </div>
         ))}
       </div>
-    </div> 
+    </div>
   );
 }

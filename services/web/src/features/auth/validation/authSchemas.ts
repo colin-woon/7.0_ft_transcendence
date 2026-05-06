@@ -36,7 +36,7 @@ export const registerWithPasswordSchema = z
       .max(AVATAR_MAX_BYTES, 'Avatar file payload is too large')
       .optional()
       .or(z.literal('')),
-    bio: z.string().trim().max(500, 'Bio must not exceed 500 characters').optional().or(z.literal('')),
+    bio: z.string().trim().max(100, 'Bio must not exceed 100 characters').optional().or(z.literal('')),
     password: passwordSchema,
     confirmPassword: passwordSchema,
   })
@@ -61,6 +61,74 @@ export const passwordChangeSchema = z
     message: 'Passwords do not match',
   })
 
+  export const updateProfileSchema = z.object({
+    username: z
+      .string()
+      .trim()
+      .min(3, "Username must be between 3 and 30 characters")
+      .max(30, "Username must be between 3 and 30 characters")
+      .regex(
+        usernamePattern,
+        "Username can only contain letters, numbers, underscores, and hyphens",
+      )
+      .optional()
+      .or(z.literal("")),
+    fullName: z
+      .string()
+      .trim()
+      .min(1, "Full name is required")
+      .max(100, "Full name must be between 1 and 100 characters")
+      .optional()
+      .or(z.literal("")),
+    avatarFile: z
+      .string()
+      .trim()
+      .max(3000000, "Avatar file payload is too large")
+      .optional()
+      .or(z.literal("")),
+    bio: z
+      .string()
+      .trim()
+      .max(100, "Bio must not exceed 100 characters")
+      .optional()
+      .or(z.literal("")),
+  });
+
+  export const createUserSchema = z.object({
+    username: z
+      .string()
+      .trim()
+      .min(3, "Username must be between 3 and 30 characters")
+      .max(30, "Username must be between 3 and 30 characters")
+      .regex(
+        usernamePattern,
+        "Username can only contain letters, numbers, underscores, and hyphens",
+      ),
+    fullName: z
+      .string()
+      .trim()
+      .min(1, "Full name is required")
+      .max(100, "Full name must be between 1 and 100 characters"),
+    overflowEmail: z
+      .string()
+      .trim()
+      .email("Please enter a valid email")
+      .max(255, "Email must be at most 255 characters")
+      .refine((value) => value.toLowerCase().endsWith("@gmail.com"), {
+        message: "Only @gmail.com addresses are allowed",
+      }),
+    bio: z
+      .string()
+      .trim()
+      .max(100, "Bio must not exceed 100 characters")
+      .optional()
+      .or(z.literal("")),
+    role: z.enum(["STUDENT", "ADMIN"]),
+    isBanned: z.boolean(),
+  });
+
 export type PasswordLoginFormValues = z.infer<typeof loginWithPasswordSchema>
 export type PasswordRegisterFormValues = z.infer<typeof registerWithPasswordSchema>
 export type PasswordChangeFormValues = z.infer<typeof passwordChangeSchema>
+export type UpdateProfileFormValues = z.infer<typeof updateProfileSchema>;
+export type CreateUserFormValues = z.infer<typeof createUserSchema>;

@@ -97,8 +97,8 @@ public class AdminService {
 
 	@Transactional
 	public UserInfoDTO adminCreateUser(UserInfoDTO userInfo) {
-		userRepository.findByEmail(userInfo.email).ifPresent(email -> {
-			LOG.warn("Attempt to create user with existing email: " + userInfo.email);
+		userRepository.findByOverflowEmail(userInfo.overflowEmail).ifPresent(email -> {
+			LOG.warn("Attempt to create user with existing email: " + userInfo.overflowEmail);
 			throw new WebApplicationException("Email already in use", 409);
 		});
 
@@ -108,7 +108,7 @@ public class AdminService {
 		});
 
 		User newUser = new User();
-		newUser.email = userInfo.email;
+		newUser.overflowEmail = userInfo.overflowEmail;
 		newUser.username = userInfo.username;
 		newUser.fullName = userInfo.fullName;
 		newUser.avatarUrl = avatarStorageService.replaceManagedAvatar(userInfo.avatarFile, null);

@@ -13,6 +13,8 @@ import org.hibernate.Hibernate;
 import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.runtime.OidcUtils;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -36,17 +38,42 @@ public class UserService {
 	AvatarStorageService avatarStorageService;
 
 	@Transactional
-	public User syncUser(UserInfo info, String tenantId) {
-		LOG.debug("Syncing user from OIDC tenant");
-		User user = switch (tenantId) {
-			case "google" -> syncByGoogle(info);
+	public User syncUser(SecurityIdentity identity) {
+		UserInfo info = identity.getAttribute("userinfo");
+		String tenantId = identity.getAttribute(OidcUtils.TENANT_ID_ATTRIBUTE);
+		if (info == null || tenantId == null) {
+			throw new WebApplicationException("OIDC user info missing", 401);
+		}
 
-			case "42" -> syncBy42(info);
+		User user = switch (tenantId) {
+			case "google" -> loginByGoogle(info);
+
+			case "42" -> loginBy42(info);
+
+			default -> throw new WebApplicationException("Unsupported authentication provider", 401);
+		};
+		Hibernate.initialize(user.intra);
+		return user;
+	}
+
+	@Transactional
+	public User linkProvider(SecurityIdentity identity, User currentUser) {
+		UserInfo info = identity.getAttribute("userinfo");
+		String tenantId = identity.getAttribute(OidcUtils.TENANT_ID_ATTRIBUTE);
+		if (info == null || tenantId == null) {
+			throw new WebApplicationException("OIDC user info missing", 401);
+		}
+		if (currentUser.isBanned) {
+			throw new WebApplicationException("User is banned", 403);
+		}
+
+		User user = switch (tenantId) {
+			case "google" -> linkByGoogle(info, currentUser);
+
+			case "42" -> linkBy42(info, currentUser);
 			
 			default -> throw new WebApplicationException("Unsupported authentication provider", 401);
 		};
-		// Initialize lazy relations while the session is still open,
-		// since the User will be stored as a detached SecurityIdentity attribute
 		Hibernate.initialize(user.intra);
 		return user;
 	}
@@ -60,7 +87,7 @@ public class UserService {
 		String normalizedEmail = normalizeEmail(dto.email);
 		String normalizedUsername = dto.username.trim();
 
-		userRepository.findByEmail(normalizedEmail).ifPresent(existing -> {
+		userRepository.findByOverflowEmail(normalizedEmail).ifPresent(existing -> {
 			throw new WebApplicationException("Account already exists", 409);
 		});
 
@@ -69,13 +96,13 @@ public class UserService {
 		});
 
 		User user = new User();
-		user.email = normalizedEmail;
+		user.overflowEmail = normalizedEmail;
 		user.username = normalizedUsername;
 		user.fullName = dto.fullName.trim();
 		user.avatarUrl = avatarStorageService.replaceManagedAvatar(dto.avatarFile, null);
-		user.bio = sanitizeOptional(dto.bio);
+		user.bio = dto.bio;
 		user.role = UserRole.STUDENT;
-		user.passwordHash = hashPassword(dto.password);
+		user.passwordHash = passwordService.hash(dto.password);
 
 		userRepository.persist(user);
 		return user;
@@ -84,7 +111,10 @@ public class UserService {
 	@Transactional
 	public User authenticateWithPassword(PasswordLoginDTO dto) {
 		String normalizedEmail = normalizeEmail(dto.email);
-		User user = userRepository.findByEmail(normalizedEmail).orElse(null);
+		User user = userRepository.findByOverflowEmail(normalizedEmail).orElse(null);
+		if (user == null) {
+			user = findPasswordLoginFallback(normalizedEmail);
+		}
 		String passwordHash = user != null ? user.passwordHash : null;
 		if (!passwordService.verifyWithFallback(dto.password, passwordHash)) {
 			throw new WebApplicationException("Invalid credentials", 401);
@@ -103,6 +133,19 @@ public class UserService {
 		return user;
 	}
 
+	private User findPasswordLoginFallback(String normalizedEmail) {
+		User intraEmailUser = userRepository.findByIntraEmail(normalizedEmail)
+			.filter(candidate -> candidate.overflowEmail == null || candidate.overflowEmail.isBlank())
+			.orElse(null);
+		if (intraEmailUser != null) {
+			return intraEmailUser;
+		}
+
+		return userRepository.findByGoogleEmail(normalizedEmail)
+			.filter(candidate -> candidate.overflowEmail == null || candidate.overflowEmail.isBlank())
+			.orElse(null);
+	}
+
 	@Transactional
 	public User updatePassword(Long userId, PasswordChangeDTO dto) {
 		if (!dto.newPassword.equals(dto.confirmPassword)) {
@@ -117,78 +160,151 @@ public class UserService {
 			if (dto.currentPassword == null || dto.currentPassword.isBlank()) {
 				throw new WebApplicationException("Current password is required", 400);
 			}
-			if (!verifyPassword(dto.currentPassword, user.passwordHash)) {
+			if (!passwordService.verify(dto.currentPassword, user.passwordHash)) {
 				throw new WebApplicationException("Current password is incorrect", 400);
 			}
 		}
 
-		user.passwordHash = hashPassword(dto.newPassword);
+		user.passwordHash = passwordService.hash(dto.newPassword);
 		userRepository.persist(user);
 		Hibernate.initialize(user.intra);
 		return user;
 	}
 
-	private User syncByGoogle(UserInfo info) {
+	private User loginByGoogle(UserInfo info) {
 		String email = normalizeEmail(info.getString("email"));
 		String rawName = info.getString("name");
 		String googleId = info.getString("sub");
 
-		LOG.debug("Syncing user by Google");
-
 		User user = userRepository.findByGoogleId(googleId).orElse(null);
-		
-		if (user == null) {
-			user = userRepository.findByEmail(email).orElse(null);
-			if (user != null) {
-				if (user.googleId == null) {
-					LOG.debug("Linking Google account to existing user");
-					user.googleId = googleId;
-					userRepository.persist(user);
-				} else {
-					LOG.warn("Email already linked to different Google account");
-					throw new WebApplicationException("Email already linked to different Google account", 409);
-				}
-			} else {
-				LOG.debug("Creating new user from Google");
-				user = createNewUser(email, rawName, googleId, UserRole.STUDENT);
+		if (user != null) {
+			User byGoogleEmail = userRepository.findByGoogleEmail(email).orElse(null);
+			if (byGoogleEmail != null && !byGoogleEmail.id.equals(user.id)) {
+				LOG.warn("Google account id and email map to different local users");
+				throw new WebApplicationException("Google account identity conflict", 409);
 			}
+			if (user.googleEmail == null || user.googleEmail.isBlank()) {
+				user.googleEmail = email;
+				userRepository.persist(user);
+			}
+			return user;
 		}
 
-		return user;
+		user = userRepository.findByGoogleEmail(email).orElse(null);
+		if (user != null) {
+			if (user.googleId == null) {
+				LOG.debug("Linking Google id to existing user via googleEmail");
+				user.googleId = googleId;
+			} else if (!user.googleId.equals(googleId)) {
+				LOG.warn("Google email already linked to different Google account");
+				throw new WebApplicationException("Google email already linked to different Google account", 409);
+			}
+
+			user.googleEmail = email;
+			userRepository.persist(user);
+			return user;
+		}
+
+		return createNewUser(email, rawName, googleId, UserRole.STUDENT);
 	}
 
-	private User syncBy42(UserInfo info) {
-		IntraDTO intraDTO = intraService.parseUserInfo(info);
-		String normalizedEmail = normalizeEmail(intraDTO.email);
+	private User linkByGoogle(UserInfo info, User targetUser) {
+		String email = normalizeEmail(info.getString("email"));
+		String googleId = info.getString("sub");
 
-		User user = userRepository.findByIntraId(intraDTO.id.toString()).orElse(null);
-
-		if (user == null) {
-			user = userRepository.findByEmail(normalizedEmail).orElse(null);
-			if (user != null) {
-				if (user.intraId == null) {
-					LOG.debug("Linking 42 account to existing user");
-					user.intraId = intraDTO.id.toString();
-					intraService.syncUserData(user, intraDTO);
-				} else {
-					LOG.warn("Email already linked to different 42 account");
-					throw new WebApplicationException("Email already linked to different 42 account", 409);
-				}
-			} else {
-				LOG.debug("Creating new user from 42");
-				user = createNewUser(intraDTO);
-			}
+		User byGoogleId = userRepository.findByGoogleId(googleId).orElse(null);
+		if (byGoogleId != null && !byGoogleId.id.equals(targetUser.id)) {
+			throw new WebApplicationException("Google account already linked to another user", 409);
 		}
 
+		User byGoogleEmail = userRepository.findByGoogleEmail(email).orElse(null);
+		if (byGoogleEmail != null && !byGoogleEmail.id.equals(targetUser.id)) {
+			throw new WebApplicationException("Google email already linked to another user", 409);
+		}
+
+		if (targetUser.googleId != null && !targetUser.googleId.equals(googleId)) {
+			throw new WebApplicationException("User already linked to a different Google account", 409);
+		}
+
+		targetUser.googleId = googleId;
+		targetUser.googleEmail = email;
+		userRepository.persist(targetUser);
+		return targetUser;
+	}
+
+	private User loginBy42(UserInfo info) {
+		IntraDTO intraDTO = intraService.parseUserInfo(info);
+		String intraEmail = normalizeEmail(intraDTO.email);
+		String intraId = intraDTO.id.toString();
+
+		User user = userRepository.findByIntraId(intraId).orElse(null);
+		if (user != null) {
+			User byIntraEmail = userRepository.findByIntraEmail(intraEmail).orElse(null);
+			if (byIntraEmail != null && !byIntraEmail.id.equals(user.id)) {
+				LOG.warn("42 account id and email map to different local users");
+				throw new WebApplicationException("42 account identity conflict", 409);
+			}
+			if (user.intraEmail == null || user.intraEmail.isBlank()) {
+				user.intraEmail = intraEmail;
+				userRepository.persist(user);
+			}
+			intraService.syncUserData(user, intraDTO);
+			intraService.syncIntraData(user, intraDTO);
+			return user;
+		}
+
+		user = userRepository.findByIntraEmail(intraEmail).orElse(null);
+		if (user != null) {
+			if (user.intraId == null) {
+				LOG.debug("Linking 42 id to existing user via intraEmail");
+				user.intraId = intraId;
+			} else if (!user.intraId.equals(intraId)) {
+				LOG.warn("42 email already linked to different 42 account");
+				throw new WebApplicationException("42 email already linked to different 42 account", 409);
+			}
+			user.intraEmail = intraEmail;
+			userRepository.persist(user);
+			intraService.syncUserData(user, intraDTO);
+			intraService.syncIntraData(user, intraDTO);
+			return user;
+		}
+
+		user = createNewUser(intraDTO);
 		intraService.syncIntraData(user, intraDTO);
 		return user;
 	}
 
-	public User createNewUser(String email, String rawName, String id, UserRole role) {
-		LOG.debug("Creating new user (provider: google)");
+	private User linkBy42(UserInfo info, User targetUser) {
+		IntraDTO intraDTO = intraService.parseUserInfo(info);
+		String intraEmail = normalizeEmail(intraDTO.email);
+		String intraId = intraDTO.id.toString();
 
+		User byIntraId = userRepository.findByIntraId(intraId).orElse(null);
+		if (byIntraId != null && !byIntraId.id.equals(targetUser.id)) {
+			throw new WebApplicationException("42 account already linked to another user", 409);
+		}
+
+		User byIntraEmail = userRepository.findByIntraEmail(intraEmail).orElse(null);
+		if (byIntraEmail != null && !byIntraEmail.id.equals(targetUser.id)) {
+			throw new WebApplicationException("42 email already linked to another user", 409);
+		}
+
+		if (targetUser.intraId != null && !targetUser.intraId.equals(intraId)) {
+			throw new WebApplicationException("User already linked to a different 42 account", 409);
+		}
+
+		targetUser.intraId = intraId;
+		targetUser.intraEmail = intraEmail;
+		userRepository.persist(targetUser);
+
+		intraService.syncIntraData(targetUser, intraDTO);
+		return targetUser;
+	}
+
+	public User createNewUser(String email, String rawName, String id, UserRole role) {
 		User user = new User();
-		user.email = email;
+		user.overflowEmail = email;
+		user.googleEmail = email;
 		user.fullName = rawName;
 		user.role = role;
 		user.username = generateUsername(rawName);
@@ -201,10 +317,10 @@ public class UserService {
 
 	public User createNewUser(IntraDTO intraDTO) {
 		String normalizedEmail = normalizeEmail(intraDTO.email);
-		LOG.debug("Creating new user (provider: 42)");
 
 		User user = new User();
-		user.email = normalizedEmail;
+		user.overflowEmail = normalizedEmail;
+		user.intraEmail = normalizedEmail;
 		user.intraId = intraDTO.id.toString();
 		user.fullName = intraDTO.usualFullName != null ? intraDTO.usualFullName : intraDTO.displayName;
 		user.username = intraDTO.login != null && !intraDTO.login.isBlank()
@@ -260,19 +376,5 @@ public class UserService {
 			throw new WebApplicationException("Email is required", 400);
 		}
 		return email.trim().toLowerCase(Locale.ROOT);
-	}
-
-	private String sanitizeOptional(String value) {
-		if (value == null) return null;
-		String trimmed = value.trim();
-		return trimmed.isEmpty() ? null : trimmed;
-	}
-
-	private String hashPassword(String password) {
-		return passwordService.hash(password);
-	}
-
-	private boolean verifyPassword(String rawPassword, String storedHash) {
-		return passwordService.verify(rawPassword, storedHash);
 	}
 }

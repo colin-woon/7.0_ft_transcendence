@@ -30,6 +30,7 @@ interface AuthState {
   isAuthenticated: boolean;
   error: string | null;
   login: (provider: "google" | "42") => void;
+  link: (provider: "google" | "42") => void;
   loginWithPassword: (payload: PasswordLoginPayload) => Promise<User>;
   registerWithPassword: (payload: PasswordRegisterPayload) => Promise<User>;
   updatePassword: (payload: PasswordChangePayload) => Promise<User>;
@@ -112,6 +113,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = (provider: "google" | "42") => {
     setError(null);
     authService.loginWithProvider(provider);
+  };
+
+  const link = (provider: "google" | "42") => {
+    setError(null);
+    authService.linkWithProvider(provider);
   };
 
   const loginWithPassword = async (
@@ -315,6 +321,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user && !!accessToken,
         error,
         login,
+        link,
         loginWithPassword,
         registerWithPassword,
         updatePassword,

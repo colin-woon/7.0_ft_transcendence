@@ -4,7 +4,7 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import type { User } from "@/features/auth/api/authService";
+import { type User } from "@/features/auth/api/authService";
 import { useAdminUsers } from "@/features/auth/hooks/useAdminUsers";
 import { useUserLookup } from "@/features/auth/hooks/useUserLookup";
 import { useUserProfile } from "@/features/auth/hooks/useUserProfile";
@@ -18,6 +18,7 @@ import {
   fileToDataUrl,
   validateAvatarFile,
 } from "@/features/auth/utils/avatarFile";
+import { updateProfileSchema } from "@/features/auth/validation/authSchemas";
 import {
   extractAchievements,
   extractIntraSummary,
@@ -237,6 +238,20 @@ export default function ProfilePage({
     subscriptionUserId: viewingOwnProfile ? null : (activeProfile?.id ?? null),
   });
 
+  const editValidation = useMemo(
+    () =>
+      updateProfileSchema.safeParse({
+        username: editDraft.username,
+        fullName: editDraft.fullName,
+        bio: editDraft.bio,
+        avatarFile: pendingAvatarFile ? "placeholder" : "",
+      }),
+    [editDraft.bio, editDraft.fullName, editDraft.username, pendingAvatarFile],
+  );
+  const editValidationMessage = editValidation.success
+    ? null
+    : editValidation.error.issues[0]?.message || "Invalid input";
+
   const openAdminEditDialog = async () => {
     if (
       !activeProfile?.id ||
@@ -270,6 +285,18 @@ export default function ProfilePage({
         setQuickActionError(validationError);
         return;
       }
+    }
+
+    const parsed = updateProfileSchema.safeParse({
+      username: editDraft.username,
+      fullName: editDraft.fullName,
+      bio: editDraft.bio,
+      avatarFile: pendingAvatarFile ? "placeholder" : "",
+    });
+
+    if (!parsed.success) {
+      setQuickActionError(parsed.error.issues[0]?.message || "Invalid input");
+      return;
     }
 
     const avatarFile = pendingAvatarFile
@@ -390,7 +417,9 @@ export default function ProfilePage({
     levelProgress: intraSummary?.levelProgress ?? 0,
     cursus: intraSummary?.activeCursus ?? "Not linked to 42 cursus",
     coalition: intraSummary?.campus?.name ?? "N/A",
-    email: activeProfile?.email ?? "",
+    overflowEmail: activeProfile?.overflowEmail ?? null,
+    intraEmail: activeProfile?.intraEmail ?? null,
+    googleEmail: activeProfile?.googleEmail ?? null,
     location: intraSummary?.location ?? "",
     since: activeProfile?.createdAt
       ? new Date(activeProfile.createdAt).toLocaleDateString("en-US", {
@@ -532,7 +561,7 @@ export default function ProfilePage({
 
       <ForumProjectsCard
         subscribedProjects={subscribedProjects}
-        suggestedProjects={viewingOwnProfile ? suggestedProjects : []} 
+        suggestedProjects={viewingOwnProfile ? suggestedProjects : []}
         isLoading={projectsLoading}
         error={projectsError}
         onRefresh={refetchProjects}
@@ -557,6 +586,8 @@ export default function ProfilePage({
         draft={editDraft}
         saving={adminLoading}
         error={quickActionError ?? adminError}
+        validationMessage={editValidationMessage}
+        submitDisabled={!editValidation.success}
         showAvatarUpload
         avatarFileName={pendingAvatarFile?.name ?? null}
         onAvatarFileChange={setPendingAvatarFile}

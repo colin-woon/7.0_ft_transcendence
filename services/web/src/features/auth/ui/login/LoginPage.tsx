@@ -16,9 +16,23 @@ function FieldError({ message }: { message?: string }) {
   return <p className="text-xs text-red-600 mt-1">{message}</p>;
 }
 
-export default function LoginPage() {
+interface LoginPageProps {
+  routeError?: string | null;
+}
+
+export default function LoginPage({ routeError }: LoginPageProps) {
   const router = useRouter();
   const { login, loginWithPassword } = useAuth();
+
+  const errorMessageMap: Record<string, string> = {
+    auth_failed: "Authentication failed. Please try again.",
+    callback_failed: "Callback handling failed. Please try again.",
+    oauth_failed: "OAuth login failed. Please try again.",
+  };
+  const routeErrorMessage =
+    routeError && routeError.trim()
+      ? errorMessageMap[routeError.trim()] ?? routeError.trim()
+      : null;
 
   const [values, setValues] = useState<PasswordLoginFormValues>({
     email: "",
@@ -144,6 +158,10 @@ export default function LoginPage() {
                 />
                 <FieldError message={errors.password} />
               </div>
+
+              {routeErrorMessage ? (
+                <p className="text-xs text-red-600">{routeErrorMessage}</p>
+              ) : null}
 
               {formError ? (
                 <p className="text-xs text-red-600">{formError}</p>

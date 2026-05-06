@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/features/auth/models/AuthContext'
 import Link from 'next/link'
+import { useAuth } from '@/features/auth/models/AuthContext'
 
 export default function Home() {
   const { user, isLoading, logout } = useAuth()
@@ -19,7 +19,14 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-8 font-sans text-slate-800">
       <h1 className="text-3xl font-semibold">Welcome, {user.fullName} 👋</h1>
-      <p className="text-slate-500 text-sm">{user.email}</p>
+      {user?.overflowEmail && (
+        <p className="text-slate-500 text-sm">{user.overflowEmail}</p>
+      )}
+      {[user?.intraEmail, user?.googleEmail].some(email => email) && (
+        <p className="text-slate-400 text-xs">
+          {[user?.intraEmail, user?.googleEmail].filter(Boolean).join(", ")}
+        </p>
+      )}
       <p className="text-xs text-slate-400">Role: {user.role}</p>
       <Link
         href="/projects"

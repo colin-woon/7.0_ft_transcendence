@@ -7,7 +7,7 @@ export interface ServerAuthUser {
   id: number;
   username: string;
   fullName: string;
-  email: string;
+  overflowEmail: string;
   avatarImage: string | null;
   bio: string | null;
   role: "STUDENT" | "ADMIN";
