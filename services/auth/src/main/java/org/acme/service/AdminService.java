@@ -50,13 +50,7 @@ public class AdminService {
 			user.username = newValue;
 		});
 		updateDTO.avatarFile.ifPresent(newValue -> {
-			String trimmed = newValue.trim();
-			if (trimmed.isEmpty()) {
-				avatarStorageService.deleteManagedAvatar(user.avatarUrl);
-				user.avatarUrl = null;
-				return;
-			}
-			user.avatarUrl = avatarStorageService.storeBase64Avatar(trimmed, user.avatarUrl);
+			user.avatarUrl = avatarStorageService.replaceManagedAvatar(newValue, user.avatarUrl);
 		});
 		updateDTO.bio.ifPresent(newValue -> user.bio = newValue );
 		updateDTO.role.ifPresent(newValue -> user.role = newValue);
@@ -103,8 +97,8 @@ public class AdminService {
 
 	@Transactional
 	public UserInfoDTO adminCreateUser(UserInfoDTO userInfo) {
-		userRepository.findByEmail(userInfo.email).ifPresent(email -> {
-			LOG.warn("Attempt to create user with existing email: " + userInfo.email);
+		userRepository.findByOverflowEmail(userInfo.overflowEmail).ifPresent(email -> {
+			LOG.warn("Attempt to create user with existing email: " + userInfo.overflowEmail);
 			throw new WebApplicationException("Email already in use", 409);
 		});
 
@@ -114,12 +108,10 @@ public class AdminService {
 		});
 
 		User newUser = new User();
-		newUser.email = userInfo.email;
+		newUser.overflowEmail = userInfo.overflowEmail;
 		newUser.username = userInfo.username;
 		newUser.fullName = userInfo.fullName;
-		if (userInfo.avatarFile != null && !userInfo.avatarFile.isBlank()) {
-			newUser.avatarUrl = avatarStorageService.storeBase64Avatar(userInfo.avatarFile, null);
-		}
+		newUser.avatarUrl = avatarStorageService.replaceManagedAvatar(userInfo.avatarFile, null);
 		newUser.bio = userInfo.bio;
 		newUser.role = userInfo.role;
 		newUser.isBanned = userInfo.isBanned;

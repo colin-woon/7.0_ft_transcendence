@@ -21,7 +21,6 @@ public class PasswordRegisterDTO {
 	@Size(min = 1, max = 100, message = "Full name must be between 1 and 100 characters")
 	public String fullName;
 
-	@Size(max = 3000000, message = "Avatar file payload is too large")
 	public String avatarFile;
 
 	@Size(max = 500, message = "Bio must not exceed 500 characters")

@@ -4,7 +4,7 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import type { User } from "@/features/auth/api/authService";
+import { type User } from "@/features/auth/api/authService";
 import { useAdminUsers } from "@/features/auth/hooks/useAdminUsers";
 import { useUserLookup } from "@/features/auth/hooks/useUserLookup";
 import { useUserProfile } from "@/features/auth/hooks/useUserProfile";
@@ -225,14 +225,8 @@ export default function ProfilePage({
     [activeProfile?.intraInfo],
   );
 
-  const groupsCount = Array.isArray(activeProfile?.intraInfo?.groups)
-    ? activeProfile.intraInfo.groups.length
-    : 0;
-  const partnershipsCount = Array.isArray(
-    activeProfile?.intraInfo?.partnerships,
-  )
-    ? activeProfile.intraInfo.partnerships.length
-    : 0;
+  const groupsCount = activeProfile?.intraInfo?.groupsCount ?? 0;
+  const partnershipsCount = activeProfile?.intraInfo?.partnershipsCount ?? 0;
   const {
     subscribedProjects,
     suggestedProjects,
@@ -423,7 +417,9 @@ export default function ProfilePage({
     levelProgress: intraSummary?.levelProgress ?? 0,
     cursus: intraSummary?.activeCursus ?? "Not linked to 42 cursus",
     coalition: intraSummary?.campus?.name ?? "N/A",
-    email: activeProfile?.email ?? "",
+    overflowEmail: activeProfile?.overflowEmail ?? null,
+    intraEmail: activeProfile?.intraEmail ?? null,
+    googleEmail: activeProfile?.googleEmail ?? null,
     location: intraSummary?.location ?? "",
     since: activeProfile?.createdAt
       ? new Date(activeProfile.createdAt).toLocaleDateString("en-US", {
@@ -565,7 +561,7 @@ export default function ProfilePage({
 
       <ForumProjectsCard
         subscribedProjects={subscribedProjects}
-        suggestedProjects={viewingOwnProfile ? suggestedProjects : []} 
+        suggestedProjects={viewingOwnProfile ? suggestedProjects : []}
         isLoading={projectsLoading}
         error={projectsError}
         onRefresh={refetchProjects}

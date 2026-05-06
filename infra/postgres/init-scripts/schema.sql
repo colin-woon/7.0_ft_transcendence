@@ -27,7 +27,9 @@ CREATE TABLE auth_service.users (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
     -- Identity Providers (OAuth)
-    email VARCHAR(255) UNIQUE NOT NULL,
+    overflow_email VARCHAR(255) UNIQUE NOT NULL,
+    google_email VARCHAR(255) UNIQUE,
+    intra_email VARCHAR(255) UNIQUE,
     intra_id VARCHAR(50) UNIQUE, -- For 42 OAuth
     google_id VARCHAR(255) UNIQUE, -- For Google OAuth
     password_hash TEXT,
@@ -70,10 +72,9 @@ CREATE TABLE auth_service.intra (
 
     user_id INTEGER UNIQUE NOT NULL REFERENCES auth_service.users(id) ON DELETE CASCADE,
 
-    kind VARCHAR(50),
-    url TEXT,
     phone VARCHAR(50),
     location VARCHAR(100),
+    original_image_url TEXT,
     wallet INTEGER DEFAULT 0,
     correction_points INTEGER DEFAULT 0,
     pool_month VARCHAR(20),
@@ -81,20 +82,14 @@ CREATE TABLE auth_service.intra (
     is_staff BOOLEAN DEFAULT FALSE,
     is_alumni BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT FALSE,
+    groups_count INTEGER DEFAULT 0,
+    partnerships_count INTEGER DEFAULT 0,
 
     -- Nested data from 42 API (stored as JSONB)
-    image JSONB,
-    intra_groups JSONB,
     cursus JSONB,
     projects JSONB,
     achievements JSONB,
-    titles JSONB,
     titles_users JSONB,
-    partnerships JSONB,
-    patroned JSONB,
-    patroning JSONB,
-    roles JSONB,
-    campus JSONB,
     campus_users JSONB,
     languages JSONB,
     expertises JSONB,
@@ -115,6 +110,10 @@ FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 -- Indexes for session management
 CREATE INDEX idx_sessions_user_id ON auth_service.sessions(user_id);
 CREATE INDEX idx_sessions_expires_at ON auth_service.sessions(expires_at);
+
+-- Indexes for user search
+CREATE INDEX idx_users_username ON auth_service.users(username);
+CREATE INDEX idx_users_full_name ON auth_service.users(full_name);
 
 -- =======================================================
 -- 2. FORUM SERVICE (Python/FastAPI)

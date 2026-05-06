@@ -14,7 +14,7 @@ interface UseUserSearchOptions {
 export function useUserSearch(options?: UseUserSearchOptions) {
   const debounceMs = options?.debounceMs ?? 300;
   const minChars = options?.minChars ?? 1;
-  const pageSize = options?.pageSize ?? 20;
+  const pageSize = options?.pageSize ?? 10;
   const excludeUserId = options?.excludeUserId;
 
   const [query, setQuery] = useState("");
@@ -26,6 +26,8 @@ export function useUserSearch(options?: UseUserSearchOptions) {
 
   const requestId = useRef(0);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipNextEffectRef = useRef(false);
+  const lastQueryRef = useRef("");
 
   const runSearch = useCallback(
     async (term: string, pageValue = 0) => {
@@ -44,12 +46,10 @@ export function useUserSearch(options?: UseUserSearchOptions) {
       setError(null);
 
       try {
-        const requestedSize =
-          pageSize + (typeof excludeUserId === "number" ? 1 : 0);
         const users = await authService.searchUsers(
           trimmed,
           pageValue,
-          requestedSize,
+          pageSize,
         );
         if (nextRequestId === requestId.current) {
           const filteredUsers =
@@ -57,7 +57,7 @@ export function useUserSearch(options?: UseUserSearchOptions) {
               ? users.filter((entry) => entry.id !== excludeUserId)
               : users;
           setResults(filteredUsers.slice(0, pageSize));
-          setHasMore(users.length === requestedSize);
+          setHasMore(users.length === pageSize);
         }
       } catch (err) {
         if (nextRequestId === requestId.current) {
@@ -76,6 +76,22 @@ export function useUserSearch(options?: UseUserSearchOptions) {
   );
 
   useEffect(() => {
+    if (skipNextEffectRef.current) {
+      skipNextEffectRef.current = false;
+      return;
+    }
+
+    // If only the page changed (not the query), search immediately without debounce
+    const queryChanged = query !== lastQueryRef.current;
+    lastQueryRef.current = query;
+
+    if (!queryChanged) {
+      // Page change only: search immediately
+      runSearch(query, page);
+      return;
+    }
+
+    // Query change: apply debounce
     debounceTimerRef.current = setTimeout(() => {
       runSearch(query, page);
     }, debounceMs);
@@ -102,13 +118,17 @@ export function useUserSearch(options?: UseUserSearchOptions) {
     setLoading(false);
   }, []);
 
-  const searchNow = useCallback(async () => {
+  const searchNow = useCallback(async (pageOverride?: number, skipNextEffect = false) => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = null;
     }
 
-    await runSearch(query, page);
+    if (skipNextEffect) {
+      skipNextEffectRef.current = true;
+    }
+
+    await runSearch(query, pageOverride ?? page);
   }, [runSearch, query, page]);
 
   const clearError = useCallback(() => {

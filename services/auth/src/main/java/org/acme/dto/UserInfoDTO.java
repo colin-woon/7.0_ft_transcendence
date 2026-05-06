@@ -19,7 +19,9 @@ public class UserInfoDTO {
 	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	public String avatarFile;
 	public String bio;
-	public String email;
+	public String overflowEmail;
+	public String googleEmail;
+	public String intraEmail;
 	public UserRole role;
 	public boolean isBanned;
 	public Instant lastSeenAt;
@@ -34,7 +36,7 @@ public class UserInfoDTO {
 
 	public UserInfoDTO() {}
 
-	public UserInfoDTO(Long id, String username, String fullName, String avatarImage, String bio, String email,
+	public UserInfoDTO(Long id, String username, String fullName, String avatarImage, String bio, String overflowEmail,
 			UserRole role, boolean isBanned, Instant lastSeenAt, Instant createdAt, boolean linkedWithGoogle,
 			Instant updatedAt, boolean linkedWithIntra, boolean hasPassword, IntraInfoDTO intraInfo) {
 		this.id = id;
@@ -42,7 +44,7 @@ public class UserInfoDTO {
 		this.fullName = fullName;
 		this.avatarImage = avatarImage;
 		this.bio = bio;
-		this.email = email;
+		this.overflowEmail = overflowEmail;
 		this.role = role;
 		this.isBanned = isBanned;
 		this.lastSeenAt = lastSeenAt;
@@ -60,7 +62,9 @@ public class UserInfoDTO {
 		this.fullName = user.fullName;
 		this.avatarPath = user.avatarUrl;
 		this.bio = user.bio;
-		this.email = user.email;
+		this.overflowEmail = user.overflowEmail;
+		this.googleEmail = user.googleEmail;
+		this.intraEmail = user.intraEmail;
 		this.role = user.role;
 		this.isBanned = user.isBanned;
 		this.lastSeenAt = user.lastSeenAt;

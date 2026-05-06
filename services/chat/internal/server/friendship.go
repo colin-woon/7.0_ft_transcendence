@@ -401,54 +401,6 @@ func (s *Server) GetPendingFriendRequests(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (s *Server) AcceptMessageRequest(w http.ResponseWriter, r *http.Request, requesterId int) {
-	ctx := r.Context()
-
-	receiverId, ok := r.Context().Value(userIDKey).(int)
-	if !ok {
-		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
-		return
-	}
-
-	qtx := s.db.GetQueries()
-
-	// Get current friend state
-	currentFriendship, err := qtx.GetFriendship(ctx, database.GetFriendshipParams{
-		RequesterID: int32(requesterId),
-		AddresseeID: int32(receiverId),
-	})
-	if err != nil {
-		http.Error(w, "Friendship not found", http.StatusNotFound)
-		return
-	}
-
-	if !currentFriendship.Status.Valid || currentFriendship.Status.ChatServiceFriendStatus != database.ChatServiceFriendStatusRequested {
-		http.Error(w, "Friendship is not in requested state", http.StatusBadRequest)
-		return
-	}
-
-	// Accept message request sets is_chat_allowed to true, status unchanged
-	_, err = qtx.UpdateFriendshipStatus(ctx, database.UpdateFriendshipStatusParams{
-		RequesterID: int32(requesterId),
-		AddresseeID: int32(receiverId),
-		Status: database.NullChatServiceFriendStatus{
-			ChatServiceFriendStatus: currentFriendship.Status.ChatServiceFriendStatus,
-			Valid:                   true,
-		},
-		LastActionUserID: int32(receiverId),
-		IsChatAllowed: sql.NullBool{
-			Bool:  true,
-			Valid: true,
-		},
-	})
-	if err != nil {
-		http.Error(w, "Failed to accept message request", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-}
-
 func (s *Server) GetAllFriendshipStatuses(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

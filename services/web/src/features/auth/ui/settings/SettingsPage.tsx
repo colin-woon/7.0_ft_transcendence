@@ -51,10 +51,12 @@ import {
 
 
 interface SettingsPageProps {
-	initialProfile?: User | null;
-	initialProfileError?: string | null;
-	initialProfileErrorStatus?: number | null;
-	initialSessions?: SessionInfo[];
+  initialProfile?: User | null;
+  initialProfileError?: string | null;
+  initialProfileErrorStatus?: number | null;
+  initialSessions?: SessionInfo[];
+  routeMessage?: string | null;
+  isRouteMessageError?: boolean;
 }
 
 type SettingsTab = {
@@ -142,32 +144,34 @@ const XIcon = () => (
 );
 
 export default function SettingsPage({
-	initialProfile,
-	initialProfileError,
-	initialProfileErrorStatus,
-	initialSessions,
+  initialProfile,
+  initialProfileError,
+  initialProfileErrorStatus,
+  initialSessions,
+  routeMessage,
+  isRouteMessageError,
 }: SettingsPageProps) {
 	const router = useRouter();
 	const pathname = usePathname();
 
-	const {
-		user,
-		isLoading: authLoading,
-		hasRole,
-		reloadIntraData,
-		updatePassword,
-		clearError,
-		error: authError,
-	} = useAuth();
+  const {
+    user,
+    isLoading: authLoading,
+    hasRole,
+    updatePassword,
+    clearError,
+    error: authError,
+  } = useAuth();
 
-	const {
-		loginWith,
-		logoutNow,
-		refreshNow,
-		actionLoading,
-		actionError,
-		clearActionError,
-	} = useAuthActions();
+  const {
+    loginWith,
+    linkWith,
+    logoutNow,
+    refreshNow,
+    actionLoading,
+    actionError,
+    clearActionError,
+  } = useAuthActions();
 
 	const {
 		profile,
@@ -216,17 +220,21 @@ export default function SettingsPage({
 	);
 	const lastConfirmAction = useRef<ConfirmAction | null>(null);
 
-	if (confirmAction) {
-		lastConfirmAction.current = confirmAction;
-	}
-	const [confirmLoading, setConfirmLoading] = useState(false);
-	const [adminActionError, setAdminActionError] = useState<string | null>(
-		null
-	);
-	const [adminActionSuccess, setAdminActionSuccess] = useState<string | null>(
-		null
-	);
-	const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
+  if (confirmAction) {
+  lastConfirmAction.current = confirmAction;
+  }
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [adminActionError, setAdminActionError] = useState<string | null>(null);
+  const [adminActionSuccess, setAdminActionSuccess] = useState<string | null>(
+    null,
+  );
+  const [routeMessageState, setRouteMessageState] = useState<string | null>(
+    routeMessage ?? null,
+  );
+  const [isRouteMessageErrorState, setIsRouteMessageErrorState] = useState<boolean>(
+    isRouteMessageError ?? false,
+  );
+  const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
   const [createUserSubmitAttempted, setCreateUserSubmitAttempted] = useState(
     false,
   );
@@ -240,35 +248,32 @@ export default function SettingsPage({
 		bio: '',
 	});
 
-	const [passwordForm, setPasswordForm] = useState<PasswordChangeFormValues>({
-		currentPassword: '',
-		newPassword: '',
-		confirmPassword: '',
-	});
-	const [passwordErrors, setPasswordErrors] = useState<
-		Partial<Record<keyof PasswordChangeFormValues, string>>
-	>({});
-	const [passwordFormError, setPasswordFormError] = useState<string | null>(
-		null
-	);
-	const [passwordFormSuccess, setPasswordFormSuccess] = useState<
-		string | null
-	>(null);
-	const [passwordSaving, setPasswordSaving] = useState(false);
-	const [passwordOpen, setPasswordOpen] = useState(false);
-	const [reloadingIntra, setReloadingIntra] = useState(false);
-	const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(
-		null
-	);
+  const [passwordForm, setPasswordForm] = useState<PasswordChangeFormValues>({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordErrors, setPasswordErrors] = useState<
+    Partial<Record<keyof PasswordChangeFormValues, string>>
+  >({});
+  const [passwordFormError, setPasswordFormError] = useState<string | null>(
+    null,
+  );
+  const [passwordFormSuccess, setPasswordFormSuccess] = useState<string | null>(
+    null,
+  );
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
 
-	const [newUserForm, setNewUserForm] = useState<CreateUserPayload>({
-		username: '',
-		fullName: '',
-		email: '',
-		bio: '',
-		role: 'STUDENT',
-		isBanned: false,
-	});
+  const [newUserForm, setNewUserForm] = useState<CreateUserPayload>({
+    username: "",
+    fullName: "",
+    overflowEmail: "",
+    bio: "",
+    role: "STUDENT",
+    isBanned: false,
+  });
 
 	const isAdmin = hasRole('ADMIN');
 	const activeProfile = profile ?? user;
@@ -303,14 +308,14 @@ export default function SettingsPage({
 			createUserSchema.safeParse({
 				username: newUserForm.username,
 				fullName: newUserForm.fullName,
-				email: newUserForm.email,
+				email: newUserForm.overflowEmail,
 				bio: newUserForm.bio ?? '',
 				role: newUserForm.role,
 				isBanned: newUserForm.isBanned,
 			}),
 		[
 			newUserForm.bio,
-			newUserForm.email,
+			newUserForm.overflowEmail,
 			newUserForm.fullName,
 			newUserForm.isBanned,
 			newUserForm.role,
@@ -362,8 +367,8 @@ export default function SettingsPage({
 			void refreshSessions();
 		}
 
-		lastTabRef.current = activeTab;
-	}, [activeTab, refreshSessions, user]);
+    lastTabRef.current = activeTab;
+  }, [activeTab, refreshSessions, user]);
 
   useEffect(() => {
     if (!createUserModalOpen) {
@@ -372,14 +377,30 @@ export default function SettingsPage({
     }
   }, [createUserModalOpen]);
 
-	const pageError =
-		authError ??
-		profileError ??
-		profileEditError ??
-		(activeTab === 'sessions' ? sessionsError : null) ??
-		adminActionError ??
-		actionError ??
-		(activeTab === 'admin' ? adminHookError : null);
+  useEffect(() => {
+    if (routeMessageState == null) return;
+    const timer = setTimeout(() => {
+      setRouteMessageState(null);
+      setIsRouteMessageErrorState(false);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [routeMessageState]);
+
+  useEffect(() => {
+    if (routeMessage == null) return;
+    setRouteMessageState(routeMessage);
+    setIsRouteMessageErrorState(Boolean(isRouteMessageError));
+  }, [routeMessage, isRouteMessageError]);
+
+  const pageError =
+    (isRouteMessageErrorState ? routeMessageState : null) ??
+    authError ??
+    profileError ??
+    profileEditError ??
+    (activeTab === "sessions" ? sessionsError : null) ??
+    adminActionError ??
+    actionError ??
+    (activeTab === "admin" ? adminHookError : null);
 
 	const updateNewUserForm = (key: string, value: any) => {
 		setNewUserForm((prev) => ({ ...prev, [key]: value }));
@@ -469,48 +490,33 @@ export default function SettingsPage({
 			return;
 		}
 
-		setPasswordErrors({});
-		setPasswordSaving(true);
-		try {
-			await updatePassword({
-				currentPassword: currentPassword || undefined,
-				newPassword: parsed.data.newPassword,
-				confirmPassword: parsed.data.confirmPassword,
-			});
-			setPasswordForm({
-				currentPassword: '',
-				newPassword: '',
-				confirmPassword: '',
-			});
-			setPasswordFormSuccess(
-				hasExistingPassword
-					? 'Password changed successfully.'
-					: 'Password created successfully.'
-			);
-			await refetch();
-		} catch (err) {
-			setPasswordFormError(
-				err instanceof Error ? err.message : 'Failed to update password'
-			);
-		} finally {
-			setPasswordSaving(false);
-		}
-	};
-
-	/**
-	 * Triggers a server-side refresh for linked 42 profile data.
-	 */
-	const handleReload42 = async () => {
-		setReloadingIntra(true);
-		try {
-			const updated = await reloadIntraData();
-			if (updated) {
-				await refetch();
-			}
-		} finally {
-			setReloadingIntra(false);
-		}
-	};
+    setPasswordErrors({});
+    setPasswordSaving(true);
+    try {
+      await updatePassword({
+        currentPassword: currentPassword || undefined,
+        newPassword: parsed.data.newPassword,
+        confirmPassword: parsed.data.confirmPassword,
+      });
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setPasswordFormSuccess(
+        hasExistingPassword
+          ? "Password changed successfully."
+          : "Password created successfully.",
+      );
+      await refetch();
+    } catch (err) {
+      setPasswordFormError(
+        err instanceof Error ? err.message : "Failed to update password",
+      );
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
 
 	/**
 	 * Creates a user as admin using the fuller UserInfoDTO-aligned fields.
@@ -523,17 +529,23 @@ export default function SettingsPage({
     setCreateUserDialogError(null);
 		setAdminActionSuccess(null);
 
-		const parsed = createUserSchema.safeParse(newUserForm);
-		if (!parsed.success) {
-			return;
-		}
 
-		const { username, fullName, email, bio, role, isBanned } = parsed.data;
+	const parsed = createUserSchema.safeParse(newUserForm);
+	if (!parsed.success) {
+		return;
+	}
+	const { username, fullName, overflowEmail, bio, role, isBanned } = parsed.data;
+
+
+    if (!username || !fullName || !overflowEmail) {
+      setAdminActionError("Username, full name, and email are required.");
+      return;
+    }
 
 		const created = await adminCreateUser({
 			username,
 			fullName,
-			email,
+			overflowEmail,
 			bio: bio?.trim() || undefined,
 			role,
 			isBanned,
@@ -547,7 +559,7 @@ export default function SettingsPage({
 		setNewUserForm({
 			username: '',
 			fullName: '',
-			email: '',
+			overflowEmail: '',
 			bio: '',
 			role: 'STUDENT',
 			isBanned: false,
@@ -589,16 +601,18 @@ export default function SettingsPage({
 		}
 	};
 
-	const clearAllErrors = () => {
-		clearError();
-		clearProfileError();
-		clearProfileEditError();
-		clearSessionsError();
-		clearActionError();
-		clearAdminHookError();
-		setAdminActionError(null);
+  const clearAllErrors = () => {
+    clearError();
+    clearProfileError();
+    clearProfileEditError();
+    clearSessionsError();
+    clearActionError();
+    clearAdminHookError();
+    setRouteMessageState(null);
+    setIsRouteMessageErrorState(false);
+    setAdminActionError(null);
     setCreateUserDialogError(null);
-	};
+  };
 
 	if (authLoading || profileLoading) {
 		return (
@@ -699,6 +713,22 @@ export default function SettingsPage({
         </div>
       )}
 
+      {routeMessageState && !isRouteMessageErrorState && (
+        <div className="alert alert-success mb-4">
+          <span className="text-sm">{routeMessageState}</span>
+          <button
+            type="button"
+            className="btn btn-xs btn-ghost ml-auto"
+            onClick={() => {
+              setRouteMessageState(null);
+              setIsRouteMessageErrorState(false);
+            }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {adminActionSuccess && (
         <div
           className="flex items-center gap-2.5 px-3.5 py-2.5 mb-3 rounded-lg"
@@ -743,48 +773,26 @@ export default function SettingsPage({
 				})}
 			</div>
 
-			<div className="card bg-base-100 border border-base-200 shadow-sm mt-0 rounded-t-none">
-				<div className="card-body">
-					{activeTab === 'profile' && (
-						<>
-							<div className="flex items-center justify-between">
-								<h2 className="text-base font-bold text-base-content">
-									Public Profile
-								</h2>
-
-								{/* edit button and refresh button*/}
-								<div className="flex items-center gap-2">
-									{isAdmin && (
-										<button
-											type="button"
-											className="btn btn-sm btn-ghost"
-											onClick={handleReload42}
-											disabled={reloadingIntra}
-											title="Reload 42 data"
-										>
-											<RefreshCcw
-												size={14}
-												className={
-													reloadingIntra
-														? 'animate-spin'
-														: ''
-												}
-											/>
-											{reloadingIntra
-												? 'Reloading...'
-												: 'Reload 42 info'}
-										</button>
-									)}
-									<button
-										type="button"
-										className="btn btn-sm btn-ghost btn-square"
-										onClick={() => setEditModalOpen(true)}
-										title="Edit profile"
-									>
-										<SquarePen size={20} />
-									</button>
-								</div>
-							</div>
+      <div className="card bg-base-100 border border-base-200 shadow-sm mt-0 rounded-t-none">
+        <div className="card-body">
+          {activeTab === "profile" && (
+            <>
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-bold text-base-content">
+                  Public Profile
+                </h2>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-ghost btn-square"
+                    onClick={() => setEditModalOpen(true)}
+                    title="Edit profile"
+                  >
+                    <SquarePen size={20} />
+                  </button>
+                </div>
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                 <div className="rounded-xl border border-base-200 p-3">
@@ -801,113 +809,79 @@ export default function SettingsPage({
                 </div>
                 <div className="rounded-xl border border-base-200 p-3 md:col-span-2">
                   <div className="text-xs text-base-content/60 mb-1">Email</div>
-                  <div className="font-medium">{activeProfile.email}</div>
+                  {activeProfile?.overflowEmail ? (
+                    <div className="font-medium">{activeProfile.overflowEmail}</div>
+                  ) : null}
+                  {activeProfile?.intraEmail ? (
+                    <div className="font-medium">{activeProfile.intraEmail}</div>
+                  ) : null}
+                  {activeProfile?.googleEmail ? (
+                    <div className="font-medium">{activeProfile.googleEmail}</div>
+                  ) : null}
                 </div>
                 <div className="rounded-xl border border-base-200 p-3 md:col-span-2">
                   <div className="text-xs text-base-content/60 mb-1">Bio</div>
-                  <div
-                    className="text-sm overflow-hidden text-ellipsis whitespace-nowrap md:whitespace-normal md:line-clamp-2"
-                    style={{
-                      maxWidth: "100%",
-                      display: "block",
-                    }}
-                  >
+                  <div className="text-sm">
                     {activeProfile.bio || "No bio yet"}
                   </div>
                 </div>
               </div>
 
-							<h2 className="text-base font-bold text-base-content mt-8">
-								Account Connections
-							</h2>
-							<div className="mt-2 divide-y divide-base-200 rounded-xl border border-base-200 overflow-hidden">
-								{/* Google */}
-								<div className="flex items-center justify-between px-4 py-3.5 gap-4">
-									<div className="flex items-center gap-3">
-										<svg
-											className="size-5 shrink-0"
-											viewBox="0 0 24 24"
-											xmlns="http://www.w3.org/2000/svg"
-										>
-											<path
-												d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-												fill="#4285F4"
-											/>
-											<path
-												d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-												fill="#34A853"
-											/>
-											<path
-												d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
-												fill="#FBBC05"
-											/>
-											<path
-												d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-												fill="#EA4335"
-											/>
-										</svg>
-										<div>
-											<p className="text-sm font-medium text-base-content">
-												Google
-											</p>
-											<p className="text-xs text-base-content/50">
-												Connect to log in with your
-												Google account
-											</p>
-										</div>
-									</div>
-									<button
-										type="button"
-										className={`btn btn-sm rounded-full px-4 font-semibold normal-case shrink-0 ${activeProfile.linkedWithGoogle ? 'btn-outline' : 'btn-neutral'}`}
-										onClick={() =>
-											!activeProfile.linkedWithGoogle &&
-											loginWith('google')
-										}
-										disabled={
-											activeProfile.linkedWithGoogle
-										}
-									>
-										{activeProfile.linkedWithGoogle
-											? 'Linked'
-											: 'Connect'}
-									</button>
-								</div>
-
-								{/* 42 Intra */}
-								<div className="flex items-center justify-between px-4 py-3.5 gap-4">
-									<div className="flex items-center gap-3">
-										<Image
-											src={intraIcon}
-											alt="42 Intra"
-											className="size-5 shrink-0 object-contain"
-										/>
-										<div>
-											<p className="text-sm font-medium text-base-content">
-												42 Intra
-											</p>
-											<p className="text-xs text-base-content/50">
-												Connect to log in with your 42
-												account
-											</p>
-										</div>
-									</div>
-									<button
-										type="button"
-										className={`btn btn-sm rounded-full px-4 font-semibold normal-case shrink-0 ${activeProfile.linkedWithIntra ? 'btn-outline' : 'btn-neutral'}`}
-										onClick={() =>
-											!activeProfile.linkedWithIntra &&
-											loginWith('42')
-										}
-										disabled={activeProfile.linkedWithIntra}
-									>
-										{activeProfile.linkedWithIntra
-											? 'Linked'
-											: 'Connect'}
-									</button>
-								</div>
-							</div>
-						</>
-					)}
+              <h2 className="text-base font-bold text-base-content mt-8">
+                Account Connections
+              </h2>
+              <div className="mt-2 divide-y divide-base-200 rounded-xl border border-base-200 overflow-hidden">
+              
+                {/* Google */}
+                <div className="flex items-center justify-between px-4 py-3.5 gap-4">
+                  <div className="flex items-center gap-3">
+                    <svg className="size-5 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    <div>
+                      <p className="text-sm font-medium text-base-content">Google</p>
+                      <p className="text-xs text-base-content/50">Connect to log in with your Google account</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className={`btn btn-sm rounded-full px-4 font-semibold normal-case shrink-0 ${activeProfile.linkedWithGoogle ? "btn-outline" : "btn-neutral"}`}
+                    onClick={() => !activeProfile.linkedWithGoogle && linkWith("google")}
+                    disabled={activeProfile.linkedWithGoogle}
+                  >
+                    {activeProfile.linkedWithGoogle ? "Linked" : "Connect"}
+                  </button>
+                </div>
+              
+                {/* 42 Intra */}
+                <div className="flex items-center justify-between px-4 py-3.5 gap-4">
+                  <div className="flex items-center gap-3">
+                    <Image 
+                      src={intraIcon} 
+                      alt="42 Intra" 
+                      className="size-5 shrink-0 object-contain" 
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-base-content">42 Intra</p>
+                      <p className="text-xs text-base-content/50">Connect to log in with your 42 account</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className={`btn btn-sm rounded-full px-4 font-semibold normal-case shrink-0 ${activeProfile.linkedWithIntra ? "btn-outline" : "btn-neutral"}`}
+                    onClick={() => !activeProfile.linkedWithIntra && linkWith("42")}
+                    disabled={activeProfile.linkedWithIntra}
+                  >
+                    {activeProfile.linkedWithIntra ? "Linked" : "Connect"}
+                  </button>
+                </div>
+              
+              </div>
+            </>
+          )}
 
 					{activeTab === 'security' && (
 						<>

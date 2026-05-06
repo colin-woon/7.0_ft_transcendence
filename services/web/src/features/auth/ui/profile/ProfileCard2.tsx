@@ -14,7 +14,9 @@ interface ProfileCard2Props {
     levelProgress: number;
     cursus: string;
     coalition: string;
-    email: string;
+    overflowEmail?: string | null;
+    intraEmail?: string | null;
+    googleEmail?: string | null;
     location: string;
     since: string;
     wallet?: number;
@@ -37,15 +39,16 @@ export default function ProfileCard2({
   bio,
 }: ProfileCard2Props) {
   const { user: loggedInUser } = useAuth();
+  const allEmails = [
+    profile.overflowEmail ?? user?.overflowEmail,
+    profile.intraEmail ?? user?.intraEmail,
+    profile.googleEmail ?? user?.googleEmail,
+  ].filter((email): email is string => !!email && email.trim().length > 0);
   const loggedInUserId = loggedInUser?.id;
   const canShowPeerActions =
     loggedInUserId !== undefined &&
     typeof user?.id === "number" &&
     user.id !== loggedInUserId;
-    const profileCardData = {
-      projectsCount: subscribedProjects.length,
-    };
-
   const displayBio = bio ?? user?.bio ?? null;
 
   const stats = [
@@ -105,8 +108,6 @@ export default function ProfileCard2({
           <span>@{user?.username ?? "jdoe"}</span>
           <span className="mx-[5px] opacity-40">·</span>
           <span>{profile.cursus}</span>
-          <span className="mx-[5px] opacity-40">·</span>
-          <span>{user?.email ?? profile.email}</span>
           {profile.pool && profile.pool !== "N/A" && (
             <>
               <span className="mx-[5px] opacity-40">·</span>
@@ -120,6 +121,11 @@ export default function ProfileCard2({
             </>
           )}
         </div>
+        {allEmails.length > 0 ? (
+          <div className="flex items-center text-sm text-gray-400 flex-wrap leading-[1.4]">
+            <span>{allEmails.join(", ")}</span>
+          </div>
+        ) : null}
 
         {/* Bio */}
         {displayBio ? (
@@ -167,6 +173,6 @@ export default function ProfileCard2({
           </div>
         ))}
       </div>
-    </div> 
+    </div>
   );
 }

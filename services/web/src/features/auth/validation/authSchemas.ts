@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { AVATAR_MAX_BYTES } from '@/features/auth/utils/avatarFile'
+
 const usernamePattern = /^[a-zA-Z0-9_-]+$/
 const strongPasswordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,128}$/
 export const passwordSchema = z
@@ -31,7 +33,7 @@ export const registerWithPasswordSchema = z
     avatarFile: z
       .string()
       .trim()
-      .max(3000000, 'Avatar file payload is too large')
+      .max(AVATAR_MAX_BYTES, 'Avatar file payload is too large')
       .optional()
       .or(z.literal('')),
     bio: z.string().trim().max(100, 'Bio must not exceed 100 characters').optional().or(z.literal('')),

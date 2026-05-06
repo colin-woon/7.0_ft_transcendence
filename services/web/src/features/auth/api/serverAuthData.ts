@@ -7,7 +7,7 @@ export interface ServerAuthUser {
   id: number;
   username: string;
   fullName: string;
-  email: string;
+  overflowEmail: string;
   avatarImage: string | null;
   bio: string | null;
   role: "STUDENT" | "ADMIN";
@@ -21,20 +21,8 @@ export interface ServerAuthUser {
   intraInfo?: ServerIntraInfo | null;
 }
 
-export interface ServerIntraImage {
-  link: string;
-  versions: {
-    large: string;
-    medium: string;
-    small: string;
-  };
-}
-
 export interface ServerIntraInfo {
-  url: string | null;
   phone: string | null;
-  kind: string | null;
-  image: ServerIntraImage | null;
   correctionPoints: number;
   poolMonth: string | null;
   poolYear: string | null;
@@ -42,19 +30,14 @@ export interface ServerIntraInfo {
   wallet: number;
   isAlumni: boolean;
   isActive: boolean;
-  groups: Record<string, unknown>[];
+  groupsCount: number;
+  partnershipsCount: number;
   cursusUsers: Record<string, unknown>[];
   projectsUsers: Record<string, unknown>[];
   languagesUsers: Record<string, unknown>[];
   achievements: Record<string, unknown>[];
-  titles: Record<string, unknown>[];
   titlesUsers: Record<string, unknown>[];
-  partnerships: Record<string, unknown>[];
-  patroned: Record<string, unknown>[];
-  patroning: Record<string, unknown>[];
   expertisesUsers: Record<string, unknown>[];
-  roles: Record<string, unknown>[];
-  campus: Record<string, unknown>[];
   campusUsers: Record<string, unknown>[];
 }
 

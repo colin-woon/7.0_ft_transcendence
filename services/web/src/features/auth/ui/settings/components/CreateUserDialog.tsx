@@ -7,7 +7,7 @@ type CreateUserDialogProps = {
   draft: {
     username: string;
     fullName: string;
-    email: string;
+    overflowEmail: string;
     bio?: string;
     role: string;
     isBanned: boolean;
@@ -68,8 +68,8 @@ export default function CreateUserDialog({
                 className="input h-10 rounded-md text-sm bg-base-100 shadow-sm border border-base-200 focus:outline-none focus:border-base-300 focus:ring-2 focus:ring-base-300/50 transition-all w-full"
                 placeholder="42overflow@example.com"
                 type="email"
-                value={draft.email}
-                onChange={e => onChange("email", e.target.value)}
+                value={draft.overflowEmail}
+                onChange={e => onChange("overflowEmail", e.target.value)}
                 required
               />
             </label>

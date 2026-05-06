@@ -30,10 +30,10 @@ public class Intra {
 	@JoinColumn(name = "user_id", nullable = false, unique = true)
 	public User user;
 
-	public String kind;
-	public String url;
 	public String phone;
 	public String location;
+	@Column(name = "original_image_url")
+	public String originalImageUrl;
 	public int wallet;
 
 	@Column(name = "correction_points") public int correctionPoints;
@@ -43,13 +43,8 @@ public class Intra {
 	@Column(name = "is_alumni") public boolean isAlumni;
 	@Column(name = "is_active") public boolean isActive;
 
-	@JdbcTypeCode(SqlTypes.JSON)
-	@Column(columnDefinition = "jsonb")
-	public IntraImage image;
-
-	@JdbcTypeCode(SqlTypes.JSON)
-	@Column(name = "intra_groups", columnDefinition = "jsonb")
-	public List<Map<String, Object>> groups;
+	@Column(name = "groups_count")
+	public int groupsCount;
 
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(columnDefinition = "jsonb")
@@ -64,32 +59,11 @@ public class Intra {
 	public List<Map<String, Object>> achievements;
 
 	@JdbcTypeCode(SqlTypes.JSON)
-	@Column(columnDefinition = "jsonb")
-	public List<Map<String, Object>> titles;
-
-	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(name = "titles_users", columnDefinition = "jsonb")
 	public List<Map<String, Object>> titlesUsers;
 
-	@JdbcTypeCode(SqlTypes.JSON)
-	@Column(columnDefinition = "jsonb")
-	public List<Map<String, Object>> partnerships;
-
-	@JdbcTypeCode(SqlTypes.JSON)
-	@Column(columnDefinition = "jsonb")
-	public List<Map<String, Object>> patroned;
-
-	@JdbcTypeCode(SqlTypes.JSON)
-	@Column(columnDefinition = "jsonb")
-	public List<Map<String, Object>> patroning;
-
-	@JdbcTypeCode(SqlTypes.JSON)
-	@Column(columnDefinition = "jsonb")
-	public List<Map<String, Object>> roles;
-
-	@JdbcTypeCode(SqlTypes.JSON)
-	@Column(columnDefinition = "jsonb")
-	public List<Map<String, Object>> campus;
+	@Column(name = "partnerships_count")
+	public int partnershipsCount;
 
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(name = "campus_users", columnDefinition = "jsonb")

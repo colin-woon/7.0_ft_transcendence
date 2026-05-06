@@ -59,7 +59,10 @@ export default function UserMenu() {
           {/* User info */}
           <div className="px-4 py-3 border-b border-gray-100">
             <p className="text-sm font-semibold text-slate-800 truncate">{user?.fullName ?? 'Guest'}</p>
-            <p className="text-xs text-slate-500 truncate">{user?.email ?? ''}</p>
+            <p className="text-xs text-slate-500 truncate">{user?.overflowEmail || 'No email'}</p>
+            {[user?.intraEmail, user?.googleEmail].some(e => e) && (
+              <p className="text-xs text-slate-400 truncate">{[user?.intraEmail, user?.googleEmail].filter(Boolean).join(', ')}</p>
+            )}
             <span className="mt-1 inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600">
               {user?.role ?? 'STUDENT'}
             </span>

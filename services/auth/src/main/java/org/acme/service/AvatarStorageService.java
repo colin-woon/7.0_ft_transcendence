@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
 
@@ -32,21 +33,25 @@ import org.jboss.logging.Logger;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.WebApplicationException;
+import net.coobird.thumbnailator.Thumbnails;
 
 @ApplicationScoped
 public class AvatarStorageService {
 
     private static final Logger LOG = Logger.getLogger(AvatarStorageService.class);
-    private static final Pattern SAFE_FILE_NAME = Pattern.compile("^[a-f0-9\\-]{36}\\.png$");
+    private static final Pattern SAFE_FILE_NAME = Pattern.compile("^[a-f0-9\\-]{36}(?:_thumbnail)?\\.png$");
     private static final Pattern ALLOWED_DATA_URL_PREFIX = Pattern.compile("^data:image/(png|jpeg|jpg|webp|gif);base64,", Pattern.CASE_INSENSITIVE);
-    private static final int MAX_IMAGE_WIDTH = 4096;
-    private static final int MAX_IMAGE_HEIGHT = 4096;
-    private static final long MAX_IMAGE_PIXELS = 16_000_000L;
+    private static final int MAX_IMAGE_WIDTH = 40960;
+    private static final int MAX_IMAGE_HEIGHT = 40960;
+    private static final long MAX_IMAGE_PIXELS = 16_000_000_000L;
+    private static final int THUMBNAIL_WIDTH = 150;
+    private static final float THUMBNAIL_QUALITY = 0.8f;
+    private static final String THUMBNAIL_SUFFIX = "_thumbnail";
 
     @ConfigProperty(name = "app.avatar.storage.path", defaultValue = "/var/lib/auth/avatars")
     String storagePathValue;
 
-    @ConfigProperty(name = "app.avatar.max-bytes", defaultValue = "2097152")
+    @ConfigProperty(name = "app.avatar.max-bytes", defaultValue = "1048576")
     long maxAvatarBytes;
 
     @jakarta.inject.Inject
@@ -79,9 +84,26 @@ public class AvatarStorageService {
 
         BufferedImage image = readImage(bytes);
         validateImageDimensions(image);
-        String storedAvatarPath = writeAsPng(image);
-        deleteIfManaged(currentAvatarPath);
+        String storedAvatarPath = writeAvatarVariants(image);
+        deleteManagedVariants(currentAvatarPath);
         return storedAvatarPath;
+    }
+
+    /**
+     * Replaces the current managed avatar with the supplied payload, or clears the avatar when the
+     * payload is blank.
+     *
+     * @param avatarFile the raw base64 avatar payload
+     * @param currentAvatarPath the currently stored managed avatar path, if any
+     * @return the new managed avatar path, or {@code null} when the avatar was cleared
+     */
+    public String replaceManagedAvatar(String avatarFile, String currentAvatarPath) {
+        if (avatarFile == null || avatarFile.isBlank()) {
+            deleteManagedVariants(currentAvatarPath);
+            return null;
+        }
+
+        return storeBase64Avatar(avatarFile.trim(), currentAvatarPath);
     }
 
     public String mirrorRemoteAvatar(String remoteUrl, String currentAvatarPath) {
@@ -116,8 +138,8 @@ public class AvatarStorageService {
             validateFileSize(tempFile);
             BufferedImage image = readImage(tempFile);
             validateImageDimensions(image);
-            String localPath = writeAsPng(image);
-            deleteIfManaged(currentAvatarPath);
+            String localPath = writeAvatarVariants(image);
+            deleteManagedVariants(currentAvatarPath);
             return localPath;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -138,32 +160,29 @@ public class AvatarStorageService {
     }
 
     public String toImageDataUrl(String avatarPath) {
-        if (!isManagedPath(avatarPath)) {
+        Path filePath = resolveManagedAvatarPath(avatarPath, false);
+        if (filePath == null) {
             return null;
         }
+        return readImageDataUrl(filePath);
+    }
 
-        Path filePath = storagePath.resolve(avatarPath).normalize();
-        if (!filePath.startsWith(storagePath) || !Files.exists(filePath) || !Files.isRegularFile(filePath)) {
+    public String toThumbnailImageDataUrl(String avatarPath) {
+        Path filePath = resolveManagedAvatarPath(avatarPath, true);
+        if (filePath == null) {
             return null;
         }
-
-        try {
-            byte[] bytes = Files.readAllBytes(filePath);
-            return "data:image/png;base64," + Base64.getEncoder().encodeToString(bytes);
-        } catch (IOException e) {
-            LOG.warnf("Failed to read avatar file %s: %s", avatarPath, e.getMessage());
-            return null;
-        }
+        return readImageDataUrl(filePath);
     }
 
     public void deleteManagedAvatar(String avatarPath) {
-        deleteIfManaged(avatarPath);
+        deleteManagedVariants(avatarPath);
     }
 
     public UserInfoDTO toUserInfoDTO(User user, IntraInfoDTO intraInfo) {
         UserInfoDTO dto = new UserInfoDTO(user, intraInfo);
         String managedImage = toImageDataUrl(user.avatarUrl);
-        String fallbackRemote = extractIntraImageLink(intraInfo);
+        String fallbackRemote = extractIntraImageLink(user);
         dto.avatarImage = managedImage != null
             ? managedImage
             : firstNonBlank(user.avatarUrl, fallbackRemote);
@@ -171,9 +190,24 @@ public class AvatarStorageService {
     }
 
     public List<UserSummaryDTO> toUserSummaryDTOs(List<UserSummaryDTO> summaries) {
+        if (summaries == null || summaries.isEmpty()) {
+            return summaries;
+        }
+
+        List<Long> userIds = summaries.stream().map(s -> s.id).toList();
+        List<User> users = userRepository.findByIdsWithIntra(userIds);
+        Map<Long, User> userMap = users.stream().collect(Collectors.toMap(u -> u.id, u -> u));
+
         Map<Long, String> fallbackByUserId = loadIntraFallbacksForSummaries(summaries);
         for (UserSummaryDTO summary : summaries) {
-            String managedImage = toImageDataUrl(summary.avatarPath);
+            User user = userMap.get(summary.id);
+            if (user != null && user.avatarUrl != null) {
+                summary.avatarPath = user.avatarUrl;
+            }
+            String managedImage = toThumbnailImageDataUrl(summary.avatarPath);
+            if (managedImage == null) {
+                managedImage = toImageDataUrl(summary.avatarPath);
+            }
             String remoteFallback = fallbackByUserId.get(summary.id);
             summary.avatarImage = managedImage != null
                 ? managedImage
@@ -192,15 +226,14 @@ public class AvatarStorageService {
         return null;
     }
 
-    private String extractIntraImageLink(IntraInfoDTO intraInfo) {
-        if (intraInfo == null || intraInfo.image == null) {
+    private String extractIntraImageLink(User user) {
+        if (user == null || user.intra == null) {
             return null;
         }
-        String link = intraInfo.image.link;
-        if (link == null || link.isBlank()) {
-            return null;
-        }
-        return link;
+        Intra intra = user.intra;
+        return intra.originalImageUrl == null || intra.originalImageUrl.isBlank()
+            ? null
+            : intra.originalImageUrl;
     }
 
     private Map<Long, String> loadIntraFallbacksForSummaries(List<UserSummaryDTO> summaries) {
@@ -220,10 +253,10 @@ public class AvatarStorageService {
         Map<Long, String> fallbackByUserId = new HashMap<>();
         for (User user : userRepository.findByIdsWithIntra(unresolvedUserIds)) {
             Intra intra = user.intra;
-            if (intra == null || intra.image == null) {
+            if (intra == null) {
                 continue;
             }
-            String link = intra.image.link;
+            String link = intra.originalImageUrl;
             if (link != null && !link.isBlank()) {
                 fallbackByUserId.put(user.id, link);
             }
@@ -231,21 +264,35 @@ public class AvatarStorageService {
         return fallbackByUserId;
     }
 
-    private String writeAsPng(BufferedImage image) {
+    private String writeAvatarVariants(BufferedImage image) {
         String fileName = UUID.randomUUID() + ".png";
+        String thumbnailFileName = thumbnailFileName(fileName);
         Path targetPath = storagePath.resolve(fileName).normalize();
+        Path thumbnailTargetPath = storagePath.resolve(thumbnailFileName).normalize();
         if (!targetPath.startsWith(storagePath)) {
             throw new WebApplicationException("Invalid avatar path", 500);
         }
+        if (!thumbnailTargetPath.startsWith(storagePath)) {
+            throw new WebApplicationException("Invalid avatar thumbnail path", 500);
+        }
 
         Path tempPath = null;
+        Path thumbnailTempPath = null;
         try {
             tempPath = Files.createTempFile(storagePath, "avatar-", ".png");
+            thumbnailTempPath = Files.createTempFile(storagePath, "avatar-thumb-", ".png");
             boolean written = ImageIO.write(image, "png", tempPath.toFile());
             if (!written) {
                 throw new WebApplicationException("Failed to encode avatar image", 400);
             }
+            Thumbnails.of(image)
+                .size(THUMBNAIL_WIDTH, THUMBNAIL_WIDTH)
+                .keepAspectRatio(true)
+                .outputQuality(THUMBNAIL_QUALITY)
+                .outputFormat("png")
+                .toFile(thumbnailTempPath.toFile());
             Files.move(tempPath, targetPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            Files.move(thumbnailTempPath, thumbnailTargetPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
             return fileName;
         } catch (IOException e) {
             throw new WebApplicationException("Failed to store avatar", 500);
@@ -257,6 +304,45 @@ public class AvatarStorageService {
                     // Ignore temp file cleanup failures
                 }
             }
+            if (thumbnailTempPath != null) {
+                try {
+                    Files.deleteIfExists(thumbnailTempPath);
+                } catch (IOException ignored) {
+                    // Ignore temp file cleanup failures
+                }
+            }
+        }
+    }
+
+    private String thumbnailFileName(String avatarFileName) {
+        int extensionIndex = avatarFileName.lastIndexOf('.');
+        if (extensionIndex < 0) {
+            return avatarFileName + THUMBNAIL_SUFFIX;
+        }
+        return avatarFileName.substring(0, extensionIndex) + THUMBNAIL_SUFFIX + avatarFileName.substring(extensionIndex);
+    }
+
+    private Path resolveManagedAvatarPath(String avatarPath, boolean thumbnail) {
+        if (!isManagedPath(avatarPath)) {
+            return null;
+        }
+
+        String fileName = baseAvatarFileName(Path.of(avatarPath).getFileName().toString());
+        String resolvedFileName = thumbnail ? thumbnailFileName(fileName) : fileName;
+        Path filePath = storagePath.resolve(resolvedFileName).normalize();
+        if (!filePath.startsWith(storagePath) || !Files.exists(filePath) || !Files.isRegularFile(filePath)) {
+            return null;
+        }
+        return filePath;
+    }
+
+    private String readImageDataUrl(Path filePath) {
+        try {
+            byte[] bytes = Files.readAllBytes(filePath);
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(bytes);
+        } catch (IOException e) {
+            LOG.warnf("Failed to read avatar file %s: %s", filePath.getFileName(), e.getMessage());
+            return null;
         }
     }
 
@@ -342,12 +428,18 @@ public class AvatarStorageService {
         }
     }
 
-    private void deleteIfManaged(String avatarPath) {
+    private void deleteManagedVariants(String avatarPath) {
         if (!isManagedPath(avatarPath)) {
             return;
         }
 
-        Path filePath = storagePath.resolve(avatarPath).normalize();
+        String fileName = baseAvatarFileName(Path.of(avatarPath).getFileName().toString());
+        deleteManagedFile(fileName);
+        deleteManagedFile(thumbnailFileName(fileName));
+    }
+
+    private void deleteManagedFile(String fileName) {
+        Path filePath = storagePath.resolve(fileName).normalize();
         if (!filePath.startsWith(storagePath)) {
             return;
         }
@@ -355,7 +447,7 @@ public class AvatarStorageService {
         try {
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
-            LOG.warnf("Failed to delete previous avatar %s", avatarPath);
+            LOG.warnf("Failed to delete previous avatar %s", fileName);
         }
     }
 
@@ -364,5 +456,18 @@ public class AvatarStorageService {
             return false;
         }
         return SAFE_FILE_NAME.matcher(avatarPath).matches();
+    }
+
+    private String baseAvatarFileName(String avatarFileName) {
+        int extensionIndex = avatarFileName.lastIndexOf('.');
+        if (extensionIndex < 0) {
+            return avatarFileName;
+        }
+
+        String baseName = avatarFileName.substring(0, extensionIndex);
+        if (baseName.endsWith(THUMBNAIL_SUFFIX)) {
+            baseName = baseName.substring(0, baseName.length() - THUMBNAIL_SUFFIX.length());
+        }
+        return baseName + avatarFileName.substring(extensionIndex);
     }
 }

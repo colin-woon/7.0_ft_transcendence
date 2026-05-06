@@ -53,6 +53,11 @@ export function ChatArea() {
     ? Object.keys(typingUsers || {}).filter((userIdStr) => Number(userIdStr) !== currentUserId)
     : [];
 
+  const firstTypingId = activeTypingUserIds[0];
+  const typingDisplayName = firstTypingId 
+  ? resolveDisplay(Number(firstTypingId)).displayName 
+  : '';
+
   // Pre-calculate which message ID should display the "Read by [User]" tag for each user.
   // We only show it on the *latest* message sent by the current user that the other user has read.
   const latestReadByMessageId: Record<number, number[]> = {};
@@ -89,7 +94,7 @@ export function ChatArea() {
         <div className="chat chat-start opacity-70 mb-2">
           <div className="chat-header pb-1 text-xs">
             {activeTypingUserIds.length === 1
-              ? `User #${activeTypingUserIds[0]} is typing...`
+              ? `${typingDisplayName} is typing...`
               : `${activeTypingUserIds.length} users are typing...`}
           </div>
           <div className="chat-bubble flex items-center h-10 px-4">

@@ -33,6 +33,7 @@ public class ProfileService {
 	@Inject
 	CookieService cookieService;
 
+	@Transactional
 	public UserInfoDTO getMyInfo(Long userId) {
 		User user = userRepository.findById(userId);
 		if (user == null) {
@@ -69,13 +70,7 @@ public class ProfileService {
 			user.username = newValue;
 		});
 		updateDTO.avatarFile.ifPresent(newValue -> {
-			String trimmed = newValue.trim();
-			if (trimmed.isEmpty()) {
-				avatarStorageService.deleteManagedAvatar(user.avatarUrl);
-				user.avatarUrl = null;
-				return;
-			}
-			user.avatarUrl = avatarStorageService.storeBase64Avatar(trimmed, user.avatarUrl);
+			user.avatarUrl = avatarStorageService.replaceManagedAvatar(newValue, user.avatarUrl);
 		});
 		updateDTO.bio.ifPresent(newValue -> user.bio = newValue );
 		userRepository.persist(user);
@@ -84,16 +79,21 @@ public class ProfileService {
 		return avatarStorageService.toUserInfoDTO(user, intrainfo);
 	}
 
+    @Transactional
 	public List<@NonNull UserSummaryDTO> searchUser(String query, int page, int size, Set<String> groups) {
 		if (page < 0) {
 			page = 0;
 		}
-		if (size < 1 || size > 100) {
-			size = 10;
+		boolean isAdmin = groups.contains(UserRole.ADMIN.name());
+		int defaultSize = isAdmin ? 30 : 10;
+		if (size < 1) {
+			size = defaultSize;
+		} else if (size > defaultSize) {
+			size = defaultSize;
 		}
 		String safeQuery = (query == null) ? "" : query.trim();
 
-		if (groups.contains(UserRole.STUDENT.name())) {
+		if (groups.contains(UserRole.STUDENT.name()) && !isAdmin) {
 			return avatarStorageService.toUserSummaryDTOs(userRepository.searchByName(safeQuery, page, size, UserRole.STUDENT));
 		}
 		return avatarStorageService.toUserSummaryDTOs(userRepository.searchByName(safeQuery, page, size));

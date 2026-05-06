@@ -50,21 +50,41 @@ export async function getAllFriendshipStatuses(): Promise<FriendStatusItem[]> {
 export function getMessageStream(
   onStreamChunkReceived: (event: StreamEvent) => void
 ): EventSource {
-  const sse = new EventSource(`/api/stream${CHAT_API_BASE_PREFIX}/message/stream`, { withCredentials: true });
-  // const sse = new EventSource(`http://localhost:8003/message/stream`, { withCredentials: true });
+  let sse: EventSource;
+  let isIntentionallyClosed = false;
 
-  sse.onmessage = (streamResponse) => {
-    try {
-      const event = streamResponse.data;
-      onStreamChunkReceived(JSON.parse(event) as StreamEvent);
-    } catch (error) {
-      console.error("Error parsing incoming SSE response:", error);
+  function connect() {
+    if (isIntentionallyClosed) return;
+
+    sse = new EventSource(`/api/stream${CHAT_API_BASE_PREFIX}/message/stream`, { withCredentials: true });
+
+    sse.onmessage = (streamResponse) => {
+      try {
+        const event = streamResponse.data;
+        onStreamChunkReceived(JSON.parse(event) as StreamEvent);
+      } catch (error) {
+        console.error("Error parsing SSE:", error);
+      }
+    };
+
+    sse.onerror = (error) => {
+      console.error("SSE Error. Reconnecting...", error);
+      sse.close();
+      if (!isIntentionallyClosed) {
+        const jitter = Math.random() * 2000;
+        setTimeout(connect, 3000 + jitter); 
+      }
+    };
+  }
+
+  connect();
+
+  return {
+    close: () => {
+      isIntentionallyClosed = true;
+      if (sse) sse.close();
     }
-  };
-  sse.onerror = (error) => {
-    console.error("SSE Connection Error. Attempting to reconnect...", error);
-  };
-  return sse;
+  } as EventSource;
 }
 
 export async function getUserInbox(): Promise<ChatRoom[]> {

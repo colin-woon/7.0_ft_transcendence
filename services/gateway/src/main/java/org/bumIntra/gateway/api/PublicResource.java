@@ -41,6 +41,15 @@ public class PublicResource {
         return authService.proxyPublicGet("api/public/auth/callback/" + provider);
     }
 
+    @GET
+    @Path("/auth/link/{provider: .*}")
+    public Response proxyPublicLink(@PathParam("provider") String provider) {
+        if (provider.contains("/") || provider.isBlank() || provider.equals(".") || provider.equals("..")) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return authService.proxyPublicGet("api/public/auth/link/" + provider);
+    }
+
     @POST
     @Path("/{service}/{subpath: .*}")
     public Response proxyPublicPost(@PathParam("service") String service, @PathParam("subpath") String subpath,
@@ -59,7 +68,7 @@ public class PublicResource {
 
     private String buildUrl(String service, String subpath) {
         // for strict auth callback path OIDC
-        if (service.equals("auth") && (subpath.startsWith("callback/") || subpath.startsWith("login/"))) {
+        if (service.equals("auth") && (subpath.startsWith("callback/") || subpath.startsWith("login/") || subpath.startsWith("link/"))) {
             return "api/public/" + service + "/" + subpath;
         }
 
