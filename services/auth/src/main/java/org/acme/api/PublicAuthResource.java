@@ -1,19 +1,21 @@
 package org.acme.api;
 
 import org.acme.dto.UserResponseDTO;
+import org.acme.model.User;
 import org.acme.service.AuthService;
+import org.acme.service.UserService;
 
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;
-import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -26,50 +28,86 @@ public class PublicAuthResource {
 	AuthService authService;
 
 	@Inject
+	UserService userService;
+
+	@Inject
 	SecurityIdentity identity;
 
 	/**
-	 * OAuth login endpoint - called AFTER successful OAuth authentication
-	 * Quarkus OIDC automatically redirects here once Google/42 confirms identity
-	 * Creates session + access tokens, then redirects to login endpoint for cleanup
+	 * OAuth login endpoint - Starts the OIDC flow
+	 * Quarkus OIDC redirects here after callback
+	 * Creates user if not exists, syncs if does with populated identity
+	 * Creates session + access tokens, then redirects to frontend profile page
 	 */
 	@GET
 	@Path("/login/{provider}")
 	@Authenticated
-	public Response login(
-						@PathParam("provider") @DefaultValue("google") String provider,
-						@QueryParam("isCookie") @DefaultValue("true") Boolean isCookie) throws java.net.URISyntaxException {
-		UserResponseDTO userResponse = authService.createToken(identity);
-		Response.ResponseBuilder responseBuilder = Response
-			.seeOther(authService.resolvePostLoginRedirect())
-			.entity(userResponse)
-			.cookie(authService.createSessionCookie(identity))
-			.cookie(authService.clearOIDCCookies());
-		if (isCookie)
-			responseBuilder.cookie(authService.createAccessTokenCookie(userResponse.accessToken));
+	public Response login(@PathParam("provider") @DefaultValue("google") String provider) {
+		try {
+			User user = userService.syncUser(identity);
+			UserResponseDTO userResponse = authService.createToken(user);
+			return Response.seeOther(authService.resolveRedirectUri("/profile"))
+				.entity(userResponse)
+				.cookie(authService.createSessionCookie(user))
+				.cookie(authService.clearOIDCCookies())
+				.cookie(authService.createAccessTokenCookie(userResponse.accessToken))
+				.build();
 
-		return responseBuilder.build();
+		} catch (WebApplicationException e) {
+			int status = e.getResponse() == null ? 500 : e.getResponse().getStatus();
+			boolean shouldClearAuth = status == 401 || status == 403 || status == 404;
+			Response.ResponseBuilder response = Response
+				.seeOther(authService.resolveRedirectUri("/login", e.getMessage(), true))
+				.cookie(authService.clearOIDCCookies());
+			if (shouldClearAuth) {
+				response.cookie(authService.clearAuthCookies());
+			}
+			return response.build();
+		} catch (Exception e) {
+			return Response
+				.seeOther(authService.resolveRedirectUri("/login", "Authentication failed", true))
+				.cookie(authService.clearOIDCCookies())
+				.build();
+		}
 	}
 
 	/**
-	 * OAuth callback endpoint - Handles OAuth provider redirect
-	 * 
-	 * OIDC automatically processes the code/state parameters.
-	 * After code exchange and token validation, OIDC sets q_auth cookie.
-	 * 
-	 * With restore-path-after-redirect=true, Quarkus will redirect browser
-	 * back to the original login path (/api/public/auth/login/{provider})
-	 * which will now execute the login() method above.
-	 * 
-	 * This endpoint just receives the callback - OIDC handles everything.
+	 * OAuth link endpoint - same OIDC flow as /login/{provider}, but links the provider
+	 * identity to the currently logged-in user (identified by session cookie).
 	 */
 	@GET
-	@Path("/callback/{provider}")
-	@PermitAll
-	public Response handleCallback(@PathParam("provider") String provider) {
-		// OIDC has already processed the callback and set cookies
-		// Return OK - OIDC will handle the redirect back to login path
-		return Response.ok("{\"status\": \"callback received\"}").build();
-	}
+	@Path("/link/{provider}")
+	@Authenticated
+	public Response link(@PathParam("provider") @DefaultValue("google") String provider,
+						@CookieParam("sessionId") String sessionId) {
+		try {
+			User linkedUser = userService.linkProvider(identity,
+					authService.validateSessionUser(sessionId));
+			UserResponseDTO userResponse = authService.createToken(linkedUser);
+			String successMessage = "Successfully linked to " + provider;
+			return Response.seeOther(authService.resolveRedirectUri("/settings", successMessage, false))
+				.entity(userResponse)
+				.cookie(authService.clearOIDCCookies())
+				.cookie(authService.createAccessTokenCookie(userResponse.accessToken))
+				.build();
 
+		} catch (WebApplicationException e) {
+			int status = e.getResponse() == null ? 500 : e.getResponse().getStatus();
+			boolean invalidSession = status == 401 || status == 404;
+			boolean banned = status == 403;
+			String redirect = invalidSession ? "/login" : "/settings";
+			Response.ResponseBuilder response = Response
+				.seeOther(authService.resolveRedirectUri(redirect, e.getMessage(), true))
+				.cookie(authService.clearOIDCCookies());
+			if (invalidSession || banned) {
+				response.cookie(authService.clearAuthCookies());
+			}
+			return response.build();
+		} catch (Exception e) {
+			return Response
+				.seeOther(authService.resolveRedirectUri("/settings", "Link failed", true))
+				.cookie(authService.clearOIDCCookies())
+				.build();
+		}
+	}
 }

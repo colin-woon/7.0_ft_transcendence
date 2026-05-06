@@ -52,7 +52,7 @@ public class SeedPersistenceService {
 			user = userRepository.findByIntraId(intraId).orElse(null);
 		}
 		if (user == null) {
-			user = userRepository.findByEmail(normalizedEmail).orElse(null);
+			user = userRepository.findByOverflowEmail(normalizedEmail).orElse(null);
 		}
 
 		String preferredUsername = firstNonBlank(record.user.username, deriveLoginFromEmail(normalizedEmail));
@@ -60,7 +60,7 @@ public class SeedPersistenceService {
 
 		if (user == null) {
 			user = new User();
-			user.email = normalizedEmail;
+			user.overflowEmail = normalizedEmail;
 			user.username = ensureUniqueUsername(preferredUsername, null);
 			user.fullName = preferredFullName;
 			user.role = resolveRole(record.user.role, record.intra != null && record.intra.isStaff);

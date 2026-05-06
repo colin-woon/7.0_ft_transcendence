@@ -44,6 +44,12 @@ export default function ProfileCard({
   adminActions,
 }: ProfileCardProps) {
   const { user: loggedInUser } = useAuth();
+  const primaryEmail = user?.overflowEmail || profile.email;
+  const allEmails = [
+    user?.overflowEmail,
+    user?.intraEmail,
+    user?.googleEmail,
+  ].filter((email): email is string => !!email && email.trim().length > 0);
   const loggedInUserId = loggedInUser?.id;
   const canShowPeerActions =
     loggedInUserId !== undefined &&
@@ -89,10 +95,17 @@ export default function ProfileCard({
               @{user?.username ?? "jdoe"} · {profile.cursus}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
-              <span className="flex items-center gap-1">
-                <Mail size={11} />
-                {user?.email ?? profile.email}
-              </span>
+              {primaryEmail ? (
+                <span className="flex items-center gap-1">
+                  <Mail size={11} />
+                  {primaryEmail}
+                </span>
+              ) : null}
+              {allEmails.length > 1 && (
+                <span className="flex items-center gap-1">
+                  {allEmails.join(", ")}
+                </span>
+              )}
               {profile.location ? (
                 <span className="flex items-center gap-1">
                   <MapPin size={11} />

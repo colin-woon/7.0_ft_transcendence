@@ -72,76 +72,46 @@ public class AuthResource {
 	// =============================================================
 	// AUTH RESOURCE ENDPOINTS
 	// =============================================================
-	// @GET
-	// @Path("/login/{provider}")
-	// @Authenticated
-	// public Response login(
-	// 					@PathParam("provider") @DefaultValue("google") String provider,
-	// 					@QueryParam("isCookie") @DefaultValue("true") Boolean isCookie) throws java.net.URISyntaxException {
-	// 	UserResponseDTO userResponse = authService.createToken(identity);
-	// 	Response.ResponseBuilder responseBuilder = Response
-	// 		.seeOther(new URI("https://localhost/profile"))
-	// 		.entity(userResponse)
-	// 		.cookie(authService.createSessionCookie(identity))
-	// 		.cookie(authService.clearOIDCCookies());
-	// 	if (isCookie)
-	// 		responseBuilder.cookie(authService.createAccessTokenCookie(userResponse.accessToken));
-
-	// 	return responseBuilder.build();
-	// }
 
 	// To refresh the user after access token expires
 	@POST
 	@Path("/refresh")
 	@PermitAll
-	public Response refresh(
-						@CookieParam("sessionId") String sessionId,
-						@QueryParam("isCookie") @DefaultValue("true") Boolean isCookie) {
+	public Response refresh(@CookieParam("sessionId") String sessionId) {
 		UserResponseDTO userResponse = authService.refreshToken(sessionId);
-		Response.ResponseBuilder responseBuilder = Response
-			.status(200)
-			.entity(userResponse);
-		if (isCookie)
-			responseBuilder.cookie(authService.createAccessTokenCookie(userResponse.accessToken));
-
-		return responseBuilder.build();
+		return Response.status(200)
+			.entity(userResponse)
+			.cookie(authService.createAccessTokenCookie(userResponse.accessToken))
+			.build();
 	}
 
 	// To authenticate with email and password, not with OIDC
 	@POST
 	@Path("/password/login")
 	@PermitAll
-	public Response passwordLogin(
-						@Valid PasswordLoginDTO loginDTO,
-						@QueryParam("isCookie") @DefaultValue("true") Boolean isCookie) {
+	public Response passwordLogin(@Valid PasswordLoginDTO loginDTO) {
 		User user = userService.authenticateWithPassword(loginDTO);
-		UserResponseDTO userResponse = authService.createTokenForUser(user);
+		UserResponseDTO userResponse = authService.createToken(user);
 
-		Response.ResponseBuilder responseBuilder = Response.ok(userResponse)
-			.cookie(authService.createSessionCookieForUser(user));
-		if (isCookie)
-			responseBuilder.cookie(authService.createAccessTokenCookie(userResponse.accessToken));
-
-		return responseBuilder.build();
+		return Response.ok(userResponse)
+			.cookie(authService.createSessionCookie(user))
+			.cookie(authService.createAccessTokenCookie(userResponse.accessToken))
+			.build();
 	}
 
 	// To register with email and password, not with OIDC (account creation is kept separate)
 	@POST
 	@Path("/password/register")
 	@PermitAll
-	public Response passwordRegister(
-							@Valid PasswordRegisterDTO registerDTO,
-							@QueryParam("isCookie") @DefaultValue("true") Boolean isCookie) {
+	public Response passwordRegister(@Valid PasswordRegisterDTO registerDTO) {
 		User user = userService.registerWithPassword(registerDTO);
-		UserResponseDTO userResponse = authService.createTokenForUser(user);
+		UserResponseDTO userResponse = authService.createToken(user);
 
-		Response.ResponseBuilder responseBuilder = Response.status(201)
+		return Response.status(201)
 			.entity(userResponse)
-			.cookie(authService.createSessionCookieForUser(user));
-		if (isCookie)
-			responseBuilder.cookie(authService.createAccessTokenCookie(userResponse.accessToken));
-
-		return responseBuilder.build();
+			.cookie(authService.createSessionCookie(user))
+			.cookie(authService.createAccessTokenCookie(userResponse.accessToken))
+			.build();
 	}
 
 	// To Logout the user from the current session, or a specific session

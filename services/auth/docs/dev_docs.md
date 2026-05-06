@@ -1,42 +1,127 @@
 # Auth Service Developer Notes
 
-This document explains how the auth service is wired in development and what to check when changing it.
+This document focuses on implementation-level behavior for auth flows, integration points, and common maintenance tasks.
 
-## Local run model
+## Runtime Topology
 
-The service is usually started through Docker Compose. In dev mode, the override file mounts the auth source tree into the container and exposes the Quarkus dev HTTP port plus the management health port.
+- The service runs behind gateway and nginx in Docker Compose.
+- Public entrypoints are proxied via gateway `/api/public/...` routes.
+- Protected APIs are exposed under `/api/auth/...` and require a valid JWT (plus session for refresh/logout semantics).
+- In dev, compose override can mount sources for live reload.
 
-The production image uses the custom auth entrypoint to prepare writable runtime paths before Quarkus starts.
+## Auth Architecture
 
-## Configuration surface
+The service uses a two-token model:
 
-- `AVATAR_MAX_BYTES` is the main avatar upload limit and defaults to `1048576` bytes.
-- `AUTH_SEED_FILE_PATH` can override the seed file location used by the entrypoint.
-- `SEED_MODE` controls whether startup seeding is skipped or loaded from file, logins, or campus data.
-- `SECURE_COOKIES` and `MAX_SESSIONS_PER_USER` control cookie behavior and per-user session limits.
+- Access token: short-lived JWT used for authorization.
+- Refresh session: long-lived `sessionId` cookie backed by `auth_service.sessions`.
 
-Keep the auth web validation aligned with the backend avatar limit. The frontend currently uses the same byte cap in `services/web/src/features/auth/utils/avatarFile.ts`.
+For OIDC, Quarkus handles provider redirects and callback code exchange. The app logic runs on restored login/link paths.
 
-## Avatar lifecycle
+## OIDC Login and Link Details
 
-1. The frontend converts the selected file to a data URL.
-2. The backend decodes the payload and rejects it if the decoded size exceeds the configured byte limit.
-3. The service validates the image and stores both the full PNG and a thumbnail.
-4. When an avatar is cleared, managed files are deleted and the profile reverts to no managed avatar.
+### Login (`GET /api/public/auth/login/{provider}`)
 
-The dimension check is a secondary safety guard, not the primary policy gate.
+- Expected providers: `google`, `42`.
+- Flow:
+	1. OIDC auth challenge/redirect.
+	2. Callback processing by Quarkus.
+	3. User sync/create in `UserService.syncUser`.
+	4. Session + access token issuance.
+	5. Redirect to `/profile`.
 
-## Seed modes
+### Link (`GET /api/public/auth/link/{provider}`)
 
-- `off`: no startup seeding.
-- `file`: load `/var/lib/auth/seed/seed_file.json` or the configured seed file.
-- `logins`: fetch specific 42 logins.
-- `campus`: fetch all users in the configured campus list.
+- Requires an existing valid `sessionId` cookie.
+- Flow:
+	1. Validate session ownership (`AuthService.validateSessionUser`).
+	2. Link provider identity to target user (`UserService.linkProvider`).
+	3. Return refreshed access token and redirect to `/profile`.
 
-The entrypoint creates the seed file when missing so file mode does not fail on a fresh volume.
+### Redirect error behavior
+
+- Login/link routes redirect with `?error=<message>` on failures.
+- Login/settings pages should render these route errors explicitly.
+
+## Password and Session Semantics
+
+- Password hashing: Argon2id via `PasswordService`.
+- Argon2 tuning keys:
+	- `auth.password.argon2.iterations`
+	- `auth.password.argon2.memory-kb`
+	- `auth.password.argon2.parallelism`
+- Refresh path (`POST /auth/refresh`) validates `sessionId` and user status.
+- Session-cap behavior (`MAX_SESSIONS_PER_USER`) deletes oldest session when limit is reached.
+
+## User Identity Reconciliation
+
+The model supports:
+
+- `overflow_email`: local canonical email.
+- `google_email` / `intra_email`: provider emails.
+- `google_id` / `intra_id`: provider account ids.
+
+For login/link safety, provider id and provider email must never resolve to different local users. Treat this as a hard `409` conflict.
+
+## Profile and Admin Surface
+
+- User profile:
+	- `GET /auth/me`
+	- `PATCH /auth/me`
+	- `POST /auth/me/password`
+	- `DELETE /auth/delete`
+- Sessions:
+	- `GET /auth/sessions`
+	- `POST /auth/logout`
+	- `POST /auth/logout/all`
+- Admin:
+	- `PATCH /auth/admin/users/{id}`
+	- `POST /auth/admin/users/{id}/logout`
+	- `POST /auth/admin/users/create`
+	- `DELETE /auth/admin/users/{id}/delete`
+
+Role enforcement is done server-side (`@RolesAllowed("ADMIN")`) and additional checks prevent admins from modifying/deleting other admins.
+
+## Frontend Contract
+
+Web module integration points:
+
+- Start OIDC login: `/api/public/auth/login/{provider}`.
+- Start OIDC link: `/api/public/auth/link/{provider}`.
+- Restore auth state: `/api/public/auth/refresh` with cookies.
+- Use bearer + cookies for protected `/api/auth/*` calls.
+
+Frontend should treat route query error (`?error=`) as displayable user feedback for login/link failures.
+
+## Avatar Lifecycle
+
+1. Frontend converts uploaded image to data URL.
+2. Backend enforces decoded byte cap (`AVATAR_MAX_BYTES`).
+3. Backend validates image and stores full PNG + thumbnail.
+4. Clearing avatar deletes managed files.
+5. Remote provider avatars are mirrored when possible; fallback keeps remote URL.
+
+## Seed Modes
+
+- `off`: skip seeding.
+- `file`: load configured seed file path.
+- `logins`: fetch selected 42 users by login.
+- `campus`: fetch selected campus users.
+
+Optional admin bootstrap is controlled by `SEED_ADMIN_*` settings.
+
+## Operational Checklist
+
+- When touching OIDC flows, test:
+	- login success/failure for both providers.
+	- link success/conflict/session-expired paths.
+	- redirect error display in login/settings UI.
+- When touching DTO fields, verify web auth types are updated in `services/web/src/features/auth/api/authService.ts`.
+- When touching password logic, verify Argon2 parameters remain valid and login still supports existing stored hashes.
 
 ## Troubleshooting
 
-- A `413` during avatar upload usually means the payload exceeds `AVATAR_MAX_BYTES`.
-- A `403` from profile APIs usually means the user is banned.
-- If the health check fails in Compose, verify the management port certificate mounts and the startup seed phase has finished.
+- `401` on refresh: missing/expired `sessionId`.
+- `403` on profile/auth calls: banned user or forbidden operation.
+- `409` on login/link: provider identity conflict.
+- Startup health delays in seeding modes are expected; adjust compose health start periods accordingly.

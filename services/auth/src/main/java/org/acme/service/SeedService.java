@@ -94,7 +94,7 @@ public class SeedService {
 	@ConfigProperty(name = "seed.test.pass", defaultValue = "__unset__")
 	String seedTestPassword;
 
-	@ConfigProperty(name = "seed.limit", defaultValue = "200")
+	@ConfigProperty(name = "seed.limit", defaultValue = "50")
 	int seedLimit;
 
 	public void onStart(@Observes StartupEvent ev) {
@@ -143,7 +143,7 @@ public class SeedService {
 		final boolean resolvedLoginExplicitlyConfigured = loginExplicitlyConfigured;
 
 		QuarkusTransaction.requiringNew().run(() -> {
-			User userByEmail = userRepository.findByEmail(resolvedAdminEmail).orElse(null);
+			User userByEmail = userRepository.findByOverflowEmail(resolvedAdminEmail).orElse(null);
 			User userByLogin = resolvedLoginExplicitlyConfigured
 				? userRepository.findByUsername(resolvedAdminLogin).orElse(null)
 				: null;
@@ -161,7 +161,7 @@ public class SeedService {
 				}
 
 				adminUser = new User();
-				adminUser.email = resolvedAdminEmail;
+				adminUser.overflowEmail = resolvedAdminEmail;
 				adminUser.username = loginToUse;
 				adminUser.fullName = "Admin";
 				adminUser.role = UserRole.ADMIN;
@@ -172,7 +172,7 @@ public class SeedService {
 				return;
 			}
 
-			adminUser.email = resolvedAdminEmail;
+			adminUser.overflowEmail = resolvedAdminEmail;
 			if (resolvedLoginExplicitlyConfigured) {
 				adminUser.username = resolvedAdminLogin;
 			}

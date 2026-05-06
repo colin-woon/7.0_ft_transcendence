@@ -16,8 +16,8 @@ public class UserRepository implements PanacheRepository<User> {
 
     // can use standard methods (persist, delete, listAll) for free
 
-    public Optional<User> findByEmail(String email) {
-        return find("email", email).firstResultOptional();
+    public Optional<User> findByOverflowEmail(String overflowEmail) {
+        return find("overflowEmail", overflowEmail).firstResultOptional();
     }
 
     public Optional<User> findByUsername(String username) {
@@ -31,9 +31,17 @@ public class UserRepository implements PanacheRepository<User> {
     public Optional<User> findByGoogleId(String googleId) {
         return find("googleId", googleId).firstResultOptional();
     }
+
+    public Optional<User> findByGoogleEmail(String googleEmail) {
+        return find("googleEmail", googleEmail).firstResultOptional();
+    }
     
     public Optional<User> findByIntraId(String intraId) {
         return find("intraId", intraId).firstResultOptional();
+    }
+
+    public Optional<User> findByIntraEmail(String intraEmail) {
+        return find("intraEmail", intraEmail).firstResultOptional();
     }
 
     public List<@NonNull UserSummaryDTO> searchByName(String query, int pageIndex, int pageSize) {

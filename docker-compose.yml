@@ -81,8 +81,10 @@ services:
         networks:
             - 42_overflow
         # auth to add health route or use management port
-        # For FILE seeding: can use interval: 10s, timeout: 5s, start_period: 60s
-        # For CAMPUS seeding: use interval: 30s, timeout: 15s, start_period: 900s (15 min)
+        # For OFF SEEDING: can use interval: 10s, timeout: 5s, start_period: 20s
+        # For FILE seeding (100 users): can use interval: 10s, timeout: 5s, start_period: 300s
+        # For CAMPUS seeding: use interval: 100s, timeout: 50s, start_period: 900s (15 min)
+        # For LOGINS seeding: Set based on number of logins
         healthcheck:
             test:
                 [
@@ -97,7 +99,7 @@ services:
                 ]
             interval: 10s
             timeout: 5s
-            start_period: 60s
+            start_period: 20s
             retries: 3
         env_file:
             - ./environment/shared.env

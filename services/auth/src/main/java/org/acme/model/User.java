@@ -28,8 +28,14 @@ public class User {
     public Long id;
 
     // --- Identity Providers ---
-    @Column(nullable = false, unique = true)
-    public String email;
+    @Column(name = "overflow_email", unique = true)
+    public String overflowEmail;
+
+    @Column(name = "google_email", unique = true)
+    public String googleEmail;
+
+    @Column(name = "intra_email", unique = true)
+    public String intraEmail;
 
     @Column(name = "intra_id", unique = true)
     public String intraId;
