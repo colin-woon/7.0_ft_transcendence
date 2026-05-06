@@ -292,9 +292,5 @@ public class AuthService {
 			session.browser = deviceInfo.get("browser");
 			session.os = deviceInfo.get("os");
 		}
-		String forwarded = request.getHeader("X-Forwarded-For");
-		session.ipAddress = forwarded != null
-			? forwarded.split(",")[0].trim()
-			: (request.remoteAddress() != null ? request.remoteAddress().host() : null);
 	}
 }

@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 
 import org.acme.dto.IntraDTO;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -34,10 +35,10 @@ public class IntraClientService {
 	private static final String FT_CAMPUSES_URL = "https://api.intra.42.fr/v2/campus";
 	private static final int PAGE_SIZE = 100;
 
-	@ConfigProperty(name = "ft.client.id", defaultValue = "")
+	@ConfigProperty(name = "ft.client.id", defaultValue = "__unset__")
 	String ftClientId;
 
-	@ConfigProperty(name = "ft.client.secret", defaultValue = "")
+	@ConfigProperty(name = "ft.client.secret", defaultValue = "__unset__")
 	String ftClientSecret;
 
 	@ConfigProperty(name = "ft.api.retry.max-attempts", defaultValue = "4")
@@ -146,6 +147,10 @@ public class IntraClientService {
 	}
 
 	public List<IntraDTO> fetchUsersByCampus(String token, String campus) {
+		return fetchUsersByCampus(token, campus, null);
+	}
+
+	public List<IntraDTO> fetchUsersByCampus(String token, String campus, BiConsumer<Integer, List<IntraDTO>> pageConsumer) {
 		List<IntraDTO> result = new ArrayList<>();
 		int pageNumber = 1;
 
@@ -180,6 +185,10 @@ public class IntraClientService {
 				List<IntraDTO> pageData = Arrays.asList(objectMapper.readValue(response.body(), IntraDTO[].class));
 				if (pageData.isEmpty()) {
 					break;
+				}
+
+				if (pageConsumer != null) {
+					pageConsumer.accept(pageNumber, pageData);
 				}
 
 				result.addAll(pageData);

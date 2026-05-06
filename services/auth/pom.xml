@@ -109,6 +109,11 @@
             <artifactId>log4j-api</artifactId>
         </dependency>
         <dependency>
+            <groupId>net.coobird</groupId>
+            <artifactId>thumbnailator</artifactId>
+            <version>0.4.20</version>
+        </dependency>
+        <dependency>
             <groupId>de.mkammerer</groupId>
             <artifactId>argon2-jvm</artifactId>
             <version>${argon2-jvm.version}</version>
