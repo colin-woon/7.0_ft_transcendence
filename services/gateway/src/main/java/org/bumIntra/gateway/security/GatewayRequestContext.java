@@ -32,6 +32,7 @@ public class GatewayRequestContext {
     private String _forwardedProto;
     private String _serviceName;
     private boolean _isLab;
+    private String _refreshCookie;
 
     // ServiceAuthFilter
     private Set<String> _roles = Collections.emptySet();
@@ -232,5 +233,13 @@ public class GatewayRequestContext {
 
     public void setLab(boolean isLab) {
         _isLab = isLab;
+    }
+
+    public String getRefreshCookie() {
+        return _refreshCookie;
+    }
+
+    public void setRefreshCookie(String refreshCookie) {
+        _refreshCookie = refreshCookie;
     }
 }

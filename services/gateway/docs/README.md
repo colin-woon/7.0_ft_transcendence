@@ -90,6 +90,19 @@ Current admin-routed services:
 
 This route family is protected by gateway RBAC and is intended for authenticated `ADMIN` access to observability tooling.
 
+### Admin WebSocket
+
+`/api/admin/grafana/api/live/ws`
+
+Handled by [`GrafanaWsServer.java`](../src/main/java/org/bumIntra/gateway/websocket/grafana/GrafanaWsServer.java).
+
+Current behavior:
+
+- browser-facing Grafana Live WebSocket endpoint under the admin route family
+- gateway authentication and `ADMIN` RBAC enforced before downstream connect
+- downstream bridge to Grafana Live established by the gateway after successful auth
+- intended for the same admin-only Grafana surface exposed under `/api/admin/grafana/...`
+
 ### SSE Streams
 
 `/api/stream/{service}/...`
@@ -137,6 +150,8 @@ Filters execute in priority order:
 - reads `accessToken` from the `Cookie` header
 - parses JWT locally with the gateway public key
 - sets `userId`, `roles`, and `authLevel`
+- for `/api/admin/**`, can silently refresh browser auth with `sessionId` when `accessToken` is missing or no longer usable
+- adds a refreshed `accessToken` cookie to the outgoing response when admin refresh succeeds
 - marks `/api/public/**` routes as public
 - enforces auth on non-public routes when `gateway.auth.required=true`
 - treats X.509 principal identity as `SERVICE` when present
@@ -180,6 +195,7 @@ The gateway no longer depends on inbound Bearer headers for the main browser flo
 Current behavior:
 
 - browser auth is primarily derived from the `accessToken` cookie
+- admin browser routes may recover auth from the `sessionId` cookie and issue a fresh `accessToken` cookie on the same response
 - the gateway parses JWTs locally using `JWTParser`
 - authenticated users become:
     - `USER`
