@@ -5,7 +5,6 @@ import intraIcon from '@/components/ui/imgs/42_icon.png';
 import PasswordForm from '@/features/auth/ui/settings/components/DropdownPassword';
 import CreateUserDialog from '@/features/auth/ui/settings/components/CreateUserDialog';
 import AdminToolsCard from '@/features/auth/ui/settings/components/AdminToolsCard';
-
 import {
 	AlertCircle,
 	ChartNoAxesColumn,
@@ -43,9 +42,13 @@ import {
 	validateAvatarFile,
 } from '@/features/auth/utils/avatarFile';
 import {
-	type PasswordChangeFormValues,
+	createUserSchema,
 	passwordChangeSchema,
+	type PasswordChangeFormValues,
+	updateProfileSchema,
+	type UpdateProfileFormValues,
 } from '@/features/auth/validation/authSchemas';
+
 
 interface SettingsPageProps {
   initialProfile?: User | null;
@@ -94,46 +97,51 @@ function getConfirmConfig(action: ConfirmAction | null): {
 		};
 	}
 
-	switch (action.kind) {
-		case 'delete-account':
-			return {
-				title: 'Delete account',
-				message:
-					'This permanently removes your account and cannot be undone.',
-				confirmLabel: 'Delete',
-				tone: 'danger',
-			};
-		case 'logout':
-			return {
-				title: 'Logout',
-				message: 'You will be signed out from your current session.',
-				confirmLabel: 'Logout',
-				tone: 'warning',
-			};
-		case 'logout-all':
-			return {
-				title: 'Logout all sessions',
-				message:
-					'This signs you out from every device, including your current one.',
-				confirmLabel: 'Logout all',
-				tone: 'warning',
-			};
-		case 'end-session':
-			return {
-				title: 'End session',
-				message: 'This session will be revoked immediately.',
-				confirmLabel: 'End session',
-				tone: 'warning',
-			};
-		default:
-			return {
-				title: 'Confirm action',
-				message: 'Please confirm this action.',
-				confirmLabel: 'Confirm',
-				tone: 'warning',
-			};
-	}
+  switch (action.kind) {
+    case 'delete-account':
+      return {
+        title: "Delete account",
+        message: "This permanently removes your account and cannot be undone.",
+        confirmLabel: "Delete",
+        tone: "danger",
+      };
+    case 'logout':
+      return {
+        title: "Logout",
+        message: "You will be signed out from your current session.",
+        confirmLabel: "Logout",
+        tone: "warning",
+      };
+    case 'logout-all':
+      return {
+        title: "Logout all sessions",
+        message:
+          "This signs you out from every device, including your current one.",
+        confirmLabel: "Logout all",
+        tone: "warning",
+      };
+    case "end-session":
+      return {
+        title: "End session",
+        message: "This session will be revoked immediately.",
+        confirmLabel: "End session",
+        tone: "warning",
+      };
+    default:
+      return {
+        title: "Confirm action",
+        message: "Please confirm this action.",
+        confirmLabel: "Confirm",
+        tone: "warning",
+      };
+  }
 }
+
+const XIcon = () => (
+  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+    <path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+  </svg>
+);
 
 export default function SettingsPage({
   initialProfile,
@@ -227,6 +235,12 @@ export default function SettingsPage({
     isRouteMessageError ?? false,
   );
   const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
+  const [createUserSubmitAttempted, setCreateUserSubmitAttempted] = useState(
+    false,
+  );
+  const [createUserDialogError, setCreateUserDialogError] = useState<
+    string | null
+  >(null);
 
 	const [editDraft, setEditDraft] = useState<EditUserDraft>({
 		username: '',
@@ -276,6 +290,45 @@ export default function SettingsPage({
 		[isAdmin]
 	);
 
+  const editValidation = useMemo(
+    () =>
+      updateProfileSchema.safeParse({
+        username: editDraft.username,
+        fullName: editDraft.fullName,
+        bio: editDraft.bio,
+        avatarFile: pendingAvatarFile ? "placeholder" : "",
+      }),
+    [editDraft.bio, editDraft.fullName, editDraft.username, pendingAvatarFile],
+  );
+  const editValidationMessage = editValidation.success
+    ? null
+    : editValidation.error.issues[0]?.message || "Invalid input";
+	const createUserValidation = useMemo(
+		() =>
+			createUserSchema.safeParse({
+				username: newUserForm.username,
+				fullName: newUserForm.fullName,
+				email: newUserForm.overflowEmail,
+				bio: newUserForm.bio ?? '',
+				role: newUserForm.role,
+				isBanned: newUserForm.isBanned,
+			}),
+		[
+			newUserForm.bio,
+			newUserForm.overflowEmail,
+			newUserForm.fullName,
+			newUserForm.isBanned,
+			newUserForm.role,
+			newUserForm.username,
+		]
+	);
+	const createUserValidationMessage = !createUserValidation.success
+		? createUserValidation.error.issues[0]?.message || 'Invalid input'
+		: null;
+	const createUserDisplayMessage = createUserSubmitAttempted
+		? createUserValidationMessage
+		: null;
+
 	useEffect(() => {
 		if (!activeProfile) return;
 		setEditDraft({
@@ -316,6 +369,13 @@ export default function SettingsPage({
 
     lastTabRef.current = activeTab;
   }, [activeTab, refreshSessions, user]);
+
+  useEffect(() => {
+    if (!createUserModalOpen) {
+      setCreateUserSubmitAttempted(false);
+      setCreateUserDialogError(null);
+    }
+  }, [createUserModalOpen]);
 
   useEffect(() => {
     if (routeMessageState == null) return;
@@ -362,6 +422,18 @@ export default function SettingsPage({
 		if (pendingAvatarFile) {
 			avatarFilePayload = await fileToDataUrl(pendingAvatarFile);
 		}
+
+    const parsed = updateProfileSchema.safeParse({
+      username: editDraft.username,
+      fullName: editDraft.fullName,
+      bio: editDraft.bio,
+      avatarFile: avatarFilePayload ?? "",
+    });
+
+    if (!parsed.success) {
+      setAdminActionError(parsed.error.issues[0]?.message || "Invalid input");
+      return;
+    }
 
 		const updated = await saveProfile({
 			username: editDraft.username.trim() || undefined,
@@ -453,42 +525,50 @@ export default function SettingsPage({
 		event: React.FormEvent<HTMLFormElement>
 	) => {
 		event.preventDefault();
-		setAdminActionError(null);
+		setCreateUserSubmitAttempted(true);
+    setCreateUserDialogError(null);
 		setAdminActionSuccess(null);
 
-    const username = newUserForm.username.trim();
-    const fullName = newUserForm.fullName.trim();
-    const overflowEmail = newUserForm.overflowEmail.trim();
+
+	const parsed = createUserSchema.safeParse(newUserForm);
+	if (!parsed.success) {
+		return;
+	}
+	const { username, fullName, overflowEmail, bio, role, isBanned } = parsed.data;
+
 
     if (!username || !fullName || !overflowEmail) {
       setAdminActionError("Username, full name, and email are required.");
       return;
     }
 
-    const created = await adminCreateUser({
-      username,
-      fullName,
-      overflowEmail,
-      bio: newUserForm.bio?.trim() || undefined,
-      role: newUserForm.role,
-      isBanned: newUserForm.isBanned,
-    });
+		const created = await adminCreateUser({
+			username,
+			fullName,
+			overflowEmail,
+			bio: bio?.trim() || undefined,
+			role,
+			isBanned,
+		});
 
 		if (!created) {
-			setAdminActionError('Failed to create user');
+			setCreateUserDialogError('Failed to create user');
 			return;
 		}
 
-    setNewUserForm({
-      username: "",
-      fullName: "",
-      overflowEmail: "",
-      bio: "",
-      role: "STUDENT",
-      isBanned: false,
-    });
-    setAdminActionSuccess(`Created user @${created.username} (${created.id}).`);
-  };
+		setNewUserForm({
+			username: '',
+			fullName: '',
+			overflowEmail: '',
+			bio: '',
+			role: 'STUDENT',
+			isBanned: false,
+		});
+    setCreateUserDialogError(null);
+		setAdminActionSuccess(
+			`User "${created.username}" created successfully (ID: ${created.id})`
+		);
+	};
 
 	/**
 	 * Executes the currently-selected destructive/security action.
@@ -531,6 +611,7 @@ export default function SettingsPage({
     setRouteMessageState(null);
     setIsRouteMessageErrorState(false);
     setAdminActionError(null);
+    setCreateUserDialogError(null);
   };
 
 	if (authLoading || profileLoading) {
@@ -558,6 +639,42 @@ export default function SettingsPage({
 	const confirmConfig = getConfirmConfig(
 		confirmAction || lastConfirmAction.current
 	);
+  const alertTextStyle = {
+    fontSize: 12.5,
+    fontWeight: 500,
+    letterSpacing: "0.01em",
+  } as const;
+  const dismissButtonStyle = {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    opacity: 0.45,
+    color: "inherit",
+    padding: 0,
+    transition: "opacity 0.15s",
+  } as const;
+  const errorNoticeStyle = {
+    background: "rgba(255, 241, 241, 0.84)",
+    border: "1px solid rgba(210, 155, 155, 0.9)",
+    color: "#6B2323",
+    boxShadow: "0 10px 24px rgba(107, 35, 35, 0.08)",
+    animation: "slideDownFade 0.2s ease-out",
+    backdropFilter: "blur(6px)",
+  } as const;
+  const successNoticeStyle = {
+    background: "rgba(236, 251, 241, 0.86)",
+    border: "1px solid rgba(152, 197, 142, 0.9)",
+    color: "#2A4F24",
+    boxShadow: "0 10px 24px rgba(42, 79, 36, 0.08)",
+    animation: "slideDownFade 0.2s ease-out",
+    backdropFilter: "blur(6px)",
+  } as const;
 
 	return (
 		<div className="max-w-4xl mx-auto px-4 py-8">
@@ -572,15 +689,26 @@ export default function SettingsPage({
 			</div>
 
       {pageError && (
-        <div className="alert alert-error mb-4">
-          <AlertCircle size={16} />
-          <span className="text-sm">{pageError}</span>
+        <div
+          className="flex items-center gap-2.5 px-3.5 py-2.5 mb-3 rounded-lg"
+          style={errorNoticeStyle}
+        >
+          <style>{`@keyframes slideDownFade { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }`}</style>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.65 }}>
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.1"/>
+            <path d="M8 5v3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+            <circle cx="8" cy="11" r="0.65" fill="currentColor"/>
+          </svg>
+          <p className="flex-1 m-0" style={alertTextStyle}>{pageError}</p>
           <button
-            type="button"
-            className="btn btn-xs btn-ghost ml-auto"
             onClick={clearAllErrors}
+            type="button"
+            aria-label="Dismiss"
+            style={dismissButtonStyle}
+            onMouseEnter={e => e.currentTarget.style.opacity = "0.9"}
+            onMouseLeave={e => e.currentTarget.style.opacity = "0.45"}
           >
-            Dismiss
+            <XIcon />
           </button>
         </div>
       )}
@@ -601,11 +729,28 @@ export default function SettingsPage({
         </div>
       )}
 
-			{adminActionSuccess && (
-				<div className="alert alert-success mb-4 text-sm">
-					{adminActionSuccess}
-				</div>
-			)}
+      {adminActionSuccess && (
+        <div
+          className="flex items-center gap-2.5 px-3.5 py-2.5 mb-3 rounded-lg"
+          style={successNoticeStyle}
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.65 }}>
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.1"/>
+            <path d="M5.5 8l2 2 3.5-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <p className="flex-1 m-0" style={alertTextStyle}>{adminActionSuccess}</p>
+          <button
+            onClick={() => setAdminActionSuccess(null)}
+            type="button"
+            aria-label="Dismiss"
+            style={dismissButtonStyle}
+            onMouseEnter={e => e.currentTarget.style.opacity = "0.9"}
+            onMouseLeave={e => e.currentTarget.style.opacity = "0.45"}
+          >
+            <XIcon />
+          </button>
+        </div>
+      )}
 
 			<div
 				role="tablist"
@@ -1054,6 +1199,8 @@ export default function SettingsPage({
 				showAvatarUpload={true}
 				saving={profileSaving}
 				error={profileEditError}
+        validationMessage={editValidationMessage}
+        submitDisabled={!editValidation.success}
 				avatarFileName={pendingAvatarFile?.name ?? null}
 				onChange={(next) =>
 					setEditDraft((prev) => ({ ...prev, ...next }))
@@ -1085,7 +1232,8 @@ export default function SettingsPage({
 				}}
 				onChange={updateNewUserForm}
 				loading={adminLoading}
-				error={adminActionError}
+				error={createUserDialogError}
+        validationMessage={createUserDisplayMessage}
 			/>
 		</div>
 	);

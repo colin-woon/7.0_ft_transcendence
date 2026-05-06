@@ -15,6 +15,7 @@ type CreateUserDialogProps = {
   onChange: (key: string, value: any) => void;
   loading: boolean;
   error?: string | null;
+  validationMessage?: string | null;
 };
 
 export default function CreateUserDialog({
@@ -25,8 +26,10 @@ export default function CreateUserDialog({
   onChange,
   loading,
   error,
+  validationMessage,
 }: CreateUserDialogProps) {
   if (!open) return null;
+  const formError = error ?? validationMessage;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
       <div className="bg-base-100 rounded-lg shadow-lg w-full max-w-2xl p-6 relative">
@@ -37,7 +40,6 @@ export default function CreateUserDialog({
           ✕
         </button>
         <h2 className="text-lg font-bold mb-4">Create User</h2>
-        {error && <div className="alert alert-error mb-2">{error}</div>}
         <form onSubmit={onSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-5">
             <label className="flex flex-col gap-1.5 w-full">
@@ -78,6 +80,7 @@ export default function CreateUserDialog({
               <textarea
                 className="textarea rounded-md text-sm bg-base-100 min-h-24 resize-none leading-relaxed shadow-sm py-3 w-full border border-base-200 focus:outline-none focus:border-base-300 focus:ring-2 focus:ring-base-300/50 transition-all"
                 placeholder="Short profile bio..."
+                maxLength={100}
                 value={draft.bio ?? ""}
                 onChange={e => onChange("bio", e.target.value)}
               />
@@ -119,6 +122,7 @@ export default function CreateUserDialog({
               </div>
             </label>
           </div>
+          {formError && <p className="text-xs text-error mt-3">{formError}</p>}
           <div className="flex items-center justify-between pt-6 mt-6 border-t border-base-200">
             <span className="text-xs text-base-content/40">All fields required unless marked optional.</span>
             <button

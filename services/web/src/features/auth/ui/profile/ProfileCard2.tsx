@@ -58,10 +58,10 @@ export default function ProfileCard2({
   ];
 
   return (
-    <div className="card bg-base-100 shadow-md rounded-xl p-4 flex flex-col md:flex-row items-center gap-5">
+    <div className="card bg-base-100 shadow-md rounded-xl p-4 flex flex-col md:flex-row md:items-start gap-5">
       
       {/* 1. Avatar Section */}
-      <div className="avatar shrink-0">
+      <div className="avatar shrink-0 self-center md:self-auto pt-1">
         <div className="relative w-19 h-19 sm:w-18 sm:h-18 rounded-full ring-2 ring-black overflow-hidden">
           <Image
             src={user?.avatarImage || guestImg}
@@ -129,7 +129,7 @@ export default function ProfileCard2({
 
         {/* Bio */}
         {displayBio ? (
-          <p className="text-sm text-gray-600 leading-relaxed mt-[1px]">
+          <p className="text-sm text-gray-600 leading-relaxed mt-[1px] break-words whitespace-pre-wrap">
             {displayBio}
           </p>
         ) : (
@@ -156,7 +156,7 @@ export default function ProfileCard2({
       </div>
 
       {/* 3. Stats Section */}
-      <div className="flex flex-wrap items-center justify-center w-full md:w-auto shrink-0 px-2 md:px-0">
+      <div className="flex flex-wrap items-center justify-center w-full md:w-auto shrink-0 px-2 md:px-0 self-center md:self-stretch">
         {stats.map(({ label, value }, i) => (
           <div key={label} className="flex items-center">
             {i > 0 && (
