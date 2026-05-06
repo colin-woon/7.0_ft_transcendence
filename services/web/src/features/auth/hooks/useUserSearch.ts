@@ -27,6 +27,7 @@ export function useUserSearch(options?: UseUserSearchOptions) {
   const requestId = useRef(0);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextEffectRef = useRef(false);
+  const lastQueryRef = useRef("");
 
   const runSearch = useCallback(
     async (term: string, pageValue = 0) => {
@@ -80,6 +81,17 @@ export function useUserSearch(options?: UseUserSearchOptions) {
       return;
     }
 
+    // If only the page changed (not the query), search immediately without debounce
+    const queryChanged = query !== lastQueryRef.current;
+    lastQueryRef.current = query;
+
+    if (!queryChanged) {
+      // Page change only: search immediately
+      runSearch(query, page);
+      return;
+    }
+
+    // Query change: apply debounce
     debounceTimerRef.current = setTimeout(() => {
       runSearch(query, page);
     }, debounceMs);

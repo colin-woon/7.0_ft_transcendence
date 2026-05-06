@@ -8,13 +8,31 @@ export const dynamic = "force-dynamic";
 
 interface SettingsRouteProps {
   params: Promise<{ tab?: string[] }>;
+  searchParams: Promise<{ error?: string | string[]; success?: string | string[] }>;
 }
 
-export default async function SettingsRoute(_props: SettingsRouteProps) {
+function extractErrorParam(value: string | string[] | undefined): string | null {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  }
+  if (Array.isArray(value)) {
+    const first = value.find((entry) => entry && entry.trim());
+    return first ? first.trim() : null;
+  }
+  return null;
+}
+
+export default async function SettingsRoute({ searchParams }: SettingsRouteProps) {
   const [profileResult, sessionsResult] = await Promise.all([
     getServerCurrentUser(),
     getServerSessions(),
   ]);
+  const params = await searchParams;
+  const routeError = extractErrorParam(params.error);
+  const routeSuccess = extractErrorParam(params.success);
+  const routeMessage = routeError || routeSuccess;
+  const isError = !!routeError;
 
   const shouldExposeInitialProfileError =
     !profileResult.ok &&
@@ -34,6 +52,8 @@ export default async function SettingsRoute(_props: SettingsRouteProps) {
       initialProfile={initialProfile}
       initialProfileError={initialProfileError}
       initialProfileErrorStatus={initialProfileErrorStatus}
+      routeMessage={routeMessage}
+      isRouteMessageError={isError}
       initialSessions={
         sessionsResult.ok && sessionsResult.data
           ? sessionsResult.data

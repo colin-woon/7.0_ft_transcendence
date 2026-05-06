@@ -1,6 +1,8 @@
 package org.acme.service;
 
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -19,7 +21,6 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
-import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.jwt.build.Jwt;
 import io.vertx.core.http.HttpServerRequest;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -58,13 +59,7 @@ public class AuthService {
 	Integer maxSessionsPerUser;
 
 	@Transactional
-	public UserResponseDTO createToken(SecurityIdentity identity) {
-		User user = identity.getAttribute("user");
-		return createTokenForUser(user);
-	}
-
-	@Transactional
-	public UserResponseDTO createTokenForUser(User user) {
+	public UserResponseDTO createToken(User user) {
 		if (user == null) {
 			LOG.error("User not found in identity during token creation");
 			throw new WebApplicationException("User not found in identity", 401);
@@ -77,7 +72,8 @@ public class AuthService {
 		LOG.debug("Issuing access token");
 		String accessToken = Jwt
 				.subject(String.valueOf(user.id))
-				.upn(user.email)
+				.upn(user.overflowEmail)
+				// .upn(user.isBanned)
 				.groups(Set.of(user.role.name()))
 				.sign();
 
@@ -86,14 +82,31 @@ public class AuthService {
 			avatarStorageService.toUserInfoDTO(user, intrainfo));
 	}
 
-	@Transactional
-	public NewCookie createSessionCookie(SecurityIdentity identity) {
-		User user = identity.getAttribute("user");
-		return createSessionCookieForUser(user);
+	public User validateSessionUser(String sessionId) {
+		if (sessionId == null || sessionId.isBlank()) {
+			throw new WebApplicationException("Session required to link accounts", 401);
+		}
+
+		Session session = sessionRepository.findBySessionId(sessionId)
+			.orElseThrow(() -> new WebApplicationException("Invalid session", 401));
+
+		if (session.expiresAt != null && session.expiresAt.isBefore(Instant.now())) {
+			sessionRepository.delete(session);
+			throw new WebApplicationException("Session expired", 401);
+		}
+
+		User user = userRepository.findById(session.userId);
+		if (user == null) {
+			throw new WebApplicationException("User not found", 404);
+		}
+		if (user.isBanned) {
+			throw new WebApplicationException("User is banned", 403);
+		}
+		return user;
 	}
-	
+
 	@Transactional
-	public NewCookie createSessionCookieForUser(User user) {
+	public NewCookie createSessionCookie(User user) {
 		if (user == null) {
 			LOG.error("User not found in identity during session creation");
 			throw new WebApplicationException("User not found in identity", 401);
@@ -158,7 +171,7 @@ public class AuthService {
 		LOG.debug("Refreshing access token");
 		String accessToken = Jwt
 				.subject(String.valueOf(user.id))
-				.upn(user.email)
+				.upn(user.overflowEmail)
 				.groups(Set.of(user.role.name()))
 				.sign();
 
@@ -218,11 +231,15 @@ public class AuthService {
 		return cookieService.clearAccessTokenCookies();
 	}
 
+	public NewCookie[] clearAuthCookies() {
+		return cookieService.clearAuthCookies();
+	}
+
 	public NewCookie[] clearOIDCCookies() {
 		return cookieService.clearOIDCCookies();
 	}
 
-	public URI resolvePostLoginRedirect() {
+	public URI resolveRedirectUri(String redirect) {
 		String base = appPublicUrl == null ? "" : appPublicUrl.trim();
 		if (base.isBlank()) {
 			base = "https://localhost";
@@ -232,7 +249,19 @@ public class AuthService {
 			base = base.substring(0, base.length() - 1);
 		}
 
-		return URI.create(base + "/profile");
+		return URI.create(base + redirect);
+	}
+
+	public URI resolveRedirectUri(String redirect, String message, Boolean isError) {
+		String trimmed = message == null ? "" : message.trim();
+		if (trimmed.isBlank()) {
+			return resolveRedirectUri(redirect);
+		}
+
+		String encoded = URLEncoder.encode(trimmed, StandardCharsets.UTF_8);
+		String paramName = Boolean.TRUE.equals(isError) ? "error" : "success";
+		String separator = redirect.contains("?") ? "&" : "?";
+		return resolveRedirectUri(redirect + separator + paramName + "=" + encoded);
 	}
 
 	public List<@NonNull SessionDTO> listSessions(Long userId, String currentSessionId) {

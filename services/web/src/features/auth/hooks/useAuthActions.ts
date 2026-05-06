@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react'
 import { useAuth } from '@/features/auth/models/AuthContext'
 
 export function useAuthActions() {
-  const { login, logout, refresh, clearError } = useAuth()
+  const { login, link, logout, refresh, clearError } = useAuth()
   const [actionLoading, setActionLoading] = useState<null | 'logout' | 'refresh'>(null)
   const [actionError, setActionError] = useState<string | null>(null)
 
@@ -15,6 +15,15 @@ export function useAuthActions() {
       login(provider)
     },
     [clearError, login],
+  )
+
+  const linkWith = useCallback(
+    (provider: 'google' | '42') => {
+      clearError()
+      setActionError(null)
+      link(provider)
+    },
+    [clearError, link],
   )
 
   const logoutNow = useCallback(async () => {
@@ -59,6 +68,7 @@ export function useAuthActions() {
     actionError,
     clearActionError,
     loginWith,
+    linkWith,
     logoutNow,
     refreshNow,
   }
