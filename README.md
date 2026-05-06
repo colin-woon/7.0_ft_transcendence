@@ -380,6 +380,21 @@ Supporting references:
 
 ---
 
+# \<FORMAT PLACEHOLDER\>
+
+## Minor/Major: Implement Server-Side Rendering
+- **Justification:** \<placeholder text\>
+- **Implementation:** \<placeholder text\>
+- **Involved Members:** \<placeholder text\>
+
+EXAMPLE:
+## Minor: Implement Server-Side Rendering
+- **Justification:** faster loading?
+- **Implementation:** used SSR in Forum Pages through Next.js server actions (something like that)
+- **Involved Members:** tjun-fan
+
+---
+
 ## Individual Contributions
 
 ### vlow
