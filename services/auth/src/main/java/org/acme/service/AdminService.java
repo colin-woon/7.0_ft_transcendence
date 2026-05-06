@@ -50,13 +50,7 @@ public class AdminService {
 			user.username = newValue;
 		});
 		updateDTO.avatarFile.ifPresent(newValue -> {
-			String trimmed = newValue.trim();
-			if (trimmed.isEmpty()) {
-				avatarStorageService.deleteManagedAvatar(user.avatarUrl);
-				user.avatarUrl = null;
-				return;
-			}
-			user.avatarUrl = avatarStorageService.storeBase64Avatar(trimmed, user.avatarUrl);
+			user.avatarUrl = avatarStorageService.replaceManagedAvatar(newValue, user.avatarUrl);
 		});
 		updateDTO.bio.ifPresent(newValue -> user.bio = newValue );
 		updateDTO.role.ifPresent(newValue -> user.role = newValue);
@@ -117,9 +111,7 @@ public class AdminService {
 		newUser.email = userInfo.email;
 		newUser.username = userInfo.username;
 		newUser.fullName = userInfo.fullName;
-		if (userInfo.avatarFile != null && !userInfo.avatarFile.isBlank()) {
-			newUser.avatarUrl = avatarStorageService.storeBase64Avatar(userInfo.avatarFile, null);
-		}
+		newUser.avatarUrl = avatarStorageService.replaceManagedAvatar(userInfo.avatarFile, null);
 		newUser.bio = userInfo.bio;
 		newUser.role = userInfo.role;
 		newUser.isBanned = userInfo.isBanned;

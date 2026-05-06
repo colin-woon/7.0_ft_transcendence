@@ -142,15 +142,14 @@ export default function SettingsPage({
 	const router = useRouter();
 	const pathname = usePathname();
 
-	const {
-		user,
-		isLoading: authLoading,
-		hasRole,
-		reloadIntraData,
-		updatePassword,
-		clearError,
-		error: authError,
-	} = useAuth();
+  const {
+    user,
+    isLoading: authLoading,
+    hasRole,
+    updatePassword,
+    clearError,
+    error: authError,
+  } = useAuth();
 
 	const {
 		loginWith,
@@ -226,26 +225,23 @@ export default function SettingsPage({
 		bio: '',
 	});
 
-	const [passwordForm, setPasswordForm] = useState<PasswordChangeFormValues>({
-		currentPassword: '',
-		newPassword: '',
-		confirmPassword: '',
-	});
-	const [passwordErrors, setPasswordErrors] = useState<
-		Partial<Record<keyof PasswordChangeFormValues, string>>
-	>({});
-	const [passwordFormError, setPasswordFormError] = useState<string | null>(
-		null
-	);
-	const [passwordFormSuccess, setPasswordFormSuccess] = useState<
-		string | null
-	>(null);
-	const [passwordSaving, setPasswordSaving] = useState(false);
-	const [passwordOpen, setPasswordOpen] = useState(false);
-	const [reloadingIntra, setReloadingIntra] = useState(false);
-	const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(
-		null
-	);
+  const [passwordForm, setPasswordForm] = useState<PasswordChangeFormValues>({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordErrors, setPasswordErrors] = useState<
+    Partial<Record<keyof PasswordChangeFormValues, string>>
+  >({});
+  const [passwordFormError, setPasswordFormError] = useState<string | null>(
+    null,
+  );
+  const [passwordFormSuccess, setPasswordFormSuccess] = useState<string | null>(
+    null,
+  );
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
 
 	const [newUserForm, setNewUserForm] = useState<CreateUserPayload>({
 		username: '',
@@ -397,48 +393,33 @@ export default function SettingsPage({
 			return;
 		}
 
-		setPasswordErrors({});
-		setPasswordSaving(true);
-		try {
-			await updatePassword({
-				currentPassword: currentPassword || undefined,
-				newPassword: parsed.data.newPassword,
-				confirmPassword: parsed.data.confirmPassword,
-			});
-			setPasswordForm({
-				currentPassword: '',
-				newPassword: '',
-				confirmPassword: '',
-			});
-			setPasswordFormSuccess(
-				hasExistingPassword
-					? 'Password changed successfully.'
-					: 'Password created successfully.'
-			);
-			await refetch();
-		} catch (err) {
-			setPasswordFormError(
-				err instanceof Error ? err.message : 'Failed to update password'
-			);
-		} finally {
-			setPasswordSaving(false);
-		}
-	};
-
-	/**
-	 * Triggers a server-side refresh for linked 42 profile data.
-	 */
-	const handleReload42 = async () => {
-		setReloadingIntra(true);
-		try {
-			const updated = await reloadIntraData();
-			if (updated) {
-				await refetch();
-			}
-		} finally {
-			setReloadingIntra(false);
-		}
-	};
+    setPasswordErrors({});
+    setPasswordSaving(true);
+    try {
+      await updatePassword({
+        currentPassword: currentPassword || undefined,
+        newPassword: parsed.data.newPassword,
+        confirmPassword: parsed.data.confirmPassword,
+      });
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setPasswordFormSuccess(
+        hasExistingPassword
+          ? "Password changed successfully."
+          : "Password created successfully.",
+      );
+      await refetch();
+    } catch (err) {
+      setPasswordFormError(
+        err instanceof Error ? err.message : "Failed to update password",
+      );
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
 
 	/**
 	 * Creates a user as admin using the fuller UserInfoDTO-aligned fields.
@@ -606,48 +587,26 @@ export default function SettingsPage({
 				})}
 			</div>
 
-			<div className="card bg-base-100 border border-base-200 shadow-sm mt-0 rounded-t-none">
-				<div className="card-body">
-					{activeTab === 'profile' && (
-						<>
-							<div className="flex items-center justify-between">
-								<h2 className="text-base font-bold text-base-content">
-									Public Profile
-								</h2>
-
-								{/* edit button and refresh button*/}
-								<div className="flex items-center gap-2">
-									{isAdmin && (
-										<button
-											type="button"
-											className="btn btn-sm btn-ghost"
-											onClick={handleReload42}
-											disabled={reloadingIntra}
-											title="Reload 42 data"
-										>
-											<RefreshCcw
-												size={14}
-												className={
-													reloadingIntra
-														? 'animate-spin'
-														: ''
-												}
-											/>
-											{reloadingIntra
-												? 'Reloading...'
-												: 'Reload 42 info'}
-										</button>
-									)}
-									<button
-										type="button"
-										className="btn btn-sm btn-ghost btn-square"
-										onClick={() => setEditModalOpen(true)}
-										title="Edit profile"
-									>
-										<SquarePen size={20} />
-									</button>
-								</div>
-							</div>
+      <div className="card bg-base-100 border border-base-200 shadow-sm mt-0 rounded-t-none">
+        <div className="card-body">
+          {activeTab === "profile" && (
+            <>
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-bold text-base-content">
+                  Public Profile
+                </h2>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-ghost btn-square"
+                    onClick={() => setEditModalOpen(true)}
+                    title="Edit profile"
+                  >
+                    <SquarePen size={20} />
+                  </button>
+                </div>
+              </div>
 
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
 								<div className="rounded-xl border border-base-200 p-3">

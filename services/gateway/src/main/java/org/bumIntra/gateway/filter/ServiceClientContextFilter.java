@@ -2,7 +2,6 @@ package org.bumIntra.gateway.filter;
 
 import java.util.List;
 
-import org.bumIntra.gateway.security.AuthLevel;
 import org.bumIntra.gateway.security.GatewayRequestContext;
 import org.bumIntra.gateway.security.IdentityHeaders;
 
@@ -36,15 +35,15 @@ public class ServiceClientContextFilter implements ClientRequestFilter {
             request.setUri(uriBuilder.build());
         }
 
-        if (grc.getHeaders() != null) {
-            // Propagate essential headers safely
-            var headersToPropagate = List.of(
-                    HttpHeaders.COOKIE,
-                    HttpHeaders.CONTENT_TYPE,
-                    HttpHeaders.ACCEPT,
-                    HttpHeaders.USER_AGENT,
-                    HttpHeaders.AUTHORIZATION,
-                    "Last-Event-ID"); // for SSE
+		if (grc.getHeaders() != null) {
+			// Propagate essential headers safely
+			var headersToPropagate = List.of(
+					HttpHeaders.COOKIE,
+					HttpHeaders.CONTENT_TYPE,
+					HttpHeaders.ACCEPT,
+					HttpHeaders.USER_AGENT,
+					HttpHeaders.AUTHORIZATION,
+					"Last-Event-ID"); // for SSE
 
             for (String headerName : headersToPropagate) {
                 String headerValue = grc.getHeaders().getFirst(headerName);

@@ -1,10 +1,14 @@
 package org.acme.service;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.acme.dto.IntraDTO;
 import org.acme.dto.IntraInfoDTO;
+import org.acme.dto.SeedRecordDTO;
 import org.acme.dto.UserInfoDTO;
 import org.acme.model.Intra;
-import org.acme.model.IntraImage;
 import org.acme.model.User;
 import org.acme.repository.IntraRepository;
 import org.acme.repository.UserRepository;
@@ -39,6 +43,9 @@ public class IntraService {
 	@Inject
 	AvatarStorageService avatarStorageService;
 
+	/**
+	 * Parses the 42 user info payload from OIDC into the raw Intra DTO.
+	 */
 	public IntraDTO parseUserInfo(UserInfo userinfo) {
 		try {
 			JsonObject jsonObject = userinfo.getJsonObject();
@@ -51,47 +58,215 @@ public class IntraService {
 
 	@Transactional
 	public Intra syncIntraData(User user, IntraDTO dto) {
+		SeedRecordDTO.SeedIntraData compact = toSeedIntraData(dto);
+		return syncIntraData(user, compact);
+	}
+
+	/**
+	 * Persists compact intra data used by auth/profile flows.
+	 */
+	@Transactional
+	public Intra syncIntraData(User user, SeedRecordDTO.SeedIntraData data) {
 		Intra intra = intraRepository.findByUserId(user.id).orElse(new Intra());
 		intra.user = user;
 
-		intra.kind = dto.kind;
-		intra.url = dto.url;
-		intra.phone = dto.phone;
-		intra.location = dto.location;
-		intra.wallet = dto.wallet;
-		intra.correctionPoints = dto.correctionPoints;
-		intra.poolMonth = dto.poolMonth;
-		intra.poolYear = dto.poolYear;
-		intra.isStaff = dto.isStaff;
-		intra.isAlumni = dto.isAlumni;
-		intra.isActive = dto.isActive;
+		intra.phone = data.phone;
+		intra.location = data.location;
+		intra.wallet = data.wallet;
+		intra.correctionPoints = data.correctionPoints;
+		intra.poolMonth = data.poolMonth;
+		intra.poolYear = data.poolYear;
+		intra.isStaff = data.isStaff;
+		intra.isAlumni = data.isAlumni;
+		intra.isActive = data.isActive;
+		intra.originalImageUrl = data.imageUrl;
 
-		// JSONB fields
-		if (dto.image != null) {
-			IntraImage img = new IntraImage();
-			img.link = dto.image.link;
-			img.versions = dto.image.versions;
-			intra.image = img;
-		} else {
-			intra.image = null;
-		}
-		intra.groups = dto.groups;
-		intra.cursus = dto.cursusUsers;
-		intra.projects = dto.projectsUsers;
-		intra.achievements = dto.achievements;
-		intra.titles = dto.titles;
-		intra.titlesUsers = dto.titlesUsers;
-		intra.partnerships = dto.partnerships;
-		intra.patroned = dto.patroned;
-		intra.patroning = dto.patroning;
-		intra.languages = dto.languagesUsers;
-		intra.expertises = dto.expertisesUsers;
-		intra.roles = dto.roles;
-		intra.campus = dto.campus;
-		intra.campusUsers = dto.campusUsers;
+		intra.groupsCount = data.groupsCount;
+		intra.partnershipsCount = data.partnershipsCount;
+		intra.cursus = data.cursusUsers;
+		intra.projects = data.projectsUsers;
+		intra.achievements = data.achievements;
+		intra.titlesUsers = data.titlesUsers;
+		intra.languages = data.languagesUsers;
+		intra.expertises = data.expertisesUsers;
+		intra.campusUsers = data.campusUsers;
 
 		intraRepository.persist(intra);
 		return intra;
+	}
+
+	/**
+	 * Converts the full 42 API payload into a compact seed/profile structure.
+	 */
+	public SeedRecordDTO.SeedIntraData toSeedIntraData(IntraDTO dto) {
+		SeedRecordDTO.SeedIntraData data = new SeedRecordDTO.SeedIntraData();
+		if (dto == null) {
+			return data;
+		}
+
+		data.intraId = dto.id != null ? dto.id.toString() : null;
+		data.phone = dto.phone;
+		data.location = dto.location;
+		data.wallet = dto.wallet;
+		data.correctionPoints = dto.correctionPoints;
+		data.poolMonth = dto.poolMonth;
+		data.poolYear = dto.poolYear;
+		data.isStaff = dto.isStaff;
+		data.isAlumni = dto.isAlumni;
+		data.isActive = dto.isActive;
+		data.imageUrl = dto.image != null ? dto.image.link : null;
+
+		data.groupsCount = dto.groups != null ? dto.groups.size() : 0;
+		data.partnershipsCount = dto.partnerships != null ? dto.partnerships.size() : 0;
+
+		data.cursusUsers = compactCursusUsers(dto.cursusUsers);
+		data.projectsUsers = compactProjects(dto.projectsUsers);
+		data.achievements = compactAchievements(dto.achievements);
+		data.titlesUsers = compactTitlesUsers(dto.titlesUsers);
+		data.languagesUsers = compactLanguagesUsers(dto.languagesUsers);
+		data.expertisesUsers = compactExpertises(dto.expertisesUsers);
+		data.campusUsers = compactCampusUsers(dto.campusUsers);
+
+		return data;
+	}
+
+	/**
+	 * Keeps only cursus fields used by profile summaries and charts.
+	 */
+	private List<Map<String, Object>> compactCursusUsers(List<Map<String, Object>> raw) {
+		if (raw == null) return List.of();
+		return raw.stream().map(c -> {
+			Map<String, Object> compact = new java.util.LinkedHashMap<>();
+			putIfPresent(compact, "cursus_id", c.get("cursus_id"));
+			putIfPresent(compact, "kind", c.get("kind"));
+			putIfPresent(compact, "grade", c.get("grade"));
+			putIfPresent(compact, "level", c.get("level"));
+			putIfPresent(compact, "blackholed_at", c.get("blackholed_at"));
+			compact.put("skills", compactSkills(asListOfMaps(c.get("skills"))));
+			compact.put("cursus", compactNested(c.get("cursus"), List.of("id", "name", "slug")));
+			return compact;
+		}).collect(Collectors.toList());
+	}
+
+	/**
+	 * Keeps only project progress fields used by profile summaries and recent project list.
+	 */
+	private List<Map<String, Object>> compactProjects(List<Map<String, Object>> raw) {
+		if (raw == null) return List.of();
+		return raw.stream().map(p -> {
+			Map<String, Object> compact = new java.util.LinkedHashMap<>();
+			putIfPresent(compact, "status", p.get("status"));
+			putIfPresent(compact, "validated", p.get("validated"));
+			putIfPresent(compact, "final_mark", p.get("final_mark"));
+			putIfPresent(compact, "updated_at", p.get("updated_at"));
+			putIfPresent(compact, "marked_at", p.get("marked_at"));
+			compact.put("project", compactNested(p.get("project"), List.of("id", "name")));
+			return compact;
+		}).collect(Collectors.toList());
+	}
+
+	/**
+	 * Keeps achievement presentation fields used by the profile page.
+	 */
+	private List<Map<String, Object>> compactAchievements(List<Map<String, Object>> raw) {
+		if (raw == null) return List.of();
+		return raw.stream().map(a -> {
+			Map<String, Object> compact = new java.util.LinkedHashMap<>();
+			putIfPresent(compact, "id", a.get("id"));
+			putIfPresent(compact, "name", a.get("name"));
+			putIfPresent(compact, "description", a.get("description"));
+
+			Object tier = a.get("achievement_tier");
+			if (tier == null && a.get("tier") != null) {
+				tier = Map.of("name", a.get("tier"));
+			}
+			putIfPresent(compact, "achievement_tier", tier);
+			return compact;
+		}).collect(Collectors.toList());
+	}
+
+	private List<Map<String, Object>> compactTitlesUsers(List<Map<String, Object>> raw) {
+		if (raw == null) return List.of();
+		return raw.stream().map(t -> {
+			Map<String, Object> compact = new java.util.LinkedHashMap<>();
+			compact.put("title", compactNested(t.get("title"), List.of("id", "name")));
+			return compact;
+		}).collect(Collectors.toList());
+	}
+
+	private List<Map<String, Object>> compactLanguagesUsers(List<Map<String, Object>> raw) {
+		if (raw == null) return List.of();
+		return raw.stream().map(l -> {
+			Map<String, Object> compact = new java.util.LinkedHashMap<>();
+			compact.put("language", compactNested(l.get("language"), List.of("id", "name", "identifier")));
+			return compact;
+		}).collect(Collectors.toList());
+	}
+
+	private List<Map<String, Object>> compactExpertises(List<Map<String, Object>> raw) {
+		if (raw == null) return List.of();
+		return raw.stream().map(e -> {
+			Map<String, Object> compact = new java.util.LinkedHashMap<>();
+			putIfPresent(compact, "id", e.get("id"));
+			putIfPresent(compact, "level", e.get("level"));
+			compact.put("expertise", compactNested(e.get("expertise"), List.of("id", "name")));
+			return compact;
+		}).collect(Collectors.toList());
+	}
+
+	private List<Map<String, Object>> compactCampusUsers(List<Map<String, Object>> raw) {
+		if (raw == null) return List.of();
+		return raw.stream().map(c -> {
+			Map<String, Object> compact = new java.util.LinkedHashMap<>();
+			compact.put("campus", compactNested(c.get("campus"), List.of("id", "name")));
+			return compact;
+		}).collect(Collectors.toList());
+	}
+
+	private List<Map<String, Object>> compactSkills(List<Map<String, Object>> raw) {
+		if (raw == null) return List.of();
+		return raw.stream().map(s -> {
+			Map<String, Object> compact = new java.util.LinkedHashMap<>();
+			putIfPresent(compact, "id", s.get("id"));
+			putIfPresent(compact, "name", s.get("name"));
+			putIfPresent(compact, "level", s.get("level"));
+			return compact;
+		}).collect(Collectors.toList());
+	}
+
+	private Map<String, Object> compactNested(Object value, List<String> keys) {
+		if (!(value instanceof Map<?, ?> mapValue)) {
+			return Map.of();
+		}
+		Map<String, Object> compact = new java.util.LinkedHashMap<>();
+		for (String key : keys) {
+			Object picked = ((Map<?, ?>) mapValue).get(key);
+			if (picked != null) {
+				compact.put(key, picked);
+			}
+		}
+		return compact;
+	}
+
+	private List<Map<String, Object>> asListOfMaps(Object value) {
+		if (!(value instanceof List<?> listValue)) {
+			return List.of();
+		}
+		return listValue.stream()
+			.filter(Map.class::isInstance)
+			.map(this::toStringObjectMap)
+			.collect(Collectors.toList());
+	}
+
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> toStringObjectMap(Object entry) {
+		return (Map<String, Object>) entry;
+	}
+
+	private void putIfPresent(Map<String, Object> target, String key, Object value) {
+		if (value != null) {
+			target.put(key, value);
+		}
 	}
 
 	@Transactional

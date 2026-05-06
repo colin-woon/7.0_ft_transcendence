@@ -1,7 +1,5 @@
 package org.acme.service;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
 import de.mkammerer.argon2.Argon2;
 import de.mkammerer.argon2.Argon2Factory;
 import jakarta.annotation.PostConstruct;
@@ -12,14 +10,9 @@ public class PasswordService {
 
 	private final Argon2 argon2;
 
-	@ConfigProperty(name = "auth.password.argon2.iterations", defaultValue = "3")
-	int iterations;
-
-	@ConfigProperty(name = "auth.password.argon2.memory-kb", defaultValue = "65536")
-	int memoryKb;
-
-	@ConfigProperty(name = "auth.password.argon2.parallelism", defaultValue = "1")
-	int parallelism;
+	private final int iterations = 3;
+	private final int memoryKb = 65536;
+	private final int parallelism = 1;
 
 	private String dummyHash;
 
