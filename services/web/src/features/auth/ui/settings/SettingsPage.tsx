@@ -308,7 +308,7 @@ export default function SettingsPage({
 			createUserSchema.safeParse({
 				username: newUserForm.username,
 				fullName: newUserForm.fullName,
-				email: newUserForm.overflowEmail,
+				overflowEmail: newUserForm.overflowEmail,
 				bio: newUserForm.bio ?? '',
 				role: newUserForm.role,
 				isBanned: newUserForm.isBanned,
@@ -322,12 +322,19 @@ export default function SettingsPage({
 			newUserForm.username,
 		]
 	);
-	const createUserValidationMessage = !createUserValidation.success
-		? createUserValidation.error.issues[0]?.message || 'Invalid input'
-		: null;
-	const createUserDisplayMessage = createUserSubmitAttempted
-		? createUserValidationMessage
-		: null;
+	const createUserFieldErrors = useMemo(() => {
+		if (!createUserSubmitAttempted || createUserValidation.success) {
+			return {} as Partial<Record<keyof CreateUserPayload, string>>;
+		}
+		const fieldErrors: Partial<Record<keyof CreateUserPayload, string>> = {};
+		for (const issue of createUserValidation.error.issues) {
+			const field = issue.path[0] as keyof CreateUserPayload | undefined;
+			if (field && !fieldErrors[field]) {
+				fieldErrors[field] = issue.message;
+			}
+		}
+		return fieldErrors;
+	}, [createUserSubmitAttempted, createUserValidation]);
 
 	useEffect(() => {
 		if (!activeProfile) return;
@@ -564,6 +571,7 @@ export default function SettingsPage({
 			role: 'STUDENT',
 			isBanned: false,
 		});
+		setCreateUserSubmitAttempted(false);
     setCreateUserDialogError(null);
 		setAdminActionSuccess(
 			`User "${created.username}" created successfully (ID: ${created.id})`
@@ -1233,7 +1241,7 @@ export default function SettingsPage({
 				onChange={updateNewUserForm}
 				loading={adminLoading}
 				error={createUserDialogError}
-        validationMessage={createUserDisplayMessage}
+				fieldErrors={createUserFieldErrors}
 			/>
 		</div>
 	);
