@@ -36,7 +36,6 @@ export default function PostVoteButtons({
     } catch (error) {
       setUpvotes(previousUpvotes);
       setUserVote(previousUserVote);
-      console.error('Voting failed:', error);
       alert('Could not register your vote. Please try again.');
     } finally {
       setIsVoting(false);
