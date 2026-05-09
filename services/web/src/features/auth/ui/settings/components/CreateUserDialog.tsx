@@ -15,7 +15,9 @@ type CreateUserDialogProps = {
   onChange: (key: string, value: any) => void;
   loading: boolean;
   error?: string | null;
-  validationMessage?: string | null;
+  fieldErrors?: Partial<
+    Record<"username" | "fullName" | "overflowEmail" | "bio" | "role" | "isBanned", string>
+  >;
 };
 
 export default function CreateUserDialog({
@@ -26,10 +28,13 @@ export default function CreateUserDialog({
   onChange,
   loading,
   error,
-  validationMessage,
+  fieldErrors,
 }: CreateUserDialogProps) {
   if (!open) return null;
-  const formError = error ?? validationMessage;
+  const formError = error ?? null;
+  const fieldErrorList = fieldErrors
+    ? Object.values(fieldErrors).filter(Boolean)
+    : [];
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
       <div className="bg-base-100 rounded-lg shadow-lg w-full max-w-2xl p-6 relative">
@@ -122,6 +127,13 @@ export default function CreateUserDialog({
               </div>
             </label>
           </div>
+          {fieldErrorList.length > 0 && (
+            <div className="mt-3 text-xs text-error space-y-1">
+              {fieldErrorList.map((message, index) => (
+                <p key={`${message}-${index}`}>{message}</p>
+              ))}
+            </div>
+          )}
           {formError && <p className="text-xs text-error mt-3">{formError}</p>}
           <div className="flex items-center justify-between pt-6 mt-6 border-t border-base-200">
             <span className="text-xs text-base-content/40">All fields required unless marked optional.</span>

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AVATAR_MAX_BYTES } from '@/features/auth/utils/avatarFile'
 
 const usernamePattern = /^[a-zA-Z0-9_-]+$/
+const fullNamePattern = /^[a-zA-Z0-9_ -]+$/
 const strongPasswordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,128}$/
 export const passwordSchema = z
   .string()
@@ -78,6 +79,10 @@ export const passwordChangeSchema = z
       .trim()
       .min(1, "Full name is required")
       .max(100, "Full name must be between 1 and 100 characters")
+      .regex(
+        fullNamePattern,
+        "Full name can only contain letters, numbers, spaces, underscores, and hyphens",
+      )
       .optional()
       .or(z.literal("")),
     avatarFile: z
@@ -108,7 +113,11 @@ export const passwordChangeSchema = z
       .string()
       .trim()
       .min(1, "Full name is required")
-      .max(100, "Full name must be between 1 and 100 characters"),
+      .max(100, "Full name must be between 1 and 100 characters")
+      .regex(
+        fullNamePattern,
+        "Full name can only contain letters, numbers, spaces, underscores, and hyphens",
+      ),
     overflowEmail: z
       .string()
       .trim()
