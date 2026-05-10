@@ -72,7 +72,7 @@ public class AuthService {
 		LOG.debug("Issuing access token");
 		String accessToken = Jwt
 				.subject(String.valueOf(user.id))
-				.upn(user.overflowEmail)
+				.upn(String.valueOf(user.id))
 				.groups(Set.of(user.role.name()))
 				.sign();
 
@@ -170,7 +170,7 @@ public class AuthService {
 		LOG.debug("Refreshing access token");
 		String accessToken = Jwt
 				.subject(String.valueOf(user.id))
-				.upn(user.overflowEmail)
+				.upn(String.valueOf(user.id))
 				.groups(Set.of(user.role.name()))
 				.sign();
 

@@ -99,15 +99,11 @@ public class PublicAuthResource {
 			LOG.debug("Error during linking", e);
 			int status = e.getResponse() == null ? 500 : e.getResponse().getStatus();
 			boolean invalidSession = status == 401 || status == 404;
-			boolean banned = status == 403;
 			String redirect = invalidSession ? "/login" : "/settings";
-			Response.ResponseBuilder response = Response
+			return Response
 				.seeOther(authService.resolveRedirectUri(redirect, e.getMessage(), true))
-				.cookie(authService.clearOIDCCookies());
-			if (invalidSession || banned) {
-				response.cookie(authService.clearAuthCookies());
-			}
-			return response.build();
+				.cookie(authService.clearOIDCCookies())
+				.build();
 		} catch (Exception e) {
 			LOG.error("Unexpected error during link callback", e);
 			return Response

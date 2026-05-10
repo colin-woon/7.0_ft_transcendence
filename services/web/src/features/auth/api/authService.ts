@@ -134,20 +134,17 @@ export class AuthApiError extends Error {
 	async getBodyText(): Promise<string> {
 		try {
 			if (!this.response) return '';
+			const text = await this.response.clone().text();
 			try {
-				const json = await this.response.json();
+				const json = JSON.parse(text);
 				if (json && typeof json === 'object') {
 					if (json.message) return String(json.message);
 					if (json.error) return String(json.error);
 				}
 			} catch (_) {
-				// ignore json parse errors
+				return text;
 			}
-			try {
-				return await this.response.text();
-			} catch (_) {
-				return '';
-			}
+			return '';
 		} catch (_) {
 			return '';
 		}
