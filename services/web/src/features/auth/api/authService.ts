@@ -129,6 +129,26 @@ interface CachedValue<T> {
 
 export class AuthApiError extends Error {
 	status: number;
+	response?: Response;
+
+	async getBodyText(): Promise<string> {
+		try {
+			if (!this.response) return '';
+			const text = await this.response.clone().text();
+			try {
+				const json = JSON.parse(text);
+				if (json && typeof json === 'object') {
+					if (json.message) return String(json.message);
+					if (json.error) return String(json.error);
+				}
+			} catch (_) {
+				return text;
+			}
+			return '';
+		} catch (_) {
+			return '';
+		}
+	}
 
 	constructor(status: number, message: string) {
 		super(message);
@@ -150,10 +170,11 @@ class AuthService {
 		response: Response,
 		fallbackMessage: string
 	): AuthApiError {
-		return new AuthApiError(
-			response.status,
-			`${fallbackMessage}: ${response.status}`
-		);
+		const err = new AuthApiError(response.status, fallbackMessage);
+		// Keep the raw response available for callers who need to inspect body
+		// but avoid embedding status codes in the human-facing message.
+		err.response = response;
+		return err;
 	}
 
 	private invalidateUserCache(userId?: number) {

@@ -88,7 +88,6 @@ export default function CreatePage({
       const newPost = await createProjectPost(projectId, payload);
       router.push(`posts/${newPost.id}`);
     } catch (error) {
-      console.error("Error creating post:", error);
       alert(error instanceof Error ? error.message : "Something went wrong");
     } finally {
       setIsSubmitting(false);

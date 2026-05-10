@@ -274,6 +274,7 @@ export default function SettingsPage({
     role: "STUDENT",
     isBanned: false,
   });
+  const [pendingNewUserAvatarFile, setPendingNewUserAvatarFile] = useState<File | null>(null);
 
 	const isAdmin = hasRole('ADMIN');
 	const activeProfile = profile ?? user;
@@ -381,6 +382,7 @@ export default function SettingsPage({
     if (!createUserModalOpen) {
       setCreateUserSubmitAttempted(false);
       setCreateUserDialogError(null);
+      setPendingNewUserAvatarFile(null);
     }
   }, [createUserModalOpen]);
 
@@ -417,17 +419,14 @@ export default function SettingsPage({
 	 * Persists profile edits for the currently authenticated user.
 	 */
 	const handleSaveOwnProfile = async () => {
+		let avatarFilePayload: string | undefined;
 		if (pendingAvatarFile) {
-			const validationError = validateAvatarFile(pendingAvatarFile);
+			avatarFilePayload = await fileToDataUrl(pendingAvatarFile);
+			const validationError = validateAvatarFile(avatarFilePayload);
 			if (validationError) {
 				setAdminActionError(validationError);
 				return;
 			}
-		}
-
-		let avatarFilePayload: string | undefined;
-		if (pendingAvatarFile) {
-			avatarFilePayload = await fileToDataUrl(pendingAvatarFile);
 		}
 
     const parsed = updateProfileSchema.safeParse({
@@ -536,13 +535,24 @@ export default function SettingsPage({
     setCreateUserDialogError(null);
 		setAdminActionSuccess(null);
 
+		if (pendingNewUserAvatarFile) {
+			const validationError = validateAvatarFile(pendingNewUserAvatarFile);
+			if (validationError) {
+				setCreateUserDialogError(validationError);
+				return;
+			}
+		}
+
+		let avatarFilePayload: string | undefined;
+		if (pendingNewUserAvatarFile) {
+			avatarFilePayload = await fileToDataUrl(pendingNewUserAvatarFile);
+		}
 
 	const parsed = createUserSchema.safeParse(newUserForm);
 	if (!parsed.success) {
 		return;
 	}
 	const { username, fullName, overflowEmail, bio, role, isBanned } = parsed.data;
-
 
     if (!username || !fullName || !overflowEmail) {
       setAdminActionError("Username, full name, and email are required.");
@@ -556,6 +566,7 @@ export default function SettingsPage({
 			bio: bio?.trim() || undefined,
 			role,
 			isBanned,
+			avatarFile: avatarFilePayload,
 		});
 
 		if (!created) {
@@ -571,6 +582,7 @@ export default function SettingsPage({
 			role: 'STUDENT',
 			isBanned: false,
 		});
+		setPendingNewUserAvatarFile(null);
 		setCreateUserSubmitAttempted(false);
     setCreateUserDialogError(null);
 		setAdminActionSuccess(
@@ -851,7 +863,7 @@ export default function SettingsPage({
                     </svg>
                     <div>
                       <p className="text-sm font-medium text-base-content">Google</p>
-                      <p className="text-xs text-base-content/50">Connect to log in with your Google account</p>
+                      <p className="text-xs text-base-content/50">Login to link with your Google account</p>
                     </div>
                   </div>
                   <button
@@ -860,7 +872,7 @@ export default function SettingsPage({
                     onClick={() => !activeProfile.linkedWithGoogle && linkWith("google")}
                     disabled={activeProfile.linkedWithGoogle}
                   >
-                    {activeProfile.linkedWithGoogle ? "Linked" : "Connect"}
+                    {activeProfile.linkedWithGoogle ? "Linked" : "Link"}
                   </button>
                 </div>
               
@@ -874,7 +886,7 @@ export default function SettingsPage({
                     />
                     <div>
                       <p className="text-sm font-medium text-base-content">42 Intra</p>
-                      <p className="text-xs text-base-content/50">Connect to log in with your 42 account</p>
+                      <p className="text-xs text-base-content/50">Login to link with your 42 account</p>
                     </div>
                   </div>
                   <button
@@ -883,7 +895,7 @@ export default function SettingsPage({
                     onClick={() => !activeProfile.linkedWithIntra && linkWith("42")}
                     disabled={activeProfile.linkedWithIntra}
                   >
-                    {activeProfile.linkedWithIntra ? "Linked" : "Connect"}
+                    {activeProfile.linkedWithIntra ? "Linked" : "Link"}
                   </button>
                 </div>
               
@@ -1242,6 +1254,8 @@ export default function SettingsPage({
 				loading={adminLoading}
 				error={createUserDialogError}
 				fieldErrors={createUserFieldErrors}
+				onAvatarFileChange={setPendingNewUserAvatarFile}
+				avatarFileName={pendingNewUserAvatarFile?.name ?? null}
 			/>
 		</div>
 	);

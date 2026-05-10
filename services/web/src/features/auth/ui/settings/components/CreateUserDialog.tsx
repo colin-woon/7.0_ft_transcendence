@@ -13,6 +13,8 @@ type CreateUserDialogProps = {
     isBanned: boolean;
   };
   onChange: (key: string, value: any) => void;
+  onAvatarFileChange?: (file: File | null) => void;
+  avatarFileName?: string | null;
   loading: boolean;
   error?: string | null;
   fieldErrors?: Partial<
@@ -26,6 +28,8 @@ export default function CreateUserDialog({
   onSubmit,
   draft,
   onChange,
+  onAvatarFileChange,
+  avatarFileName,
   loading,
   error,
   fieldErrors,
@@ -89,6 +93,21 @@ export default function CreateUserDialog({
                 value={draft.bio ?? ""}
                 onChange={e => onChange("bio", e.target.value)}
               />
+            </label>
+            <label className="flex flex-col gap-1.5 md:col-span-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/50">Avatar</span>
+              <label className="btn btn-outline btn-sm w-full">
+                Choose avatar image
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(event) => onAvatarFileChange?.(event.target.files?.[0] ?? null)}
+                />
+              </label>
+              {avatarFileName && (
+                <span className="text-xs text-base-content/60 font-medium">Selected: {avatarFileName}</span>
+              )}
             </label>
             <label className="flex flex-col gap-1.5">
               <span className="text-[11px] font-bold uppercase tracking-wider text-base-content/50">Role</span>

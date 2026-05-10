@@ -62,18 +62,17 @@ public class AuthService {
 	public UserResponseDTO createToken(User user) {
 		if (user == null) {
 			LOG.error("User not found in identity during token creation");
-			throw new WebApplicationException("User not found in identity", 401);
+			throw new WebApplicationException("auth_failed", 401);
 		}
 		if (user.isBanned) {
 			LOG.warn("Banned user attempted to login");
-			throw new WebApplicationException("User is banned", 403);
+			throw new WebApplicationException("banned", 403);
 		}
 
 		LOG.debug("Issuing access token");
 		String accessToken = Jwt
 				.subject(String.valueOf(user.id))
-				.upn(user.overflowEmail)
-				// .upn(user.isBanned)
+				.upn(String.valueOf(user.id))
 				.groups(Set.of(user.role.name()))
 				.sign();
 
@@ -82,38 +81,38 @@ public class AuthService {
 			avatarStorageService.toUserInfoDTO(user, intrainfo));
 	}
 
-	public User validateSessionUser(String sessionId) {
+	public Long validateSessionUser(String sessionId) {
 		if (sessionId == null || sessionId.isBlank()) {
-			throw new WebApplicationException("Session required to link accounts", 401);
+			throw new WebApplicationException("session_invalid", 401);
 		}
 
 		Session session = sessionRepository.findBySessionId(sessionId)
-			.orElseThrow(() -> new WebApplicationException("Invalid session", 401));
+			.orElseThrow(() -> new WebApplicationException("session_invalid", 401));
 
 		if (session.expiresAt != null && session.expiresAt.isBefore(Instant.now())) {
 			sessionRepository.delete(session);
-			throw new WebApplicationException("Session expired", 401);
+			throw new WebApplicationException("session_invalid", 401);
 		}
 
 		User user = userRepository.findById(session.userId);
 		if (user == null) {
-			throw new WebApplicationException("User not found", 404);
+			throw new WebApplicationException("session_invalid", 404);
 		}
 		if (user.isBanned) {
-			throw new WebApplicationException("User is banned", 403);
+			throw new WebApplicationException("banned", 403);
 		}
-		return user;
+		return user.id;
 	}
 
 	@Transactional
 	public NewCookie createSessionCookie(User user) {
 		if (user == null) {
 			LOG.error("User not found in identity during session creation");
-			throw new WebApplicationException("User not found in identity", 401);
+			throw new WebApplicationException("auth_failed", 401);
 		}
 		if (user.isBanned) {
 			LOG.warn("Banned user attempted to create session");
-			throw new WebApplicationException("User is banned", 403);
+			throw new WebApplicationException("banned", 403);
 		}
 		Instant expiry = Instant.now().plus(cookieService.sessionLifetime());
 
@@ -171,7 +170,7 @@ public class AuthService {
 		LOG.debug("Refreshing access token");
 		String accessToken = Jwt
 				.subject(String.valueOf(user.id))
-				.upn(user.overflowEmail)
+				.upn(String.valueOf(user.id))
 				.groups(Set.of(user.role.name()))
 				.sign();
 
@@ -317,9 +316,11 @@ public class AuthService {
 		String uaHeader = request.getHeader("User-Agent");
 		if (uaHeader != null && !uaHeader.isBlank()) {
 			var deviceInfo = deviceParser.parse(uaHeader);
-			session.deviceType = deviceInfo.get("deviceType");
-			session.browser = deviceInfo.get("browser");
-			session.os = deviceInfo.get("os");
+			if (deviceInfo != null) {
+				session.deviceType = deviceInfo.get("deviceType");
+				session.browser = deviceInfo.get("browser");
+				session.os = deviceInfo.get("os");
+			}
 		}
 	}
 }

@@ -280,13 +280,13 @@ export default function ProfilePage({
     if (!activeProfile?.id) return;
 
     if (pendingAvatarFile) {
-      const validationError = validateAvatarFile(pendingAvatarFile);
+      const avatarFile = await fileToDataUrl(pendingAvatarFile);
+      const validationError = validateAvatarFile(avatarFile);
       if (validationError) {
         setQuickActionError(validationError);
         return;
       }
     }
-
     const parsed = updateProfileSchema.safeParse({
       username: editDraft.username,
       fullName: editDraft.fullName,

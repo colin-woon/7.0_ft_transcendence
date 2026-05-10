@@ -37,18 +37,14 @@ export default function WriteCommentBox({
           if (newestComment) {
             onCommentCreated(newestComment);
           }
-        } catch (fetchError) {
-          console.error(
-            'Failed to fetch latest comment after create:',
-            fetchError
-          );
+        } catch {
+          // comment was created; UI will refresh via router.refresh()
         }
       }
 
       setContent('');
       router.refresh();
     } catch (error) {
-      console.error('Failed to create comment:', error);
       alert(
         error instanceof Error ? error.message : 'Could not create comment'
       );
