@@ -364,11 +364,37 @@ Supporting references:
 - Modules of Choice
     - implemented through the zero-trust API gateway, centralized RBAC, request policy enforcement, Redis-backed rate limiting, and edge observability
 
-### Module Justification Summary
+### Module Justifications
 
-- Web, User Management, and User Experience were chosen because they match the product's social and collaborative platform direction.
-- DevOps was chosen to make the platform observable, operable, and demonstrable as a production-style multi-service system.
-- The custom gateway module was chosen because the project needed one central control plane for routing, authentication, RBAC, request policy, and observability.
+#### Major: Monitoring System with Prometheus and Grafana
+
+- **Justification**: This module provides the operational visibility layer of the stack. It gives one place to observe service health, gateway traffic, downstream failures, scrape freshness, and alert state across the platform.
+- **Implementation**: Prometheus scrapes gateway, auth, forum, chat, web, and PostgreSQL exporter metrics. Grafana provides dashboards for service health, gateway traffic, latency, errors, and alerts. Alert rules were added for sustained failure states, and Grafana access is protected through the gateway under `/api/admin/grafana` with `ADMIN` RBAC.
+- **Involved Members**: `vlow`
+
+#### Major: Backend as Microservices
+
+- **Justification**: This module defines the service boundary structure of the stack. It separates security, identity, forum, chat, and frontend concerns into isolated runtime units with clear interfaces and responsibilities.
+- **Implementation**: The platform is split into Nginx, Gateway, Auth, Forum, Chat, Web, PostgreSQL, Redis, Prometheus, and Grafana. Services communicate through gateway-controlled HTTPS/mTLS and REST interfaces, with the gateway acting as the central control plane for routing, auth, RBAC, and policy enforcement.
+- **Involved Members**: `vlow`
+
+#### Minor: Health Checks, Backups, and Disaster Recovery Procedures
+
+- **Justification**: This module provides the recovery and operator-readiness layer of the stack. It ensures service state can be observed, persistence can be backed up, and recovery can be performed in a controlled way during failure scenarios.
+- **Implementation**: Runtime services expose health/readiness endpoints and Docker healthchecks. Grafana provides the operator-facing status dashboard. Automated PostgreSQL backups are stored outside the live DB volume, Prometheus alerts track persistent failure and backup health, and the disaster recovery procedure is documented and restore-tested.
+- **Involved Members**: `vlow`
+
+#### Major: Advanced Permissions System
+
+- **Justification**: This module provides the access-control model of the stack. It separates student, admin, guest, and internal service capabilities so protected routes, admin surfaces, and internal traffic follow one consistent authorization model.
+- **Implementation**: Roles are embedded in JWT claims and resolved by the gateway into `GUEST`, `USER`, `ADMIN`, and `SERVICE` access levels. The gateway enforces RBAC across public, protected, admin, and internal route families, while downstream services receive trusted identity headers instead of making independent authorization decisions.
+- **Involved Members**: `vlow`, `jothomas`
+
+#### Major: Zero-Trust API Gateway and Policy Enforcement Layer
+
+- **Justification**: This module provides the central policy and transport control layer of the stack. It keeps routing, authentication, RBAC, rate limiting, downstream fault handling, and observability in one gateway instead of scattering those concerns across every service.
+- **Implementation**: The Quarkus gateway validates cookie/JWT auth, resolves role-based access, applies request policy filters, performs Redis-backed rate limiting, maps downstream failures into consistent gateway errors, proxies realtime transport where needed, and emits structured logs and Prometheus metrics for all routed traffic.
+- **Involved Members**: `vlow`
 
 ### Module Ownership
 
@@ -387,7 +413,7 @@ Supporting references:
 - Gateway architecture and implementation
 - Backend policy enforcement design
 - DevOps setup, monitoring, and observability
-- Challenge note: `<to be filled by vlow>`
+- Challenge note: `Implementing the gateway as the central zero-trust policy layer for routing, authentication, and RBAC, while also building the DevOps and observability foundation for monitoring, alerting, backups, and recovery.`
 
 ### tjun-fan
 
@@ -421,7 +447,6 @@ Supporting references:
 
 ### Project References
 
-- [ft_transcendence.pdf](./ft_transcendence.pdf)
 - [Project Overview](./docs/0.project_overview.md)
 - [Product Requirements](./docs/1.product_requirements.md)
 - [Architectural Decisions](./docs/2.architectual_decisions.md)
