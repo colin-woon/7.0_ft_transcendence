@@ -379,6 +379,20 @@ Supporting references:
 - Modules of Choice: vlow
 
 ---
+## Minor: Use an ORM for the Database
+- **Justification** Increased productivity (focus on business logic), Cleaner codebase (more concise and readable compared to SQL) and Built-in Securiy (uses parameterized queries, safe from SQL injections).
+- **Implementation** SQLAlchemy used in Python Forum Backend, Hibernate for Java User/Auth Backend.
+- **Involved Members** tjun-fan, jothomas
+
+## Minor: Server Side Rendering
+- **Justification** Reduced load on backend servers during mass load. 
+- **Implementation** Projects list in forum containing hundreds (and increasing) of projects are loaded on the server once and served to clients on request using nextjs caching.
+- **Involved Members** tjun-fan
+
+## Minor: Implement advanced search functionality with filters, sorting, and pagination
+- **Justification** Better UX for users, easier to search for projects/posts using the filters and sorting. Increased loading times for pages rendered client side.
+- **Implementation** Forum /projects page utilizes all 3 functionalities, with filtering (by subscribed, difficulty etc...), sorting (by creation date, popularity or name) and pagination (10 posts per page). 
+- **Involved Members** tjun-fan
 
 ## Individual Contributions
 

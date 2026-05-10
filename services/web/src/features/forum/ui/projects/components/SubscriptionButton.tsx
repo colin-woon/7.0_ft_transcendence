@@ -33,8 +33,7 @@ export default function SubscriptionButton({
         if (isMounted) {
           setSubscribed(status.subscribed);
         }
-      } catch (error) {
-        console.error("Failed to load subscription status:", error);
+      } catch {
         if (isMounted) {
           setSubscribed(false);
         }
@@ -63,8 +62,7 @@ export default function SubscriptionButton({
       }
 
       router.refresh();
-    } catch (error) {
-      console.error("Failed to toggle subscription:", error);
+    } catch {
       alert("Unable to update subscription right now. Please try again.");
     } finally {
       setIsSubmitting(false);
