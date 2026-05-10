@@ -274,6 +274,7 @@ export default function SettingsPage({
     role: "STUDENT",
     isBanned: false,
   });
+  const [pendingNewUserAvatarFile, setPendingNewUserAvatarFile] = useState<File | null>(null);
 
 	const isAdmin = hasRole('ADMIN');
 	const activeProfile = profile ?? user;
@@ -381,6 +382,7 @@ export default function SettingsPage({
     if (!createUserModalOpen) {
       setCreateUserSubmitAttempted(false);
       setCreateUserDialogError(null);
+      setPendingNewUserAvatarFile(null);
     }
   }, [createUserModalOpen]);
 
@@ -533,13 +535,24 @@ export default function SettingsPage({
     setCreateUserDialogError(null);
 		setAdminActionSuccess(null);
 
+		if (pendingNewUserAvatarFile) {
+			const validationError = validateAvatarFile(pendingNewUserAvatarFile);
+			if (validationError) {
+				setCreateUserDialogError(validationError);
+				return;
+			}
+		}
+
+		let avatarFilePayload: string | undefined;
+		if (pendingNewUserAvatarFile) {
+			avatarFilePayload = await fileToDataUrl(pendingNewUserAvatarFile);
+		}
 
 	const parsed = createUserSchema.safeParse(newUserForm);
 	if (!parsed.success) {
 		return;
 	}
 	const { username, fullName, overflowEmail, bio, role, isBanned } = parsed.data;
-
 
     if (!username || !fullName || !overflowEmail) {
       setAdminActionError("Username, full name, and email are required.");
@@ -553,6 +566,7 @@ export default function SettingsPage({
 			bio: bio?.trim() || undefined,
 			role,
 			isBanned,
+			avatarFile: avatarFilePayload,
 		});
 
 		if (!created) {
@@ -568,6 +582,7 @@ export default function SettingsPage({
 			role: 'STUDENT',
 			isBanned: false,
 		});
+		setPendingNewUserAvatarFile(null);
 		setCreateUserSubmitAttempted(false);
     setCreateUserDialogError(null);
 		setAdminActionSuccess(
@@ -1239,6 +1254,8 @@ export default function SettingsPage({
 				loading={adminLoading}
 				error={createUserDialogError}
 				fieldErrors={createUserFieldErrors}
+				onAvatarFileChange={setPendingNewUserAvatarFile}
+				avatarFileName={pendingNewUserAvatarFile?.name ?? null}
 			/>
 		</div>
 	);

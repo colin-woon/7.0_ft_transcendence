@@ -122,10 +122,13 @@ export const passwordChangeSchema = z
       .string()
       .trim()
       .email("Please enter a valid email")
-      .max(255, "Email must be at most 255 characters")
-      .refine((value) => value.toLowerCase().endsWith("@gmail.com"), {
-        message: "Only @gmail.com addresses are allowed",
-      }),
+      .max(255, "Email must be at most 255 characters"),
+    avatarFile: z
+      .string()
+      .trim()
+      .max(3000000, "Avatar file payload is too large")
+      .optional()
+      .or(z.literal("")),
     bio: z
       .string()
       .trim()
