@@ -380,6 +380,35 @@ Supporting references:
 
 ---
 
+## Minor: Implement Server-Side Rendering
+- **Justification:** faster loading?
+- **Implementation:** used SSR in Forum Pages through Next.js server actions (something like that)
+- **Involved Members:** tjun-fan
+
+## Major: Use a framework for both the frontend and backend
+- **Justification:** We leverage frameworks because they have built-in security abstractions and standardized middleware, ensuring our microservices remain resilient against common vulnerabilities without reinventing core infrastructure. This architectural choice allowed the team to focus on complex business logic and real-time integration rather than low-level HTTP handling and boilerplate configuration.
+- **Implementation**:
+  - Fullstack framework: Next.js, server side acts as a Backend-For-Frontend
+  - Backend framework: Quarkus for auth/gateway, strong typing from Java and easy containerization; FastAPI for forum, helps with fast prototyping
+- **Involved Members:** jothomas, rteoh, vlow, tjun-fan, cwoon
+
+## Major: Allow users to interact with other users.
+- **Justification:** Allow users to chat directly on platform without switching to another app. Profile information also shows trustability and users can always reach out to trusted users through friendship management.
+- **Implementation:** Profile UI is minimalistic, and users have the option to link to their 42 accounts to show 42 stats. The friends system is a two way relationship, allowing complex state switching between requested, pending, accepted and blocked. The chat system is implemented with a combination of HTTP POST(send) requests + SSE(receive), managing connections through go channels. The UI is inspired by Discord DMs.
+- **Involved Members:** cwoon, rteoh, jothomas
+
+## Major: Implement real-time features using WebSockets or similar technology
+- **Justification:** Since our platform has a chat function, making it real-time will improve user experience and allow information exchange efficiently. Most real-time features are only focused at the chat functionality.
+- **Implementation:** Group chats are implemented to allow message broadcasting, real-time updates is applied to chat features such as typing indicators, instant messaging, read receipts, online statuses, unread indicators, and incoming friend requests. SSE also has a default reconnection behaviour with the `EventSource` function but it only works for instant server restarts, so an automated reconnection code is also added to ensure that real-time features come back when server was shut down for a long time.
+- **Involved Members:** cwoon
+
+## Minor: Advanced chat features (enhances the basic chat from "User interaction" module).
+- **Justification:** Complements the real-time module, improves user experience significantly for chat function.
+- **Implementation:** A clickable link and a dropdown option was added to the chat interface to view the user profile information. Blocked users are completely hidden from the chat interfaces, they will not appear in group chats too, their messages also wont load. Chat messages is always saved to the DB first before SSE sends the message back to the client. Typing indicators and read receipts are exclusively for friends only. To justify the module completion since this was a game module but we're not building a game, we also have unread indicators to show unopened chat messages and a one-time message request from non-friends to start a chat.
+- **Involved Members:** cwoon
+
+---
+
 ## Individual Contributions
 
 ### vlow
