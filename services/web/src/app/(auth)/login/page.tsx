@@ -1,5 +1,6 @@
 import LoginPage from '@/features/auth/ui/login/LoginPage'
 import { getServerCurrentUser } from '@/features/auth/api/serverAuthData'
+import { isValidAuthRedirectToken } from '@/features/auth/utils/redirectMessage'
 import { redirect } from 'next/navigation'
 
 // export const dynamic = 'force-dynamic'
@@ -20,6 +21,11 @@ function extractErrorParam(value: string | string[] | undefined): string | null 
   return null
 }
 
+function normalizeLoginRouteError(value: string | null): string | null {
+  if (!value) return null
+  return isValidAuthRedirectToken(value) ? value : null
+}
+
 export default async function LoginRoute({ searchParams }: LoginRouteProps) {
   const profileResult = await getServerCurrentUser()
   if (profileResult.ok && profileResult.data) {
@@ -27,7 +33,7 @@ export default async function LoginRoute({ searchParams }: LoginRouteProps) {
   }
 
   const params = await searchParams
-  const routeError = extractErrorParam(params.error)
+  const routeError = normalizeLoginRouteError(extractErrorParam(params.error))
 
   return <LoginPage routeError={routeError} />
 }

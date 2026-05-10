@@ -419,17 +419,14 @@ export default function SettingsPage({
 	 * Persists profile edits for the currently authenticated user.
 	 */
 	const handleSaveOwnProfile = async () => {
+		let avatarFilePayload: string | undefined;
 		if (pendingAvatarFile) {
-			const validationError = validateAvatarFile(pendingAvatarFile);
+			avatarFilePayload = await fileToDataUrl(pendingAvatarFile);
+			const validationError = validateAvatarFile(avatarFilePayload);
 			if (validationError) {
 				setAdminActionError(validationError);
 				return;
 			}
-		}
-
-		let avatarFilePayload: string | undefined;
-		if (pendingAvatarFile) {
-			avatarFilePayload = await fileToDataUrl(pendingAvatarFile);
 		}
 
     const parsed = updateProfileSchema.safeParse({
@@ -866,7 +863,7 @@ export default function SettingsPage({
                     </svg>
                     <div>
                       <p className="text-sm font-medium text-base-content">Google</p>
-                      <p className="text-xs text-base-content/50">Connect to log in with your Google account</p>
+                      <p className="text-xs text-base-content/50">Login to link with your Google account</p>
                     </div>
                   </div>
                   <button
@@ -875,7 +872,7 @@ export default function SettingsPage({
                     onClick={() => !activeProfile.linkedWithGoogle && linkWith("google")}
                     disabled={activeProfile.linkedWithGoogle}
                   >
-                    {activeProfile.linkedWithGoogle ? "Linked" : "Connect"}
+                    {activeProfile.linkedWithGoogle ? "Linked" : "Link"}
                   </button>
                 </div>
               
@@ -889,7 +886,7 @@ export default function SettingsPage({
                     />
                     <div>
                       <p className="text-sm font-medium text-base-content">42 Intra</p>
-                      <p className="text-xs text-base-content/50">Connect to log in with your 42 account</p>
+                      <p className="text-xs text-base-content/50">Login to link with your 42 account</p>
                     </div>
                   </div>
                   <button
@@ -898,7 +895,7 @@ export default function SettingsPage({
                     onClick={() => !activeProfile.linkedWithIntra && linkWith("42")}
                     disabled={activeProfile.linkedWithIntra}
                   >
-                    {activeProfile.linkedWithIntra ? "Linked" : "Connect"}
+                    {activeProfile.linkedWithIntra ? "Linked" : "Link"}
                   </button>
                 </div>
               

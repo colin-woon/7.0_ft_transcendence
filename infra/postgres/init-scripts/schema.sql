@@ -27,7 +27,7 @@ CREATE TABLE auth_service.users (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
     -- Identity Providers (OAuth)
-    overflow_email VARCHAR(255) UNIQUE NOT NULL,
+    overflow_email VARCHAR(255) UNIQUE,
     google_email VARCHAR(255) UNIQUE,
     intra_email VARCHAR(255) UNIQUE,
     intra_id VARCHAR(50) UNIQUE, -- For 42 OAuth

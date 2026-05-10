@@ -379,6 +379,16 @@ Supporting references:
 - Modules of Choice: vlow
 
 ---
+## Major: Standard User management and authentication
+- **Justification** Establishes user identity and enables secure authentication across multiple OAuth providers (Google, 42) and local password-based registration. Essential for supporting social interaction, profiles, and role-based access control.
+- **Implementation** Auth Service provides password authentication with Argon2 hashing, OAuth 2.0 integration, JWT tokens, session management, and profile CRUD with avatar support. Gateway enforces authentication before protected routes.
+- **Involved Members** jothomas, cwoon
+
+## Major: Advanced permissions system
+- **Justification** Backend-enforced RBAC prevents authorization bypass and ensures admin-only operations (user management, moderation) cannot be circumvented. Enables role-aware views and actions critical for platform security and governance.
+- **Implementation** Role enums (STUDENT, ADMIN) persisted to PostgreSQL, JWT group claims for stateless validation, gateway RBAC middleware for route authorization, and protected endpoints for admin actions. Authorization enforced at backend level before business logic.
+- **Involved Members** jothomas, rteoh, cwoon
+
 ## Minor: Use an ORM for the Database
 - **Justification** Increased productivity (focus on business logic), Cleaner codebase (more concise and readable compared to SQL) and Built-in Securiy (uses parameterized queries, safe from SQL injections).
 - **Implementation** SQLAlchemy used in Python Forum Backend, Hibernate for Java User/Auth Backend.
