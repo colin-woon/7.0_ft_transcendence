@@ -316,9 +316,11 @@ public class AuthService {
 		String uaHeader = request.getHeader("User-Agent");
 		if (uaHeader != null && !uaHeader.isBlank()) {
 			var deviceInfo = deviceParser.parse(uaHeader);
-			session.deviceType = deviceInfo.get("deviceType");
-			session.browser = deviceInfo.get("browser");
-			session.os = deviceInfo.get("os");
+			if (deviceInfo != null) {
+				session.deviceType = deviceInfo.get("deviceType");
+				session.browser = deviceInfo.get("browser");
+				session.os = deviceInfo.get("os");
+			}
 		}
 	}
 }

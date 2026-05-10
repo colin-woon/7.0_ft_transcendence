@@ -154,7 +154,7 @@ public class UserService {
 			User byGoogleEmail = userRepository.findByGoogleEmail(email).orElse(null);
 			if (byGoogleEmail != null && !byGoogleEmail.id.equals(user.id)) {
 				LOG.warn("Google account id and email map to different local users");
-				throw new WebApplicationException("Google account identity conflict", 409);
+				throw new WebApplicationException("auth_conflict", 409);
 			}
 			if (user.googleEmail == null || user.googleEmail.isBlank()) {
 				user.googleEmail = email;
@@ -170,7 +170,7 @@ public class UserService {
 				user.googleId = googleId;
 			} else if (!user.googleId.equals(googleId)) {
 				LOG.warn("Google email already linked to different Google account");
-			throw new WebApplicationException("auth_conflict", 409);
+				throw new WebApplicationException("auth_conflict", 409);
 			}
 
 			user.googleEmail = email;
@@ -229,7 +229,7 @@ public class UserService {
 				user.intraId = intraId;
 			} else if (!user.intraId.equals(intraId)) {
 				LOG.warn("42 email already linked to different 42 account");
-			throw new WebApplicationException("auth_conflict", 409);
+				throw new WebApplicationException("auth_conflict", 409);
 			}
 			intraService.syncUserData(user, intraDTO, intraEmail);
 			intraService.syncIntraData(user, intraDTO);

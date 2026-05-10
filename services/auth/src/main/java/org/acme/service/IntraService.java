@@ -271,7 +271,7 @@ public class IntraService {
 
 	@Transactional
 	public void syncUserData(User user, IntraDTO dto, String email) {
-		if (user.intraEmail == null || user.intraEmail.isBlank())
+		if (email != null && !email.isBlank() && (user.intraEmail == null || user.intraEmail.isBlank()))
 			user.intraEmail = email;
 		if (user.fullName == null || user.fullName.isBlank())
 			user.fullName = dto.usualFullName != null ? dto.usualFullName : dto.displayName;
