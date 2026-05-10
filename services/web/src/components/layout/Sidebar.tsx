@@ -123,7 +123,7 @@ export default function Sidebar() {
               </Link>
               <Link
                 onClick={onClose}
-                href="/messages"
+                href="/friends"
                 className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[#8EE7E3]/10 rounded-lg transition group"
               >
                 <MessageCircle
