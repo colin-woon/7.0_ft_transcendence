@@ -345,7 +345,6 @@ export async function getProjectDetailsBySort(
     );
     return { ...project, posts };
   } catch (err) {
-    console.error(`Failed to fetch posts for project ${projectId}`, err);
     return { ...project, posts: [] };
   }
 }

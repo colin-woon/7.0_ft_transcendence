@@ -21,7 +21,6 @@ export default function AuthCallback() {
           router.push('/login?error=auth_failed')
         }
       } catch (err) {
-        console.error('Callback handling failed:', err)
         router.push('/login?error=callback_failed')
       }
     }

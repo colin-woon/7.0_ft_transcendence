@@ -68,7 +68,7 @@ export function getMessageStream(
     };
 
     sse.onerror = (error) => {
-      console.error("SSE Error. Reconnecting...", error);
+      console.log("SSE Error. Reconnecting...", error);
       sse.close();
       if (!isIntentionallyClosed) {
         const jitter = Math.random() * 2000;

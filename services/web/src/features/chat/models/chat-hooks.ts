@@ -153,8 +153,7 @@ export const useCreateGroupChatAction = () => {
 
       return newChat;
     } catch (error) {
-      console.error("Failed to create group chat", error);
-      throw error;
+        throw error;
     } finally {
       setIsSubmitting(false);
     }

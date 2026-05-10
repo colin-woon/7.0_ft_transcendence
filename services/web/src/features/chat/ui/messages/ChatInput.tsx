@@ -26,10 +26,8 @@ export function ChatInput() {
     try {
       await acceptMessageRequest(requestedBy); 
     } catch (err) {
-      console.error('Failed to accept message request', err);
       updateChatPermission(chatId, false);
     }
-    // Removed empty finally block
   };
 
   const handleSend = async () => {

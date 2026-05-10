@@ -41,8 +41,6 @@ export default function FriendsPage() {
       fetchAllAcceptedFriends();
 
     } catch (err) {
-      console.error("Failed update friendship", err);
-
       setFriendshipStatus(
         friendId,
         status === 'accepted' ? 'requested' : 'accepted',

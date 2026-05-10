@@ -270,7 +270,6 @@ class AuthService {
 			const response = await this.refreshAccessToken();
 			return response.user;
 		} catch (error) {
-			console.error('OAuth callback failed:', error);
 			return null;
 		}
 	}
@@ -648,7 +647,6 @@ class AuthService {
 		const refreshIn = Math.max(secondsUntilExpiry - 60, 10) * 1000;
 		this.refreshTimer = setTimeout(() => {
 			this.refreshAccessToken().catch((error) => {
-				console.error('Auto-refresh failed:', error);
 				this.logout().catch(() => undefined);
 			});
 		}, refreshIn);

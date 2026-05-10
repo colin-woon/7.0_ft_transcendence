@@ -45,7 +45,6 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
       />
     );
   } catch (error) {
-    console.error("Failed to load post detail:", error);
     notFound();
   }
 }
