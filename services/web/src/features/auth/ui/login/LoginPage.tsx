@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useAuth } from "@/features/auth/models/AuthContext";
+import { AuthApiError } from "@/features/auth/api/authService";
+import { getAuthRedirectMessage } from "@/features/auth/utils/redirectMessage";
 import { BackgroundBlobs } from "@/features/auth/ui/login/BackgroundBlobs";
 import { GlassCard } from "@/features/auth/ui/login/GlassCard";
 import { LoginHeader } from "@/features/auth/ui/login/LoginHeader";
@@ -24,14 +26,9 @@ export default function LoginPage({ routeError }: LoginPageProps) {
   const router = useRouter();
   const { login, loginWithPassword } = useAuth();
 
-  const errorMessageMap: Record<string, string> = {
-    auth_failed: "Authentication failed. Please try again.",
-    callback_failed: "Callback handling failed. Please try again.",
-    oauth_failed: "OAuth login failed. Please try again.",
-  };
   const routeErrorMessage =
     routeError && routeError.trim()
-      ? errorMessageMap[routeError.trim()] ?? routeError.trim()
+      ? getAuthRedirectMessage(routeError.trim()) ?? 'Authentication failed. Please try again.'
       : null;
 
   const [values, setValues] = useState<PasswordLoginFormValues>({
@@ -85,7 +82,17 @@ export default function LoginPage({ routeError }: LoginPageProps) {
       await loginWithPassword(parsed.data);
       router.push("/profile");
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Login failed");
+      if (error instanceof AuthApiError) {
+        if (error.status === 401) {
+          setFormError("Invalid email or password");
+        } else if (error.status === 403) {
+          setFormError("Your account is banned");
+        } else {
+          setFormError(error.message ?? "Login failed");
+        }
+      } else {
+        setFormError(error instanceof Error ? error.message : "Login failed");
+      }
     } finally {
       setIsSubmitting(false);
     }

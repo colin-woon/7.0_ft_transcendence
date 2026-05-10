@@ -191,17 +191,15 @@ export default function UsersSearchPage({
   const saveAdminEdit = async () => {
     if (!editUserId) return;
 
+    let avatarFile: string | undefined;
     if (pendingAvatarFile) {
-      const validationError = validateAvatarFile(pendingAvatarFile);
+      avatarFile = await fileToDataUrl(pendingAvatarFile);
+      const validationError = validateAvatarFile(avatarFile);
       if (validationError) {
         setQuickActionError(validationError);
         return;
       }
     }
-
-    const avatarFile = pendingAvatarFile
-      ? await fileToDataUrl(pendingAvatarFile)
-      : undefined;
 
     const updated = await updateUser(editUserId, {
       username: editDraft.username.trim() || undefined,
