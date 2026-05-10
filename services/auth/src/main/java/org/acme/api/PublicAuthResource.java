@@ -4,6 +4,7 @@ import org.acme.dto.UserResponseDTO;
 import org.acme.model.User;
 import org.acme.service.AuthService;
 import org.acme.service.UserService;
+import org.jboss.logging.Logger;
 
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -23,6 +24,8 @@ import jakarta.ws.rs.core.Response;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class PublicAuthResource {
+
+	private static final Logger LOG = Logger.getLogger(PublicAuthResource.class);
 
 	@Inject
 	AuthService authService;
@@ -44,7 +47,7 @@ public class PublicAuthResource {
 	@Authenticated
 	public Response login(@PathParam("provider") @DefaultValue("google") String provider) {
 		try {
-			User user = userService.syncUser(identity);
+			User user = userService.syncUser(identity, null);
 			UserResponseDTO userResponse = authService.createToken(user);
 			return Response.seeOther(authService.resolveRedirectUri("/profile"))
 				.entity(userResponse)
@@ -54,6 +57,7 @@ public class PublicAuthResource {
 				.build();
 
 		} catch (WebApplicationException e) {
+			LOG.debug("Error during login", e);
 			int status = e.getResponse() == null ? 500 : e.getResponse().getStatus();
 			boolean shouldClearAuth = status == 401 || status == 403 || status == 404;
 			Response.ResponseBuilder response = Response
@@ -64,8 +68,9 @@ public class PublicAuthResource {
 			}
 			return response.build();
 		} catch (Exception e) {
+			LOG.error("Unexpected error during login callback", e);
 			return Response
-				.seeOther(authService.resolveRedirectUri("/login", "Authentication failed", true))
+				.seeOther(authService.resolveRedirectUri("/login", "auth_failed", true))
 				.cookie(authService.clearOIDCCookies())
 				.build();
 		}
@@ -81,17 +86,17 @@ public class PublicAuthResource {
 	public Response link(@PathParam("provider") @DefaultValue("google") String provider,
 						@CookieParam("sessionId") String sessionId) {
 		try {
-			User linkedUser = userService.linkProvider(identity,
+			User linkedUser = userService.syncUser(identity,
 					authService.validateSessionUser(sessionId));
 			UserResponseDTO userResponse = authService.createToken(linkedUser);
-			String successMessage = "Successfully linked to " + provider;
-			return Response.seeOther(authService.resolveRedirectUri("/settings", successMessage, false))
+			return Response.seeOther(authService.resolveRedirectUri("/settings", "link_success", false))
 				.entity(userResponse)
 				.cookie(authService.clearOIDCCookies())
 				.cookie(authService.createAccessTokenCookie(userResponse.accessToken))
 				.build();
 
 		} catch (WebApplicationException e) {
+			LOG.debug("Error during linking", e);
 			int status = e.getResponse() == null ? 500 : e.getResponse().getStatus();
 			boolean invalidSession = status == 401 || status == 404;
 			boolean banned = status == 403;
@@ -104,8 +109,9 @@ public class PublicAuthResource {
 			}
 			return response.build();
 		} catch (Exception e) {
+			LOG.error("Unexpected error during link callback", e);
 			return Response
-				.seeOther(authService.resolveRedirectUri("/settings", "Link failed", true))
+				.seeOther(authService.resolveRedirectUri("/settings", "link_failed", true))
 				.cookie(authService.clearOIDCCookies())
 				.build();
 		}

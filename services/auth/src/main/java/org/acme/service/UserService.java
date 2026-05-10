@@ -38,40 +38,26 @@ public class UserService {
 	AvatarStorageService avatarStorageService;
 
 	@Transactional
-	public User syncUser(SecurityIdentity identity) {
+	public User syncUser(SecurityIdentity identity, Long currentUserId) {
 		UserInfo info = identity.getAttribute("userinfo");
 		String tenantId = identity.getAttribute(OidcUtils.TENANT_ID_ATTRIBUTE);
 		if (info == null || tenantId == null) {
-			throw new WebApplicationException("OIDC user info missing", 401);
+			throw new WebApplicationException("auth_failed", 401);
 		}
 
 		User user = switch (tenantId) {
-			case "google" -> loginByGoogle(info);
+			case "google" -> {
+				if (currentUserId == null)
+					yield loginByGoogle(info);
+				yield linkByGoogle(info, userRepository.findById(currentUserId));
+			}
 
-			case "42" -> loginBy42(info);
+			case "42" -> {
+				if (currentUserId == null)
+					yield loginBy42(info);
+				yield linkBy42(info, userRepository.findById(currentUserId));
+			}
 
-			default -> throw new WebApplicationException("Unsupported authentication provider", 401);
-		};
-		Hibernate.initialize(user.intra);
-		return user;
-	}
-
-	@Transactional
-	public User linkProvider(SecurityIdentity identity, User currentUser) {
-		UserInfo info = identity.getAttribute("userinfo");
-		String tenantId = identity.getAttribute(OidcUtils.TENANT_ID_ATTRIBUTE);
-		if (info == null || tenantId == null) {
-			throw new WebApplicationException("OIDC user info missing", 401);
-		}
-		if (currentUser.isBanned) {
-			throw new WebApplicationException("User is banned", 403);
-		}
-
-		User user = switch (tenantId) {
-			case "google" -> linkByGoogle(info, currentUser);
-
-			case "42" -> linkBy42(info, currentUser);
-			
 			default -> throw new WebApplicationException("Unsupported authentication provider", 401);
 		};
 		Hibernate.initialize(user.intra);
@@ -95,41 +81,28 @@ public class UserService {
 			throw new WebApplicationException("Username already in use", 409);
 		});
 
-		User user = new User();
-		user.overflowEmail = normalizedEmail;
-		user.username = normalizedUsername;
-		user.fullName = dto.fullName.trim();
-		user.avatarUrl = avatarStorageService.replaceManagedAvatar(dto.avatarFile, null);
-		user.bio = dto.bio;
-		user.role = UserRole.STUDENT;
-		user.passwordHash = passwordService.hash(dto.password);
-
-		userRepository.persist(user);
-		return user;
+		return createNewUser(dto);
 	}
 
 	@Transactional
 	public User authenticateWithPassword(PasswordLoginDTO dto) {
 		String normalizedEmail = normalizeEmail(dto.email);
 		User user = userRepository.findByOverflowEmail(normalizedEmail).orElse(null);
+
 		if (user == null) {
 			user = findPasswordLoginFallback(normalizedEmail);
+			if (user == null)
+				throw new WebApplicationException("Invalid email or password", 401);
 		}
-		String passwordHash = user != null ? user.passwordHash : null;
-		if (!passwordService.verifyWithFallback(dto.password, passwordHash)) {
-			throw new WebApplicationException("Invalid credentials", 401);
-		}
-
-		if (user == null) {
-			throw new WebApplicationException("Invalid credentials", 401);
-		}
-
 		if (user.isBanned) {
-			throw new WebApplicationException("Invalid credentials", 401);
+			throw new WebApplicationException("User is banned", 403);
+		}
+
+		if (!passwordService.verifyWithFallback(dto.password, user.passwordHash)) {
+			throw new WebApplicationException("Invalid email or password", 401);
 		}
 
 		Hibernate.initialize(user.intra);
-
 		return user;
 	}
 
@@ -197,7 +170,7 @@ public class UserService {
 				user.googleId = googleId;
 			} else if (!user.googleId.equals(googleId)) {
 				LOG.warn("Google email already linked to different Google account");
-				throw new WebApplicationException("Google email already linked to different Google account", 409);
+			throw new WebApplicationException("auth_conflict", 409);
 			}
 
 			user.googleEmail = email;
@@ -214,16 +187,16 @@ public class UserService {
 
 		User byGoogleId = userRepository.findByGoogleId(googleId).orElse(null);
 		if (byGoogleId != null && !byGoogleId.id.equals(targetUser.id)) {
-			throw new WebApplicationException("Google account already linked to another user", 409);
+			throw new WebApplicationException("link_conflict", 409);
 		}
 
 		User byGoogleEmail = userRepository.findByGoogleEmail(email).orElse(null);
 		if (byGoogleEmail != null && !byGoogleEmail.id.equals(targetUser.id)) {
-			throw new WebApplicationException("Google email already linked to another user", 409);
+			throw new WebApplicationException("link_conflict", 409);
 		}
 
 		if (targetUser.googleId != null && !targetUser.googleId.equals(googleId)) {
-			throw new WebApplicationException("User already linked to a different Google account", 409);
+			throw new WebApplicationException("link_conflict", 409);
 		}
 
 		targetUser.googleId = googleId;
@@ -242,13 +215,9 @@ public class UserService {
 			User byIntraEmail = userRepository.findByIntraEmail(intraEmail).orElse(null);
 			if (byIntraEmail != null && !byIntraEmail.id.equals(user.id)) {
 				LOG.warn("42 account id and email map to different local users");
-				throw new WebApplicationException("42 account identity conflict", 409);
+				throw new WebApplicationException("auth_conflict", 409);
 			}
-			if (user.intraEmail == null || user.intraEmail.isBlank()) {
-				user.intraEmail = intraEmail;
-				userRepository.persist(user);
-			}
-			intraService.syncUserData(user, intraDTO);
+			intraService.syncUserData(user, intraDTO, intraEmail);
 			intraService.syncIntraData(user, intraDTO);
 			return user;
 		}
@@ -260,11 +229,9 @@ public class UserService {
 				user.intraId = intraId;
 			} else if (!user.intraId.equals(intraId)) {
 				LOG.warn("42 email already linked to different 42 account");
-				throw new WebApplicationException("42 email already linked to different 42 account", 409);
+			throw new WebApplicationException("auth_conflict", 409);
 			}
-			user.intraEmail = intraEmail;
-			userRepository.persist(user);
-			intraService.syncUserData(user, intraDTO);
+			intraService.syncUserData(user, intraDTO, intraEmail);
 			intraService.syncIntraData(user, intraDTO);
 			return user;
 		}
@@ -281,16 +248,16 @@ public class UserService {
 
 		User byIntraId = userRepository.findByIntraId(intraId).orElse(null);
 		if (byIntraId != null && !byIntraId.id.equals(targetUser.id)) {
-			throw new WebApplicationException("42 account already linked to another user", 409);
+			throw new WebApplicationException("link_conflict", 409);
 		}
 
 		User byIntraEmail = userRepository.findByIntraEmail(intraEmail).orElse(null);
 		if (byIntraEmail != null && !byIntraEmail.id.equals(targetUser.id)) {
-			throw new WebApplicationException("42 email already linked to another user", 409);
+			throw new WebApplicationException("link_conflict", 409);
 		}
 
 		if (targetUser.intraId != null && !targetUser.intraId.equals(intraId)) {
-			throw new WebApplicationException("User already linked to a different 42 account", 409);
+			throw new WebApplicationException("link_conflict", 409);
 		}
 
 		targetUser.intraId = intraId;
@@ -303,7 +270,6 @@ public class UserService {
 
 	public User createNewUser(String email, String rawName, String id, UserRole role) {
 		User user = new User();
-		user.overflowEmail = email;
 		user.googleEmail = email;
 		user.fullName = rawName;
 		user.role = role;
@@ -319,7 +285,6 @@ public class UserService {
 		String normalizedEmail = normalizeEmail(intraDTO.email);
 
 		User user = new User();
-		user.overflowEmail = normalizedEmail;
 		user.intraEmail = normalizedEmail;
 		user.intraId = intraDTO.id.toString();
 		user.fullName = intraDTO.usualFullName != null ? intraDTO.usualFullName : intraDTO.displayName;
@@ -332,6 +297,24 @@ public class UserService {
 
 		userRepository.persist(user);
 		LOG.debug("User created successfully (provider: 42)");
+		return user;
+	}
+
+	public User createNewUser(PasswordRegisterDTO dto) {
+		String normalizedEmail = normalizeEmail(dto.email);
+		String normalizedUsername = dto.username.trim();
+
+		User user = new User();
+		user.overflowEmail = normalizedEmail;
+		user.username = normalizedUsername;
+		user.fullName = dto.fullName.trim();
+		user.avatarUrl = avatarStorageService.replaceManagedAvatar(dto.avatarFile, null);
+		user.bio = dto.bio;
+		user.role = UserRole.STUDENT;
+		user.passwordHash = passwordService.hash(dto.password);
+
+		userRepository.persist(user);
+		LOG.debug("User created successfully (provider: Overflow)");
 		return user;
 	}
 
