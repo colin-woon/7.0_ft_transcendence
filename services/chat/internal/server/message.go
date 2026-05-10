@@ -172,9 +172,7 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request) {
 	flusher.Flush()
 
 	sseCh := make(chan string, 10)
-	s.sseHub.mutex.Lock()
-	s.sseHub.userChannels[userId] = sseCh
-	s.sseHub.mutex.Unlock()
+	s.sseHub.AddConnection(userId, sseCh)
 
 	// Broadcast "online" status to friends in a goroutine (non-blocking)
 	go s.broadcastStatusToFriends(userId, true)
@@ -184,12 +182,12 @@ func (s *Server) GetMessageStream(w http.ResponseWriter, r *http.Request) {
 	for {
 		select {
 		case <-r.Context().Done():
-			s.sseHub.mutex.Lock()
-			delete(s.sseHub.userChannels, userId)
-			s.sseHub.mutex.Unlock()
+			s.sseHub.RemoveConnection(userId, sseCh)
 
 			// Broadcast "offline" status to friends (synchronous during cleanup)
-			s.broadcastStatusToFriends(userId, false)
+			if !s.sseHub.IsUserOnline(userId) {
+				s.broadcastStatusToFriends(userId, false)
+			}
 			return
 
 		case message := <-sseCh:
@@ -561,18 +559,13 @@ func (s *Server) SendMessageRequest(w http.ResponseWriter, r *http.Request, rece
 			return
 		}
 
-		// Prevent multiple requests if one is already sent/pending
-		if existing.Status.Valid && (existing.Status.ChatServiceFriendStatus == database.ChatServiceFriendStatusRequested ||
-			existing.Status.ChatServiceFriendStatus == database.ChatServiceFriendStatusPending) {
-			http.Error(w, "Message request already pending", http.StatusForbidden)
-			return
-		} else {
+		if existing.Status.Valid && existing.Status.ChatServiceFriendStatus != database.ChatServiceFriendStatusRequested &&
+			existing.Status.ChatServiceFriendStatus != database.ChatServiceFriendStatusPending {
 			http.Error(w, "Friendship already exists", http.StatusConflict)
 			return
 		}
 	}
 
-	// Create chat room
 	chatId, err := qtx.CreateDirectRoomWithMembers(ctx, database.CreateDirectRoomWithMembersParams{
 		UserID:   int32(senderId),
 		UserID_2: int32(receiverId),
@@ -582,7 +575,15 @@ func (s *Server) SendMessageRequest(w http.ResponseWriter, r *http.Request, rece
 		return
 	}
 
-	// Create the 1 allowed message
+	history, _ := qtx.GetMessageHistoryByChatId(ctx, database.GetMessageHistoryByChatIdParams{
+		ChatID:      chatId,
+		AddresseeID: int32(receiverId),
+	})
+	if len(history) > 0 {
+		http.Error(w, "Message request already sent", http.StatusConflict)
+		return
+	}
+
 	savedMsg, err := qtx.CreateMessage(ctx, database.CreateMessageParams{
 		ChatID:   chatId,
 		SenderID: int32(senderId),
@@ -615,4 +616,56 @@ func (s *Server) SendMessageRequest(w http.ResponseWriter, r *http.Request, rece
 	s.sseHub.BroadcastToRoomExcept(memberIDs, senderId, string(jsonData))
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (s *Server) AcceptMessageRequest(w http.ResponseWriter, r *http.Request, requesterId int) {
+	ctx := r.Context()
+
+	receiverId, ok := r.Context().Value(userIDKey).(int)
+	if !ok {
+		http.Error(w, "Internal Server Error: Missing User ID in context", http.StatusInternalServerError)
+		return
+	}
+
+	qtx := s.db.GetQueries()
+
+	// Get current friend state
+	currentFriendship, err := qtx.GetFriendship(ctx, database.GetFriendshipParams{
+		RequesterID: int32(requesterId),
+		AddresseeID: int32(receiverId),
+	})
+	if err != nil {
+		http.Error(w, "Friendship not found", http.StatusNotFound)
+		return
+	}
+
+	status := currentFriendship.Status.ChatServiceFriendStatus
+	isReqOrPend := status == database.ChatServiceFriendStatusRequested ||
+		status == database.ChatServiceFriendStatusPending
+
+	if !currentFriendship.Status.Valid || !isReqOrPend {
+		http.Error(w, "Friendship is not in requested or pending state", http.StatusBadRequest)
+		return
+	}
+
+	// Accept message request sets is_chat_allowed to true, status unchanged
+	_, err = qtx.UpdateFriendshipStatus(ctx, database.UpdateFriendshipStatusParams{
+		RequesterID: int32(requesterId),
+		AddresseeID: int32(receiverId),
+		Status: database.NullChatServiceFriendStatus{
+			ChatServiceFriendStatus: currentFriendship.Status.ChatServiceFriendStatus,
+			Valid:                   true,
+		},
+		LastActionUserID: currentFriendship.LastActionUserID,
+		IsChatAllowed: sql.NullBool{
+			Bool:  true,
+			Valid: true,
+		},
+	})
+	if err != nil {
+		http.Error(w, "Failed to accept message request", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

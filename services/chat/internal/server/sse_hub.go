@@ -7,15 +7,39 @@ import (
 
 // SseConnectionHub manages active SSE connections for real-time messaging
 type SseConnectionHub struct {
-	userChannels map[int]chan string
+	userChannels map[int]map[chan string]bool
 	mutex        sync.RWMutex
 }
 
 // NewSseConnectionHub creates a new SSE connection hub
 func NewSseConnectionHub() *SseConnectionHub {
 	return &SseConnectionHub{
-		userChannels: make(map[int]chan string),
+		userChannels: make(map[int]map[chan string]bool),
 		mutex:        sync.RWMutex{},
+	}
+}
+
+// AddConnection registers a new SSE channel for a user
+func (hub *SseConnectionHub) AddConnection(userId int, ch chan string) {
+	hub.mutex.Lock()
+	defer hub.mutex.Unlock()
+
+	if _, exists := hub.userChannels[userId]; !exists {
+		hub.userChannels[userId] = make(map[chan string]bool)
+	}
+	hub.userChannels[userId][ch] = true
+}
+
+// RemoveConnection unregisters an SSE channel for a user
+func (hub *SseConnectionHub) RemoveConnection(userId int, ch chan string) {
+	hub.mutex.Lock()
+	defer hub.mutex.Unlock()
+
+	if channels, exists := hub.userChannels[userId]; exists {
+		delete(channels, ch)
+		if len(channels) == 0 {
+			delete(hub.userChannels, userId)
+		}
 	}
 }
 
@@ -28,11 +52,13 @@ func (hub *SseConnectionHub) BroadcastToRoomExcept(memberIDs []int32, senderId i
 		if int(memberId) == senderId {
 			continue
 		}
-		if ch, ok := hub.userChannels[int(memberId)]; ok {
-			select {
-			case ch <- payload:
-			default:
-				fmt.Printf("Warning: channel full for user %d\n", memberId)
+		if channels, ok := hub.userChannels[int(memberId)]; ok {
+			for ch := range channels {
+				select {
+				case ch <- payload:
+				default:
+					fmt.Printf("Warning: channel full for user %d\n", memberId)
+				}
 			}
 		}
 	}
@@ -44,11 +70,13 @@ func (hub *SseConnectionHub) BroadcastToUsers(userIds []int, payload string) {
 	defer hub.mutex.RUnlock()
 
 	for _, userId := range userIds {
-		if ch, ok := hub.userChannels[userId]; ok {
-			select {
-			case ch <- payload:
-			default:
-				fmt.Printf("Warning: channel full for user %d\n", userId)
+		if channels, ok := hub.userChannels[userId]; ok {
+			for ch := range channels {
+				select {
+				case ch <- payload:
+				default:
+					fmt.Printf("Warning: channel full for user %d\n", userId)
+				}
 			}
 		}
 	}
@@ -58,8 +86,8 @@ func (hub *SseConnectionHub) BroadcastToUsers(userIds []int, payload string) {
 func (hub *SseConnectionHub) IsUserOnline(userId int) bool {
 	hub.mutex.RLock()
 	defer hub.mutex.RUnlock()
-	_, online := hub.userChannels[userId]
-	return online
+	channels, online := hub.userChannels[userId]
+	return online && len(channels) > 0
 }
 
 // GetOnlineUsers returns a list of all currently connected user IDs
@@ -69,7 +97,7 @@ func (hub *SseConnectionHub) GetOnlineUsers(userIds []int) []int {
 
 	online := make([]int, 0)
 	for _, userId := range userIds {
-		if _, exists := hub.userChannels[userId]; exists {
+		if channels, exists := hub.userChannels[userId]; exists && len(channels) > 0 {
 			online = append(online, userId)
 		}
 	}

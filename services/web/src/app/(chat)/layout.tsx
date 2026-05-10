@@ -2,7 +2,6 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { ChatSidebar } from "@/features/chat/ui";
 import { SSEStreamController } from "@/features/chat/ui";
-import { Toaster } from "react-hot-toast";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 export default async function ChatLayout({
@@ -36,7 +35,6 @@ export default async function ChatLayout({
           className="flex-1 flex flex-col h-full w-full overflow-hidden relative bg-base-100"
         >
           <SSEStreamController />
-          <Toaster position="top-right" reverseOrder={false} />
           {children}
         </main>
       </div>

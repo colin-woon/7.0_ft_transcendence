@@ -14,7 +14,9 @@ export interface User {
   id: number
   username: string
   fullName: string
-  email: string
+	overflowEmail: string
+	googleEmail?: string | null
+	intraEmail?: string | null
   avatarImage?: string | null
   // Deprecated compatibility field for legacy temporary UI modules.
   avatarUrl?: string | null
@@ -91,12 +93,13 @@ export interface AdminUpdatePayload extends UserUpdatePayload {
 export interface CreateUserPayload {
   username: string
   fullName: string
-  email: string
+	overflowEmail: string
   avatarFile?: string
   bio?: string
   role?: 'STUDENT' | 'ADMIN'
   isBanned?: boolean
 }
+
 
 export interface PasswordLoginPayload {
 	email: string;
@@ -162,6 +165,10 @@ class AuthService {
 
 	loginWithProvider(provider: 'google' | '42') {
 		window.location.href = getApiUrl(`/api/public/auth/login/${provider}`);
+	}
+
+	linkWithProvider(provider: 'google' | '42') {
+		window.location.href = getApiUrl(`/api/public/auth/link/${provider}`);
 	}
 
 	async loginWithPassword(

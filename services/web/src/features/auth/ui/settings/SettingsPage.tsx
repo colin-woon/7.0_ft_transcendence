@@ -5,7 +5,6 @@ import intraIcon from '@/components/ui/imgs/42_icon.png';
 import PasswordForm from '@/features/auth/ui/settings/components/DropdownPassword';
 import CreateUserDialog from '@/features/auth/ui/settings/components/CreateUserDialog';
 import AdminToolsCard from '@/features/auth/ui/settings/components/AdminToolsCard';
-
 import {
 	AlertCircle,
 	ChartNoAxesColumn,
@@ -43,15 +42,21 @@ import {
 	validateAvatarFile,
 } from '@/features/auth/utils/avatarFile';
 import {
-	type PasswordChangeFormValues,
+	createUserSchema,
 	passwordChangeSchema,
+	type PasswordChangeFormValues,
+	updateProfileSchema,
+	type UpdateProfileFormValues,
 } from '@/features/auth/validation/authSchemas';
 
+
 interface SettingsPageProps {
-	initialProfile?: User | null;
-	initialProfileError?: string | null;
-	initialProfileErrorStatus?: number | null;
-	initialSessions?: SessionInfo[];
+  initialProfile?: User | null;
+  initialProfileError?: string | null;
+  initialProfileErrorStatus?: number | null;
+  initialSessions?: SessionInfo[];
+  routeMessage?: string | null;
+  isRouteMessageError?: boolean;
 }
 
 type SettingsTab = {
@@ -92,52 +97,59 @@ function getConfirmConfig(action: ConfirmAction | null): {
 		};
 	}
 
-	switch (action.kind) {
-		case 'delete-account':
-			return {
-				title: 'Delete account',
-				message:
-					'This permanently removes your account and cannot be undone.',
-				confirmLabel: 'Delete',
-				tone: 'danger',
-			};
-		case 'logout':
-			return {
-				title: 'Logout',
-				message: 'You will be signed out from your current session.',
-				confirmLabel: 'Logout',
-				tone: 'warning',
-			};
-		case 'logout-all':
-			return {
-				title: 'Logout all sessions',
-				message:
-					'This signs you out from every device, including your current one.',
-				confirmLabel: 'Logout all',
-				tone: 'warning',
-			};
-		case 'end-session':
-			return {
-				title: 'End session',
-				message: 'This session will be revoked immediately.',
-				confirmLabel: 'End session',
-				tone: 'warning',
-			};
-		default:
-			return {
-				title: 'Confirm action',
-				message: 'Please confirm this action.',
-				confirmLabel: 'Confirm',
-				tone: 'warning',
-			};
-	}
+  switch (action.kind) {
+    case 'delete-account':
+      return {
+        title: "Delete account",
+        message: "This permanently removes your account and cannot be undone.",
+        confirmLabel: "Delete",
+        tone: "danger",
+      };
+    case 'logout':
+      return {
+        title: "Logout",
+        message: "You will be signed out from your current session.",
+        confirmLabel: "Logout",
+        tone: "warning",
+      };
+    case 'logout-all':
+      return {
+        title: "Logout all sessions",
+        message:
+          "This signs you out from every device, including your current one.",
+        confirmLabel: "Logout all",
+        tone: "warning",
+      };
+    case "end-session":
+      return {
+        title: "End session",
+        message: "This session will be revoked immediately.",
+        confirmLabel: "End session",
+        tone: "warning",
+      };
+    default:
+      return {
+        title: "Confirm action",
+        message: "Please confirm this action.",
+        confirmLabel: "Confirm",
+        tone: "warning",
+      };
+  }
 }
 
+const XIcon = () => (
+  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+    <path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+  </svg>
+);
+
 export default function SettingsPage({
-	initialProfile,
-	initialProfileError,
-	initialProfileErrorStatus,
-	initialSessions,
+  initialProfile,
+  initialProfileError,
+  initialProfileErrorStatus,
+  initialSessions,
+  routeMessage,
+  isRouteMessageError,
 }: SettingsPageProps) {
 	const router = useRouter();
 	const pathname = usePathname();
@@ -151,14 +163,15 @@ export default function SettingsPage({
     error: authError,
   } = useAuth();
 
-	const {
-		loginWith,
-		logoutNow,
-		refreshNow,
-		actionLoading,
-		actionError,
-		clearActionError,
-	} = useAuthActions();
+  const {
+    loginWith,
+    linkWith,
+    logoutNow,
+    refreshNow,
+    actionLoading,
+    actionError,
+    clearActionError,
+  } = useAuthActions();
 
 	const {
 		profile,
@@ -207,17 +220,27 @@ export default function SettingsPage({
 	);
 	const lastConfirmAction = useRef<ConfirmAction | null>(null);
 
-	if (confirmAction) {
-		lastConfirmAction.current = confirmAction;
-	}
-	const [confirmLoading, setConfirmLoading] = useState(false);
-	const [adminActionError, setAdminActionError] = useState<string | null>(
-		null
-	);
-	const [adminActionSuccess, setAdminActionSuccess] = useState<string | null>(
-		null
-	);
-	const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
+  if (confirmAction) {
+  lastConfirmAction.current = confirmAction;
+  }
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [adminActionError, setAdminActionError] = useState<string | null>(null);
+  const [adminActionSuccess, setAdminActionSuccess] = useState<string | null>(
+    null,
+  );
+  const [routeMessageState, setRouteMessageState] = useState<string | null>(
+    routeMessage ?? null,
+  );
+  const [isRouteMessageErrorState, setIsRouteMessageErrorState] = useState<boolean>(
+    isRouteMessageError ?? false,
+  );
+  const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
+  const [createUserSubmitAttempted, setCreateUserSubmitAttempted] = useState(
+    false,
+  );
+  const [createUserDialogError, setCreateUserDialogError] = useState<
+    string | null
+  >(null);
 
 	const [editDraft, setEditDraft] = useState<EditUserDraft>({
 		username: '',
@@ -243,14 +266,14 @@ export default function SettingsPage({
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
 
-	const [newUserForm, setNewUserForm] = useState<CreateUserPayload>({
-		username: '',
-		fullName: '',
-		email: '',
-		bio: '',
-		role: 'STUDENT',
-		isBanned: false,
-	});
+  const [newUserForm, setNewUserForm] = useState<CreateUserPayload>({
+    username: "",
+    fullName: "",
+    overflowEmail: "",
+    bio: "",
+    role: "STUDENT",
+    isBanned: false,
+  });
 
 	const isAdmin = hasRole('ADMIN');
 	const activeProfile = profile ?? user;
@@ -266,6 +289,52 @@ export default function SettingsPage({
 		() => SETTINGS_TABS.filter((tab) => !tab.adminOnly || isAdmin),
 		[isAdmin]
 	);
+
+  const editValidation = useMemo(
+    () =>
+      updateProfileSchema.safeParse({
+        username: editDraft.username,
+        fullName: editDraft.fullName,
+        bio: editDraft.bio,
+        avatarFile: pendingAvatarFile ? "placeholder" : "",
+      }),
+    [editDraft.bio, editDraft.fullName, editDraft.username, pendingAvatarFile],
+  );
+  const editValidationMessage = editValidation.success
+    ? null
+    : editValidation.error.issues[0]?.message || "Invalid input";
+	const createUserValidation = useMemo(
+		() =>
+			createUserSchema.safeParse({
+				username: newUserForm.username,
+				fullName: newUserForm.fullName,
+				overflowEmail: newUserForm.overflowEmail,
+				bio: newUserForm.bio ?? '',
+				role: newUserForm.role,
+				isBanned: newUserForm.isBanned,
+			}),
+		[
+			newUserForm.bio,
+			newUserForm.overflowEmail,
+			newUserForm.fullName,
+			newUserForm.isBanned,
+			newUserForm.role,
+			newUserForm.username,
+		]
+	);
+	const createUserFieldErrors = useMemo(() => {
+		if (!createUserSubmitAttempted || createUserValidation.success) {
+			return {} as Partial<Record<keyof CreateUserPayload, string>>;
+		}
+		const fieldErrors: Partial<Record<keyof CreateUserPayload, string>> = {};
+		for (const issue of createUserValidation.error.issues) {
+			const field = issue.path[0] as keyof CreateUserPayload | undefined;
+			if (field && !fieldErrors[field]) {
+				fieldErrors[field] = issue.message;
+			}
+		}
+		return fieldErrors;
+	}, [createUserSubmitAttempted, createUserValidation]);
 
 	useEffect(() => {
 		if (!activeProfile) return;
@@ -305,17 +374,40 @@ export default function SettingsPage({
 			void refreshSessions();
 		}
 
-		lastTabRef.current = activeTab;
-	}, [activeTab, refreshSessions, user]);
+    lastTabRef.current = activeTab;
+  }, [activeTab, refreshSessions, user]);
 
-	const pageError =
-		authError ??
-		profileError ??
-		profileEditError ??
-		(activeTab === 'sessions' ? sessionsError : null) ??
-		adminActionError ??
-		actionError ??
-		(activeTab === 'admin' ? adminHookError : null);
+  useEffect(() => {
+    if (!createUserModalOpen) {
+      setCreateUserSubmitAttempted(false);
+      setCreateUserDialogError(null);
+    }
+  }, [createUserModalOpen]);
+
+  useEffect(() => {
+    if (routeMessageState == null) return;
+    const timer = setTimeout(() => {
+      setRouteMessageState(null);
+      setIsRouteMessageErrorState(false);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [routeMessageState]);
+
+  useEffect(() => {
+    if (routeMessage == null) return;
+    setRouteMessageState(routeMessage);
+    setIsRouteMessageErrorState(Boolean(isRouteMessageError));
+  }, [routeMessage, isRouteMessageError]);
+
+  const pageError =
+    (isRouteMessageErrorState ? routeMessageState : null) ??
+    authError ??
+    profileError ??
+    profileEditError ??
+    (activeTab === "sessions" ? sessionsError : null) ??
+    adminActionError ??
+    actionError ??
+    (activeTab === "admin" ? adminHookError : null);
 
 	const updateNewUserForm = (key: string, value: any) => {
 		setNewUserForm((prev) => ({ ...prev, [key]: value }));
@@ -337,6 +429,18 @@ export default function SettingsPage({
 		if (pendingAvatarFile) {
 			avatarFilePayload = await fileToDataUrl(pendingAvatarFile);
 		}
+
+    const parsed = updateProfileSchema.safeParse({
+      username: editDraft.username,
+      fullName: editDraft.fullName,
+      bio: editDraft.bio,
+      avatarFile: avatarFilePayload ?? "",
+    });
+
+    if (!parsed.success) {
+      setAdminActionError(parsed.error.issues[0]?.message || "Invalid input");
+      return;
+    }
 
 		const updated = await saveProfile({
 			username: editDraft.username.trim() || undefined,
@@ -428,42 +532,49 @@ export default function SettingsPage({
 		event: React.FormEvent<HTMLFormElement>
 	) => {
 		event.preventDefault();
-		setAdminActionError(null);
+		setCreateUserSubmitAttempted(true);
+    setCreateUserDialogError(null);
 		setAdminActionSuccess(null);
 
-		const username = newUserForm.username.trim();
-		const fullName = newUserForm.fullName.trim();
-		const email = newUserForm.email.trim();
 
-		if (!username || !fullName || !email) {
-			setAdminActionError('Username, full name, and email are required.');
-			return;
-		}
+	const parsed = createUserSchema.safeParse(newUserForm);
+	if (!parsed.success) {
+		return;
+	}
+	const { username, fullName, overflowEmail, bio, role, isBanned } = parsed.data;
+
+
+    if (!username || !fullName || !overflowEmail) {
+      setAdminActionError("Username, full name, and email are required.");
+      return;
+    }
 
 		const created = await adminCreateUser({
 			username,
 			fullName,
-			email,
-			bio: newUserForm.bio?.trim() || undefined,
-			role: newUserForm.role,
-			isBanned: newUserForm.isBanned,
+			overflowEmail,
+			bio: bio?.trim() || undefined,
+			role,
+			isBanned,
 		});
 
 		if (!created) {
-			setAdminActionError('Failed to create user');
+			setCreateUserDialogError('Failed to create user');
 			return;
 		}
 
 		setNewUserForm({
 			username: '',
 			fullName: '',
-			email: '',
+			overflowEmail: '',
 			bio: '',
 			role: 'STUDENT',
 			isBanned: false,
 		});
+		setCreateUserSubmitAttempted(false);
+    setCreateUserDialogError(null);
 		setAdminActionSuccess(
-			`Created user @${created.username} (${created.id}).`
+			`User "${created.username}" created successfully (ID: ${created.id})`
 		);
 	};
 
@@ -498,15 +609,18 @@ export default function SettingsPage({
 		}
 	};
 
-	const clearAllErrors = () => {
-		clearError();
-		clearProfileError();
-		clearProfileEditError();
-		clearSessionsError();
-		clearActionError();
-		clearAdminHookError();
-		setAdminActionError(null);
-	};
+  const clearAllErrors = () => {
+    clearError();
+    clearProfileError();
+    clearProfileEditError();
+    clearSessionsError();
+    clearActionError();
+    clearAdminHookError();
+    setRouteMessageState(null);
+    setIsRouteMessageErrorState(false);
+    setAdminActionError(null);
+    setCreateUserDialogError(null);
+  };
 
 	if (authLoading || profileLoading) {
 		return (
@@ -533,6 +647,42 @@ export default function SettingsPage({
 	const confirmConfig = getConfirmConfig(
 		confirmAction || lastConfirmAction.current
 	);
+  const alertTextStyle = {
+    fontSize: 12.5,
+    fontWeight: 500,
+    letterSpacing: "0.01em",
+  } as const;
+  const dismissButtonStyle = {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    opacity: 0.45,
+    color: "inherit",
+    padding: 0,
+    transition: "opacity 0.15s",
+  } as const;
+  const errorNoticeStyle = {
+    background: "rgba(255, 241, 241, 0.84)",
+    border: "1px solid rgba(210, 155, 155, 0.9)",
+    color: "#6B2323",
+    boxShadow: "0 10px 24px rgba(107, 35, 35, 0.08)",
+    animation: "slideDownFade 0.2s ease-out",
+    backdropFilter: "blur(6px)",
+  } as const;
+  const successNoticeStyle = {
+    background: "rgba(236, 251, 241, 0.86)",
+    border: "1px solid rgba(152, 197, 142, 0.9)",
+    color: "#2A4F24",
+    boxShadow: "0 10px 24px rgba(42, 79, 36, 0.08)",
+    animation: "slideDownFade 0.2s ease-out",
+    backdropFilter: "blur(6px)",
+  } as const;
 
 	return (
 		<div className="max-w-4xl mx-auto px-4 py-8">
@@ -546,25 +696,69 @@ export default function SettingsPage({
 				</p>
 			</div>
 
-			{pageError && (
-				<div className="alert alert-error mb-4">
-					<AlertCircle size={16} />
-					<span className="text-sm">{pageError}</span>
-					<button
-						type="button"
-						className="btn btn-xs btn-ghost ml-auto"
-						onClick={clearAllErrors}
-					>
-						Dismiss
-					</button>
-				</div>
-			)}
+      {pageError && (
+        <div
+          className="flex items-center gap-2.5 px-3.5 py-2.5 mb-3 rounded-lg"
+          style={errorNoticeStyle}
+        >
+          <style>{`@keyframes slideDownFade { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }`}</style>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.65 }}>
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.1"/>
+            <path d="M8 5v3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+            <circle cx="8" cy="11" r="0.65" fill="currentColor"/>
+          </svg>
+          <p className="flex-1 m-0" style={alertTextStyle}>{pageError}</p>
+          <button
+            onClick={clearAllErrors}
+            type="button"
+            aria-label="Dismiss"
+            style={dismissButtonStyle}
+            onMouseEnter={e => e.currentTarget.style.opacity = "0.9"}
+            onMouseLeave={e => e.currentTarget.style.opacity = "0.45"}
+          >
+            <XIcon />
+          </button>
+        </div>
+      )}
 
-			{adminActionSuccess && (
-				<div className="alert alert-success mb-4 text-sm">
-					{adminActionSuccess}
-				</div>
-			)}
+      {routeMessageState && !isRouteMessageErrorState && (
+        <div className="alert alert-success mb-4">
+          <span className="text-sm">{routeMessageState}</span>
+          <button
+            type="button"
+            className="btn btn-xs btn-ghost ml-auto"
+            onClick={() => {
+              setRouteMessageState(null);
+              setIsRouteMessageErrorState(false);
+            }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {adminActionSuccess && (
+        <div
+          className="flex items-center gap-2.5 px-3.5 py-2.5 mb-3 rounded-lg"
+          style={successNoticeStyle}
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.65 }}>
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.1"/>
+            <path d="M5.5 8l2 2 3.5-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <p className="flex-1 m-0" style={alertTextStyle}>{adminActionSuccess}</p>
+          <button
+            onClick={() => setAdminActionSuccess(null)}
+            type="button"
+            aria-label="Dismiss"
+            style={dismissButtonStyle}
+            onMouseEnter={e => e.currentTarget.style.opacity = "0.9"}
+            onMouseLeave={e => e.currentTarget.style.opacity = "0.45"}
+          >
+            <XIcon />
+          </button>
+        </div>
+      )}
 
 			<div
 				role="tablist"
@@ -608,132 +802,94 @@ export default function SettingsPage({
                 </div>
               </div>
 
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-								<div className="rounded-xl border border-base-200 p-3">
-									<div className="text-xs text-base-content/60 mb-1">
-										Username
-									</div>
-									<div className="font-medium">
-										@{activeProfile.username}
-									</div>
-								</div>
-								<div className="rounded-xl border border-base-200 p-3">
-									<div className="text-xs text-base-content/60 mb-1">
-										Full Name
-									</div>
-									<div className="font-medium">
-										{activeProfile.fullName}
-									</div>
-								</div>
-								<div className="rounded-xl border border-base-200 p-3 md:col-span-2">
-									<div className="text-xs text-base-content/60 mb-1">
-										Email
-									</div>
-									<div className="font-medium">
-										{activeProfile.email}
-									</div>
-								</div>
-								<div className="rounded-xl border border-base-200 p-3 md:col-span-2">
-									<div className="text-xs text-base-content/60 mb-1">
-										Bio
-									</div>
-									<div className="text-sm">
-										{activeProfile.bio || 'No bio yet'}
-									</div>
-								</div>
-							</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                <div className="rounded-xl border border-base-200 p-3">
+                  <div className="text-xs text-base-content/60 mb-1">
+                    Username
+                  </div>
+                  <div className="font-medium">@{activeProfile.username}</div>
+                </div>
+                <div className="rounded-xl border border-base-200 p-3">
+                  <div className="text-xs text-base-content/60 mb-1">
+                    Full Name
+                  </div>
+                  <div className="font-medium">{activeProfile.fullName}</div>
+                </div>
+                <div className="rounded-xl border border-base-200 p-3 md:col-span-2">
+                  <div className="text-xs text-base-content/60 mb-1">Email</div>
+                  {activeProfile?.overflowEmail ? (
+                    <div className="font-medium">{activeProfile.overflowEmail}</div>
+                  ) : null}
+                  {activeProfile?.intraEmail ? (
+                    <div className="font-medium">{activeProfile.intraEmail}</div>
+                  ) : null}
+                  {activeProfile?.googleEmail ? (
+                    <div className="font-medium">{activeProfile.googleEmail}</div>
+                  ) : null}
+                </div>
+                <div className="rounded-xl border border-base-200 p-3 md:col-span-2">
+                  <div className="text-xs text-base-content/60 mb-1">Bio</div>
+                  <div className="text-sm">
+                    {activeProfile.bio || "No bio yet"}
+                  </div>
+                </div>
+              </div>
 
-							<h2 className="text-base font-bold text-base-content mt-8">
-								Account Connections
-							</h2>
-							<div className="mt-2 divide-y divide-base-200 rounded-xl border border-base-200 overflow-hidden">
-								{/* Google */}
-								<div className="flex items-center justify-between px-4 py-3.5 gap-4">
-									<div className="flex items-center gap-3">
-										<svg
-											className="size-5 shrink-0"
-											viewBox="0 0 24 24"
-											xmlns="http://www.w3.org/2000/svg"
-										>
-											<path
-												d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-												fill="#4285F4"
-											/>
-											<path
-												d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-												fill="#34A853"
-											/>
-											<path
-												d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
-												fill="#FBBC05"
-											/>
-											<path
-												d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-												fill="#EA4335"
-											/>
-										</svg>
-										<div>
-											<p className="text-sm font-medium text-base-content">
-												Google
-											</p>
-											<p className="text-xs text-base-content/50">
-												Connect to log in with your
-												Google account
-											</p>
-										</div>
-									</div>
-									<button
-										type="button"
-										className={`btn btn-sm rounded-full px-4 font-semibold normal-case shrink-0 ${activeProfile.linkedWithGoogle ? 'btn-outline' : 'btn-neutral'}`}
-										onClick={() =>
-											!activeProfile.linkedWithGoogle &&
-											loginWith('google')
-										}
-										disabled={
-											activeProfile.linkedWithGoogle
-										}
-									>
-										{activeProfile.linkedWithGoogle
-											? 'Linked'
-											: 'Connect'}
-									</button>
-								</div>
-
-								{/* 42 Intra */}
-								<div className="flex items-center justify-between px-4 py-3.5 gap-4">
-									<div className="flex items-center gap-3">
-										<Image
-											src={intraIcon}
-											alt="42 Intra"
-											className="size-5 shrink-0 object-contain"
-										/>
-										<div>
-											<p className="text-sm font-medium text-base-content">
-												42 Intra
-											</p>
-											<p className="text-xs text-base-content/50">
-												Connect to log in with your 42
-												account
-											</p>
-										</div>
-									</div>
-									<button
-										type="button"
-										className={`btn btn-sm rounded-full px-4 font-semibold normal-case shrink-0 ${activeProfile.linkedWithIntra ? 'btn-outline' : 'btn-neutral'}`}
-										onClick={() =>
-											!activeProfile.linkedWithIntra &&
-											loginWith('42')
-										}
-										disabled={activeProfile.linkedWithIntra}
-									>
-										{activeProfile.linkedWithIntra
-											? 'Linked'
-											: 'Connect'}
-									</button>
-								</div>
-							</div>
-						</>
-					)}
+              <h2 className="text-base font-bold text-base-content mt-8">
+                Account Connections
+              </h2>
+              <div className="mt-2 divide-y divide-base-200 rounded-xl border border-base-200 overflow-hidden">
+              
+                {/* Google */}
+                <div className="flex items-center justify-between px-4 py-3.5 gap-4">
+                  <div className="flex items-center gap-3">
+                    <svg className="size-5 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    <div>
+                      <p className="text-sm font-medium text-base-content">Google</p>
+                      <p className="text-xs text-base-content/50">Connect to log in with your Google account</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className={`btn btn-sm rounded-full px-4 font-semibold normal-case shrink-0 ${activeProfile.linkedWithGoogle ? "btn-outline" : "btn-neutral"}`}
+                    onClick={() => !activeProfile.linkedWithGoogle && linkWith("google")}
+                    disabled={activeProfile.linkedWithGoogle}
+                  >
+                    {activeProfile.linkedWithGoogle ? "Linked" : "Connect"}
+                  </button>
+                </div>
+              
+                {/* 42 Intra */}
+                <div className="flex items-center justify-between px-4 py-3.5 gap-4">
+                  <div className="flex items-center gap-3">
+                    <Image 
+                      src={intraIcon} 
+                      alt="42 Intra" 
+                      className="size-5 shrink-0 object-contain" 
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-base-content">42 Intra</p>
+                      <p className="text-xs text-base-content/50">Connect to log in with your 42 account</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className={`btn btn-sm rounded-full px-4 font-semibold normal-case shrink-0 ${activeProfile.linkedWithIntra ? "btn-outline" : "btn-neutral"}`}
+                    onClick={() => !activeProfile.linkedWithIntra && linkWith("42")}
+                    disabled={activeProfile.linkedWithIntra}
+                  >
+                    {activeProfile.linkedWithIntra ? "Linked" : "Connect"}
+                  </button>
+                </div>
+              
+              </div>
+            </>
+          )}
 
 					{activeTab === 'security' && (
 						<>
@@ -1051,6 +1207,8 @@ export default function SettingsPage({
 				showAvatarUpload={true}
 				saving={profileSaving}
 				error={profileEditError}
+        validationMessage={editValidationMessage}
+        submitDisabled={!editValidation.success}
 				avatarFileName={pendingAvatarFile?.name ?? null}
 				onChange={(next) =>
 					setEditDraft((prev) => ({ ...prev, ...next }))
@@ -1082,7 +1240,8 @@ export default function SettingsPage({
 				}}
 				onChange={updateNewUserForm}
 				loading={adminLoading}
-				error={adminActionError}
+				error={createUserDialogError}
+				fieldErrors={createUserFieldErrors}
 			/>
 		</div>
 	);

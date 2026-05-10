@@ -15,6 +15,8 @@ export interface EditUserDialogProps {
   showAvatarUpload?: boolean;
   saving?: boolean;
   error?: string | null;
+  validationMessage?: string | null;
+  submitDisabled?: boolean;
   avatarFileName?: string | null;
   extraActions?: ReactNode;
   onChange: (next: Partial<EditUserDraft>) => void;
@@ -33,6 +35,8 @@ export default function EditUserDialog({
   showAvatarUpload = false,
   saving = false,
   error,
+  validationMessage,
+  submitDisabled = false,
   avatarFileName,
   extraActions,
   onChange,
@@ -40,6 +44,7 @@ export default function EditUserDialog({
   onClose,
   onSubmit,
 }: EditUserDialogProps) {
+  const formError = error ?? validationMessage;
   return (
     <dialog className={`modal ${open ? "modal-open" : ""}`}>
       <div className="modal-box bg-base-100 border border-base-200 p-0 flex flex-col rounded-2xl max-w-lg">
@@ -91,6 +96,7 @@ export default function EditUserDialog({
                   placeholder="Short profile bio..."
                   value={draft.bio ?? ""}
                   onChange={(event) => onChange({ bio: event.target.value })}
+                  maxLength={100}
                 />
               </label>
 
@@ -114,7 +120,7 @@ export default function EditUserDialog({
 
             </div>
 
-            {error && <p className="text-xs text-error">{error}</p>}
+            {formError && <p className="text-xs text-error">{formError}</p>}
             {extraActions && <div>{extraActions}</div>}
           </div>
 
@@ -131,7 +137,7 @@ export default function EditUserDialog({
             <button
               type="submit"
               className="btn btn-sm rounded-full px-4 font-semibold normal-case shrink-0 btn-outline hover:btn-neutral"
-              disabled={saving}
+              disabled={saving || submitDisabled}
             >
               {saving ? "Saving..." : "Save"}
             </button>
