@@ -40,8 +40,8 @@ export default function CreateUserDialog({
     ? Object.values(fieldErrors).filter(Boolean)
     : [];
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div className="bg-base-100 rounded-lg shadow-lg w-full max-w-2xl p-6 relative">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 pt-20 pb-6 px-4 sm:px-6">
+      <div className="bg-base-100 rounded-lg shadow-lg w-full max-w-2xl p-6 relative pt-8 max-h-[calc(100vh-5rem)] overflow-y-auto">
         <button
           className="absolute top-2 right-2 btn btn-xs btn-ghost"
           onClick={onClose}
