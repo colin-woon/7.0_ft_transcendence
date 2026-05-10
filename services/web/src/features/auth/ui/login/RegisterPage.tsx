@@ -88,18 +88,16 @@ export default function RegisterPage({ initialEmail = "" }: RegisterPageProps) {
     setFormError(null);
 
     try {
+      let avatarPayload: string | undefined;
       if (avatarFile) {
-        const validationError = validateAvatarFile(avatarFile);
+        avatarPayload = await fileToDataUrl(avatarFile);
+        const validationError = validateAvatarFile(avatarPayload);
         if (validationError) {
           setFormError(validationError);
           setIsSubmitting(false);
           return;
         }
       }
-
-      const avatarPayload = avatarFile
-        ? await fileToDataUrl(avatarFile)
-        : undefined;
       await registerWithPassword({
         ...parsed.data,
         avatarFile: avatarPayload,
@@ -107,18 +105,24 @@ export default function RegisterPage({ initialEmail = "" }: RegisterPageProps) {
       router.push("/profile");
     } catch (error) {
       if (error instanceof AuthApiError && error.status === 409) {
-        if (error.message.toLowerCase().includes("username")) {
+        // Try to inspect backend response body for more specific conflict info
+        const body = (await (error.getBodyText ? error.getBodyText() : Promise.resolve(''))).toLowerCase();
+        if (body.includes('username')) {
           setFormError(
-            "That username is already taken. Please choose a different username.",
+            'That username is already taken. Please choose a different username.',
           );
         } else {
           setFormError(
-            "An account with this email already exists. If it was created with Google/42, sign in with that provider first.",
+            'An account with this email already exists. If it was created with Google/42, sign in with that provider first.',
           );
         }
+      } else if (error instanceof AuthApiError && error.status === 413) {
+        setFormError('Uploaded file exceeds maximum allowed size');
+      } else if (error instanceof AuthApiError && error.status === 403) {
+        setFormError('Your account is banned');
       } else {
         setFormError(
-          error instanceof Error ? error.message : "Registration failed",
+          error instanceof Error ? error.message : 'Registration failed',
         );
       }
     } finally {

@@ -270,10 +270,15 @@ public class IntraService {
 	}
 
 	@Transactional
-	public void syncUserData(User user, IntraDTO dto) {
-		user.fullName = dto.usualFullName != null ? dto.usualFullName : dto.displayName;
+	public void syncUserData(User user, IntraDTO dto, String email) {
+		if (email != null && !email.isBlank() && (user.intraEmail == null || user.intraEmail.isBlank()))
+			user.intraEmail = email;
+		if (user.fullName == null || user.fullName.isBlank())
+			user.fullName = dto.usualFullName != null ? dto.usualFullName : dto.displayName;
 		if (dto.image != null && dto.image.link != null && !dto.image.link.isBlank()) {
-			user.avatarUrl = avatarStorageService.mirrorRemoteAvatar(dto.image.link, user.avatarUrl);
+			if (user.avatarUrl == null || user.avatarUrl.isBlank()) {
+				user.avatarUrl = avatarStorageService.mirrorRemoteAvatar(dto.image.link, user.avatarUrl);
+			}
 		}
 		userRepository.persist(user);
 	}
@@ -310,7 +315,7 @@ public class IntraService {
 			LOG.error("Failed to fetch 42 profile for user: " + user.id + " (intraId=" + user.intraId + ")");
 			throw new WebApplicationException("Failed to fetch user from 42 API", 502);
 		}
-		syncUserData(user, dto);
+		syncUserData(user, dto, null);
 		Intra intra = syncIntraData(user, dto);
 
 		return avatarStorageService.toUserInfoDTO(user, new IntraInfoDTO(intra));

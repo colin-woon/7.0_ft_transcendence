@@ -2,6 +2,7 @@ package org.bumIntra.gateway.websocket.grafana;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Optional;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -28,10 +29,10 @@ public class GrafanaWsBridgeService {
     String grafanaBaseUrl;
 
     @ConfigProperty(name = "quarkus.rest-client.grafana-service.trust-store")
-    String trustStorePath;
+    Optional<String> trustStorePath;
 
     @ConfigProperty(name = "quarkus.rest-client.grafana-service.trust-store-password")
-    String trustStorePassword;
+    Optional<String> trustStorePassword;
 
     @Inject
     Vertx vertx;
@@ -152,9 +153,11 @@ public class GrafanaWsBridgeService {
             if ("wss".equalsIgnoreCase(grafanaWsUri.getScheme())) {
                 options.setSsl(true);
                 options.setVerifyHost(true);
-                options.setTrustOptions(new PfxOptions()
-                        .setPath(trustStorePath)
-                        .setPassword(trustStorePassword));
+                if (trustStorePath.isPresent() && trustStorePassword.isPresent()) {
+                    options.setTrustOptions(new PfxOptions()
+                            .setPath(trustStorePath.get())
+                            .setPassword(trustStorePassword.get()));
+                }
             }
 
             httpClient = vertx.createHttpClient(options);

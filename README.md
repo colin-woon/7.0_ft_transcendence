@@ -364,11 +364,37 @@ Supporting references:
 - Modules of Choice
     - implemented through the zero-trust API gateway, centralized RBAC, request policy enforcement, Redis-backed rate limiting, and edge observability
 
-### Module Justification Summary
+### Module Justifications
 
-- Web, User Management, and User Experience were chosen because they match the product's social and collaborative platform direction.
-- DevOps was chosen to make the platform observable, operable, and demonstrable as a production-style multi-service system.
-- The custom gateway module was chosen because the project needed one central control plane for routing, authentication, RBAC, request policy, and observability.
+#### Major: Monitoring System with Prometheus and Grafana
+
+- **Justification**: This module provides the operational visibility layer of the stack. It gives one place to observe service health, gateway traffic, downstream failures, scrape freshness, and alert state across the platform.
+- **Implementation**: Prometheus scrapes gateway, auth, forum, chat, web, and PostgreSQL exporter metrics. Grafana provides dashboards for service health, gateway traffic, latency, errors, and alerts. Alert rules were added for sustained failure states, and Grafana access is protected through the gateway under `/api/admin/grafana` with `ADMIN` RBAC.
+- **Involved Members**: `vlow`
+
+#### Major: Backend as Microservices
+
+- **Justification**: This module defines the service boundary structure of the stack. It separates security, identity, forum, chat, and frontend concerns into isolated runtime units with clear interfaces and responsibilities.
+- **Implementation**: The platform is split into Nginx, Gateway, Auth, Forum, Chat, Web, PostgreSQL, Redis, Prometheus, and Grafana. Services communicate through gateway-controlled HTTPS/mTLS and REST interfaces, with the gateway acting as the central control plane for routing, auth, RBAC, and policy enforcement.
+- **Involved Members**: `vlow`
+
+#### Minor: Health Checks, Backups, and Disaster Recovery Procedures
+
+- **Justification**: This module provides the recovery and operator-readiness layer of the stack. It ensures service state can be observed, persistence can be backed up, and recovery can be performed in a controlled way during failure scenarios.
+- **Implementation**: Runtime services expose health/readiness endpoints and Docker healthchecks. Grafana provides the operator-facing status dashboard. Automated PostgreSQL backups are stored outside the live DB volume, Prometheus alerts track persistent failure and backup health, and the disaster recovery procedure is documented and restore-tested.
+- **Involved Members**: `vlow`
+
+#### Major: Advanced Permissions System
+
+- **Justification**: This module provides the access-control model of the stack. It separates student, admin, guest, and internal service capabilities so protected routes, admin surfaces, and internal traffic follow one consistent authorization model.
+- **Implementation**: Roles are embedded in JWT claims and resolved by the gateway into `GUEST`, `USER`, `ADMIN`, and `SERVICE` access levels. The gateway enforces RBAC across public, protected, admin, and internal route families, while downstream services receive trusted identity headers instead of making independent authorization decisions.
+- **Involved Members**: `vlow`, `jothomas`
+
+#### Major: Zero-Trust API Gateway and Policy Enforcement Layer
+
+- **Justification**: This module provides the central policy and transport control layer of the stack. It keeps routing, authentication, RBAC, rate limiting, downstream fault handling, and observability in one gateway instead of scattering those concerns across every service.
+- **Implementation**: The Quarkus gateway validates cookie/JWT auth, resolves role-based access, applies request policy filters, performs Redis-backed rate limiting, maps downstream failures into consistent gateway errors, proxies realtime transport where needed, and emits structured logs and Prometheus metrics for all routed traffic.
+- **Involved Members**: `vlow`
 
 ### Module Ownership
 
@@ -379,6 +405,30 @@ Supporting references:
 - Modules of Choice: vlow
 
 ---
+## Major: Standard User management and authentication
+- **Justification** Establishes user identity and enables secure authentication across multiple OAuth providers (Google, 42) and local password-based registration. Essential for supporting social interaction, profiles, and role-based access control.
+- **Implementation** Auth Service provides password authentication with Argon2 hashing, OAuth 2.0 integration, JWT tokens, session management, and profile CRUD with avatar support. Gateway enforces authentication before protected routes.
+- **Involved Members** jothomas, cwoon
+
+## Major: Advanced permissions system
+- **Justification** Backend-enforced RBAC prevents authorization bypass and ensures admin-only operations (user management, moderation) cannot be circumvented. Enables role-aware views and actions critical for platform security and governance.
+- **Implementation** Role enums (STUDENT, ADMIN) persisted to PostgreSQL, JWT group claims for stateless validation, gateway RBAC middleware for route authorization, and protected endpoints for admin actions. Authorization enforced at backend level before business logic.
+- **Involved Members** jothomas, rteoh, cwoon
+
+## Minor: Use an ORM for the Database
+- **Justification** Increased productivity (focus on business logic), Cleaner codebase (more concise and readable compared to SQL) and Built-in Securiy (uses parameterized queries, safe from SQL injections).
+- **Implementation** SQLAlchemy used in Python Forum Backend, Hibernate for Java User/Auth Backend.
+- **Involved Members** tjun-fan, jothomas
+
+## Minor: Server Side Rendering
+- **Justification** Reduced load on backend servers during mass load. 
+- **Implementation** Projects list in forum containing hundreds (and increasing) of projects are loaded on the server once and served to clients on request using nextjs caching.
+- **Involved Members** tjun-fan
+
+## Minor: Implement advanced search functionality with filters, sorting, and pagination
+- **Justification** Better UX for users, easier to search for projects/posts using the filters and sorting. Increased loading times for pages rendered client side.
+- **Implementation** Forum /projects page utilizes all 3 functionalities, with filtering (by subscribed, difficulty etc...), sorting (by creation date, popularity or name) and pagination (10 posts per page). 
+- **Involved Members** tjun-fan
 
 ## Minor: Implement Server-Side Rendering
 - **Justification:** faster loading?
@@ -416,7 +466,7 @@ Supporting references:
 - Gateway architecture and implementation
 - Backend policy enforcement design
 - DevOps setup, monitoring, and observability
-- Challenge note: `<to be filled by vlow>`
+- Challenge note: `Implementing the gateway as the central zero-trust policy layer for routing, authentication, and RBAC, while also building the DevOps and observability foundation for monitoring, alerting, backups, and recovery.`
 
 ### tjun-fan
 
@@ -450,7 +500,6 @@ Supporting references:
 
 ### Project References
 
-- [ft_transcendence.pdf](./ft_transcendence.pdf)
 - [Project Overview](./docs/0.project_overview.md)
 - [Product Requirements](./docs/1.product_requirements.md)
 - [Architectural Decisions](./docs/2.architectual_decisions.md)

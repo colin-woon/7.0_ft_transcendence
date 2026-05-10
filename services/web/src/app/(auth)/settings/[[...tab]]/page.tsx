@@ -3,6 +3,10 @@ import {
   getServerSessions,
 } from "@/features/auth/api/serverAuthData";
 import SettingsPage from "@/features/auth/ui/settings/SettingsPage";
+import {
+  getAuthRedirectMessage,
+  isValidAuthRedirectToken,
+} from "@/features/auth/utils/redirectMessage";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +27,24 @@ function extractErrorParam(value: string | string[] | undefined): string | null 
   return null;
 }
 
+function normalizeRouteMessage(value: string | null, isError: boolean) {
+  if (!value) {
+    return { routeMessage: null, isRouteMessageError: false };
+  }
+
+  if (!isValidAuthRedirectToken(value)) {
+    return {
+      routeMessage: isError ? 'Something went wrong. Please try again.' : null,
+      isRouteMessageError: isError,
+    };
+  }
+
+  return {
+    routeMessage: getAuthRedirectMessage(value),
+    isRouteMessageError: isError,
+  };
+}
+
 export default async function SettingsRoute({ searchParams }: SettingsRouteProps) {
   const [profileResult, sessionsResult] = await Promise.all([
     getServerCurrentUser(),
@@ -31,8 +53,10 @@ export default async function SettingsRoute({ searchParams }: SettingsRouteProps
   const params = await searchParams;
   const routeError = extractErrorParam(params.error);
   const routeSuccess = extractErrorParam(params.success);
-  const routeMessage = routeError || routeSuccess;
-  const isError = !!routeError;
+  const normalizedRouteError = normalizeRouteMessage(routeError, true);
+  const normalizedRouteSuccess = normalizeRouteMessage(routeSuccess, false);
+  const routeMessage = normalizedRouteError.routeMessage || normalizedRouteSuccess.routeMessage;
+  const isError = normalizedRouteError.routeMessage != null;
 
   const shouldExposeInitialProfileError =
     !profileResult.ok &&
