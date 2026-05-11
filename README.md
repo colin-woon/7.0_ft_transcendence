@@ -462,7 +462,7 @@ Supporting references:
 
 - Auth service implementation
 - Authentication and login-related frontend flows
-- Challenge note: `<to be filled by jothomas>`
+- Challenge note: `Difficulties in implementing smallrye with OIDC, as Quarkus OIDC is rather rigid and will try to take over    authorization as well as authentication. Had some issues with implementing the avatar uploads, as had to find a way to manage them in a volume rather than in a db, as well as managing the thumbnail versions for quick search. Lastly, had challenges with proper linking between authentication methods, due to our architecture having little distinction between user identity and user information.`
 
 ### rteoh
 
