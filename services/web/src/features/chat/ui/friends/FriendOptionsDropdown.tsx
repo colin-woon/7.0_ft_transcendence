@@ -28,7 +28,7 @@ export function FriendOptionsDropdown({ friendId, onActionComplete, isProfilePag
       setFriendshipStatus(friendId, 'requested', user!.id);
       onActionComplete?.();
     } catch (error) {
-      console.error('Failed to update friendship status:', error);
+      // console.error('Failed to update friendship status:', error);
     }
   };
 
@@ -38,7 +38,7 @@ export function FriendOptionsDropdown({ friendId, onActionComplete, isProfilePag
       setFriendshipStatus(friendId, 'blocked', user!.id);
       onActionComplete?.();
     } catch (error) {
-      console.error('Failed to update friendship status:', error);
+      // console.error('Failed to update friendship status:', error);
     }
   };
 

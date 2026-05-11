@@ -30,7 +30,7 @@ export function AddFriendButton({ targetUserId }: AddFriendButtonProps) {
       await sendFriendRequest(targetUserId)
       setFriendshipStatus(targetUserId, 'pending', user!.id) 
     } catch (error) {
-      console.error('Failed to send friend request:', error)
+      // console.error('Failed to send friend request:', error)
     } finally {
       setIsSending(false)
     }
@@ -42,7 +42,7 @@ export function AddFriendButton({ targetUserId }: AddFriendButtonProps) {
       await updateFriendshipStatus(targetUserId, 'requested')
       setFriendshipStatus(targetUserId, 'requested', user!.id) 
     } catch (error) {
-      console.error('Failed to unblock user:', error)
+      // console.error('Failed to unblock user:', error)
     } finally {
       setIsSending(false)
     }
@@ -54,7 +54,7 @@ export function AddFriendButton({ targetUserId }: AddFriendButtonProps) {
       await updateFriendshipStatus(targetUserId, 'accepted')
       setFriendshipStatus(targetUserId, 'accepted', user!.id) 
     } catch (error) {
-      console.error('Failed to accept friend request:', error)
+      // console.error('Failed to accept friend request:', error)
     } finally {
       setIsSending(false)
     }

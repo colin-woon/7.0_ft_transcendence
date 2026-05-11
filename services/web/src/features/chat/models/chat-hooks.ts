@@ -202,7 +202,6 @@ export function useMessageVisibility({
         try {
           await onReadReceipt(cId, uId, msgId);
         } catch (error) {
-          console.error('Failed to send read receipt:', error);
           // Allow retry by backing off slightly
           lastSentMessageId.current = Math.max(0, msgId - 1);
         }

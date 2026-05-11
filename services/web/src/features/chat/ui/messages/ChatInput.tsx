@@ -61,7 +61,7 @@ export function ChatInput() {
       const now = Date.now();
       if (now - lastTypingTime.current > 3000) {
         sendTypingEvent(chatId).catch((err) => {
-          console.error('Failed to send typing event', err);
+          // console.error('Failed to send typing event', err);
         });
         lastTypingTime.current = now; 
       }
