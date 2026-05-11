@@ -449,7 +449,7 @@ Supporting references:
 - Forum service implementation
 - Forum-facing web integration
 - Coordination of forum product scope
-- Challenge note: `<to be filled by tjun-fan>`
+- Challenge note: `Difficulties in implementing interfaces/DTOs between frontend and backend without having a finalized scope. Also, getting Next.js server requests to work through the gateway infrastructure (by importing Mtls headers before sending the request). Lastly, integration with user/auth module (how to obtain/verify user identity in forum).`
 
 ### cwoon
 
