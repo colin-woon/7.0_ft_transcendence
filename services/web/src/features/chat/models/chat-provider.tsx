@@ -40,7 +40,7 @@ export const ChatStoreProvider = ({
         store.fetchAllChatSessions(),
         store.fetchAllFriendshipStatuses()
       ]).catch((error) => {
-        console.error("Failed to initialize chat store data:", error);
+        // console.error("Failed to initialize chat store data:", error);
       });
     }
   }, [user?.id]);

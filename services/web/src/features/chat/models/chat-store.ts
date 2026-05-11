@@ -173,7 +173,7 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
             state.allChatSessions = transformedSessions;
           });
         } catch (error) {
-          console.error("Failed to fetch inbox:", error);
+          // console.error("Failed to fetch inbox:", error);
         }
       },
       fetchChatHistory: async (chatId: ChatId) => {
@@ -248,7 +248,7 @@ export const createChatStore = (initialSessions: AllChatSessions = {}) => {
 
           await apiUpdateReadReceipt(chatId, messageId);
         } catch (error) {
-          console.error('Failed to send read receipt:', error);
+          // console.error('Failed to send read receipt:', error);
         }
       },
 

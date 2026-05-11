@@ -63,12 +63,12 @@ export function getMessageStream(
         const event = streamResponse.data;
         onStreamChunkReceived(JSON.parse(event) as StreamEvent);
       } catch (error) {
-        console.error("Error parsing SSE:", error);
+        // console.error("Error parsing SSE:", error);
       }
     };
 
     sse.onerror = (error) => {
-      console.log("SSE Error. Reconnecting...", error);
+      // console.log("SSE Error. Reconnecting...", error);
       sse.close();
       if (!isIntentionallyClosed) {
         const jitter = Math.random() * 2000;

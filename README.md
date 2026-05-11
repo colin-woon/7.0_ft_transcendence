@@ -183,7 +183,7 @@ Project-management details:
 - task distribution: service/domain ownership with cross-review during integration
 - task tracking: `GitHub Issues / Projects`
 - communication channel: `Discord`
-- meeting cadence: 2 syncs per week plus ad hoc debugging calls
+- meeting cadence: 1 syncs per week plus ad hoc debugging calls
 
 ---
 
@@ -269,7 +269,7 @@ Supporting references:
 - Profile management
 - Avatar support
 - Role-based access control
-- Main contributors: `vlow`, `jothomas`
+- Main contributors: `vlow`, `jothomas`, `rteoh`
 
 ### Forum
 
@@ -456,7 +456,7 @@ Supporting references:
 - Chat service implementation
 - Chat UI integration
 - Friends-related architecture and behavior
-- Challenge note: `<to be filled by cwoon>`
+- Challenge note: `Transitioning from rigid 1:1 friendship schema to flexible junction-based room model. Resolved data redundancy and enabled group chat support via many-to-many abstraction. Technical debt in redundant API endpoints; future optimization requires unified APIs for improved contract scalability. In development environment, Next.js dev server stream resets required Nginx proxy bypass for SSE stability; prod uses native server. Testing chat features were also mostly manual with multiple browsers.`
 
 ### jothomas
 
