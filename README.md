@@ -468,7 +468,7 @@ Supporting references:
 
 - Shared frontend implementation
 - Cross-page web integration and UI delivery
-- Challenge note: `<to be filled by rteoh>`
+- Challenge note: `Aligning design ideas and feature ideas into a clear and understandable strategy to produce a minimalist UI that prioritizes users experience and simplicity.`
 
 ---
 
